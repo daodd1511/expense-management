@@ -1,14 +1,16 @@
 'use client'
 
-import { Check, Moon, Plus, Sun } from 'lucide-react'
+import { Check, Moon, Sun } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 import { CategoryIcon, colorVar } from '@/components/category-icon'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input, Label } from '@/components/ui/input'
+import { useLang } from '@/lib/i18n'
 import { useStore } from '@/lib/store'
-import type { Category } from '@/lib/types'
+import type { Category, Lang } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 const COLOR_OPTIONS = ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5', 'income', 'expense'] as const
@@ -41,6 +43,7 @@ const EMPTY_CATEGORY: CategoryFormState = {
 export function DesktopSettings() {
   const { categories, addCategory, updateCategory } = useStore()
   const { theme, setTheme } = useTheme()
+  const { t, lang, setLang } = useLang()
   const [mounted, setMounted] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(categories[0]?.id ?? null)
   const editingCategory = categories.find((c) => c.id === editingId)
@@ -77,25 +80,26 @@ export function DesktopSettings() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Cài đặt</h1>
-        <p className="text-sm text-muted-foreground">Quản lý danh mục và tùy chọn ứng dụng</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('settings.title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('settings.subtitle')}</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Appearance */}
         <Card className="flex flex-col gap-4 p-6">
           <div>
-            <h2 className="text-base font-semibold">Giao diện</h2>
-            <p className="text-sm text-muted-foreground">Chọn chế độ sáng hoặc tối</p>
+            <h2 className="text-base font-semibold">{t('settings.appearance')}</h2>
+            <p className="text-sm text-muted-foreground">{t('settings.appearanceDesc')}</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {(['light', 'dark'] as const).map((t) => {
-              const active = mounted && theme === t
-              const Icon = t === 'light' ? Sun : Moon
+            {(['light', 'dark'] as const).map((th) => {
+              const active = mounted && theme === th
+              const Icon = th === 'light' ? Sun : Moon
               return (
                 <button
-                  key={t}
+                  key={th}
                   type="button"
-                  onClick={() => setTheme(t)}
+                  onClick={() => setTheme(th)}
                   className={cn(
                     'flex items-center justify-between rounded-xl border p-4 text-sm font-medium transition-colors',
                     active ? 'border-primary bg-accent' : 'border-border hover:bg-muted',
@@ -103,7 +107,7 @@ export function DesktopSettings() {
                 >
                   <span className="flex items-center gap-2">
                     <Icon className="size-4" />
-                    {t === 'light' ? 'Sáng' : 'Tối'}
+                    {th === 'light' ? t('settings.light') : t('settings.dark')}
                   </span>
                   {active && <Check className="size-4 text-primary" />}
                 </button>
@@ -112,19 +116,47 @@ export function DesktopSettings() {
           </div>
         </Card>
 
+        {/* Language */}
         <Card className="flex flex-col gap-4 p-6">
+          <div>
+            <h2 className="text-base font-semibold">{t('settings.language')}</h2>
+            <p className="text-sm text-muted-foreground">{t('settings.languageDesc')}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {(['vi', 'en'] as Lang[]).map((l) => {
+              const active = lang === l
+              return (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setLang(l)}
+                  className={cn(
+                    'flex items-center justify-between rounded-xl border p-4 text-sm font-medium transition-colors',
+                    active ? 'border-primary bg-accent' : 'border-border hover:bg-muted',
+                  )}
+                >
+                  <span>{l === 'vi' ? t('settings.langVi') : t('settings.langEn')}</span>
+                  {active && <Check className="size-4 text-primary" />}
+                </button>
+              )
+            })}
+          </div>
+        </Card>
+
+        {/* Categories */}
+        <Card className="flex flex-col gap-4 p-6 lg:col-span-2">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-base font-semibold">Danh mục</h2>
-              <p className="text-sm text-muted-foreground">{categories.length} danh mục đang hoạt động</p>
+              <h2 className="text-base font-semibold">{t('settings.categories')}</h2>
+              <p className="text-sm text-muted-foreground">{t('settings.categoriesActive', { n: categories.length })}</p>
             </div>
             <Button type="button" variant="outline" size="sm" onClick={handleNewCategory}>
               <Plus className="size-3.5" />
-              Thêm
+              {t('settings.add')}
             </Button>
           </div>
 
-          <ul className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto pr-1">
+          <ul className="grid grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
             {categories.map((c) => (
               <li
                 key={c.id}
@@ -160,34 +192,34 @@ export function DesktopSettings() {
               </span>
               <div>
                 <h3 className="text-sm font-semibold">
-                  {editingId ? 'Sửa danh mục' : 'Thêm danh mục'}
+                  {editingId ? t('settings.editCat') : t('settings.newCat')}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Thay đổi tên, biểu tượng và màu hiển thị
+                  {t('settings.catDesc')}
                 </p>
               </div>
             </div>
 
             <div className="grid gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="category-name">Tên danh mục</Label>
+                <Label htmlFor="category-name">{t('settings.catName')}</Label>
                 <Input
                   id="category-name"
                   value={categoryForm.name}
                   onChange={(e) => setCategoryForm((prev) => ({ ...prev, name: e.target.value }))}
-                  placeholder="VD: Cà phê"
+                  placeholder={t('settings.catPlaceholder')}
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label>Biểu tượng</Label>
+                <Label>{t('settings.icon')}</Label>
                 <div className="flex flex-wrap gap-2">
                   {ICON_OPTIONS.map((icon) => (
                     <button
                       key={icon}
                       type="button"
                       onClick={() => setCategoryForm((prev) => ({ ...prev, icon }))}
-                      aria-label={`Chọn biểu tượng ${icon}`}
+                      aria-label={t('settings.iconLabel', { icon })}
                       className={cn(
                         'inline-flex size-9 items-center justify-center rounded-lg border transition-colors',
                         categoryForm.icon === icon ? 'border-primary bg-accent text-primary' : 'border-border hover:bg-muted',
@@ -200,14 +232,14 @@ export function DesktopSettings() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label>Màu</Label>
+                <Label>{t('settings.color')}</Label>
                 <div className="flex flex-wrap gap-2">
                   {COLOR_OPTIONS.map((color) => (
                     <button
                       key={color}
                       type="button"
                       onClick={() => setCategoryForm((prev) => ({ ...prev, color }))}
-                      aria-label={`Chọn màu ${color}`}
+                      aria-label={t('settings.colorLabel', { color })}
                       className={cn(
                         'size-8 rounded-full border-2 transition-transform active:scale-95',
                         categoryForm.color === color ? 'border-foreground' : 'border-transparent',
@@ -225,7 +257,7 @@ export function DesktopSettings() {
                 onClick={handleSaveCategory}
                 className="w-full"
               >
-                {editingId ? 'Lưu danh mục' : 'Tạo danh mục'}
+                {editingId ? t('settings.saveCat') : t('settings.createCat')}
               </Button>
             </div>
           </div>

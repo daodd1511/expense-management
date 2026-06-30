@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { monthlyTrend } from '@/lib/data'
 import { buildDonutData } from '@/lib/derive'
 import { formatVND } from '@/lib/format'
+import { useLang } from '@/lib/i18n'
 import { monthSummary, useStore } from '@/lib/store'
 import type { Transaction } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -22,6 +23,7 @@ export function DesktopDashboard({
   onEdit: (tx: Transaction) => void
 }) {
   const { transactions, getCategory } = useStore()
+  const { t } = useLang()
   const summary = monthSummary(transactions)
   const { data, total } = buildDonutData(transactions, getCategory)
   const savingRate = summary.income > 0 ? Math.round((summary.balance / summary.income) * 100) : 0
@@ -31,17 +33,17 @@ export function DesktopDashboard({
     <div className="flex flex-col gap-5">
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-        <Kpi label="Số dư tháng" value={formatVND(summary.balance)} icon={Wallet} accent />
-        <Kpi label="Thu nhập" value={formatVND(summary.income)} icon={ArrowDownLeft} tone="income" />
-        <Kpi label="Chi tiêu" value={formatVND(summary.expense)} icon={ArrowUpRight} tone="expense" />
-        <Kpi label="Tỷ lệ tiết kiệm" value={`${savingRate}%`} icon={PiggyBank} />
+        <Kpi label={t('dashboard.monthBalance')} value={formatVND(summary.balance)} icon={Wallet} accent />
+        <Kpi label={t('dashboard.income')} value={formatVND(summary.income)} icon={ArrowDownLeft} tone="income" />
+        <Kpi label={t('dashboard.expense')} value={formatVND(summary.expense)} icon={ArrowUpRight} tone="expense" />
+        <Kpi label={t('dashboard.savingsRate')} value={`${savingRate}%`} icon={PiggyBank} />
       </div>
 
       {/* Widget grid */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle>Chi theo danh mục</CardTitle>
+            <CardTitle>{t('dashboard.byCategory')}</CardTitle>
           </CardHeader>
           <CardContent>
             <CategoryDonut data={data} total={total} size={200} />
@@ -61,16 +63,16 @@ export function DesktopDashboard({
 
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Xu hướng thu chi 6 tháng</CardTitle>
+            <CardTitle>{t('dashboard.trend6m')}</CardTitle>
           </CardHeader>
           <CardContent>
             <TrendChart data={monthlyTrend} height={260} />
             <div className="mt-3 flex gap-6 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-full bg-income" /> Thu nhập
+                <span className="size-2.5 rounded-full bg-income" /> {t('dashboard.income')}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-full bg-expense" /> Chi tiêu
+                <span className="size-2.5 rounded-full bg-expense" /> {t('dashboard.expense')}
               </span>
             </div>
           </CardContent>
@@ -80,8 +82,8 @@ export function DesktopDashboard({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Ngân sách</CardTitle>
-            <Action onClick={() => onNavigate('budgets')} />
+            <CardTitle>{t('dashboard.budgets')}</CardTitle>
+            <Action label={t('dashboard.viewAll')} onClick={() => onNavigate('budgets')} />
           </CardHeader>
           <CardContent>
             <BudgetBars limit={4} />
@@ -90,8 +92,8 @@ export function DesktopDashboard({
 
         <Card className="lg:col-span-1">
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Tài khoản</CardTitle>
-            <Action onClick={() => onNavigate('accounts')} />
+            <CardTitle>{t('dashboard.accounts')}</CardTitle>
+            <Action label={t('dashboard.viewAll')} onClick={() => onNavigate('accounts')} />
           </CardHeader>
           <CardContent>
             <AccountList />
@@ -100,8 +102,8 @@ export function DesktopDashboard({
 
         <Card className="lg:col-span-1">
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Giao dịch gần đây</CardTitle>
-            <Action onClick={() => onNavigate('transactions')} />
+            <CardTitle>{t('dashboard.recent')}</CardTitle>
+            <Action label={t('dashboard.viewAll')} onClick={() => onNavigate('transactions')} />
           </CardHeader>
           <CardContent>
             <div className="flex flex-col divide-y divide-border">
@@ -157,14 +159,14 @@ function Kpi({
   )
 }
 
-function Action({ onClick }: { onClick: () => void }) {
+function Action({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline"
     >
-      Xem tất cả <ChevronRight className="size-3.5" />
+      {label} <ChevronRight className="size-3.5" />
     </button>
   )
 }

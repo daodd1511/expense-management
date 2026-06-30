@@ -4,6 +4,7 @@ import { ArrowRight, Camera, Delete, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { CategoryIcon, colorVar } from '@/components/category-icon'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Input, Label, Textarea } from '@/components/ui/input'
 import {
   Select,
@@ -15,15 +16,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { formatVND } from '@/lib/format'
+import { useLang } from '@/lib/i18n'
 import { useStore } from '@/lib/store'
 import type { Transaction, TxType } from '@/lib/types'
 import { cn } from '@/lib/utils'
-
-const TYPE_TABS: { value: TxType; label: string }[] = [
-  { value: 'expense', label: 'Chi tiền' },
-  { value: 'income', label: 'Thu tiền' },
-  { value: 'transfer', label: 'Chuyển khoản' },
-]
 
 const INCOME_CATS = ['salary', 'other-income']
 
@@ -39,6 +35,7 @@ export function TransactionForm({
   onCancel: () => void
 }) {
   const { categories, accounts, getCategory } = useStore()
+  const { t } = useLang()
   const [type, setType] = useState<TxType>(initial?.type ?? 'expense')
   const [amount, setAmount] = useState<string>(initial ? String(initial.amount) : '')
   const [categoryId, setCategoryId] = useState<string | null>(initial?.categoryId ?? null)
@@ -53,6 +50,12 @@ export function TransactionForm({
   )
   const [receipt, setReceipt] = useState<string | null>(initial?.receipt ?? null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const TYPE_TABS: { value: TxType; label: string }[] = [
+    { value: 'expense', label: t('form.expense') },
+    { value: 'income', label: t('form.income') },
+    { value: 'transfer', label: t('form.transfer') },
+  ]
 
   const numericAmount = Number(amount) || 0
   const visibleCats = categories.filter((c) =>
@@ -87,7 +90,7 @@ export function TransactionForm({
       categoryId: type === 'transfer' ? null : categoryId,
       accountId,
       toAccountId: type === 'transfer' ? toAccountId : null,
-      merchant: merchant.trim() || (type === 'transfer' ? 'Chuyển khoản' : getCategory(categoryId)?.name || 'Giao dịch'),
+      merchant: merchant.trim() || (type === 'transfer' ? t('form.defaultTransfer') : getCategory(categoryId)?.name || t('form.defaultTx')),
       note: note.trim() || undefined,
       date: new Date(`${date}T${(initial?.date ?? new Date().toISOString()).slice(11, 19)}`).toISOString(),
       receipt,
@@ -102,12 +105,12 @@ export function TransactionForm({
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-2 pb-3 sm:px-5">
         <h2 className="text-base font-semibold">
-          {initial ? 'Sửa giao dịch' : 'Thêm giao dịch'}
+          {initial ? t('form.editTitle') : t('form.addTitle')}
         </h2>
         <button
           type="button"
           onClick={onCancel}
-          aria-label="Đóng"
+          aria-label={t('form.close')}
           className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
         >
           <X className="size-4" />
@@ -117,28 +120,28 @@ export function TransactionForm({
       {/* Type tabs */}
       <div className="px-4 sm:px-5">
         <div className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
-          {TYPE_TABS.map((t) => (
+          {TYPE_TABS.map((tab) => (
             <button
-              key={t.value}
+              key={tab.value}
               type="button"
               onClick={() => {
-                setType(t.value)
-                if (t.value === 'income') setCategoryId('salary')
-                else if (t.value === 'expense' && INCOME_CATS.includes(categoryId ?? ''))
+                setType(tab.value)
+                if (tab.value === 'income') setCategoryId('salary')
+                else if (tab.value === 'expense' && INCOME_CATS.includes(categoryId ?? ''))
                   setCategoryId(null)
               }}
               className={cn(
                 'rounded-lg py-2 text-sm font-medium transition-colors',
-                type === t.value
-                  ? t.value === 'income'
+                type === tab.value
+                  ? tab.value === 'income'
                     ? 'bg-income text-income-foreground'
-                    : t.value === 'expense'
+                    : tab.value === 'expense'
                       ? 'bg-expense text-expense-foreground'
                       : 'bg-card text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >
-              {t.label}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -146,7 +149,7 @@ export function TransactionForm({
 
       {/* Amount display */}
       <div className="flex flex-col items-center gap-1 px-4 py-5 sm:px-5">
-        <span className="text-xs text-muted-foreground">Số tiền</span>
+        <span className="text-xs text-muted-foreground">{t('form.amount')}</span>
         <div className={cn('tabular text-4xl font-bold tracking-tight', amountTone)}>
           {formatVND(numericAmount)}
         </div>
@@ -156,7 +159,7 @@ export function TransactionForm({
         {/* Categories */}
         {type !== 'transfer' && (
           <div className="flex flex-col gap-2">
-            <Label>Danh mục</Label>
+            <Label>{t('form.category')}</Label>
             <div className="flex flex-wrap gap-2">
               {visibleCats.map((c) => {
                 const active = categoryId === c.id
@@ -186,54 +189,54 @@ export function TransactionForm({
         {type === 'transfer' ? (
           <div className="flex items-end gap-2">
             <div className="flex flex-1 flex-col gap-2">
-              <Label>Từ tài khoản</Label>
-              <AccountSelect value={accountId} onChange={setAccountId} accounts={accounts} />
+              <Label>{t('form.fromAccount')}</Label>
+              <AccountSelect value={accountId} onChange={setAccountId} accounts={accounts} placeholder={t('form.selectAccount')} />
             </div>
             <ArrowRight className="mb-2.5 size-5 shrink-0 text-muted-foreground" />
             <div className="flex flex-1 flex-col gap-2">
-              <Label>Đến tài khoản</Label>
-              <AccountSelect value={toAccountId} onChange={setToAccountId} accounts={accounts} />
+              <Label>{t('form.toAccount')}</Label>
+              <AccountSelect value={toAccountId} onChange={setToAccountId} accounts={accounts} placeholder={t('form.selectAccount')} />
             </div>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            <Label>Tài khoản</Label>
-            <AccountSelect value={accountId} onChange={setAccountId} accounts={accounts} />
+            <Label>{t('form.account')}</Label>
+            <AccountSelect value={accountId} onChange={setAccountId} accounts={accounts} placeholder={t('form.selectAccount')} />
           </div>
         )}
 
         {/* Merchant + date */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="merchant">Nơi giao dịch</Label>
+            <Label htmlFor="merchant">{t('form.merchant')}</Label>
             <Input
               id="merchant"
               value={merchant}
               onChange={(e) => setMerchant(e.target.value)}
-              placeholder="VD: Highlands Coffee"
+              placeholder={t('form.merchantPlaceholder')}
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="date">Ngày</Label>
-            <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Label>{t('form.date')}</Label>
+            <DatePicker value={date} onChange={setDate} />
           </div>
         </div>
 
         {/* Note */}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="note">Ghi chú</Label>
+          <Label htmlFor="note">{t('form.note')}</Label>
           <Textarea
             id="note"
             rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Thêm ghi chú (tùy chọn)"
+            placeholder={t('form.notePlaceholder')}
           />
         </div>
 
         {/* Receipt */}
         <div className="flex flex-col gap-2">
-          <Label>Hóa đơn</Label>
+          <Label>{t('form.receipt')}</Label>
           <div className="flex items-center gap-3">
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
             {receipt ? (
@@ -241,13 +244,13 @@ export function TransactionForm({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={receipt || '/placeholder.svg'}
-                  alt="Ảnh hóa đơn đính kèm"
+                  alt={t('form.receiptAlt')}
                   className="size-16 rounded-lg border border-border object-cover"
                 />
                 <button
                   type="button"
                   onClick={() => setReceipt(null)}
-                  aria-label="Xóa ảnh"
+                  aria-label={t('form.removeReceipt')}
                   className="absolute -right-2 -top-2 inline-flex size-5 items-center justify-center rounded-full bg-foreground text-background"
                 >
                   <X className="size-3" />
@@ -263,7 +266,7 @@ export function TransactionForm({
               </button>
             )}
             <span className="text-xs text-muted-foreground">
-              Đính kèm ảnh hóa đơn để lưu trữ
+              {t('form.receiptHint')}
             </span>
           </div>
         </div>
@@ -288,7 +291,7 @@ export function TransactionForm({
       {/* Submit */}
       <div className="sticky bottom-0 flex gap-2 border-t border-border bg-card p-4 sm:px-5">
         <Button variant="outline" size="lg" className="h-11 flex-1" onClick={onCancel}>
-          Hủy
+          {t('form.cancel')}
         </Button>
         <Button
           size="lg"
@@ -296,7 +299,7 @@ export function TransactionForm({
           disabled={!canSubmit}
           onClick={submit}
         >
-          {initial ? 'Lưu thay đổi' : 'Thêm giao dịch'}
+          {initial ? t('form.save') : t('form.submit')}
         </Button>
       </div>
     </div>
@@ -307,17 +310,19 @@ function AccountSelect({
   value,
   onChange,
   accounts,
+  placeholder,
 }: {
   value: string
   onChange: (v: string) => void
   accounts: { id: string; name: string }[]
+  placeholder: string
 }) {
   const labels = Object.fromEntries(accounts.map((account) => [account.id, account.name]))
 
   return (
     <Select value={value} onValueChange={(nextValue) => nextValue && onChange(nextValue)}>
       <SelectTrigger>
-        <SelectValue>{(selected: string | null) => labels[selected ?? ''] ?? 'Chọn tài khoản'}</SelectValue>
+        <SelectValue>{(selected: string | null) => labels[selected ?? ''] ?? placeholder}</SelectValue>
       </SelectTrigger>
       <SelectPortal>
         <SelectPositioner>

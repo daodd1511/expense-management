@@ -26,7 +26,6 @@ function Leading({ tx }: { tx: Transaction }) {
       <CategoryIcon
         name={cat?.icon}
         className="size-4"
-        // @ts-expect-error inline style color
         style={{ color: colorVar(cat?.color ?? 'chart-1') }}
       />
     </span>

@@ -5,33 +5,35 @@ import { useMemo, useState } from 'react'
 import { TransactionRow } from '@/components/shared/transaction-row'
 import { Input } from '@/components/ui/input'
 import { formatDayLabel, formatVND } from '@/lib/format'
+import { useLang } from '@/lib/i18n'
 import { useStore } from '@/lib/store'
 import type { Transaction, TxType } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-const FILTERS: { value: TxType | 'all'; label: string }[] = [
-  { value: 'all', label: 'Tất cả' },
-  { value: 'expense', label: 'Chi' },
-  { value: 'income', label: 'Thu' },
-  { value: 'transfer', label: 'Chuyển' },
-]
-
 export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => void }) {
   const { transactions } = useStore()
+  const { t, lang } = useLang()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<TxType | 'all'>('all')
 
+  const FILTERS: { value: TxType | 'all'; label: string }[] = [
+    { value: 'all', label: t('tx.filterAll') },
+    { value: 'expense', label: t('tx.filterExpense') },
+    { value: 'income', label: t('tx.filterIncome') },
+    { value: 'transfer', label: t('tx.filterTransfer') },
+  ]
+
   const groups = useMemo(() => {
-    const filtered = transactions.filter((t) => {
-      if (filter !== 'all' && t.type !== filter) return false
-      if (query && !t.merchant.toLowerCase().includes(query.toLowerCase())) return false
+    const filtered = transactions.filter((tx) => {
+      if (filter !== 'all' && tx.type !== filter) return false
+      if (query && !tx.merchant.toLowerCase().includes(query.toLowerCase())) return false
       return true
     })
     const map = new Map<string, Transaction[]>()
-    for (const t of filtered) {
-      const key = t.date.slice(0, 10)
+    for (const tx of filtered) {
+      const key = tx.date.slice(0, 10)
       if (!map.has(key)) map.set(key, [])
-      map.get(key)!.push(t)
+      map.get(key)!.push(tx)
     }
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]))
   }, [transactions, query, filter])
@@ -43,7 +45,7 @@ export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => vo
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Tìm giao dịch..."
+          placeholder={t('tx.searchMobile')}
           className="pl-9"
         />
       </div>
@@ -68,13 +70,15 @@ export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => vo
 
       {groups.map(([day, items]) => {
         const dayNet = items.reduce(
-          (s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0),
+          (s, tx) => s + (tx.type === 'income' ? tx.amount : tx.type === 'expense' ? -tx.amount : 0),
           0,
         )
         return (
           <div key={day} className="flex flex-col">
             <div className="flex items-center justify-between px-1 pb-1 pt-3">
-              <span className="text-xs font-semibold text-muted-foreground">{formatDayLabel(day)}</span>
+              <span className="text-xs font-semibold text-muted-foreground">
+                {formatDayLabel(day, lang, t('date.today'), t('date.yesterday'))}
+              </span>
               <span className="tabular text-xs text-muted-foreground">
                 {dayNet >= 0 ? '+' : '−'}
                 {formatVND(dayNet)}
@@ -82,8 +86,8 @@ export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => vo
             </div>
             <div className="overflow-hidden rounded-2xl border border-border bg-card">
               <div className="divide-y divide-border px-2">
-                {items.map((t) => (
-                  <TransactionRow key={t.id} tx={t} onClick={() => onEdit(t)} swipe />
+                {items.map((tx) => (
+                  <TransactionRow key={tx.id} tx={tx} onClick={() => onEdit(tx)} swipe />
                 ))}
               </div>
             </div>
@@ -92,7 +96,7 @@ export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => vo
       })}
 
       {groups.length === 0 && (
-        <p className="py-12 text-center text-sm text-muted-foreground">Không có giao dịch nào.</p>
+        <p className="py-12 text-center text-sm text-muted-foreground">{t('tx.empty')}</p>
       )}
     </div>
   )

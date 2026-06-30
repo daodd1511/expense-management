@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { monthlyTrend } from '@/lib/data'
 import { buildDonutData } from '@/lib/derive'
 import { formatVND, monthLabel } from '@/lib/format'
+import { useLang } from '@/lib/i18n'
 import { monthSummary, useStore } from '@/lib/store'
 import type { Transaction } from '@/lib/types'
 
@@ -20,6 +21,7 @@ export function MobileHome({
   onEdit: (tx: Transaction) => void
 }) {
   const { transactions, getCategory } = useStore()
+  const { t, lang } = useLang()
   const summary = monthSummary(transactions)
   const { data, total } = buildDonutData(transactions, getCategory)
   const recent = transactions.slice(0, 4)
@@ -30,7 +32,7 @@ export function MobileHome({
       <Card className="overflow-hidden border-0 bg-primary text-primary-foreground">
         <CardContent className="p-5">
           <div className="flex items-center justify-between">
-            <span className="text-sm opacity-80">Số dư tháng · {monthLabel(new Date())}</span>
+            <span className="text-sm opacity-80">{t('dashboard.monthBalance')} · {monthLabel(new Date(), lang)}</span>
             <TrendingUp className="size-4 opacity-80" />
           </div>
           <div className="tabular mt-1 text-3xl font-bold tracking-tight">
@@ -39,13 +41,13 @@ export function MobileHome({
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-primary-foreground/10 p-3">
               <div className="flex items-center gap-1 text-xs opacity-80">
-                <ArrowDownLeft className="size-3.5" /> Thu nhập
+                <ArrowDownLeft className="size-3.5" /> {t('dashboard.income')}
               </div>
               <div className="tabular mt-0.5 text-base font-semibold">{formatVND(summary.income)}</div>
             </div>
             <div className="rounded-xl bg-primary-foreground/10 p-3">
               <div className="flex items-center gap-1 text-xs opacity-80">
-                <ArrowUpRight className="size-3.5" /> Chi tiêu
+                <ArrowUpRight className="size-3.5" /> {t('dashboard.expense')}
               </div>
               <div className="tabular mt-0.5 text-base font-semibold">{formatVND(summary.expense)}</div>
             </div>
@@ -56,7 +58,7 @@ export function MobileHome({
       {/* Donut */}
       <Card>
         <CardContent className="p-5">
-          <SectionTitle title="Chi theo danh mục" />
+          <SectionTitle title={t('dashboard.byCategory')} />
           <div className="mt-3 flex items-center gap-3">
             <div className="w-[9.375rem] shrink-0">
               <CategoryDonut data={data} total={total} size={142} />
@@ -81,7 +83,7 @@ export function MobileHome({
       {/* Budgets */}
       <Card>
         <CardContent className="p-5">
-          <SectionTitle title="Ngân sách" action="Xem tất cả" onAction={() => onNavigate('budgets')} />
+          <SectionTitle title={t('dashboard.budgets')} action={t('dashboard.viewAll')} onAction={() => onNavigate('budgets')} />
           <div className="mt-4">
             <BudgetBars limit={3} />
           </div>
@@ -91,7 +93,7 @@ export function MobileHome({
       {/* Trend */}
       <Card>
         <CardContent className="p-5">
-          <SectionTitle title="Xu hướng 6 tháng" />
+          <SectionTitle title={t('dashboard.trend6mShort')} />
           <div className="mt-2">
             <TrendChart data={monthlyTrend} height={170} />
           </div>
@@ -101,7 +103,7 @@ export function MobileHome({
       {/* Accounts */}
       <Card>
         <CardContent className="p-5">
-          <SectionTitle title="Tài khoản" action="Xem tất cả" onAction={() => onNavigate('accounts')} />
+          <SectionTitle title={t('dashboard.accounts')} action={t('dashboard.viewAll')} onAction={() => onNavigate('accounts')} />
           <div className="mt-3">
             <AccountList />
           </div>
@@ -111,10 +113,10 @@ export function MobileHome({
       {/* Recent */}
       <Card>
         <CardContent className="p-5">
-          <SectionTitle title="Gần đây" action="Xem tất cả" onAction={() => onNavigate('transactions')} />
+          <SectionTitle title={t('dashboard.recentShort')} action={t('dashboard.viewAll')} onAction={() => onNavigate('transactions')} />
           <div className="mt-1 flex flex-col">
-            {recent.map((t) => (
-              <TransactionRow key={t.id} tx={t} onClick={() => onEdit(t)} />
+            {recent.map((tx) => (
+              <TransactionRow key={tx.id} tx={tx} onClick={() => onEdit(tx)} />
             ))}
           </div>
         </CardContent>

@@ -1,39 +1,43 @@
 'use client'
 
-import { ArrowLeftRight, Home, Plus, Wallet, Wallet2 } from 'lucide-react'
+import { ArrowLeftRight, Home, Plus, Settings, Wallet, Wallet2 } from 'lucide-react'
 import { useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { TransactionForm } from '@/components/transaction-form'
 import { BottomSheet } from '@/components/ui/overlay'
+import { useLang } from '@/lib/i18n'
 import { useStore } from '@/lib/store'
 import type { Transaction } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { MobileAccounts } from './accounts'
 import { MobileBudgets } from './budgets'
 import { MobileHome } from './home'
+import { MobileSettings } from './settings'
 import { MobileTransactions } from './transactions'
 
-type Screen = 'home' | 'transactions' | 'budgets' | 'accounts'
-
-const TITLES: Record<Screen, string> = {
-  home: 'Tổng quan',
-  transactions: 'Giao dịch',
-  budgets: 'Ngân sách',
-  accounts: 'Tài khoản',
-}
-
-const NAV: { screen: Screen; label: string; icon: typeof Home }[] = [
-  { screen: 'home', label: 'Trang chủ', icon: Home },
-  { screen: 'transactions', label: 'Giao dịch', icon: ArrowLeftRight },
-  { screen: 'budgets', label: 'Ngân sách', icon: Wallet2 },
-  { screen: 'accounts', label: 'Tài khoản', icon: Wallet },
-]
+type Screen = 'home' | 'transactions' | 'budgets' | 'accounts' | 'settings'
 
 export function MobileApp() {
   const { addTransaction, updateTransaction } = useStore()
+  const { t } = useLang()
   const [screen, setScreen] = useState<Screen>('home')
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
+
+  const TITLES: Record<Screen, string> = {
+    home: t('nav.dashboard'),
+    transactions: t('nav.transactions'),
+    budgets: t('nav.budgets'),
+    accounts: t('nav.accounts'),
+    settings: t('nav.settings'),
+  }
+
+  const NAV: { screen: Screen; label: string; icon: typeof Home }[] = [
+    { screen: 'home', label: t('nav.home'), icon: Home },
+    { screen: 'transactions', label: t('nav.transactions'), icon: ArrowLeftRight },
+    { screen: 'budgets', label: t('nav.budgets'), icon: Wallet2 },
+    { screen: 'accounts', label: t('nav.accounts'), icon: Wallet },
+  ]
 
   const openAdd = () => {
     setEditing(null)
@@ -58,7 +62,21 @@ export function MobileApp() {
           </span>
           <h1 className="text-base font-semibold tracking-tight">{TITLES[screen]}</h1>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setScreen(screen === 'settings' ? 'home' : 'settings')}
+            aria-label={t('nav.settings')}
+            className={cn(
+              'inline-flex size-8 items-center justify-center rounded-lg transition-colors',
+              screen === 'settings'
+                ? 'bg-accent text-primary'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+            )}
+          >
+            <Settings className="size-4" />
+          </button>
+        </div>
       </header>
 
       {/* Screen */}
@@ -67,6 +85,7 @@ export function MobileApp() {
         {screen === 'transactions' && <MobileTransactions onEdit={openEdit} />}
         {screen === 'budgets' && <MobileBudgets />}
         {screen === 'accounts' && <MobileAccounts />}
+        {screen === 'settings' && <MobileSettings />}
       </main>
 
       {/* Bottom nav with center FAB */}
@@ -80,7 +99,7 @@ export function MobileApp() {
               <button
                 type="button"
                 onClick={openAdd}
-                aria-label="Thêm giao dịch"
+                aria-label={t('app.addTransaction')}
                 className="-mt-7 inline-flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-background transition-transform active:scale-95"
               >
                 <Plus className="size-6" />
@@ -93,7 +112,7 @@ export function MobileApp() {
         </div>
       </nav>
 
-      <BottomSheet open={sheetOpen} onClose={close} title="Thêm giao dịch">
+      <BottomSheet open={sheetOpen} onClose={close} title={editing ? t('form.editTitle') : t('form.addTitle')}>
         <TransactionForm
           variant="mobile"
           initial={editing ?? undefined}

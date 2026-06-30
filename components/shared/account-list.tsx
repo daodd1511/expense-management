@@ -3,19 +3,22 @@
 import { Banknote, CreditCard, Landmark, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { formatVND } from '@/lib/format'
+import { useLang } from '@/lib/i18n'
 import { useStore } from '@/lib/store'
 import type { AccountKind } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-const KIND: Record<AccountKind, { icon: LucideIcon; label: string }> = {
-  cash: { icon: Banknote, label: 'Tiền mặt' },
-  bank: { icon: Landmark, label: 'Ngân hàng' },
-  card: { icon: CreditCard, label: 'Thẻ tín dụng' },
-  ewallet: { icon: Wallet, label: 'Ví điện tử' },
-}
-
 export function AccountList({ className }: { className?: string }) {
   const { accounts } = useStore()
+  const { t } = useLang()
+
+  const KIND: Record<AccountKind, { icon: LucideIcon; label: string }> = {
+    cash: { icon: Banknote, label: t('accounts.kindCash') },
+    bank: { icon: Landmark, label: t('accounts.kindBank') },
+    card: { icon: CreditCard, label: t('accounts.kindCard') },
+    ewallet: { icon: Wallet, label: t('accounts.kindEwallet') },
+  }
+
   return (
     <ul className={cn('flex flex-col divide-y divide-border', className)}>
       {accounts.map((a) => {

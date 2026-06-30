@@ -5,10 +5,12 @@ import { CategoryIcon, colorVar } from '@/components/category-icon'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { formatVND, monthLabel } from '@/lib/format'
+import { useLang } from '@/lib/i18n'
 import { spentForCategory, useStore } from '@/lib/store'
 
 export function DesktopBudgets() {
   const { budgets, transactions } = useStore()
+  const { t, lang } = useLang()
   const totalLimit = budgets.reduce((s, b) => s + b.limit, 0)
   const totalSpent = budgets.reduce((s, b) => s + spentForCategory(transactions, b.categoryId), 0)
   const pct = Math.round((totalSpent / totalLimit) * 100)
@@ -21,27 +23,27 @@ export function DesktopBudgets() {
       <div className="flex flex-col gap-4 lg:col-span-1">
         <Card>
           <CardContent className="p-5">
-            <span className="text-sm text-muted-foreground">Tổng ngân sách · {monthLabel(new Date())}</span>
+            <span className="text-sm text-muted-foreground">{t('budget.total', { month: monthLabel(new Date(), lang) })}</span>
             <div className="tabular mt-1 flex items-baseline gap-2">
               <span className="text-2xl font-bold tracking-tight">{formatVND(totalSpent)}</span>
               <span className="text-sm text-muted-foreground">/ {formatVND(totalLimit)}</span>
             </div>
             <Progress value={pct} className="mt-3 h-2.5" />
             <p className="mt-2 text-xs text-muted-foreground">
-              Đã dùng {pct}% · còn lại {formatVND(Math.max(0, totalLimit - totalSpent))}
+              {t('budget.used', { pct, remaining: formatVND(Math.max(0, totalLimit - totalSpent)) })}
             </p>
           </CardContent>
         </Card>
         <div className="grid grid-cols-2 gap-4">
           <Card>
             <CardContent className="p-5">
-              <span className="text-xs text-muted-foreground">Danh mục</span>
+              <span className="text-xs text-muted-foreground">{t('budget.categories')}</span>
               <div className="mt-1 text-2xl font-bold">{budgets.length}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-5">
-              <span className="text-xs text-muted-foreground">Vượt hạn mức</span>
+              <span className="text-xs text-muted-foreground">{t('budget.over')}</span>
               <div className="mt-1 text-2xl font-bold text-expense">{over}</div>
             </CardContent>
           </Card>
@@ -50,7 +52,7 @@ export function DesktopBudgets() {
 
       <Card className="lg:col-span-2">
         <CardHeader>
-          <CardTitle>Ngân sách theo danh mục</CardTitle>
+          <CardTitle>{t('budget.byCategory')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">

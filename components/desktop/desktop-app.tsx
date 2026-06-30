@@ -9,11 +9,11 @@ import {
   Target,
   Wallet,
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { TransactionForm } from '@/components/transaction-form'
 import { Drawer } from '@/components/ui/overlay'
+import { useLang } from '@/lib/i18n'
 import { useStore } from '@/lib/store'
 import type { Transaction } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -25,19 +25,20 @@ import { DesktopTransactionsTable } from './transactions-table'
 
 type Tab = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings'
 
-const NAV: { id: Tab; label: string; icon: LucideIcon }[] = [
-  { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
-  { id: 'transactions', label: 'Giao dịch', icon: Receipt },
-  { id: 'budgets', label: 'Ngân sách', icon: Target },
-  { id: 'accounts', label: 'Tài khoản', icon: Wallet },
-  { id: 'settings', label: 'Cài đặt', icon: Settings },
-]
-
 export function DesktopApp() {
   const { addTransaction, updateTransaction } = useStore()
+  const { t } = useLang()
   const [tab, setTab] = useState<Tab>('dashboard')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | undefined>(undefined)
+
+  const NAV: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+    { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { id: 'transactions', label: t('nav.transactions'), icon: Receipt },
+    { id: 'budgets', label: t('nav.budgets'), icon: Target },
+    { id: 'accounts', label: t('nav.accounts'), icon: Wallet },
+    { id: 'settings', label: t('nav.settings'), icon: Settings },
+  ]
 
   const openAdd = () => {
     setEditing(undefined)
@@ -57,8 +58,8 @@ export function DesktopApp() {
             <CreditCard className="size-5" />
           </span>
           <div className="leading-tight">
-            <p className="text-sm font-semibold">Sổ Chi Tiêu</p>
-            <p className="text-xs text-muted-foreground">Quản lý tài chính</p>
+            <p className="text-sm font-semibold">{t('app.name')}</p>
+            <p className="text-xs text-muted-foreground">{t('app.tagline')}</p>
           </div>
         </div>
 
@@ -91,11 +92,11 @@ export function DesktopApp() {
           className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
           <Plus className="size-4" />
-          Thêm giao dịch
+          {t('app.addTransaction')}
         </button>
 
         <div className="mt-auto flex items-center justify-between rounded-xl border border-border px-3 py-2">
-          <span className="text-xs font-medium text-muted-foreground">Giao diện</span>
+          <span className="text-xs font-medium text-muted-foreground">{t('settings.appearance')}</span>
           <ThemeToggle />
         </div>
       </aside>
