@@ -1,5 +1,7 @@
 export type TxType = 'expense' | 'income' | 'transfer'
 
+export type Lang = 'vi' | 'en'
+
 export type AccountKind = 'cash' | 'bank' | 'card' | 'ewallet'
 
 export interface Account {
