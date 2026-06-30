@@ -17,6 +17,9 @@ interface StoreValue {
   addTransaction: (t: Omit<Transaction, 'id'>) => void
   updateTransaction: (id: string, t: Partial<Transaction>) => void
   deleteTransaction: (id: string) => void
+  addAccount: (a: Omit<Account, 'id'>) => void
+  updateAccount: (id: string, patch: Partial<Omit<Account, 'id'>>) => void
+  deleteAccount: (id: string) => void
   addCategory: (c: Omit<Category, 'id'>) => void
   updateCategory: (id: string, c: Partial<Omit<Category, 'id'>>) => void
   getCategory: (id: string | null | undefined) => Category | undefined
@@ -27,7 +30,7 @@ const StoreContext = createContext<StoreValue | null>(null)
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>(seedTransactions)
-  const [accounts] = useState<Account[]>(seedAccounts)
+  const [accounts, setAccounts] = useState<Account[]>(seedAccounts)
   const [categories, setCategories] = useState<Category[]>(seedCategories)
   const [budgets] = useState<Budget[]>(seedBudgets)
 
@@ -41,6 +44,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const deleteTransaction = useCallback((id: string) => {
     setTransactions((prev) => prev.filter((t) => t.id !== id))
+  }, [])
+
+  const addAccount = useCallback((a: Omit<Account, 'id'>) => {
+    setAccounts((prev) => [...prev, { ...a, id: `acc-${Date.now()}` }])
+  }, [])
+
+  const updateAccount = useCallback((id: string, patch: Partial<Omit<Account, 'id'>>) => {
+    setAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)))
+  }, [])
+
+  const deleteAccount = useCallback((id: string) => {
+    setAccounts((prev) => prev.filter((a) => a.id !== id))
   }, [])
 
   const addCategory = useCallback((c: Omit<Category, 'id'>) => {
@@ -62,12 +77,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       addTransaction,
       updateTransaction,
       deleteTransaction,
+      addAccount,
+      updateAccount,
+      deleteAccount,
       addCategory,
       updateCategory,
       getCategory: (id) => (id ? catMap.get(id) : undefined),
       getAccount: (id) => (id ? accMap.get(id) : undefined),
     }
-  }, [transactions, accounts, categories, budgets, addTransaction, updateTransaction, deleteTransaction, addCategory, updateCategory])
+  }, [transactions, accounts, categories, budgets, addTransaction, updateTransaction, deleteTransaction, addAccount, updateAccount, deleteAccount, addCategory, updateCategory])
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }

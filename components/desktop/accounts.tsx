@@ -1,42 +1,71 @@
 'use client'
 
-import { Banknote, CreditCard, Landmark, Plus, Wallet } from 'lucide-react'
+import { Banknote, CreditCard, Landmark, Pencil, Plus, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { useState } from 'react'
+import { AccountForm } from '@/components/shared/account-form'
 import { Card } from '@/components/ui/card'
+import { Modal } from '@/components/ui/overlay'
 import { formatVND } from '@/lib/format'
+import { useLang } from '@/lib/i18n'
 import { useStore } from '@/lib/store'
-import type { AccountKind } from '@/lib/types'
+import type { Account, AccountKind } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-const KIND: Record<AccountKind, { icon: LucideIcon; label: string }> = {
-  cash: { icon: Banknote, label: 'Tiền mặt' },
-  bank: { icon: Landmark, label: 'Ngân hàng' },
-  card: { icon: CreditCard, label: 'Thẻ tín dụng' },
-  ewallet: { icon: Wallet, label: 'Ví điện tử' },
-}
-
 export function DesktopAccounts() {
-  const { accounts } = useStore()
+  const { accounts, addAccount, updateAccount } = useStore()
+  const { t } = useLang()
   const total = accounts.reduce((s, a) => s + a.balance, 0)
+  const [editing, setEditing] = useState<Account | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+
+  const KIND: Record<AccountKind, { icon: LucideIcon; label: string }> = {
+    cash: { icon: Banknote, label: t('accounts.kindCash') },
+    bank: { icon: Landmark, label: t('accounts.kindBank') },
+    card: { icon: CreditCard, label: t('accounts.kindCard') },
+    ewallet: { icon: Wallet, label: t('accounts.kindEwallet') },
+  }
+
+  const openAdd = () => {
+    setEditing(null)
+    setModalOpen(true)
+  }
+
+  const openEdit = (account: Account) => {
+    setEditing(account)
+    setModalOpen(true)
+  }
+
+  const close = () => {
+    setModalOpen(false)
+    setEditing(null)
+  }
+
+  const handleSubmit = (data: Omit<Account, 'id'>) => {
+    if (editing) updateAccount(editing.id, data)
+    else addAccount(data)
+    close()
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Tài khoản</h1>
-          <p className="text-sm text-muted-foreground">Tổng số dư trên tất cả tài khoản</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('accounts.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('accounts.subtitle')}</p>
         </div>
         <button
           type="button"
+          onClick={openAdd}
           className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
           <Plus className="size-4" />
-          Thêm tài khoản
+          {t('accounts.add')}
         </button>
       </div>
 
       <Card className="p-6">
-        <p className="text-sm text-muted-foreground">Tổng tài sản ròng</p>
+        <p className="text-sm text-muted-foreground">{t('accounts.netWorth')}</p>
         <p className="tabular mt-1 text-3xl font-semibold">{formatVND(total)}</p>
       </Card>
 
@@ -46,24 +75,43 @@ export function DesktopAccounts() {
           const Icon = meta.icon
           const negative = a.balance < 0
           return (
-            <Card key={a.id} className="flex flex-col gap-4 p-5">
+            <Card key={a.id} className="group flex flex-col gap-4 p-5">
               <div className="flex items-center justify-between">
                 <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
                   <Icon className="size-5" />
                 </span>
-                <span className="text-xs font-medium text-muted-foreground">{meta.label}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground">{meta.label}</span>
+                  <button
+                    type="button"
+                    onClick={() => openEdit(a)}
+                    aria-label={t('accounts.edit')}
+                    className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100"
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                </div>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">{a.name}</p>
                 <p className={cn('tabular mt-1 text-xl font-semibold', negative && 'text-expense')}>
                   {negative ? '−' : ''}
-                  {formatVND(a.balance)}
+                  {formatVND(Math.abs(a.balance))}
                 </p>
               </div>
             </Card>
           )
         })}
       </div>
+
+      <Modal open={modalOpen} onClose={close}>
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="text-base font-semibold">
+            {editing ? t('accounts.editTitle') : t('accounts.addTitle')}
+          </h2>
+        </div>
+        <AccountForm initial={editing ?? undefined} onSubmit={handleSubmit} onCancel={close} />
+      </Modal>
     </div>
   )
 }
