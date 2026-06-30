@@ -1,0 +1,128 @@
+'use client'
+
+import {
+  CreditCard,
+  LayoutDashboard,
+  Plus,
+  Receipt,
+  Settings,
+  Target,
+  Wallet,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { useState } from 'react'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { TransactionForm } from '@/components/transaction-form'
+import { Drawer } from '@/components/ui/overlay'
+import { useStore } from '@/lib/store'
+import type { Transaction } from '@/lib/types'
+import { cn } from '@/lib/utils'
+import { DesktopAccounts } from './accounts'
+import { DesktopBudgets } from './budgets'
+import { DesktopDashboard } from './dashboard'
+import { DesktopSettings } from './settings'
+import { DesktopTransactionsTable } from './transactions-table'
+
+type Tab = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings'
+
+const NAV: { id: Tab; label: string; icon: LucideIcon }[] = [
+  { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
+  { id: 'transactions', label: 'Giao dịch', icon: Receipt },
+  { id: 'budgets', label: 'Ngân sách', icon: Target },
+  { id: 'accounts', label: 'Tài khoản', icon: Wallet },
+  { id: 'settings', label: 'Cài đặt', icon: Settings },
+]
+
+export function DesktopApp() {
+  const { addTransaction, updateTransaction } = useStore()
+  const [tab, setTab] = useState<Tab>('dashboard')
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [editing, setEditing] = useState<Transaction | undefined>(undefined)
+
+  const openAdd = () => {
+    setEditing(undefined)
+    setDrawerOpen(true)
+  }
+  const openEdit = (tx: Transaction) => {
+    setEditing(tx)
+    setDrawerOpen(true)
+  }
+
+  return (
+    <div className="flex min-h-dvh bg-background text-foreground">
+      {/* Sidebar */}
+      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border bg-sidebar p-4 lg:flex">
+        <div className="flex items-center gap-2.5 px-2 py-3">
+          <span className="inline-flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <CreditCard className="size-5" />
+          </span>
+          <div className="leading-tight">
+            <p className="text-sm font-semibold">Sổ Chi Tiêu</p>
+            <p className="text-xs text-muted-foreground">Quản lý tài chính</p>
+          </div>
+        </div>
+
+        <nav className="mt-4 flex flex-col gap-1">
+          {NAV.map((item) => {
+            const Icon = item.icon
+            const active = tab === item.id
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTab(item.id)}
+                className={cn(
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                  active
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground',
+                )}
+              >
+                <Icon className="size-4.5" />
+                {item.label}
+              </button>
+            )
+          })}
+        </nav>
+
+        <button
+          type="button"
+          onClick={openAdd}
+          className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          <Plus className="size-4" />
+          Thêm giao dịch
+        </button>
+
+        <div className="mt-auto flex items-center justify-between rounded-xl border border-border px-3 py-2">
+          <span className="text-xs font-medium text-muted-foreground">Giao diện</span>
+          <ThemeToggle />
+        </div>
+      </aside>
+
+      {/* Main */}
+      <main className="flex-1 overflow-x-hidden px-5 py-6 lg:px-10 lg:py-8">
+        <div className="mx-auto max-w-6xl">
+          {tab === 'dashboard' && <DesktopDashboard onNavigate={(s) => setTab(s as Tab)} onEdit={openEdit} />}
+          {tab === 'transactions' && <DesktopTransactionsTable onEdit={openEdit} />}
+          {tab === 'budgets' && <DesktopBudgets />}
+          {tab === 'accounts' && <DesktopAccounts />}
+          {tab === 'settings' && <DesktopSettings />}
+        </div>
+      </main>
+
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+        <TransactionForm
+          variant="desktop"
+          initial={editing}
+          onSubmit={(tx) => {
+            if (editing) updateTransaction(editing.id, tx)
+            else addTransaction(tx)
+            setDrawerOpen(false)
+          }}
+          onCancel={() => setDrawerOpen(false)}
+        />
+      </Drawer>
+    </div>
+  )
+}

@@ -1,0 +1,149 @@
+'use client'
+
+import { ArrowDownLeft, ArrowUpRight, ChevronRight, TrendingUp } from 'lucide-react'
+import { CategoryDonut, TrendChart } from '@/components/charts'
+import { AccountList } from '@/components/shared/account-list'
+import { BudgetBars } from '@/components/shared/budget-bars'
+import { TransactionRow } from '@/components/shared/transaction-row'
+import { Card, CardContent } from '@/components/ui/card'
+import { monthlyTrend } from '@/lib/data'
+import { buildDonutData } from '@/lib/derive'
+import { formatVND, monthLabel } from '@/lib/format'
+import { monthSummary, useStore } from '@/lib/store'
+import type { Transaction } from '@/lib/types'
+
+export function MobileHome({
+  onNavigate,
+  onEdit,
+}: {
+  onNavigate: (s: string) => void
+  onEdit: (tx: Transaction) => void
+}) {
+  const { transactions, getCategory } = useStore()
+  const summary = monthSummary(transactions)
+  const { data, total } = buildDonutData(transactions, getCategory)
+  const recent = transactions.slice(0, 4)
+
+  return (
+    <div className="flex flex-col gap-4 p-4">
+      {/* Month summary hero */}
+      <Card className="overflow-hidden border-0 bg-primary text-primary-foreground">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between">
+            <span className="text-sm opacity-80">Số dư tháng · {monthLabel(new Date())}</span>
+            <TrendingUp className="size-4 opacity-80" />
+          </div>
+          <div className="tabular mt-1 text-3xl font-bold tracking-tight">
+            {formatVND(summary.balance)}
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-primary-foreground/10 p-3">
+              <div className="flex items-center gap-1 text-xs opacity-80">
+                <ArrowDownLeft className="size-3.5" /> Thu nhập
+              </div>
+              <div className="tabular mt-0.5 text-base font-semibold">{formatVND(summary.income)}</div>
+            </div>
+            <div className="rounded-xl bg-primary-foreground/10 p-3">
+              <div className="flex items-center gap-1 text-xs opacity-80">
+                <ArrowUpRight className="size-3.5" /> Chi tiêu
+              </div>
+              <div className="tabular mt-0.5 text-base font-semibold">{formatVND(summary.expense)}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Donut */}
+      <Card>
+        <CardContent className="p-5">
+          <SectionTitle title="Chi theo danh mục" />
+          <div className="mt-3 flex items-center gap-3">
+            <div className="w-[9.375rem] shrink-0">
+              <CategoryDonut data={data} total={total} size={142} />
+            </div>
+            <ul className="flex min-w-0 flex-1 flex-col gap-2">
+              {data.slice(0, 5).map((d) => (
+                <li key={d.name} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
+                    <span className="truncate">{d.name}</span>
+                  </span>
+                  <span className="tabular shrink-0 text-muted-foreground">
+                    {Math.round((d.value / total) * 100)}%
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Budgets */}
+      <Card>
+        <CardContent className="p-5">
+          <SectionTitle title="Ngân sách" action="Xem tất cả" onAction={() => onNavigate('budgets')} />
+          <div className="mt-4">
+            <BudgetBars limit={3} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Trend */}
+      <Card>
+        <CardContent className="p-5">
+          <SectionTitle title="Xu hướng 6 tháng" />
+          <div className="mt-2">
+            <TrendChart data={monthlyTrend} height={170} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Accounts */}
+      <Card>
+        <CardContent className="p-5">
+          <SectionTitle title="Tài khoản" action="Xem tất cả" onAction={() => onNavigate('accounts')} />
+          <div className="mt-3">
+            <AccountList />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent */}
+      <Card>
+        <CardContent className="p-5">
+          <SectionTitle title="Gần đây" action="Xem tất cả" onAction={() => onNavigate('transactions')} />
+          <div className="mt-1 flex flex-col">
+            {recent.map((t) => (
+              <TransactionRow key={t.id} tx={t} onClick={() => onEdit(t)} />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function SectionTitle({
+  title,
+  action,
+  onAction,
+}: {
+  title: string
+  action?: string
+  onAction?: () => void
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
+      {action && (
+        <button
+          type="button"
+          onClick={onAction}
+          className="inline-flex items-center gap-0.5 text-xs font-medium text-primary"
+        >
+          {action} <ChevronRight className="size-3.5" />
+        </button>
+      )}
+    </div>
+  )
+}
