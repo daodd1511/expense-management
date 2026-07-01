@@ -35,7 +35,7 @@ categoriesRouter.post('/', async (c) => {
   const userId = c.get('userId')
   const { data, error } = await supabase
     .from('categories')
-    .insert(fromCategory(parsed.data, userId))
+    .insert(fromCategory({ category: parsed.data, ownerId: userId }))
     .select('*')
     .single()
 

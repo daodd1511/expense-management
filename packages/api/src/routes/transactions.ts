@@ -60,7 +60,7 @@ transactionsRouter.post('/', async (c) => {
   const userId = c.get('userId')
   const { data, error } = await supabase
     .from('transactions')
-    .insert(fromTransaction(parsed.data, userId))
+    .insert(fromTransaction({ transaction: parsed.data, ownerId: userId }))
     .select('*')
     .single()
 

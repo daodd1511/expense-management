@@ -34,7 +34,7 @@ budgetsRouter.post('/', async (c) => {
   const userId = c.get('userId')
   const { data, error } = await supabase
     .from('budgets')
-    .insert(fromBudget(parsed.data, userId))
+    .insert(fromBudget({ budget: parsed.data, ownerId: userId }))
     .select('*')
     .single()
 

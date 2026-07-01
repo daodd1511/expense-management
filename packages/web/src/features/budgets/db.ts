@@ -1,51 +1,41 @@
-import { supabase } from '@/core/supabase'
+import { z } from 'zod'
 import type { Budget } from '@/core/types'
-import { budgetRowSchema, secureParse, type BudgetRow } from '@wallet/shared'
+import { apiJson } from '@/core/api'
+import { budgetSchema } from '@wallet/shared'
 
-// ---- Mapper ----
+const budgetsResponseSchema = z.object({
+  data: z.array(budgetSchema),
+})
 
-function toBudget(row: BudgetRow): Budget {
-  return { categoryId: row.category_id, limit: row.amount }
+const budgetResponseSchema = z.object({
+  data: budgetSchema,
+})
+
+const okResponseSchema = z.object({
+  ok: z.literal(true),
+})
+
+export async function fetchBudgets(_ownerId: string): Promise<Budget[]> {
+  const response = await apiJson('/budgets', budgetsResponseSchema)
+  return response.data
 }
 
-// ---- Repository ----
-
-export async function fetchBudgets(ownerId: string): Promise<Budget[]> {
-  const { data, error } = await supabase
-    .from('budgets')
-    .select('*')
-    .eq('owner_id', ownerId)
-    .order('created_at', { ascending: true })
-  if (error) throw error
-  return (data ?? [])
-    .map((row) => secureParse(budgetRowSchema, row))
-    .filter((b): b is BudgetRow => b !== null)
-    .map(toBudget)
-}
-
-export async function insertBudget(budget: Budget, ownerId: string): Promise<void> {
-  const { error } = await supabase.from('budgets').insert({
-    owner_id: ownerId,
-    category_id: budget.categoryId,
-    amount: budget.limit,
+export async function insertBudget(budget: Budget, _ownerId: string): Promise<void> {
+  await apiJson('/budgets', budgetResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(budget),
   })
-  if (error) throw error
 }
 
-export async function updateBudget(categoryId: string, limit: number, ownerId: string): Promise<void> {
-  const { error } = await supabase
-    .from('budgets')
-    .update({ amount: limit })
-    .eq('category_id', categoryId)
-    .eq('owner_id', ownerId)
-  if (error) throw error
+export async function updateBudget(categoryId: string, limit: number, _ownerId: string): Promise<void> {
+  await apiJson(`/budgets/${categoryId}`, budgetResponseSchema, {
+    method: 'PATCH',
+    body: JSON.stringify({ limit }),
+  })
 }
 
-export async function deleteBudget(categoryId: string, ownerId: string): Promise<void> {
-  const { error } = await supabase
-    .from('budgets')
-    .delete()
-    .eq('category_id', categoryId)
-    .eq('owner_id', ownerId)
-  if (error) throw error
+export async function deleteBudget(categoryId: string, _ownerId: string): Promise<void> {
+  await apiJson(`/budgets/${categoryId}`, okResponseSchema, {
+    method: 'DELETE',
+  })
 }

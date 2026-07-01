@@ -37,7 +37,7 @@ subscriptionsRouter.post('/', async (c) => {
   const userId = c.get('userId')
   const { data, error } = await supabase
     .from('subscriptions')
-    .insert(fromSubscription(parsed.data, userId))
+    .insert(fromSubscription({ subscription: parsed.data, ownerId: userId }))
     .select('*')
     .single()
 
@@ -78,8 +78,8 @@ subscriptionsRouter.post('/:id/log', async (c) => {
   const txInsert = await supabase
     .from('transactions')
     .insert(
-      fromTransaction(
-        {
+      fromTransaction({
+        transaction: {
           type: domainSubscription.type,
           amount: domainSubscription.amount,
           categoryId: domainSubscription.categoryId,
@@ -91,8 +91,8 @@ subscriptionsRouter.post('/:id/log', async (c) => {
           receipt: null,
           subscriptionId: domainSubscription.id,
         },
-        userId,
-      ),
+        ownerId: userId,
+      }),
     )
   if (txInsert.error) {
     return jsonError(c, 500, txInsert.error.message)
