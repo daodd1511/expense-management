@@ -8,9 +8,11 @@
     "build": "pnpm --filter @wallet/web build",
     "preview": "pnpm --filter @wallet/web preview",
     "dev:api": "pnpm --filter @wallet/api dev",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
   },
   "devDependencies": {
-    "@types/node": "^24.10.4"
+    "@types/node": "^24.10.4",
+    "vitest": "^3.2.4"
   }
 }

@@ -2,6 +2,9 @@
   "name": "@wallet/shared",
   "version": "0.1.0",
   "private": true,
+  "scripts": {
+    "test": "vitest run"
+  },
   "dependencies": {
     "zod": "^4.4.3"
   },

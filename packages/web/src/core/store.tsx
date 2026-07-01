@@ -87,11 +87,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const deleteSub = useDeleteSubscription()
   const logSub = useLogSubscription()
 
-  const transactions = txQuery.data ?? []
-  const accounts = accQuery.data ?? []
-  const categories = catQuery.data ?? []
-  const budgets = budgetQuery.data ?? []
-  const subscriptions = subQuery.data ?? []
+  const transactions: Transaction[] = txQuery.data ?? []
+  const accounts: Account[] = accQuery.data ?? []
+  const categories: Category[] = catQuery.data ?? []
+  const budgets: Budget[] = budgetQuery.data ?? []
+  const subscriptions: Subscription[] = subQuery.data ?? []
 
   const loading =
     txQuery.isLoading ||
@@ -170,15 +170,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   )
   const logSubscription = useCallback(
     (id: string) => {
-      const sub = subscriptions.find((s) => s.id === id)
+      const sub = subscriptions.find((s: Subscription) => s.id === id)
       if (sub) logSub.mutate(sub)
     },
     [subscriptions, logSub],
   )
 
   const value = useMemo<StoreValue>(() => {
-    const catMap = new Map(categories.map((c) => [c.id, c]))
-    const accMap = new Map(accounts.map((a) => [a.id, a]))
+    const catMap = new Map<string, Category>(categories.map((category) => [category.id, category]))
+    const accMap = new Map<string, Account>(accounts.map((account) => [account.id, account]))
     return {
       transactions,
       accounts,
