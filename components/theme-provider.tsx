@@ -1,8 +1,45 @@
-'use client'
+import { createContext, useContext, useEffect, useState } from 'react'
 
-import { ThemeProvider as NextThemesProvider } from 'next-themes'
-import type { ComponentProps } from 'react'
+type Theme = 'light' | 'dark' | 'system'
 
-export function ThemeProvider({ children, ...props }: ComponentProps<typeof NextThemesProvider>) {
-  return <NextThemesProvider {...props}>{children}</NextThemesProvider>
+interface ThemeContextValue {
+  theme: Theme
+  resolvedTheme: 'light' | 'dark'
+  setTheme: (t: Theme) => void
 }
+
+const ThemeCtx = createContext<ThemeContextValue>({
+  theme: 'system',
+  resolvedTheme: 'light',
+  setTheme: () => {},
+})
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [theme, setThemeState] = useState<Theme>(
+    () => (localStorage.getItem('theme') as Theme) ?? 'system'
+  )
+
+  const resolvedTheme: 'light' | 'dark' =
+    theme === 'system'
+      ? matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      : theme
+
+  useEffect(() => {
+    const root = document.documentElement
+    const dark = resolvedTheme === 'dark'
+    root.classList.toggle('dark', dark)
+    localStorage.setItem('theme', theme)
+  }, [theme, resolvedTheme])
+
+  function setTheme(t: Theme) {
+    setThemeState(t)
+  }
+
+  return (
+    <ThemeCtx.Provider value={{ theme, resolvedTheme, setTheme }}>
+      {children}
+    </ThemeCtx.Provider>
+  )
+}
+
+export const useTheme = () => useContext(ThemeCtx)

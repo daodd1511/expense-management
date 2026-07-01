@@ -1,4 +1,3 @@
-'use client'
 
 import { useEffect, useState } from 'react'
 import { DesktopApp } from '@/components/desktop/desktop-app'

@@ -1,4 +1,3 @@
-'use client'
 
 import { DesktopSettings } from '@/components/desktop/settings'
 

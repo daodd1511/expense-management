@@ -1,4 +1,3 @@
-'use client'
 
 import { ArrowLeftRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Paperclip, Pencil, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'

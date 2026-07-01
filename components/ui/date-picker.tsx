@@ -1,4 +1,3 @@
-'use client'
 
 import { format } from 'date-fns'
 import { enUS, vi } from 'date-fns/locale'

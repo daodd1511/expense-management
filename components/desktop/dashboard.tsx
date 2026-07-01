@@ -1,4 +1,3 @@
-'use client'
 
 import { ArrowDownLeft, ArrowUpRight, ChevronRight, PiggyBank, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'

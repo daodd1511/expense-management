@@ -1,4 +1,3 @@
-'use client'
 
 import { ArrowLeftRight, Paperclip, Pencil, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'

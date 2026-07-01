@@ -1,9 +1,7 @@
-'use client'
-
 import { Check, Moon, Sun } from 'lucide-react'
 import { Plus } from 'lucide-react'
-import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
+import { useTheme } from '@/components/theme-provider'
+import { useState } from 'react'
 import { CategoryIcon, colorVar } from '@/components/category-icon'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -44,12 +42,9 @@ export function DesktopSettings() {
   const { categories, addCategory, updateCategory } = useStore()
   const { theme, setTheme } = useTheme()
   const { t, lang, setLang } = useLang()
-  const [mounted, setMounted] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(categories[0]?.id ?? null)
   const editingCategory = categories.find((c) => c.id === editingId)
   const [categoryForm, setCategoryForm] = useState<CategoryFormState>(() => toFormState(editingCategory))
-
-  useEffect(() => setMounted(true), [])
 
   const handleSelectCategory = (category: Category) => {
     setEditingId(category.id)
@@ -93,7 +88,7 @@ export function DesktopSettings() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             {(['light', 'dark'] as const).map((th) => {
-              const active = mounted && theme === th
+              const active = theme === th
               const Icon = th === 'light' ? Sun : Moon
               return (
                 <button

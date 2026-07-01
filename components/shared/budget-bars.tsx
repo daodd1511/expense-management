@@ -1,4 +1,3 @@
-'use client'
 
 import { CategoryIcon, colorVar } from '@/components/category-icon'
 import { Progress } from '@/components/ui/progress'

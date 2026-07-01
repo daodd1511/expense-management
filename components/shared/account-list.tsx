@@ -1,4 +1,3 @@
-'use client'
 
 import { Banknote, CreditCard, Landmark, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'

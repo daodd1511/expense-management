@@ -1,4 +1,3 @@
-'use client'
 
 import { budgetState } from '@/components/shared/budget-bars'
 import { CategoryIcon, colorVar } from '@/components/category-icon'

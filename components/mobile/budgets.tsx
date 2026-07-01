@@ -1,4 +1,3 @@
-'use client'
 
 import { BudgetBars } from '@/components/shared/budget-bars'
 import { Card, CardContent } from '@/components/ui/card'

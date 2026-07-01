@@ -1,4 +1,3 @@
-'use client'
 
 import { ArrowDownLeft, ArrowUpRight, ChevronRight, TrendingUp } from 'lucide-react'
 import { CategoryDonut, TrendChart } from '@/components/charts'

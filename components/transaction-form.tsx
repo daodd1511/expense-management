@@ -1,4 +1,3 @@
-'use client'
 
 import { ArrowRight, Camera, Delete, X } from 'lucide-react'
 import { useRef, useState } from 'react'
