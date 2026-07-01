@@ -1,14 +1,14 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
-import { authMiddleware } from './middleware/auth'
+import { authMiddleware, type AuthEnv } from './middleware/auth'
 import { transactionsRouter } from './routes/transactions'
 import { accountsRouter } from './routes/accounts'
 import { categoriesRouter } from './routes/categories'
 import { budgetsRouter } from './routes/budgets'
 import { subscriptionsRouter } from './routes/subscriptions'
 
-const app = new Hono()
+const app = new Hono<AuthEnv>()
 
 app.use('*', logger())
 app.use('*', cors())
