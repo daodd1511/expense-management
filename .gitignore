@@ -15,4 +15,5 @@ node_modules
 .next/
 .DS_Store
 dist
-execution/
+execution/.env
+.claude/
