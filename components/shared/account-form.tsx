@@ -27,7 +27,7 @@ export function AccountForm({
   const { t } = useLang()
   const [name, setName] = useState(initial?.name ?? '')
   const [kind, setKind] = useState<AccountKind>(initial?.kind ?? 'cash')
-  const [balance, setBalance] = useState(initial ? String(initial.balance) : '0')
+  const [balance, setBalance] = useState(initial ? String(initial.openingBalance) : '0')
 
   const KIND_LABELS: Record<AccountKind, string> = {
     cash: t('accounts.kindCash'),
@@ -40,7 +40,7 @@ export function AccountForm({
 
   const submit = () => {
     if (!canSubmit) return
-    onSubmit({ name: name.trim(), kind, balance: Number(balance) || 0 })
+    onSubmit({ name: name.trim(), kind, openingBalance: Number(balance) || 0 })
   }
 
   return (

@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { BottomSheet } from '@/components/ui/overlay'
 import { formatVND } from '@/lib/format'
 import { useLang } from '@/lib/i18n'
-import { useStore } from '@/lib/store'
+import { computeBalance, useStore } from '@/lib/store'
 import type { Account, AccountKind } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -20,11 +20,13 @@ const KIND_ICONS: Record<AccountKind, LucideIcon> = {
 
 function AccountRow({
   account,
+  balance,
   kindLabel,
   onEdit,
   onDelete,
 }: {
   account: Account
+  balance: number
   kindLabel: string
   onEdit: () => void
   onDelete: () => void
@@ -32,7 +34,7 @@ function AccountRow({
   const [dx, setDx] = useState(0)
   const startX = useRef<number | null>(null)
   const Icon = KIND_ICONS[account.kind]
-  const negative = account.balance < 0
+  const negative = balance < 0
 
   const onTouchStart = (e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX
@@ -87,7 +89,7 @@ function AccountRow({
             <span className="text-xs text-muted-foreground">{kindLabel}</span>
           </span>
           <span className={cn('tabular shrink-0 text-sm font-semibold', negative ? 'text-expense' : 'text-foreground')}>
-            {negative ? '−' : ''}{formatVND(Math.abs(account.balance))}
+            {negative ? '−' : ''}{formatVND(Math.abs(balance))}
           </span>
         </button>
       </div>
@@ -96,9 +98,9 @@ function AccountRow({
 }
 
 export function MobileAccounts() {
-  const { accounts, addAccount, updateAccount, deleteAccount } = useStore()
+  const { accounts, transactions, addAccount, updateAccount, deleteAccount } = useStore()
   const { t } = useLang()
-  const net = accounts.reduce((s, a) => s + a.balance, 0)
+  const net = accounts.reduce((s, a) => s + computeBalance(a.id, transactions, a.openingBalance), 0)
   const [editing, setEditing] = useState<Account | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
 
@@ -151,6 +153,7 @@ export function MobileAccounts() {
             <AccountRow
               key={a.id}
               account={a}
+              balance={computeBalance(a.id, transactions, a.openingBalance)}
               kindLabel={KIND_LABELS[a.kind]}
               onEdit={() => openEdit(a)}
               onDelete={() => deleteAccount(a.id)}

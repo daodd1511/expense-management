@@ -1,4 +1,4 @@
-import { Check, Moon, Sun } from 'lucide-react'
+import { Check, LogOut, Moon, Sun } from 'lucide-react'
 import { Plus } from 'lucide-react'
 import { useTheme } from '@/components/theme-provider'
 import { useState } from 'react'
@@ -6,6 +6,7 @@ import { CategoryIcon, colorVar } from '@/components/category-icon'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input, Label } from '@/components/ui/input'
+import { useAuth } from '@/lib/auth'
 import { useLang } from '@/lib/i18n'
 import { useStore } from '@/lib/store'
 import type { Category, Lang } from '@/lib/types'
@@ -42,6 +43,7 @@ export function DesktopSettings() {
   const { categories, addCategory, updateCategory } = useStore()
   const { theme, setTheme } = useTheme()
   const { t, lang, setLang } = useLang()
+  const { user, signOut } = useAuth()
   const [editingId, setEditingId] = useState<string | null>(categories[0]?.id ?? null)
   const editingCategory = categories.find((c) => c.id === editingId)
   const [categoryForm, setCategoryForm] = useState<CategoryFormState>(() => toFormState(editingCategory))
@@ -256,6 +258,18 @@ export function DesktopSettings() {
               </Button>
             </div>
           </div>
+        </Card>
+
+        {/* Account */}
+        <Card className="flex items-center justify-between px-5 py-4">
+          <div>
+            <p className="text-sm font-medium">{user?.email}</p>
+            <p className="text-xs text-muted-foreground">Google</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={signOut}>
+            <LogOut className="size-4" />
+            {t('auth.signOut')}
+          </Button>
         </Card>
       </div>
     </div>

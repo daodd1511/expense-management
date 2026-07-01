@@ -7,14 +7,14 @@ import { Card } from '@/components/ui/card'
 import { Modal } from '@/components/ui/overlay'
 import { formatVND } from '@/lib/format'
 import { useLang } from '@/lib/i18n'
-import { useStore } from '@/lib/store'
+import { computeBalance, useStore } from '@/lib/store'
 import type { Account, AccountKind } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 export function DesktopAccounts() {
-  const { accounts, addAccount, updateAccount } = useStore()
+  const { accounts, transactions, addAccount, updateAccount } = useStore()
   const { t } = useLang()
-  const total = accounts.reduce((s, a) => s + a.balance, 0)
+  const total = accounts.reduce((s, a) => s + computeBalance(a.id, transactions, a.openingBalance), 0)
   const [editing, setEditing] = useState<Account | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -72,7 +72,8 @@ export function DesktopAccounts() {
         {accounts.map((a) => {
           const meta = KIND[a.kind]
           const Icon = meta.icon
-          const negative = a.balance < 0
+          const bal = computeBalance(a.id, transactions, a.openingBalance)
+          const negative = bal < 0
           return (
             <Card key={a.id} className="group flex flex-col gap-4 p-5">
               <div className="flex items-center justify-between">
@@ -95,7 +96,7 @@ export function DesktopAccounts() {
                 <p className="text-sm font-medium text-muted-foreground">{a.name}</p>
                 <p className={cn('tabular mt-1 text-xl font-semibold', negative && 'text-expense')}>
                   {negative ? '−' : ''}
-                  {formatVND(Math.abs(a.balance))}
+                  {formatVND(Math.abs(bal))}
                 </p>
               </div>
             </Card>

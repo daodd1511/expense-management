@@ -3,12 +3,12 @@ import { Banknote, CreditCard, Landmark, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { formatVND } from '@/lib/format'
 import { useLang } from '@/lib/i18n'
-import { useStore } from '@/lib/store'
+import { computeBalance, useStore } from '@/lib/store'
 import type { AccountKind } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 export function AccountList({ className }: { className?: string }) {
-  const { accounts } = useStore()
+  const { accounts, transactions } = useStore()
   const { t } = useLang()
 
   const KIND: Record<AccountKind, { icon: LucideIcon; label: string }> = {
@@ -23,7 +23,8 @@ export function AccountList({ className }: { className?: string }) {
       {accounts.map((a) => {
         const meta = KIND[a.kind]
         const Icon = meta.icon
-        const negative = a.balance < 0
+        const bal = computeBalance(a.id, transactions, a.openingBalance)
+        const negative = bal < 0
         return (
           <li key={a.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
             <div className="flex items-center gap-3">
@@ -42,7 +43,7 @@ export function AccountList({ className }: { className?: string }) {
               )}
             >
               {negative ? '−' : ''}
-              {formatVND(a.balance)}
+              {formatVND(Math.abs(bal))}
             </span>
           </li>
         )

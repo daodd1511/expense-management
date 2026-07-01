@@ -1,30 +1,59 @@
-
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo } from 'react'
 import {
-  accounts as seedAccounts,
-  budgets as seedBudgets,
-  categories as seedCategories,
-  subscriptions as seedSubscriptions,
-  transactions as seedTransactions,
-} from './data'
+  useAccounts,
+  useAddAccount,
+  useDeleteAccount,
+  useUpdateAccount,
+} from './queries/accounts'
+import {
+  useAddCategory,
+  useCategories,
+  useDeleteCategory,
+  useUpdateCategory,
+} from './queries/categories'
+import {
+  useAddTransaction,
+  useDeleteTransaction,
+  useTransactions,
+  useUpdateTransaction,
+} from './queries/transactions'
+import {
+  useAddBudget,
+  useBudgets,
+  useDeleteBudget,
+  useUpdateBudget,
+} from './queries/budgets'
+import {
+  useAddSubscription,
+  useDeleteSubscription,
+  useLogSubscription,
+  useSubscriptions,
+  useUpdateSubscription,
+} from './queries/subscriptions'
 import type { Account, Budget, Category, Subscription, Transaction, TxType } from './types'
 
-interface StoreValue {
+export interface StoreValue {
   transactions: Transaction[]
   accounts: Account[]
   categories: Category[]
   budgets: Budget[]
   subscriptions: Subscription[]
+  loading: boolean
   addTransaction: (t: Omit<Transaction, 'id'>) => void
-  updateTransaction: (id: string, t: Partial<Transaction>) => void
+  updateTransaction: (id: string, patch: Partial<Transaction>) => void
   deleteTransaction: (id: string) => void
+  deleteTransactions: (ids: string[]) => void
   addAccount: (a: Omit<Account, 'id'>) => void
   updateAccount: (id: string, patch: Partial<Omit<Account, 'id'>>) => void
   deleteAccount: (id: string) => void
   addCategory: (c: Omit<Category, 'id'>) => void
-  updateCategory: (id: string, c: Partial<Omit<Category, 'id'>>) => void
+  updateCategory: (id: string, patch: Partial<Omit<Category, 'id'>>) => void
+  deleteCategory: (id: string) => void
   getCategory: (id: string | null | undefined) => Category | undefined
   getAccount: (id: string | null | undefined) => Account | undefined
+  addBudget: (b: Budget) => void
+  updateBudget: (categoryId: string, limit: number) => void
+  deleteBudget: (categoryId: string) => void
   addSubscription: (s: Omit<Subscription, 'id'>) => void
   updateSubscription: (id: string, patch: Partial<Omit<Subscription, 'id'>>) => void
   deleteSubscription: (id: string) => void
@@ -34,75 +63,118 @@ interface StoreValue {
 const StoreContext = createContext<StoreValue | null>(null)
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [transactions, setTransactions] = useState<Transaction[]>(seedTransactions)
-  const [accounts, setAccounts] = useState<Account[]>(seedAccounts)
-  const [categories, setCategories] = useState<Category[]>(seedCategories)
-  const [budgets] = useState<Budget[]>(seedBudgets)
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>(seedSubscriptions)
+  const txQuery = useTransactions()
+  const accQuery = useAccounts()
+  const catQuery = useCategories()
+  const budgetQuery = useBudgets()
+  const subQuery = useSubscriptions()
 
-  const addTransaction = useCallback((t: Omit<Transaction, 'id'>) => {
-    setTransactions((prev) => [{ ...t, id: `tx-${Date.now()}` }, ...prev])
-  }, [])
+  const addTx = useAddTransaction()
+  const updateTx = useUpdateTransaction()
+  const deleteTx = useDeleteTransaction()
+  // bulk delete handled inline via individual deleteTx or a dedicated hook if needed
+  const addAcc = useAddAccount()
+  const updateAcc = useUpdateAccount()
+  const deleteAcc = useDeleteAccount()
+  const addCat = useAddCategory()
+  const updateCat = useUpdateCategory()
+  const deleteCat = useDeleteCategory()
+  const addBud = useAddBudget()
+  const updateBud = useUpdateBudget()
+  const deleteBud = useDeleteBudget()
+  const addSub = useAddSubscription()
+  const updateSub = useUpdateSubscription()
+  const deleteSub = useDeleteSubscription()
+  const logSub = useLogSubscription()
 
-  const updateTransaction = useCallback((id: string, patch: Partial<Transaction>) => {
-    setTransactions((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)))
-  }, [])
+  const transactions = txQuery.data ?? []
+  const accounts = accQuery.data ?? []
+  const categories = catQuery.data ?? []
+  const budgets = budgetQuery.data ?? []
+  const subscriptions = subQuery.data ?? []
 
-  const deleteTransaction = useCallback((id: string) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id))
-  }, [])
+  const loading =
+    txQuery.isLoading ||
+    accQuery.isLoading ||
+    catQuery.isLoading ||
+    budgetQuery.isLoading ||
+    subQuery.isLoading
 
-  const addAccount = useCallback((a: Omit<Account, 'id'>) => {
-    setAccounts((prev) => [...prev, { ...a, id: `acc-${Date.now()}` }])
-  }, [])
+  const addTransaction = useCallback(
+    (t: Omit<Transaction, 'id'>) => addTx.mutate(t),
+    [addTx],
+  )
+  const updateTransaction = useCallback(
+    (id: string, patch: Partial<Transaction>) => updateTx.mutate({ id, patch }),
+    [updateTx],
+  )
+  const deleteTransaction = useCallback(
+    (id: string) => deleteTx.mutate(id),
+    [deleteTx],
+  )
+  const deleteTransactions = useCallback(
+    (ids: string[]) => ids.forEach((id) => deleteTx.mutate(id)),
+    [deleteTx],
+  )
 
-  const updateAccount = useCallback((id: string, patch: Partial<Omit<Account, 'id'>>) => {
-    setAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)))
-  }, [])
+  const addAccount = useCallback(
+    (a: Omit<Account, 'id'>) => addAcc.mutate(a),
+    [addAcc],
+  )
+  const updateAccount = useCallback(
+    (id: string, patch: Partial<Omit<Account, 'id'>>) => updateAcc.mutate({ id, patch }),
+    [updateAcc],
+  )
+  const deleteAccount = useCallback(
+    (id: string) => deleteAcc.mutate(id),
+    [deleteAcc],
+  )
 
-  const deleteAccount = useCallback((id: string) => {
-    setAccounts((prev) => prev.filter((a) => a.id !== id))
-  }, [])
+  const addCategory = useCallback(
+    (c: Omit<Category, 'id'>) => addCat.mutate(c),
+    [addCat],
+  )
+  const updateCategory = useCallback(
+    (id: string, patch: Partial<Omit<Category, 'id'>>) => updateCat.mutate({ id, patch }),
+    [updateCat],
+  )
+  const deleteCategory = useCallback(
+    (id: string) => deleteCat.mutate(id),
+    [deleteCat],
+  )
 
-  const addCategory = useCallback((c: Omit<Category, 'id'>) => {
-    setCategories((prev) => [...prev, { ...c, id: `cat-${Date.now()}` }])
-  }, [])
+  const addBudget = useCallback(
+    (b: Budget) => addBud.mutate(b),
+    [addBud],
+  )
+  const updateBudget = useCallback(
+    (categoryId: string, limit: number) => updateBud.mutate({ categoryId, limit }),
+    [updateBud],
+  )
+  const deleteBudget = useCallback(
+    (categoryId: string) => deleteBud.mutate(categoryId),
+    [deleteBud],
+  )
 
-  const updateCategory = useCallback((id: string, patch: Partial<Omit<Category, 'id'>>) => {
-    setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
-  }, [])
-
-  const addSubscription = useCallback((s: Omit<Subscription, 'id'>) => {
-    setSubscriptions((prev) => [...prev, { ...s, id: `sub-${Date.now()}` }])
-  }, [])
-
-  const updateSubscription = useCallback((id: string, patch: Partial<Omit<Subscription, 'id'>>) => {
-    setSubscriptions((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
-  }, [])
-
-  const deleteSubscription = useCallback((id: string) => {
-    setSubscriptions((prev) => prev.filter((s) => s.id !== id))
-  }, [])
-
-  const logSubscription = useCallback((id: string) => {
-    setSubscriptions((prev) => {
-      const s = prev.find((x) => x.id === id)
-      if (!s) return prev
-      const tx: Transaction = {
-        id: `tx-${Date.now()}`,
-        type: s.type,
-        amount: s.amount,
-        categoryId: s.categoryId,
-        accountId: s.accountId,
-        merchant: s.name,
-        note: s.note,
-        date: new Date().toISOString().slice(0, 10),
-        subscriptionId: s.id,
-      }
-      setTransactions((txs) => [tx, ...txs])
-      return prev.map((x) => (x.id === id ? { ...x, nextDueDate: advanceNextDueDate(x) } : x))
-    })
-  }, [])
+  const addSubscription = useCallback(
+    (s: Omit<Subscription, 'id'>) => addSub.mutate(s),
+    [addSub],
+  )
+  const updateSubscription = useCallback(
+    (id: string, patch: Partial<Omit<Subscription, 'id'>>) => updateSub.mutate({ id, patch }),
+    [updateSub],
+  )
+  const deleteSubscription = useCallback(
+    (id: string) => deleteSub.mutate(id),
+    [deleteSub],
+  )
+  const logSubscription = useCallback(
+    (id: string) => {
+      const sub = subscriptions.find((s) => s.id === id)
+      if (sub) logSub.mutate(sub)
+    },
+    [subscriptions, logSub],
+  )
 
   const value = useMemo<StoreValue>(() => {
     const catMap = new Map(categories.map((c) => [c.id, c]))
@@ -113,22 +185,35 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       categories,
       budgets,
       subscriptions,
+      loading,
       addTransaction,
       updateTransaction,
       deleteTransaction,
+      deleteTransactions,
       addAccount,
       updateAccount,
       deleteAccount,
       addCategory,
       updateCategory,
+      deleteCategory,
       getCategory: (id) => (id ? catMap.get(id) : undefined),
       getAccount: (id) => (id ? accMap.get(id) : undefined),
+      addBudget,
+      updateBudget,
+      deleteBudget,
       addSubscription,
       updateSubscription,
       deleteSubscription,
       logSubscription,
     }
-  }, [transactions, accounts, categories, budgets, subscriptions, addTransaction, updateTransaction, deleteTransaction, addAccount, updateAccount, deleteAccount, addCategory, updateCategory, addSubscription, updateSubscription, deleteSubscription, logSubscription])
+  }, [
+    transactions, accounts, categories, budgets, subscriptions, loading,
+    addTransaction, updateTransaction, deleteTransaction, deleteTransactions,
+    addAccount, updateAccount, deleteAccount,
+    addCategory, updateCategory, deleteCategory,
+    addBudget, updateBudget, deleteBudget,
+    addSubscription, updateSubscription, deleteSubscription, logSubscription,
+  ])
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }
@@ -177,14 +262,18 @@ export function spentForCategory(transactions: Transaction[], categoryId: string
   return total
 }
 
-function advanceNextDueDate(s: Subscription): string {
-  const d = new Date(s.nextDueDate)
-  if (s.cadence === 'monthly') {
-    d.setMonth(d.getMonth() + 1)
-  } else {
-    d.setFullYear(d.getFullYear() + 1)
+/** Computed balance = opening balance + all income - all expenses ± transfers */
+export function computeBalance(accountId: string, transactions: Transaction[], openingBalance: number): number {
+  let balance = openingBalance
+  for (const tx of transactions) {
+    if (tx.type === 'income' && tx.accountId === accountId) balance += tx.amount
+    else if (tx.type === 'expense' && tx.accountId === accountId) balance -= tx.amount
+    else if (tx.type === 'transfer') {
+      if (tx.accountId === accountId) balance -= tx.amount
+      if (tx.toAccountId === accountId) balance += tx.amount
+    }
   }
-  return d.toISOString().slice(0, 10)
+  return balance
 }
 
 export type { Account, Budget, Category, Subscription, Transaction, TxType }

@@ -168,6 +168,8 @@ const VI = {
   'sub.empty': 'Chưa có đăng ký nào.',
   'sub.addFirst': 'Thêm đăng ký đầu tiên',
   'sub.lastPaid': 'Lần cuối: {date}',
+  'auth.signInWithGoogle': 'Đăng nhập với Google',
+  'auth.signOut': 'Đăng xuất',
 } as const
 
 type TranslationKey = keyof typeof VI
@@ -338,6 +340,8 @@ const EN: Record<TranslationKey, string> = {
   'sub.empty': 'No subscriptions yet.',
   'sub.addFirst': 'Add your first subscription',
   'sub.lastPaid': 'Last paid: {date}',
+  'auth.signInWithGoogle': 'Sign in with Google',
+  'auth.signOut': 'Sign out',
 }
 
 export const DATE_LOCALE: Record<Lang, { months: string[]; weekdays: string[] }> = {
