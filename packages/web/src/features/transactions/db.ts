@@ -21,12 +21,12 @@ const okResponseSchema = z.object({
   ok: z.literal(true),
 })
 
-export async function fetchTransactions(_ownerId: string): Promise<Transaction[]> {
+export async function fetchTransactions(): Promise<Transaction[]> {
   const response = await apiJson('/transactions', transactionsResponseSchema)
   return response.data
 }
 
-export async function insertTransaction(transaction: Omit<Transaction, 'id'>, _ownerId: string): Promise<void> {
+export async function insertTransaction(transaction: Omit<Transaction, 'id'>): Promise<void> {
   await apiJson('/transactions', transactionResponseSchema, {
     method: 'POST',
     body: JSON.stringify(transaction),
@@ -36,7 +36,6 @@ export async function insertTransaction(transaction: Omit<Transaction, 'id'>, _o
 export async function patchTransaction(
   id: string,
   patch: Partial<Transaction>,
-  _ownerId: string,
 ): Promise<void> {
   await apiJson(`/transactions/${id}`, transactionResponseSchema, {
     method: 'PATCH',
@@ -44,13 +43,13 @@ export async function patchTransaction(
   })
 }
 
-export async function deleteTransaction(id: string, _ownerId: string): Promise<void> {
+export async function deleteTransaction(id: string): Promise<void> {
   await apiJson(`/transactions/${id}`, okResponseSchema, {
     method: 'DELETE',
   })
 }
 
-export async function deleteTransactions(ids: string[], _ownerId: string): Promise<void> {
+export async function deleteTransactions(ids: string[]): Promise<void> {
   await apiJson('/transactions', deleteTransactionsResponseSchema, {
     method: 'DELETE',
     body: JSON.stringify({ ids }),

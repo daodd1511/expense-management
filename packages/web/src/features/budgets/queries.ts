@@ -7,7 +7,7 @@ export function useBudgets() {
   const { user } = useAuth()
   return useQuery({
     queryKey: ['budgets', user?.id],
-    queryFn: () => fetchBudgets(user!.id),
+    queryFn: fetchBudgets,
     enabled: !!user,
   })
 }
@@ -16,7 +16,7 @@ export function useAddBudget() {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (budget: Budget) => insertBudget(budget, user!.id),
+    mutationFn: (budget: Budget) => insertBudget(budget),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['budgets', user?.id] }),
   })
 }
@@ -25,7 +25,7 @@ export function useUpdateBudget() {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ categoryId, limit }: Budget) => updateBudget(categoryId, limit, user!.id),
+    mutationFn: ({ categoryId, limit }: Budget) => updateBudget(categoryId, limit),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['budgets', user?.id] }),
   })
 }
@@ -34,7 +34,7 @@ export function useDeleteBudget() {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (categoryId: string) => deleteBudget(categoryId, user!.id),
+    mutationFn: (categoryId: string) => deleteBudget(categoryId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['budgets', user?.id] }),
   })
 }

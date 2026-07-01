@@ -12,7 +12,7 @@ export function useCategories() {
   const { user } = useAuth()
   return useQuery({
     queryKey: ['categories', user?.id],
-    queryFn: () => fetchCategories(user!.id),
+    queryFn: fetchCategories,
     enabled: !!user,
   })
 }
@@ -21,7 +21,7 @@ export function useAddCategory() {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (category: Pick<Category, 'name' | 'icon' | 'color'>) => insertCategory(category, user!.id),
+    mutationFn: (category: Pick<Category, 'name' | 'icon' | 'color'>) => insertCategory(category),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['categories', user?.id] }),
   })
 }
@@ -31,7 +31,7 @@ export function useUpdateCategory() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: Partial<Pick<Category, 'name' | 'icon' | 'color'>> }) =>
-      patchCategory(id, patch, user!.id),
+      patchCategory(id, patch),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['categories', user?.id] }),
   })
 }
@@ -40,7 +40,7 @@ export function useDeleteCategory() {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => deleteCategory(id, user!.id),
+    mutationFn: (id: string) => deleteCategory(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['categories', user?.id] })
       qc.invalidateQueries({ queryKey: ['transactions', user?.id] })

@@ -15,26 +15,26 @@ const okResponseSchema = z.object({
   ok: z.literal(true),
 })
 
-export async function fetchBudgets(_ownerId: string): Promise<Budget[]> {
+export async function fetchBudgets(): Promise<Budget[]> {
   const response = await apiJson('/budgets', budgetsResponseSchema)
   return response.data
 }
 
-export async function insertBudget(budget: Budget, _ownerId: string): Promise<void> {
+export async function insertBudget(budget: Budget): Promise<void> {
   await apiJson('/budgets', budgetResponseSchema, {
     method: 'POST',
     body: JSON.stringify(budget),
   })
 }
 
-export async function updateBudget(categoryId: string, limit: number, _ownerId: string): Promise<void> {
+export async function updateBudget(categoryId: string, limit: number): Promise<void> {
   await apiJson(`/budgets/${categoryId}`, budgetResponseSchema, {
     method: 'PATCH',
     body: JSON.stringify({ limit }),
   })
 }
 
-export async function deleteBudget(categoryId: string, _ownerId: string): Promise<void> {
+export async function deleteBudget(categoryId: string): Promise<void> {
   await apiJson(`/budgets/${categoryId}`, okResponseSchema, {
     method: 'DELETE',
   })

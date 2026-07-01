@@ -15,12 +15,12 @@ const okResponseSchema = z.object({
   ok: z.literal(true),
 })
 
-export async function fetchSubscriptions(_ownerId: string): Promise<Subscription[]> {
+export async function fetchSubscriptions(): Promise<Subscription[]> {
   const response = await apiJson('/subscriptions', subscriptionsResponseSchema)
   return response.data
 }
 
-export async function insertSubscription(subscription: Omit<Subscription, 'id'>, _ownerId: string): Promise<void> {
+export async function insertSubscription(subscription: Omit<Subscription, 'id'>): Promise<void> {
   await apiJson('/subscriptions', subscriptionResponseSchema, {
     method: 'POST',
     body: JSON.stringify(subscription),
@@ -30,7 +30,6 @@ export async function insertSubscription(subscription: Omit<Subscription, 'id'>,
 export async function patchSubscription(
   id: string,
   patch: Partial<Omit<Subscription, 'id'>>,
-  _ownerId: string,
 ): Promise<void> {
   await apiJson(`/subscriptions/${id}`, subscriptionResponseSchema, {
     method: 'PATCH',
@@ -38,13 +37,13 @@ export async function patchSubscription(
   })
 }
 
-export async function deleteSubscription(id: string, _ownerId: string): Promise<void> {
+export async function deleteSubscription(id: string): Promise<void> {
   await apiJson(`/subscriptions/${id}`, okResponseSchema, {
     method: 'DELETE',
   })
 }
 
-export async function logSubscription(subscription: Subscription, _ownerId: string): Promise<void> {
+export async function logSubscription(subscription: Subscription): Promise<void> {
   await apiJson(`/subscriptions/${subscription.id}/log`, subscriptionResponseSchema, {
     method: 'POST',
   })

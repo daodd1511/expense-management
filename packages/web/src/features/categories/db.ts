@@ -15,12 +15,12 @@ const okResponseSchema = z.object({
   ok: z.literal(true),
 })
 
-export async function fetchCategories(_ownerId: string): Promise<Category[]> {
+export async function fetchCategories(): Promise<Category[]> {
   const response = await apiJson('/categories', categoriesResponseSchema)
   return response.data
 }
 
-export async function insertCategory(category: Pick<Category, 'name' | 'icon' | 'color'>, _ownerId: string): Promise<void> {
+export async function insertCategory(category: Pick<Category, 'name' | 'icon' | 'color'>): Promise<void> {
   await apiJson('/categories', categoryResponseSchema, {
     method: 'POST',
     body: JSON.stringify(category),
@@ -30,7 +30,6 @@ export async function insertCategory(category: Pick<Category, 'name' | 'icon' | 
 export async function patchCategory(
   id: string,
   patch: Partial<Pick<Category, 'name' | 'icon' | 'color'>>,
-  _ownerId: string,
 ): Promise<void> {
   await apiJson(`/categories/${id}`, categoryResponseSchema, {
     method: 'PATCH',
@@ -38,7 +37,7 @@ export async function patchCategory(
   })
 }
 
-export async function deleteCategory(id: string, _ownerId: string): Promise<void> {
+export async function deleteCategory(id: string): Promise<void> {
   await apiJson(`/categories/${id}`, okResponseSchema, {
     method: 'DELETE',
   })

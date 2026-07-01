@@ -7,7 +7,7 @@ export function useAccounts() {
   const { user } = useAuth()
   return useQuery({
     queryKey: ['accounts', user?.id],
-    queryFn: () => fetchAccounts(user!.id),
+    queryFn: fetchAccounts,
     enabled: !!user,
   })
 }
@@ -16,7 +16,7 @@ export function useAddAccount() {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (account: Omit<Account, 'id'>) => insertAccount(account, user!.id),
+    mutationFn: (account: Omit<Account, 'id'>) => insertAccount(account),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts', user?.id] }),
   })
 }
@@ -25,8 +25,7 @@ export function useUpdateAccount() {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: Partial<Omit<Account, 'id'>> }) =>
-      patchAccount(id, patch, user!.id),
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<Omit<Account, 'id'>> }) => patchAccount(id, patch),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts', user?.id] }),
   })
 }
@@ -35,7 +34,7 @@ export function useDeleteAccount() {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => archiveAccount(id, user!.id),
+    mutationFn: (id: string) => archiveAccount(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts', user?.id] }),
   })
 }
