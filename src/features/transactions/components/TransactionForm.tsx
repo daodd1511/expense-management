@@ -1,5 +1,5 @@
 
-import { ArrowRight, Camera, Delete, X } from 'lucide-react'
+import { ArrowRight, Camera, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
@@ -40,7 +40,7 @@ export function TransactionForm({
   const [categoryId, setCategoryId] = useState<string | null>(initial?.categoryId ?? null)
   const [accountId, setAccountId] = useState<string>(initial?.accountId ?? accounts[0].id)
   const [toAccountId, setToAccountId] = useState<string>(
-    initial?.toAccountId ?? accounts[1].id,
+    initial?.toAccountId ?? accounts[1]?.id ?? accounts[0]?.id ?? '',
   )
   const [merchant, setMerchant] = useState(initial?.merchant ?? '')
   const [note, setNote] = useState(initial?.note ?? '')
@@ -60,16 +60,6 @@ export function TransactionForm({
   const visibleCats = categories.filter((c) =>
     type === 'income' ? INCOME_CATS.includes(c.id) : !INCOME_CATS.includes(c.id),
   )
-
-  const handleKeypad = (key: string) => {
-    if (key === 'back') {
-      setAmount((a) => a.slice(0, -1))
-    } else if (key === '000') {
-      setAmount((a) => (a ? a + '000' : a))
-    } else {
-      setAmount((a) => (a.length >= 12 ? a : a + key))
-    }
-  }
 
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -91,7 +81,7 @@ export function TransactionForm({
       toAccountId: type === 'transfer' ? toAccountId : null,
       merchant: merchant.trim() || (type === 'transfer' ? t('form.defaultTransfer') : getCategory(categoryId)?.name || t('form.defaultTx')),
       note: note.trim() || undefined,
-      date: new Date(`${date}T${(initial?.date ?? new Date().toISOString()).slice(11, 19)}`).toISOString(),
+      date: `${date}T12:00:00.000Z`,
       receipt,
     })
   }
@@ -146,12 +136,27 @@ export function TransactionForm({
         </div>
       </div>
 
-      {/* Amount display */}
+      {/* Amount input */}
       <div className="flex flex-col items-center gap-1 px-4 py-5 sm:px-5">
         <span className="text-xs text-muted-foreground">{t('form.amount')}</span>
-        <div className={cn('tabular text-4xl font-bold tracking-tight', amountTone)}>
-          {formatVND(numericAmount)}
-        </div>
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={amount}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, '')
+            if (v.length <= 12) setAmount(v)
+          }}
+          placeholder="0"
+          className={cn(
+            'w-full bg-transparent text-center text-4xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/40',
+            amountTone,
+          )}
+        />
+        {numericAmount > 0 && (
+          <span className="text-sm text-muted-foreground">{formatVND(numericAmount)}</span>
+        )}
       </div>
 
       <div className="flex flex-col gap-4 px-4 sm:px-5">
@@ -270,22 +275,6 @@ export function TransactionForm({
           </div>
         </div>
       </div>
-
-      {/* Numeric keypad on mobile */}
-      {variant === 'mobile' && (
-        <div className="mt-4 grid grid-cols-3 gap-px overflow-hidden border-t border-border bg-border">
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9', '000', '0', 'back'].map((k) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => handleKeypad(k)}
-              className="flex h-14 items-center justify-center bg-card text-xl font-semibold text-foreground active:bg-muted"
-            >
-              {k === 'back' ? <Delete className="size-5" /> : k}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Submit */}
       <div className="sticky bottom-0 flex gap-2 border-t border-border bg-card p-4 sm:px-5">

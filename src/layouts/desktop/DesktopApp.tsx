@@ -125,16 +125,18 @@ export function DesktopApp() {
       </main>
 
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <TransactionForm
-          variant="desktop"
-          initial={editing}
-          onSubmit={(tx) => {
-            if (editing) updateTransaction(editing.id, tx)
-            else addTransaction(tx)
-            setDrawerOpen(false)
-          }}
-          onCancel={() => setDrawerOpen(false)}
-        />
+        {drawerOpen && (
+          <TransactionForm
+            variant="desktop"
+            initial={editing}
+            onSubmit={(tx) => {
+              if (editing) updateTransaction(editing.id, tx)
+              else addTransaction(tx)
+              setDrawerOpen(false)
+            }}
+            onCancel={() => setDrawerOpen(false)}
+          />
+        )}
       </Drawer>
     </div>
   )

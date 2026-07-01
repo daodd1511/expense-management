@@ -120,16 +120,18 @@ export function MobileApp() {
       </nav>
 
       <BottomSheet open={sheetOpen} onClose={close} title={editing ? t('form.editTitle') : t('form.addTitle')}>
-        <TransactionForm
-          variant="mobile"
-          initial={editing ?? undefined}
-          onCancel={close}
-          onSubmit={(tx) => {
-            if (editing) updateTransaction(editing.id, tx)
-            else addTransaction(tx)
-            close()
-          }}
-        />
+        {sheetOpen && (
+          <TransactionForm
+            variant="mobile"
+            initial={editing ?? undefined}
+            onCancel={close}
+            onSubmit={(tx) => {
+              if (editing) updateTransaction(editing.id, tx)
+              else addTransaction(tx)
+              close()
+            }}
+          />
+        )}
       </BottomSheet>
     </div>
   )
