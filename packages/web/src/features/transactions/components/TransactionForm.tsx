@@ -22,6 +22,14 @@ import { cn } from '@/shared/lib/utils'
 
 const INCOME_CATS = ['salary', 'other-income']
 
+function todayIsoDate() {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export function TransactionForm({
   variant,
   initial,
@@ -74,7 +82,7 @@ export function TransactionForm({
       toAccountId: type === 'transfer' ? toAccountId : null,
       merchant: merchant.trim() || (type === 'transfer' ? t('form.defaultTransfer') : getCategory(categoryId)?.name || t('form.defaultTx')),
       note: note.trim() || undefined,
-      date: `${date}T12:00:00.000Z`,
+      date,
       receipt: null,
     })
   }
@@ -215,7 +223,7 @@ export function TransactionForm({
           </div>
           <div className="flex flex-col gap-2">
             <Label>{t('form.date')}</Label>
-            <DatePicker value={date} onChange={setDate} />
+            <DatePicker value={date} onChange={setDate} max={todayIsoDate()} />
           </div>
         </div>
 
@@ -234,7 +242,7 @@ export function TransactionForm({
       </div>
 
       {/* Submit */}
-      <div className="sticky bottom-0 flex gap-2 border-t border-border bg-card p-4 sm:px-5">
+      <div className="sticky bottom-0 flex gap-2 bg-card p-4 sm:px-5">
         <Button variant="outline" size="lg" className="h-11 flex-1" onClick={onCancel}>
           {t('form.cancel')}
         </Button>

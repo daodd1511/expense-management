@@ -6,7 +6,7 @@ import {
   fromBudget,
   toBudget,
 } from '@wallet/shared'
-import { supabase } from '../db/supabase'
+import { getSupabase } from '../db/supabase'
 import { jsonError, parseJsonBody, parseRows } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
 
@@ -14,6 +14,7 @@ export const budgetsRouter = new Hono<AuthEnv>()
 
 budgetsRouter.get('/', async (c) => {
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('budgets')
     .select('*')
@@ -32,6 +33,7 @@ budgetsRouter.post('/', async (c) => {
   if (!parsed.success) return parsed.response
 
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('budgets')
     .insert(fromBudget({ budget: parsed.data, ownerId: userId }))
@@ -55,6 +57,7 @@ budgetsRouter.patch('/:categoryId', async (c) => {
   if (!parsed.success) return parsed.response
 
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('budgets')
     .update({ amount: parsed.data.limit })
@@ -80,6 +83,7 @@ budgetsRouter.patch('/:categoryId', async (c) => {
 
 budgetsRouter.delete('/:categoryId', async (c) => {
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('budgets')
     .delete()

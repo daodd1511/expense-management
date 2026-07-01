@@ -2,6 +2,18 @@ import { z } from 'zod'
 import { txTypeSchema } from '../models'
 import { atLeastOneKey, isoDateSchema } from './common.dto'
 
+function todayIsoDate() {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const transactionDateSchema = isoDateSchema.refine((value) => value <= todayIsoDate(), {
+  message: 'Transaction date cannot be in the future',
+})
+
 export const transactionRowSchema = z.object({
   id: z.string(),
   owner_id: z.string(),
@@ -26,7 +38,7 @@ export const transactionCreateSchema = z.object({
   toAccountId: z.string().min(1).nullable().optional(),
   merchant: z.string().trim().min(1),
   note: z.string().trim().optional(),
-  date: isoDateSchema,
+  date: transactionDateSchema,
   receipt: z.string().trim().nullable().optional(),
   subscriptionId: z.string().min(1).nullable().optional(),
 })
@@ -39,7 +51,7 @@ export const transactionPatchSchema = atLeastOneKey({
   toAccountId: z.string().min(1).nullable(),
   merchant: z.string().trim().min(1),
   note: z.string().trim().nullable(),
-  date: isoDateSchema,
+  date: transactionDateSchema,
   receipt: z.string().trim().nullable(),
 })
 

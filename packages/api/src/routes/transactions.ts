@@ -9,7 +9,7 @@ import {
   transactionPatchToRow,
   transactionRowSchema,
 } from '@wallet/shared'
-import { supabase } from '../db/supabase'
+import { getSupabase } from '../db/supabase'
 import { jsonError, parseJsonBody, parseRows } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
 
@@ -28,6 +28,7 @@ export const transactionsRouter = new Hono<AuthEnv>()
 transactionsRouter.get('/', async (c) => {
   const userId = c.get('userId')
   const month = c.req.query('month')
+  const supabase = getSupabase()
 
   let query = supabase
     .from('transactions')
@@ -58,6 +59,7 @@ transactionsRouter.post('/', async (c) => {
   if (!parsed.success) return parsed.response
 
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('transactions')
     .insert(fromTransaction({ transaction: parsed.data, ownerId: userId }))
@@ -81,6 +83,7 @@ transactionsRouter.patch('/:id', async (c) => {
   if (!parsed.success) return parsed.response
 
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('transactions')
     .update(transactionPatchToRow(parsed.data))
@@ -109,6 +112,7 @@ transactionsRouter.delete('/', async (c) => {
   if (!parsed.success) return parsed.response
 
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('transactions')
     .delete()
@@ -125,6 +129,7 @@ transactionsRouter.delete('/', async (c) => {
 
 transactionsRouter.delete('/:id', async (c) => {
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('transactions')
     .delete()

@@ -7,7 +7,7 @@ import {
   fromCategory,
   toCategory,
 } from '@wallet/shared'
-import { supabase } from '../db/supabase'
+import { getSupabase } from '../db/supabase'
 import { jsonError, parseJsonBody, parseRows } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
 
@@ -15,6 +15,7 @@ export const categoriesRouter = new Hono<AuthEnv>()
 
 categoriesRouter.get('/', async (c) => {
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('categories')
     .select('*')
@@ -33,6 +34,7 @@ categoriesRouter.post('/', async (c) => {
   if (!parsed.success) return parsed.response
 
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('categories')
     .insert(fromCategory({ category: parsed.data, ownerId: userId }))
@@ -56,6 +58,7 @@ categoriesRouter.patch('/:id', async (c) => {
   if (!parsed.success) return parsed.response
 
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('categories')
     .update(categoryPatchToRow(parsed.data))
@@ -82,6 +85,7 @@ categoriesRouter.patch('/:id', async (c) => {
 categoriesRouter.delete('/:id', async (c) => {
   const userId = c.get('userId')
   const categoryId = c.req.param('id')
+  const supabase = getSupabase()
 
   const txUpdate = await supabase
     .from('transactions')

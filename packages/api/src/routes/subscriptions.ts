@@ -9,7 +9,7 @@ import {
   subscriptionRowSchema,
   toSubscription,
 } from '@wallet/shared'
-import { supabase } from '../db/supabase'
+import { getSupabase } from '../db/supabase'
 import { jsonError, parseJsonBody, parseRows } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
 
@@ -17,6 +17,7 @@ export const subscriptionsRouter = new Hono<AuthEnv>()
 
 subscriptionsRouter.get('/', async (c) => {
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('subscriptions')
     .select('*')
@@ -35,6 +36,7 @@ subscriptionsRouter.post('/', async (c) => {
   if (!parsed.success) return parsed.response
 
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('subscriptions')
     .insert(fromSubscription({ subscription: parsed.data, ownerId: userId }))
@@ -55,6 +57,7 @@ subscriptionsRouter.post('/', async (c) => {
 
 subscriptionsRouter.post('/:id/log', async (c) => {
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('subscriptions')
     .select('*')
@@ -127,6 +130,7 @@ subscriptionsRouter.patch('/:id', async (c) => {
   if (!parsed.success) return parsed.response
 
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('subscriptions')
     .update(subscriptionPatchToRow(parsed.data))
@@ -152,6 +156,7 @@ subscriptionsRouter.patch('/:id', async (c) => {
 
 subscriptionsRouter.delete('/:id', async (c) => {
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('subscriptions')
     .delete()

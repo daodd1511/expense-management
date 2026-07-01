@@ -17,12 +17,14 @@ interface DatePickerProps {
   value: string
   onChange: (iso: string) => void
   className?: string
+  max?: string
 }
 
-export function DatePicker({ value, onChange, className }: DatePickerProps) {
+export function DatePicker({ value, onChange, className, max }: DatePickerProps) {
   const { lang, t } = useLang()
   const locale = lang === 'vi' ? vi : enUS
   const selected = value ? new Date(value) : undefined
+  const maxDate = max ? new Date(max) : undefined
 
   const handleSelect = (date: Date | undefined) => {
     if (!date) return
@@ -55,6 +57,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
               onSelect={handleSelect}
               defaultMonth={selected}
               locale={locale}
+              disabled={maxDate ? { after: maxDate } : undefined}
             />
           </PopoverPopup>
         </PopoverPositioner>

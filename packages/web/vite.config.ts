@@ -4,6 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const apiProxyTarget = process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:3000'
+
 export default defineConfig({
   plugins: [
     react(),
@@ -23,4 +25,17 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    host: '127.0.0.1',
+    proxy: {
+      '/api': {
+        target: apiProxyTarget,
+        changeOrigin: true,
+      },
+      '/health': {
+        target: apiProxyTarget,
+        changeOrigin: true,
+      },
+    },
+  },
 })

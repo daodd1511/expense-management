@@ -7,7 +7,7 @@ import {
   fromAccount,
   toAccount,
 } from '@wallet/shared'
-import { supabase } from '../db/supabase'
+import { getSupabase } from '../db/supabase'
 import { jsonError, parseJsonBody, parseRows } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
 
@@ -15,6 +15,7 @@ export const accountsRouter = new Hono<AuthEnv>()
 
 accountsRouter.get('/', async (c) => {
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('accounts')
     .select('*')
@@ -34,6 +35,7 @@ accountsRouter.post('/', async (c) => {
   if (!parsed.success) return parsed.response
 
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('accounts')
     .insert(fromAccount({ account: parsed.data, ownerId: userId }))
@@ -57,6 +59,7 @@ accountsRouter.patch('/:id', async (c) => {
   if (!parsed.success) return parsed.response
 
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('accounts')
     .update(accountPatchToRow(parsed.data))
@@ -82,6 +85,7 @@ accountsRouter.patch('/:id', async (c) => {
 
 accountsRouter.delete('/:id', async (c) => {
   const userId = c.get('userId')
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('accounts')
     .update({ archived: true })

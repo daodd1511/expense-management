@@ -7,7 +7,7 @@
 | Motivation | Third-party integrations + future-proofing | Server-side secrets (bank APIs, OCR, notifications), extensibility |
 | Runtime | Hono on Bun | Already pinned in package.json, native TS, fast, VPS-deployable |
 | API style | REST | Standard, universal, no client lock-in |
-| Auth | JWT passthrough + service role | FE keeps Google OAuth via Supabase Auth; BE verifies JWT, uses service role for DB |
+| Auth | JWT passthrough + secret key | FE keeps Google OAuth via Supabase Auth; BE verifies JWT via Supabase JWKS and uses a server-side secret key for DB |
 | Scope | Full proxy | All data through BE; anon key leaves browser entirely |
 | Structure | pnpm monorepo | `packages/web` + `packages/api` + `packages/shared`; shared types flow automatically |
 | Deployment | Same VPS, Caddy proxy | `/api/*` → Bun process (port 3000); static FE on same domain; no CORS |
@@ -24,9 +24,9 @@ FE (browser)
   3. Every API request: Authorization: Bearer <supabase_access_token>
 
 BE (Hono + Bun)
-  4. Middleware verifies JWT signature using SUPABASE_JWT_SECRET
+  4. Middleware verifies JWT signature using Supabase JWKS
   5. Extracts user_id from JWT sub claim
-  6. Queries Supabase using SUPABASE_SERVICE_ROLE_KEY (bypasses RLS)
+  6. Queries Supabase using SUPABASE_SECRET_KEY (server-side only)
   7. Filters all queries by owner_id = user_id
 ```
 
@@ -63,8 +63,8 @@ packages/
         budgets.ts
         subscriptions.ts
       db/
-        supabase.ts         ← createClient with service role key
-    .env                    ← SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_JWT_SECRET, PORT
+        supabase.ts         ← createClient with server-side secret key
+    .env                    ← SUPABASE_URL, SUPABASE_SECRET_KEY, PORT
     package.json
 
   web/                      ← current src/ moves here
@@ -134,7 +134,7 @@ POST   /api/subscriptions/:id/log  creates transaction + advances next_due_date 
 ### Auth middleware (`middleware/auth.ts`)
 ```ts
 // Verifies Supabase JWT, injects userId into Hono context
-// Uses SUPABASE_JWT_SECRET to verify signature — no network call needed
+// Uses Supabase JWKS / signing keys to verify signature
 // Returns 401 if token missing, expired, or invalid
 ```
 
@@ -152,7 +152,7 @@ import type { Database } from '@shared/database.types'
 
 export const supabase = createClient<Database>(
   process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  process.env.SUPABASE_SECRET_KEY!,
 )
 ```
 
@@ -227,12 +227,14 @@ app.yourdomain.com {
 - Reuse Zod schemas from `packages/shared`
 - Test each endpoint (curl / REST client) against real Supabase data
 - Deploy BE to VPS, configure Caddy `/api/*` proxy
+- **Status:** route handlers are implemented; middleware uses JWKS auth; `/health` and `/api/*` return JSON through the Vite proxy; full authenticated route verification and VPS deployment remain
 - **Exit criteria:** all endpoints return correct data for authenticated requests; FE still calls Supabase directly (unchanged)
 
 ### Phase 3 — Switch FE
 - Replace `features/*/db.ts` — Supabase calls → `apiFetch` calls
 - Remove `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` from data path (keep for auth only)
 - Remove service role / data concerns from `packages/web`
+- **Status:** FE data modules already call `apiFetch`; direct browser Supabase data calls have been removed; transaction dates are normalized to `YYYY-MM-DD`, future transaction dates are blocked in UI and API validation
 - **Exit criteria:** app fully functional through BE; no direct Supabase data calls from browser; TypeScript clean
 
 ---
@@ -242,8 +244,7 @@ app.yourdomain.com {
 ### packages/api (.env)
 ```
 SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=    ← never in browser
-SUPABASE_JWT_SECRET=          ← from Supabase dashboard → Settings → API → JWT Secret
+SUPABASE_SECRET_KEY=          ← never in browser
 PORT=3000
 ```
 

@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter @wallet/web dev",
+    "dev": "pnpm --parallel --stream --filter @wallet/api --filter @wallet/web dev",
+    "dev:web": "pnpm --filter @wallet/web dev",
     "build": "pnpm --filter @wallet/web build",
     "preview": "pnpm --filter @wallet/web preview",
     "dev:api": "pnpm --filter @wallet/api dev",
