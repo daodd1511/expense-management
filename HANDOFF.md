@@ -1,384 +1,128 @@
-# Handoff — BE Integration Phase 1 (mid-execution)
+# Handoff — REST Integration and Test Baseline
 
 ## Context
 
-Repo: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
-Branch: `master`
-Goal: Convert flat repo into pnpm monorepo (`packages/web`, `packages/api`, `packages/shared`).
-Full plan: `BE_INTEGRATION_PLAN.md`
-
----
-
-## Current State (mid-execution, NOT committed)
-
-### What's already done (staged, not yet committed)
-
-All web source files moved via `git mv` to `packages/web/`:
-- `src/` → `packages/web/src/`
-- `index.html` → `packages/web/index.html`
-- `vite.config.ts` → `packages/web/vite.config.ts`
-- `tsconfig.json` → `packages/web/tsconfig.json`
-- `public/` → `packages/web/public/`
-- `components.json` → `packages/web/components.json`
-
-Root `package.json` updated to workspace root (no deps, just scripts).
-
-### What exists on disk but NOT staged
-
-- `packages/web/package.json` — created, has all web deps
-- `packages/shared/src/index.ts` — placeholder
-- `packages/shared/src/types.ts` — placeholder
-- `packages/shared/package.json` — created
-- `packages/api/src/` — empty directory only
-
-### What is NOT done yet
-
-Everything below must be completed before committing Phase 1.
-
----
-
-## Remaining Steps — Do These In Order
-
-### Step 1 — Update `pnpm-workspace.yaml`
-
-Current content only has `allowBuilds`. Replace with:
-
-```yaml
-packages:
-  - 'packages/*'
-
-allowBuilds:
-  msw: true
-  sharp: true
-```
-
-File: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/pnpm-workspace.yaml`
-
----
-
-### Step 2 — Create `packages/shared/tsconfig.json`
-
-```json
-{
-  "compilerOptions": {
-    "lib": ["esnext"],
-    "target": "ES2020",
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "noEmit": true,
-    "skipLibCheck": true,
-    "isolatedModules": true
-  },
-  "include": ["src/**/*.ts"]
-}
-```
-
----
-
-### Step 3 — Create `packages/api/package.json`
-
-```json
-{
-  "name": "@wallet/api",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "bun run --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target bun",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.108.2",
-    "@wallet/shared": "workspace:*",
-    "hono": "4.12.25",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "5.7.3"
-  }
-}
-```
-
----
-
-### Step 4 — Create `packages/api/tsconfig.json`
-
-```json
-{
-  "compilerOptions": {
-    "lib": ["esnext"],
-    "target": "ES2020",
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "noEmit": true,
-    "skipLibCheck": true,
-    "isolatedModules": true,
-    "types": ["bun-types"]
-  },
-  "include": ["src/**/*.ts"]
-}
-```
-
----
-
-### Step 5 — Create `packages/api/src/db/supabase.ts`
-
-```ts
-import { createClient } from '@supabase/supabase-js'
-
-// Service role key — never sent to browser
-export const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-)
-```
-
----
-
-### Step 6 — Create `packages/api/src/middleware/auth.ts`
-
-```ts
-import type { Context, Next } from 'hono'
-import { createMiddleware } from 'hono/factory'
-import { verify } from 'hono/jwt'
-
-export type AuthEnv = {
-  Variables: {
-    userId: string
-  }
-}
-
-export const authMiddleware = createMiddleware<AuthEnv>(async (c: Context, next: Next) => {
-  const header = c.req.header('Authorization')
-  if (!header?.startsWith('Bearer ')) {
-    return c.json({ error: 'Unauthorized' }, 401)
-  }
-  const token = header.slice(7)
-  try {
-    const payload = await verify(token, process.env.SUPABASE_JWT_SECRET!)
-    c.set('userId', payload.sub as string)
-  } catch {
-    return c.json({ error: 'Invalid token' }, 401)
-  }
-  await next()
-})
-```
-
----
-
-### Step 7 — Create `packages/api/src/routes/transactions.ts`
-
-```ts
-import { Hono } from 'hono'
-import type { AuthEnv } from '../middleware/auth'
+- Repo: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
+- Branch: `master`
+- Current objective for next session: continue post-migration hardening and operational completion of the BE/FE REST setup
+
+Canonical artifacts to read first:
+- [BE_INTEGRATION_PLAN.md](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/BE_INTEGRATION_PLAN.md)
+- Commit `0e03146` `Finish REST auth wiring and sync docs`
+- Commit `5ffabc5` `Add tests for REST migration`
+
+Do not use this handoff as the source of truth for architecture details already captured in the plan and commits above.
+
+## Current State
+
+The monorepo migration is complete and the app is already split into:
+- `packages/web`
+- `packages/api`
+- `packages/shared`
+
+The FE data path is switched to the REST API. Browser-side Supabase is retained for auth/session only.
+
+The API auth model was updated away from deprecated JWT-secret verification:
+- backend verifies Supabase access tokens via JWKS/signing keys
+- backend uses `SUPABASE_SECRET_KEY` server-side
+- legacy `SUPABASE_SERVICE_ROLE_KEY` is still accepted as fallback in code
+
+Recent functional fixes already landed:
+- `/api` no longer falls back to SPA HTML
+- Vite dev proxy routes `/api` and `/health` to the backend
+- transaction form submits `YYYY-MM-DD` instead of full ISO timestamps
+- shared DTOs normalize timestamp-shaped date input defensively
+- future transaction dates are blocked in both UI and API validation
+- textarea resize artifact under note field was removed
+
+## Verification Status
+
+Confirmed in this session:
+- direct backend `/health` returns JSON
+- proxied `/health` through Vite returns JSON
+- unauthenticated `/api/accounts` returns JSON `401`, not HTML
+- strict TypeScript passes when invoked directly with:
+  - `/Users/thomasduong/.volta/bin/tsc --noEmit -p packages/web/tsconfig.json`
+  - `/Users/thomasduong/.volta/bin/tsc --noEmit -p packages/api/tsconfig.json`
+  - `/Users/thomasduong/.volta/bin/tsc --noEmit -p packages/shared/tsconfig.json`
+
+Test baseline added and passing when run directly with Vitest:
+- shared DTO/date tests
+- backend auth/http/route tests
+- frontend API/form tests
+
+## Important Environment Constraint
+
+`pnpm` is unreliable in this Codex sandbox after dependency changes because it repeatedly tries to recreate workspace `node_modules`, then hits:
+- network isolation (`ENOTFOUND`)
+- dependency/build approval friction
+- non-interactive purge/install behavior
+
+Practical workaround used in this session:
+- use direct binaries or direct `tsc` paths for verification
+- use direct `vitest` binary runs instead of relying on `pnpm test`
+
+Do not assume `pnpm test` is green in this environment just because the tests are valid. The suite itself passed when run directly.
+
+## Files and Areas Most Likely Relevant Next
+
+Backend auth/runtime:
+- [packages/api/src/middleware/auth.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/api/src/middleware/auth.ts)
+- [packages/api/src/db/supabase.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/api/src/db/supabase.ts)
+- [packages/api/.env.example](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/api/.env.example)
+
+Frontend API/data path:
+- [packages/web/src/core/api.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/core/api.ts)
+- [packages/web/vite.config.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/vite.config.ts)
+- `packages/web/src/features/*/db.ts`
+
+Transaction/date rules:
+- [packages/shared/src/dtos/common.dto.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/shared/src/dtos/common.dto.ts)
+- [packages/shared/src/dtos/transaction.dto.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/shared/src/dtos/transaction.dto.ts)
+- [packages/web/src/features/transactions/components/TransactionForm.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/transactions/components/TransactionForm.tsx)
+- [packages/web/src/shared/components/ui/date-picker.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/shared/components/ui/date-picker.tsx)
+
+Test harness:
+- [package.json](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/package.json)
+- [pnpm-workspace.yaml](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/pnpm-workspace.yaml)
+- [packages/web/vite.config.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/vite.config.ts)
+
+## Remaining Work
+
+Highest-priority incomplete items:
+1. Verify every authenticated REST route against real Supabase data:
+   - `/api/accounts`
+   - `/api/categories`
+   - `/api/budgets`
+   - `/api/subscriptions`
+   - `/api/subscriptions/:id/log`
+   - `/api/transactions`
+2. Deploy the API process on VPS and configure Caddy `/api/*` proxy in the real environment
+3. Decide whether to make `pnpm test` robust in this environment or accept direct-run verification as the local workaround
+
+Secondary cleanup:
+1. Remove or keep `vite-tsconfig-paths` warning deliberately
+2. Expand route coverage if new defects appear during authenticated manual verification
+3. Optionally add API integration tests around subscriptions log flow once a cleaner mocking path is worth the setup
 
-export const transactionsRouter = new Hono<AuthEnv>()
+## Git State
 
-transactionsRouter.get('/', async (c) => {
-  const userId = c.get('userId')
-  // TODO Phase 2: implement
-  return c.json({ data: [], userId })
-})
+Recent commits:
+- `5ffabc5` `Add tests for REST migration`
+- `0e03146` `Finish REST auth wiring and sync docs`
 
-transactionsRouter.post('/', async (c) => c.json({ error: 'Not implemented' }, 501))
-transactionsRouter.patch('/:id', async (c) => c.json({ error: 'Not implemented' }, 501))
-transactionsRouter.delete('/:id', async (c) => c.json({ error: 'Not implemented' }, 501))
-```
-
----
+Current working tree:
+- clean except one unrelated untracked file:
+  - `.agents/skills/react-frontend-developer/references/architecture.md.md`
 
-### Step 8 — Create stub route files (same pattern as Step 7)
+Leave that untracked file alone unless the user explicitly asks about it.
 
-Create these 4 files with identical stub pattern — just change the variable name and router export:
+## Suggested Skills
 
-- `packages/api/src/routes/accounts.ts` → export `accountsRouter`
-- `packages/api/src/routes/categories.ts` → export `categoriesRouter`
-- `packages/api/src/routes/budgets.ts` → export `budgetsRouter`
-- `packages/api/src/routes/subscriptions.ts` → export `subscriptionsRouter`
+- `handoff`
+  - use again at the end of the next substantial session
+- `react-frontend-developer`
+  - use for any further FE test, component, or client-side architecture work
+- `caveman-commit`
+  - use if another commit is requested and a terse message is needed
 
-Each file:
-```ts
-import { Hono } from 'hono'
-import type { AuthEnv } from '../middleware/auth'
-
-export const <name>Router = new Hono<AuthEnv>()
-
-<name>Router.get('/', async (c) => c.json({ data: [], userId: c.get('userId') }))
-<name>Router.post('/', async (c) => c.json({ error: 'Not implemented' }, 501))
-<name>Router.patch('/:id', async (c) => c.json({ error: 'Not implemented' }, 501))
-<name>Router.delete('/:id', async (c) => c.json({ error: 'Not implemented' }, 501))
-```
-
----
-
-### Step 9 — Create `packages/api/src/index.ts`
-
-```ts
-import { Hono } from 'hono'
-import { cors } from 'hono/cors'
-import { logger } from 'hono/logger'
-import { authMiddleware } from './middleware/auth'
-import { transactionsRouter } from './routes/transactions'
-import { accountsRouter } from './routes/accounts'
-import { categoriesRouter } from './routes/categories'
-import { budgetsRouter } from './routes/budgets'
-import { subscriptionsRouter } from './routes/subscriptions'
-
-const app = new Hono()
-
-app.use('*', logger())
-app.use('*', cors())
-
-app.get('/health', (c) => c.json({ ok: true }))
-
-// All /api/* routes require auth
-const api = app.basePath('/api')
-api.use('*', authMiddleware)
-api.route('/transactions', transactionsRouter)
-api.route('/accounts', accountsRouter)
-api.route('/categories', categoriesRouter)
-api.route('/budgets', budgetsRouter)
-api.route('/subscriptions', subscriptionsRouter)
-
-export default {
-  port: Number(process.env.PORT ?? 3000),
-  fetch: app.fetch,
-}
-```
-
----
-
-### Step 10 — Scope `packages/web/tsconfig.json` include
-
-Current `include` is `["**/*.ts", "**/*.tsx"]` — from `packages/web/` this is fine, but be explicit. Verify the file looks like this (read it first):
-
-The `include` should be:
-```json
-"include": ["src/**/*.ts", "src/**/*.tsx"]
-```
-
-If it currently says `["**/*.ts", "**/*.tsx"]` — update it to `["src/**/*.ts", "src/**/*.tsx"]`.
-
----
-
-### Step 11 — Run `pnpm install` from repo root
-
-```bash
-pnpm install
-```
-
-This installs all workspace packages. Expect it to link `@wallet/shared` and `@wallet/api` correctly.
-
----
-
-### Step 12 — Verify build passes
-
-```bash
-# From repo root:
-pnpm build
-# Should run: pnpm --filter @wallet/web build
-# Which runs: tsc -b && vite build inside packages/web/
-
-# Also typecheck web explicitly:
-cd packages/web && pnpm exec tsc --noEmit
-```
-
-Fix any errors before proceeding.
-
----
-
-### Step 13 — Update `AGENTS.md`
-
-The file is stale — references old paths (`lib/`, `components/`, `src/components`). Update it to reflect:
-- Commands now run from root: `pnpm dev`, `pnpm build`
-- Web source is at `packages/web/src/`
-- API source is at `packages/api/src/`
-- Shared types at `packages/shared/src/`
-
----
-
-### Step 14 — Commit
-
-Stage and commit in two logical commits:
-
-**Commit 1** — monorepo restructure (the git mv + new package.json files):
-```bash
-git add packages/web/package.json packages/shared/ pnpm-workspace.yaml package.json AGENTS.md
-git commit -m "Monorepo Phase 1: move web into packages/web, scaffold api and shared"
-```
-
-**Commit 2** — api skeleton:
-```bash
-git add packages/api/
-git commit -m "Add packages/api skeleton: Hono + Bun, auth middleware, route stubs"
-```
-
----
-
-## Checklist
-
-- [ ] `pnpm-workspace.yaml` updated with `packages: ['packages/*']`
-- [ ] `packages/shared/tsconfig.json` created
-- [ ] `packages/api/package.json` created
-- [ ] `packages/api/tsconfig.json` created
-- [ ] `packages/api/src/db/supabase.ts` created
-- [ ] `packages/api/src/middleware/auth.ts` created
-- [ ] `packages/api/src/routes/transactions.ts` created
-- [ ] `packages/api/src/routes/accounts.ts` created
-- [ ] `packages/api/src/routes/categories.ts` created
-- [ ] `packages/api/src/routes/budgets.ts` created
-- [ ] `packages/api/src/routes/subscriptions.ts` created
-- [ ] `packages/api/src/index.ts` created
-- [ ] `packages/web/tsconfig.json` `include` scoped to `src/**`
-- [ ] `pnpm install` runs clean from repo root
-- [ ] `pnpm build` passes (web builds to dist/)
-- [ ] `cd packages/web && pnpm exec tsc --noEmit` — zero errors
-- [ ] `AGENTS.md` updated with correct paths and commands
-- [ ] Phase 1 committed (2 commits as above)
-
----
-
-## Phase 1 Exit Criteria
-
-App behaviour is **identical** to before. Only the folder structure changed:
-- `pnpm dev` still starts Vite dev server for web
-- `pnpm build` still produces `packages/web/dist/`
-- Zero TypeScript errors in packages/web
-- packages/api and packages/shared exist as valid TS packages (stub, not yet functional)
-
----
-
-## What Comes Next (Phase 2 — Build API)
-
-After Phase 1 is committed and green:
-
-1. Move `packages/web/src/core/types.ts` → `packages/shared/src/types.ts`, re-export from web
-2. Move Zod schemas from `packages/web/src/features/*/db.ts` → `packages/shared/src/schemas/`
-3. Implement each route in `packages/api/src/routes/*.ts` using service role Supabase client
-4. Add `.env` to `packages/api/` with `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`
-5. Test each endpoint with curl/REST client against real Supabase data
-6. Deploy BE to VPS, configure Caddy `/api/*` proxy
-
-Full API spec in `BE_INTEGRATION_PLAN.md`.
-
----
-
-## Key Files To Read Before Starting
-
-- `BE_INTEGRATION_PLAN.md` — full architecture decisions
-- `packages/web/src/core/types.ts` — domain types (Account, Transaction, Category, Budget, Subscription)
-- `packages/web/src/features/*/db.ts` — current Supabase query layer (will become BE route implementations)
-- `packages/web/src/core/database.types.ts` — generated Supabase DB types
-
-## Env Vars Needed for Phase 2
-
-These go in `packages/api/.env` (never commit):
-```
-SUPABASE_URL=           # same as current VITE_SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY=   # from Supabase dashboard → Settings → API
-SUPABASE_JWT_SECRET=         # from Supabase dashboard → Settings → API → JWT Secret
-PORT=3000
-```
