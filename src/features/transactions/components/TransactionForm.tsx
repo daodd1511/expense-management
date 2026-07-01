@@ -1,6 +1,6 @@
 
-import { ArrowRight, Camera, X } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { ArrowRight, X } from 'lucide-react'
+import { useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
 import { DatePicker } from '@/shared/components/ui/date-picker'
@@ -47,8 +47,6 @@ export function TransactionForm({
   const [date, setDate] = useState(
     (initial?.date ?? new Date().toISOString()).slice(0, 10),
   )
-  const [receipt, setReceipt] = useState<string | null>(initial?.receipt ?? null)
-  const fileRef = useRef<HTMLInputElement>(null)
 
   const TYPE_TABS: { value: TxType; label: string }[] = [
     { value: 'expense', label: t('form.expense') },
@@ -60,11 +58,6 @@ export function TransactionForm({
   const visibleCats = categories.filter((c) =>
     type === 'income' ? INCOME_CATS.includes(c.id) : !INCOME_CATS.includes(c.id),
   )
-
-  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) setReceipt(URL.createObjectURL(file))
-  }
 
   const canSubmit =
     numericAmount > 0 &&
@@ -82,7 +75,7 @@ export function TransactionForm({
       merchant: merchant.trim() || (type === 'transfer' ? t('form.defaultTransfer') : getCategory(categoryId)?.name || t('form.defaultTx')),
       note: note.trim() || undefined,
       date: `${date}T12:00:00.000Z`,
-      receipt,
+      receipt: null,
     })
   }
 
@@ -238,42 +231,6 @@ export function TransactionForm({
           />
         </div>
 
-        {/* Receipt */}
-        <div className="flex flex-col gap-2">
-          <Label>{t('form.receipt')}</Label>
-          <div className="flex items-center gap-3">
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
-            {receipt ? (
-              <div className="relative">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={receipt || '/placeholder.svg'}
-                  alt={t('form.receiptAlt')}
-                  className="size-16 rounded-lg border border-border object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => setReceipt(null)}
-                  aria-label={t('form.removeReceipt')}
-                  className="absolute -right-2 -top-2 inline-flex size-5 items-center justify-center rounded-full bg-foreground text-background"
-                >
-                  <X className="size-3" />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="inline-flex size-16 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border text-muted-foreground hover:bg-muted"
-              >
-                <Camera className="size-5" />
-              </button>
-            )}
-            <span className="text-xs text-muted-foreground">
-              {t('form.receiptHint')}
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Submit */}
