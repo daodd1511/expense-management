@@ -29,6 +29,24 @@ export interface Transaction {
   note?: string
   date: string // ISO
   receipt?: string | null
+  subscriptionId?: string | null
+}
+
+export type SubscriptionCadence = 'monthly' | 'yearly'
+
+export interface Subscription {
+  id: string
+  name: string
+  amount: number
+  type: 'expense' | 'income'
+  categoryId: string | null
+  accountId: string
+  cadence: SubscriptionCadence
+  dayOfMonth: number   // 1–28 (clamped to avoid Feb edge cases)
+  monthOfYear: number  // 1–12, only used when cadence = 'yearly'
+  nextDueDate: string  // ISO date string
+  note?: string
+  active: boolean
 }
 
 export interface Budget {

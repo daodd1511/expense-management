@@ -1,4 +1,4 @@
-import type { Account, Budget, Category, Transaction } from './types'
+import type { Account, Budget, Category, Subscription, Transaction } from './types'
 
 export const categories: Category[] = [
   { id: 'food', name: 'Ăn uống', icon: 'Utensils', color: 'chart-1' },
@@ -27,6 +27,112 @@ export const budgets: Budget[] = [
   { categoryId: 'fun', limit: 1_500_000 },
   { categoryId: 'shopping', limit: 3_000_000 },
   { categoryId: 'health', limit: 1_000_000 },
+]
+
+// Today's date parts for seed nextDueDate
+const _now = new Date()
+const _y = _now.getFullYear()
+const _m = _now.getMonth() + 1 // 1-based
+
+function nextDue(day: number, month?: number): string {
+  const d = new Date()
+  if (month !== undefined) {
+    // yearly: next occurrence
+    const candidate = new Date(_y, month - 1, day)
+    if (candidate <= d) candidate.setFullYear(_y + 1)
+    return candidate.toISOString().slice(0, 10)
+  }
+  // monthly: this month if day >= today, else next month
+  const candidate = new Date(_y, _m - 1, day)
+  if (candidate <= d) candidate.setMonth(candidate.getMonth() + 1)
+  return candidate.toISOString().slice(0, 10)
+}
+
+// Seed: 2 overdue (day=1 of current month, already past), rest upcoming
+const _overdue1 = new Date(_y, _m - 1, 1).toISOString().slice(0, 10)
+const _overdue2 = new Date(_y, _m - 1, 3).toISOString().slice(0, 10)
+
+export const subscriptions: Subscription[] = [
+  {
+    id: 'sub-netflix',
+    name: 'Netflix',
+    amount: 260_000,
+    type: 'expense',
+    categoryId: 'fun',
+    accountId: 'tcb-card',
+    cadence: 'monthly',
+    dayOfMonth: 1,
+    monthOfYear: 1,
+    nextDueDate: _overdue1,
+    note: 'Gói Premium 4K',
+    active: true,
+  },
+  {
+    id: 'sub-spotify',
+    name: 'Spotify',
+    amount: 59_000,
+    type: 'expense',
+    categoryId: 'fun',
+    accountId: 'momo',
+    cadence: 'monthly',
+    dayOfMonth: 3,
+    monthOfYear: 1,
+    nextDueDate: _overdue2,
+    active: true,
+  },
+  {
+    id: 'sub-icloud',
+    name: 'iCloud 200GB',
+    amount: 49_000,
+    type: 'expense',
+    categoryId: 'bills',
+    accountId: 'tcb-card',
+    cadence: 'monthly',
+    dayOfMonth: 15,
+    monthOfYear: 1,
+    nextDueDate: nextDue(15),
+    active: true,
+  },
+  {
+    id: 'sub-domain',
+    name: 'Tên miền .com',
+    amount: 350_000,
+    type: 'expense',
+    categoryId: 'bills',
+    accountId: 'tcb-card',
+    cadence: 'yearly',
+    dayOfMonth: 20,
+    monthOfYear: 8,
+    nextDueDate: nextDue(20, 8),
+    note: 'Gia hạn hàng năm',
+    active: true,
+  },
+  {
+    id: 'sub-chatgpt',
+    name: 'ChatGPT Plus',
+    amount: 500_000,
+    type: 'expense',
+    categoryId: 'bills',
+    accountId: 'tcb-card',
+    cadence: 'monthly',
+    dayOfMonth: 22,
+    monthOfYear: 1,
+    nextDueDate: nextDue(22),
+    active: true,
+  },
+  {
+    id: 'sub-gym',
+    name: 'Thẻ phòng gym',
+    amount: 450_000,
+    type: 'expense',
+    categoryId: 'health',
+    accountId: 'vcb',
+    cadence: 'monthly',
+    dayOfMonth: 28,
+    monthOfYear: 1,
+    nextDueDate: nextDue(28),
+    active: false,
+  },
 ]
 
 function daysAgo(n: number, h = 9, m = 30): string {

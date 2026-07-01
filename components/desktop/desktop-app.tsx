@@ -1,6 +1,6 @@
-'use client'
 
 import {
+  CalendarClock,
   CreditCard,
   LayoutDashboard,
   Plus,
@@ -15,27 +15,31 @@ import { TransactionForm } from '@/components/transaction-form'
 import { Drawer } from '@/components/ui/overlay'
 import { useLang } from '@/lib/i18n'
 import { useStore } from '@/lib/store'
+import { dueBanner } from '@/lib/subscriptions'
 import type { Transaction } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { DesktopAccounts } from './accounts'
 import { DesktopBudgets } from './budgets'
 import { DesktopDashboard } from './dashboard'
 import { DesktopSettings } from './settings'
+import { DesktopSubscriptions } from './subscriptions'
 import { DesktopTransactionsTable } from './transactions-table'
 
-type Tab = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings'
+type Tab = 'dashboard' | 'transactions' | 'budgets' | 'subscriptions' | 'accounts' | 'settings'
 
 export function DesktopApp() {
-  const { addTransaction, updateTransaction } = useStore()
+  const { addTransaction, updateTransaction, subscriptions, transactions } = useStore()
   const { t } = useLang()
   const [tab, setTab] = useState<Tab>('dashboard')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | undefined>(undefined)
+  const dueCount = dueBanner(subscriptions, transactions).length
 
-  const NAV: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+  const NAV: { id: Tab; label: string; icon: typeof LayoutDashboard; badge?: number }[] = [
     { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
     { id: 'transactions', label: t('nav.transactions'), icon: Receipt },
     { id: 'budgets', label: t('nav.budgets'), icon: Target },
+    { id: 'subscriptions', label: t('nav.subscriptions'), icon: CalendarClock, badge: dueCount },
     { id: 'accounts', label: t('nav.accounts'), icon: Wallet },
     { id: 'settings', label: t('nav.settings'), icon: Settings },
   ]
@@ -79,7 +83,14 @@ export function DesktopApp() {
                     : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground',
                 )}
               >
-                <Icon className="size-4.5" />
+                <span className="relative">
+                  <Icon className="size-4.5" />
+                  {item.badge != null && item.badge > 0 && (
+                    <span className="absolute -right-1.5 -top-1 inline-flex size-3.5 items-center justify-center rounded-full bg-expense text-[0.5rem] font-bold text-expense-foreground">
+                      {item.badge}
+                    </span>
+                  )}
+                </span>
                 {item.label}
               </button>
             )
@@ -107,6 +118,7 @@ export function DesktopApp() {
           {tab === 'dashboard' && <DesktopDashboard onNavigate={(s) => setTab(s as Tab)} onEdit={openEdit} />}
           {tab === 'transactions' && <DesktopTransactionsTable onEdit={openEdit} />}
           {tab === 'budgets' && <DesktopBudgets />}
+          {tab === 'subscriptions' && <DesktopSubscriptions />}
           {tab === 'accounts' && <DesktopAccounts />}
           {tab === 'settings' && <DesktopSettings />}
         </div>

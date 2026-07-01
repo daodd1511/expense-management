@@ -1,41 +1,43 @@
-'use client'
 
-import { ArrowLeftRight, Home, Plus, Settings, Wallet, Wallet2 } from 'lucide-react'
+import { ArrowLeftRight, CalendarClock, Home, Plus, Settings, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { TransactionForm } from '@/components/transaction-form'
+import { SubscriptionDueBanner } from '@/components/shared/subscription-due-banner'
 import { BottomSheet } from '@/components/ui/overlay'
 import { useLang } from '@/lib/i18n'
 import { useStore } from '@/lib/store'
+import { dueBanner } from '@/lib/subscriptions'
 import type { Transaction } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { MobileAccounts } from './accounts'
-import { MobileBudgets } from './budgets'
 import { MobileHome } from './home'
+import { MobilePlanning } from './planning'
 import { MobileSettings } from './settings'
 import { MobileTransactions } from './transactions'
 
-type Screen = 'home' | 'transactions' | 'budgets' | 'accounts' | 'settings'
+type Screen = 'home' | 'transactions' | 'planning' | 'accounts' | 'settings'
 
 export function MobileApp() {
-  const { addTransaction, updateTransaction } = useStore()
+  const { addTransaction, updateTransaction, subscriptions, transactions } = useStore()
   const { t } = useLang()
   const [screen, setScreen] = useState<Screen>('home')
+  const dueCount = dueBanner(subscriptions, transactions).length
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
 
   const TITLES: Record<Screen, string> = {
     home: t('nav.dashboard'),
     transactions: t('nav.transactions'),
-    budgets: t('nav.budgets'),
+    planning: t('nav.planning'),
     accounts: t('nav.accounts'),
     settings: t('nav.settings'),
   }
 
-  const NAV: { screen: Screen; label: string; icon: typeof Home }[] = [
+  const NAV: { screen: Screen; label: string; icon: typeof Home; badge?: number }[] = [
     { screen: 'home', label: t('nav.home'), icon: Home },
     { screen: 'transactions', label: t('nav.transactions'), icon: ArrowLeftRight },
-    { screen: 'budgets', label: t('nav.budgets'), icon: Wallet2 },
+    { screen: 'planning', label: t('nav.planning'), icon: CalendarClock, badge: dueCount },
     { screen: 'accounts', label: t('nav.accounts'), icon: Wallet },
   ]
 
@@ -81,9 +83,14 @@ export function MobileApp() {
 
       {/* Screen */}
       <main className="flex-1 pb-24">
-        {screen === 'home' && <MobileHome onNavigate={(s) => setScreen(s as Screen)} onEdit={openEdit} />}
+        {screen === 'home' && (
+          <>
+            <SubscriptionDueBanner />
+            <MobileHome onNavigate={(s) => setScreen(s as Screen)} onEdit={openEdit} />
+          </>
+        )}
         {screen === 'transactions' && <MobileTransactions onEdit={openEdit} />}
-        {screen === 'budgets' && <MobileBudgets />}
+        {screen === 'planning' && <MobilePlanning />}
         {screen === 'accounts' && <MobileAccounts />}
         {screen === 'settings' && <MobileSettings />}
       </main>
@@ -93,7 +100,7 @@ export function MobileApp() {
         <div className="relative border-t border-border bg-card/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md">
           <div className="grid grid-cols-5 items-center">
             {NAV.slice(0, 2).map((n) => (
-              <NavButton key={n.screen} {...n} active={screen === n.screen} onClick={() => setScreen(n.screen)} />
+              <NavButton key={n.screen} {...n} active={screen === n.screen} onClick={() => setScreen(n.screen)} badge={n.badge} />
             ))}
             <div className="flex justify-center">
               <button
@@ -106,7 +113,7 @@ export function MobileApp() {
               </button>
             </div>
             {NAV.slice(2).map((n) => (
-              <NavButton key={n.screen} {...n} active={screen === n.screen} onClick={() => setScreen(n.screen)} />
+              <NavButton key={n.screen} {...n} active={screen === n.screen} onClick={() => setScreen(n.screen)} badge={n.badge} />
             ))}
           </div>
         </div>
@@ -133,11 +140,13 @@ function NavButton({
   icon: Icon,
   active,
   onClick,
+  badge,
 }: {
   label: string
   icon: typeof Home
   active: boolean
   onClick: () => void
+  badge?: number
 }) {
   return (
     <button
@@ -148,7 +157,14 @@ function NavButton({
         active ? 'text-primary' : 'text-muted-foreground',
       )}
     >
-      <Icon className={cn('size-5', active && 'fill-primary/15')} />
+      <span className="relative">
+        <Icon className={cn('size-5', active && 'fill-primary/15')} />
+        {badge != null && badge > 0 && (
+          <span className="absolute -right-1.5 -top-1 inline-flex size-3.5 items-center justify-center rounded-full bg-expense text-[0.5rem] font-bold text-expense-foreground">
+            {badge}
+          </span>
+        )}
+      </span>
       {label}
     </button>
   )

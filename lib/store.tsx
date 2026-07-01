@@ -1,19 +1,20 @@
-'use client'
 
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import {
   accounts as seedAccounts,
   budgets as seedBudgets,
   categories as seedCategories,
+  subscriptions as seedSubscriptions,
   transactions as seedTransactions,
 } from './data'
-import type { Account, Budget, Category, Transaction, TxType } from './types'
+import type { Account, Budget, Category, Subscription, Transaction, TxType } from './types'
 
 interface StoreValue {
   transactions: Transaction[]
   accounts: Account[]
   categories: Category[]
   budgets: Budget[]
+  subscriptions: Subscription[]
   addTransaction: (t: Omit<Transaction, 'id'>) => void
   updateTransaction: (id: string, t: Partial<Transaction>) => void
   deleteTransaction: (id: string) => void
@@ -24,6 +25,10 @@ interface StoreValue {
   updateCategory: (id: string, c: Partial<Omit<Category, 'id'>>) => void
   getCategory: (id: string | null | undefined) => Category | undefined
   getAccount: (id: string | null | undefined) => Account | undefined
+  addSubscription: (s: Omit<Subscription, 'id'>) => void
+  updateSubscription: (id: string, patch: Partial<Omit<Subscription, 'id'>>) => void
+  deleteSubscription: (id: string) => void
+  logSubscription: (id: string) => void
 }
 
 const StoreContext = createContext<StoreValue | null>(null)
@@ -33,6 +38,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [accounts, setAccounts] = useState<Account[]>(seedAccounts)
   const [categories, setCategories] = useState<Category[]>(seedCategories)
   const [budgets] = useState<Budget[]>(seedBudgets)
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>(seedSubscriptions)
 
   const addTransaction = useCallback((t: Omit<Transaction, 'id'>) => {
     setTransactions((prev) => [{ ...t, id: `tx-${Date.now()}` }, ...prev])
@@ -66,6 +72,38 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
   }, [])
 
+  const addSubscription = useCallback((s: Omit<Subscription, 'id'>) => {
+    setSubscriptions((prev) => [...prev, { ...s, id: `sub-${Date.now()}` }])
+  }, [])
+
+  const updateSubscription = useCallback((id: string, patch: Partial<Omit<Subscription, 'id'>>) => {
+    setSubscriptions((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
+  }, [])
+
+  const deleteSubscription = useCallback((id: string) => {
+    setSubscriptions((prev) => prev.filter((s) => s.id !== id))
+  }, [])
+
+  const logSubscription = useCallback((id: string) => {
+    setSubscriptions((prev) => {
+      const s = prev.find((x) => x.id === id)
+      if (!s) return prev
+      const tx: Transaction = {
+        id: `tx-${Date.now()}`,
+        type: s.type,
+        amount: s.amount,
+        categoryId: s.categoryId,
+        accountId: s.accountId,
+        merchant: s.name,
+        note: s.note,
+        date: new Date().toISOString().slice(0, 10),
+        subscriptionId: s.id,
+      }
+      setTransactions((txs) => [tx, ...txs])
+      return prev.map((x) => (x.id === id ? { ...x, nextDueDate: advanceNextDueDate(x) } : x))
+    })
+  }, [])
+
   const value = useMemo<StoreValue>(() => {
     const catMap = new Map(categories.map((c) => [c.id, c]))
     const accMap = new Map(accounts.map((a) => [a.id, a]))
@@ -74,6 +112,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       accounts,
       categories,
       budgets,
+      subscriptions,
       addTransaction,
       updateTransaction,
       deleteTransaction,
@@ -84,8 +123,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       updateCategory,
       getCategory: (id) => (id ? catMap.get(id) : undefined),
       getAccount: (id) => (id ? accMap.get(id) : undefined),
+      addSubscription,
+      updateSubscription,
+      deleteSubscription,
+      logSubscription,
     }
-  }, [transactions, accounts, categories, budgets, addTransaction, updateTransaction, deleteTransaction, addAccount, updateAccount, deleteAccount, addCategory, updateCategory])
+  }, [transactions, accounts, categories, budgets, subscriptions, addTransaction, updateTransaction, deleteTransaction, addAccount, updateAccount, deleteAccount, addCategory, updateCategory, addSubscription, updateSubscription, deleteSubscription, logSubscription])
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }
@@ -134,4 +177,14 @@ export function spentForCategory(transactions: Transaction[], categoryId: string
   return total
 }
 
-export type { Account, Budget, Category, Transaction, TxType }
+function advanceNextDueDate(s: Subscription): string {
+  const d = new Date(s.nextDueDate)
+  if (s.cadence === 'monthly') {
+    d.setMonth(d.getMonth() + 1)
+  } else {
+    d.setFullYear(d.getFullYear() + 1)
+  }
+  return d.toISOString().slice(0, 10)
+}
+
+export type { Account, Budget, Category, Subscription, Transaction, TxType }
