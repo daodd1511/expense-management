@@ -1,222 +1,384 @@
-# Wallet — Handoff
+# Handoff — BE Integration Phase 1 (mid-execution)
 
-## State: Implementation phase — Next→Vite conversion pending
+## Context
 
-Main folder: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
-Deprecated: `~/dev/personal/wallet` (old docs + HTML mockups, ignore)
-
----
-
-## What exists
-
-### Spec docs (this repo)
-- `PLAN.md` — authoritative system plan (stack, data model, features, execution phases)
-- `PRODUCT.md` — product register, brand personality, design principles
-- `DESIGN.md` — full design system (register-gold, tonal, warm-paper, OKLCH tokens)
-- `FEATURES.md` — feature checklist with status
-
-### UI (this repo — current state)
-React components built as Next.js 16 app. **Design-complete, no real system.**
-In-memory store resets on refresh. No persistence, no auth, no backend.
-
-| Area | Status | Notes |
-|---|---|---|
-| Dashboard | ✅ Done | KPIs, donut chart, trend chart, recent txns, budget overview, account balances |
-| Transactions | ✅ Done | Mobile grouped list + swipe actions; desktop table + pagination + bulk delete |
-| Add/Edit transaction | ✅ Done | Bottom sheet (mobile), drawer (desktop), date picker, receipt attach |
-| Accounts | ✅ Done | List, add/edit/delete, swipe actions, net worth card |
-| Budgets | ✅ Done (display) | Budget bars + state colors. **CRUD missing — no add/edit/delete** |
-| Categories | ✅ Done (add/edit) | **Delete missing** |
-| Settings | ✅ Done | Theme toggle, language switch |
-| Persistence | ❌ None | In-memory only — resets on refresh |
+Repo: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
+Branch: `master`
+Goal: Convert flat repo into pnpm monorepo (`packages/web`, `packages/api`, `packages/shared`).
+Full plan: `BE_INTEGRATION_PLAN.md`
 
 ---
 
-## Immediate next task: Next → Vite conversion (in place)
+## Current State (mid-execution, NOT committed)
 
-All existing components are client-only (no RSC, no server routes used). Conversion is mechanical.
+### What's already done (staged, not yet committed)
 
-### Steps in order
+All web source files moved via `git mv` to `packages/web/`:
+- `src/` → `packages/web/src/`
+- `index.html` → `packages/web/index.html`
+- `vite.config.ts` → `packages/web/vite.config.ts`
+- `tsconfig.json` → `packages/web/tsconfig.json`
+- `public/` → `packages/web/public/`
+- `components.json` → `packages/web/components.json`
 
-1. **Install Vite + deps, remove Next**
-   ```bash
-   pnpm remove next next-themes
-   pnpm add -D vite @vitejs/plugin-react vite-tsconfig-paths
-   pnpm add @vite-pwa/assets-generator vite-plugin-pwa
-   pnpm add @fontsource/be-vietnam-pro
-   ```
+Root `package.json` updated to workspace root (no deps, just scripts).
 
-2. **`vite.config.ts`** (new file)
-   ```ts
-   import { defineConfig } from 'vite'
-   import react from '@vitejs/plugin-react'
-   import tsconfigPaths from 'vite-tsconfig-paths'
-   import { VitePWA } from 'vite-plugin-pwa'
+### What exists on disk but NOT staged
 
-   export default defineConfig({
-     plugins: [
-       react(),
-       tsconfigPaths(),
-       VitePWA({
-         registerType: 'autoUpdate',
-         manifest: {
-           name: 'Wallet',
-           short_name: 'Wallet',
-           theme_color: 'oklch(0.985 0.004 90)',
-           background_color: 'oklch(0.985 0.004 90)',
-           display: 'standalone',
-           start_url: '/',
-           icons: [], // add 192/512 icons
-         },
-       }),
-     ],
-   })
-   ```
+- `packages/web/package.json` — created, has all web deps
+- `packages/shared/src/index.ts` — placeholder
+- `packages/shared/src/types.ts` — placeholder
+- `packages/shared/package.json` — created
+- `packages/api/src/` — empty directory only
 
-3. **Tailwind 4:** swap `@tailwindcss/postcss` for `@tailwindcss/vite`
-   - `pnpm remove @tailwindcss/postcss && pnpm add -D @tailwindcss/vite`
-   - Remove `postcss.config.mjs`
-   - Add `import tailwindcss from '@tailwindcss/vite'` to `vite.config.ts` plugins
+### What is NOT done yet
 
-4. **`index.html`** (root, replace `app/` shell)
-   ```html
-   <!doctype html>
-   <html lang="en">
-     <head>
-       <meta charset="UTF-8" />
-       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-       <title>Wallet</title>
-     </head>
-     <body>
-       <div id="root"></div>
-       <script type="module" src="/src/main.tsx"></script>
-     </body>
-   </html>
-   ```
-
-5. **`src/main.tsx`** (replaces `app/layout.tsx` + `app/page.tsx`)
-   ```tsx
-   import '@fontsource/be-vietnam-pro/400.css'
-   import '@fontsource/be-vietnam-pro/500.css'
-   import '@fontsource/be-vietnam-pro/600.css'
-   import '@fontsource/be-vietnam-pro/700.css'
-   import './app/globals.css'
-   import { StrictMode } from 'react'
-   import { createRoot } from 'react-dom/client'
-   import { StoreProvider } from './lib/store'
-   import { LangProvider } from './lib/i18n'
-   import { ThemeProvider } from './components/theme-provider'
-   import ResponsiveApp from './components/responsive-app'
-
-   createRoot(document.getElementById('root')!).render(
-     <StrictMode>
-       <ThemeProvider>
-         <LangProvider>
-           <StoreProvider>
-             <ResponsiveApp />
-           </StoreProvider>
-         </LangProvider>
-       </ThemeProvider>
-     </StrictMode>
-   )
-   ```
-
-6. **`components/theme-provider.tsx`** — rewrite (remove next-themes)
-   ```tsx
-   'use client'
-   import { createContext, useContext, useEffect, useState } from 'react'
-
-   type Theme = 'light' | 'dark' | 'system'
-   const ThemeCtx = createContext<{ theme: Theme; setTheme: (t: Theme) => void }>({
-     theme: 'system', setTheme: () => {},
-   })
-
-   export function ThemeProvider({ children }: { children: React.ReactNode }) {
-     const [theme, setThemeState] = useState<Theme>(
-       () => (localStorage.getItem('theme') as Theme) ?? 'system'
-     )
-     useEffect(() => {
-       const root = document.documentElement
-       const dark =
-         theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
-       root.classList.toggle('dark', dark)
-       localStorage.setItem('theme', theme)
-     }, [theme])
-     return (
-       <ThemeCtx.Provider value={{ theme, setTheme: setThemeState }}>
-         {children}
-       </ThemeCtx.Provider>
-     )
-   }
-
-   export const useTheme = () => useContext(ThemeCtx)
-   ```
-
-7. **`globals.css`** — add Be Vietnam Pro to font stack
-   ```css
-   @theme inline {
-     --font-sans: 'Be Vietnam Pro', ui-sans-serif, system-ui, -apple-system, sans-serif;
-     /* rest unchanged */
-   }
-   ```
-
-8. **Motion + z-index tokens** — append to `:root` in `globals.css`
-   ```css
-   :root {
-     --duration-fast:  120ms;
-     --duration-base:  200ms;
-     --duration-slow:  320ms;
-     --ease-out:       cubic-bezier(0.16, 1, 0.3, 1);
-     --ease-in-out:    cubic-bezier(0.4, 0, 0.2, 1);
-     --z-dropdown:  100;
-     --z-sticky:    200;
-     --z-overlay:   300;
-     --z-modal:     400;
-     --z-toast:     500;
-     --z-tooltip:   600;
-   }
-   @media (prefers-reduced-motion: reduce) {
-     * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
-   }
-   ```
-
-9. **Delete** `app/` dir, `next.config.mjs`, `next-env.d.ts`, `postcss.config.mjs`
-
-10. **Strip `'use client'`** directives (harmless but noisy; strip opportunistically)
-
-11. **`tsconfig.json`** — ensure `"baseUrl": "."` and `"paths": { "@/*": ["./*"] }` (vite-tsconfig-paths handles resolution)
-
-12. **`package.json` scripts** — replace next scripts:
-    ```json
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
-    ```
+Everything below must be completed before committing Phase 1.
 
 ---
 
-## After conversion: Phase 1 — persistence + computed balances
+## Remaining Steps — Do These In Order
 
-See `PLAN.md` → Persistence and Balances sections.
+### Step 1 — Update `pnpm-workspace.yaml`
 
-Key changes to `lib/store.tsx`:
-- Replace `useState(seedData)` with `useLocalStorage` hooks (or `idb-keyval` for IndexedDB)
-- `Account.balance` (static) → `Account.openingBalance`; add `computeBalance(accountId, transactions)` pure fn
-- Add budget CRUD mutations (`addBudget`, `updateBudget`, `deleteBudget`)
-- Add category `deleteCategory`
+Current content only has `allowBuilds`. Replace with:
+
+```yaml
+packages:
+  - 'packages/*'
+
+allowBuilds:
+  msw: true
+  sharp: true
+```
+
+File: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/pnpm-workspace.yaml`
 
 ---
 
-## Key decisions (locked — don't re-litigate)
+### Step 2 — Create `packages/shared/tsconfig.json`
 
-- **Stack:** Vite + React 19, Tailwind 4, shadcn/base-ui, recharts, vite-plugin-pwa
-- **Host:** self-hosted VPS, static `dist/` behind Caddy (auto-HTTPS)
-- **Backend (Phase 2):** Supabase + Google OAuth + RLS on `owner_id`
-- **Persistence (Phase 1):** localStorage / IndexedDB — no backend yet
-- **Balances:** computed (`openingBalance + Σincome − Σexpense ± transfers`), never stored
-- **Font:** Be Vietnam Pro (Vietnamese diacritic support)
-- **Design:** register-gold accent, tonal/no-shadow depth, warm-paper neutrals (see `DESIGN.md`)
-- **i18n:** custom flat-key (`lib/i18n.tsx`), vi default, en secondary — no react-i18next
-- **Layouts:** two purpose-built surfaces — mobile (`<1024px` bottom nav + bottom sheet) and desktop (`≥1024px` sidebar + drawer). Not responsive scaling.
-- **Amounts:** VND integers, `Intl.NumberFormat('vi-VN', {style:'currency',currency:'VND'})` → `100.000 ₫`
-- **Transfers:** single row, `accountId` (from) + `toAccountId` (to), excluded from income/expense aggregates
+```json
+{
+  "compilerOptions": {
+    "lib": ["esnext"],
+    "target": "ES2020",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "isolatedModules": true
+  },
+  "include": ["src/**/*.ts"]
+}
+```
+
+---
+
+### Step 3 — Create `packages/api/package.json`
+
+```json
+{
+  "name": "@wallet/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
+    "@wallet/shared": "workspace:*",
+    "hono": "4.12.25",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "5.7.3"
+  }
+}
+```
+
+---
+
+### Step 4 — Create `packages/api/tsconfig.json`
+
+```json
+{
+  "compilerOptions": {
+    "lib": ["esnext"],
+    "target": "ES2020",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "types": ["bun-types"]
+  },
+  "include": ["src/**/*.ts"]
+}
+```
+
+---
+
+### Step 5 — Create `packages/api/src/db/supabase.ts`
+
+```ts
+import { createClient } from '@supabase/supabase-js'
+
+// Service role key — never sent to browser
+export const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+)
+```
+
+---
+
+### Step 6 — Create `packages/api/src/middleware/auth.ts`
+
+```ts
+import type { Context, Next } from 'hono'
+import { createMiddleware } from 'hono/factory'
+import { verify } from 'hono/jwt'
+
+export type AuthEnv = {
+  Variables: {
+    userId: string
+  }
+}
+
+export const authMiddleware = createMiddleware<AuthEnv>(async (c: Context, next: Next) => {
+  const header = c.req.header('Authorization')
+  if (!header?.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+  const token = header.slice(7)
+  try {
+    const payload = await verify(token, process.env.SUPABASE_JWT_SECRET!)
+    c.set('userId', payload.sub as string)
+  } catch {
+    return c.json({ error: 'Invalid token' }, 401)
+  }
+  await next()
+})
+```
+
+---
+
+### Step 7 — Create `packages/api/src/routes/transactions.ts`
+
+```ts
+import { Hono } from 'hono'
+import type { AuthEnv } from '../middleware/auth'
+
+export const transactionsRouter = new Hono<AuthEnv>()
+
+transactionsRouter.get('/', async (c) => {
+  const userId = c.get('userId')
+  // TODO Phase 2: implement
+  return c.json({ data: [], userId })
+})
+
+transactionsRouter.post('/', async (c) => c.json({ error: 'Not implemented' }, 501))
+transactionsRouter.patch('/:id', async (c) => c.json({ error: 'Not implemented' }, 501))
+transactionsRouter.delete('/:id', async (c) => c.json({ error: 'Not implemented' }, 501))
+```
+
+---
+
+### Step 8 — Create stub route files (same pattern as Step 7)
+
+Create these 4 files with identical stub pattern — just change the variable name and router export:
+
+- `packages/api/src/routes/accounts.ts` → export `accountsRouter`
+- `packages/api/src/routes/categories.ts` → export `categoriesRouter`
+- `packages/api/src/routes/budgets.ts` → export `budgetsRouter`
+- `packages/api/src/routes/subscriptions.ts` → export `subscriptionsRouter`
+
+Each file:
+```ts
+import { Hono } from 'hono'
+import type { AuthEnv } from '../middleware/auth'
+
+export const <name>Router = new Hono<AuthEnv>()
+
+<name>Router.get('/', async (c) => c.json({ data: [], userId: c.get('userId') }))
+<name>Router.post('/', async (c) => c.json({ error: 'Not implemented' }, 501))
+<name>Router.patch('/:id', async (c) => c.json({ error: 'Not implemented' }, 501))
+<name>Router.delete('/:id', async (c) => c.json({ error: 'Not implemented' }, 501))
+```
+
+---
+
+### Step 9 — Create `packages/api/src/index.ts`
+
+```ts
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+import { logger } from 'hono/logger'
+import { authMiddleware } from './middleware/auth'
+import { transactionsRouter } from './routes/transactions'
+import { accountsRouter } from './routes/accounts'
+import { categoriesRouter } from './routes/categories'
+import { budgetsRouter } from './routes/budgets'
+import { subscriptionsRouter } from './routes/subscriptions'
+
+const app = new Hono()
+
+app.use('*', logger())
+app.use('*', cors())
+
+app.get('/health', (c) => c.json({ ok: true }))
+
+// All /api/* routes require auth
+const api = app.basePath('/api')
+api.use('*', authMiddleware)
+api.route('/transactions', transactionsRouter)
+api.route('/accounts', accountsRouter)
+api.route('/categories', categoriesRouter)
+api.route('/budgets', budgetsRouter)
+api.route('/subscriptions', subscriptionsRouter)
+
+export default {
+  port: Number(process.env.PORT ?? 3000),
+  fetch: app.fetch,
+}
+```
+
+---
+
+### Step 10 — Scope `packages/web/tsconfig.json` include
+
+Current `include` is `["**/*.ts", "**/*.tsx"]` — from `packages/web/` this is fine, but be explicit. Verify the file looks like this (read it first):
+
+The `include` should be:
+```json
+"include": ["src/**/*.ts", "src/**/*.tsx"]
+```
+
+If it currently says `["**/*.ts", "**/*.tsx"]` — update it to `["src/**/*.ts", "src/**/*.tsx"]`.
+
+---
+
+### Step 11 — Run `pnpm install` from repo root
+
+```bash
+pnpm install
+```
+
+This installs all workspace packages. Expect it to link `@wallet/shared` and `@wallet/api` correctly.
+
+---
+
+### Step 12 — Verify build passes
+
+```bash
+# From repo root:
+pnpm build
+# Should run: pnpm --filter @wallet/web build
+# Which runs: tsc -b && vite build inside packages/web/
+
+# Also typecheck web explicitly:
+cd packages/web && pnpm exec tsc --noEmit
+```
+
+Fix any errors before proceeding.
+
+---
+
+### Step 13 — Update `AGENTS.md`
+
+The file is stale — references old paths (`lib/`, `components/`, `src/components`). Update it to reflect:
+- Commands now run from root: `pnpm dev`, `pnpm build`
+- Web source is at `packages/web/src/`
+- API source is at `packages/api/src/`
+- Shared types at `packages/shared/src/`
+
+---
+
+### Step 14 — Commit
+
+Stage and commit in two logical commits:
+
+**Commit 1** — monorepo restructure (the git mv + new package.json files):
+```bash
+git add packages/web/package.json packages/shared/ pnpm-workspace.yaml package.json AGENTS.md
+git commit -m "Monorepo Phase 1: move web into packages/web, scaffold api and shared"
+```
+
+**Commit 2** — api skeleton:
+```bash
+git add packages/api/
+git commit -m "Add packages/api skeleton: Hono + Bun, auth middleware, route stubs"
+```
+
+---
+
+## Checklist
+
+- [ ] `pnpm-workspace.yaml` updated with `packages: ['packages/*']`
+- [ ] `packages/shared/tsconfig.json` created
+- [ ] `packages/api/package.json` created
+- [ ] `packages/api/tsconfig.json` created
+- [ ] `packages/api/src/db/supabase.ts` created
+- [ ] `packages/api/src/middleware/auth.ts` created
+- [ ] `packages/api/src/routes/transactions.ts` created
+- [ ] `packages/api/src/routes/accounts.ts` created
+- [ ] `packages/api/src/routes/categories.ts` created
+- [ ] `packages/api/src/routes/budgets.ts` created
+- [ ] `packages/api/src/routes/subscriptions.ts` created
+- [ ] `packages/api/src/index.ts` created
+- [ ] `packages/web/tsconfig.json` `include` scoped to `src/**`
+- [ ] `pnpm install` runs clean from repo root
+- [ ] `pnpm build` passes (web builds to dist/)
+- [ ] `cd packages/web && pnpm exec tsc --noEmit` — zero errors
+- [ ] `AGENTS.md` updated with correct paths and commands
+- [ ] Phase 1 committed (2 commits as above)
+
+---
+
+## Phase 1 Exit Criteria
+
+App behaviour is **identical** to before. Only the folder structure changed:
+- `pnpm dev` still starts Vite dev server for web
+- `pnpm build` still produces `packages/web/dist/`
+- Zero TypeScript errors in packages/web
+- packages/api and packages/shared exist as valid TS packages (stub, not yet functional)
+
+---
+
+## What Comes Next (Phase 2 — Build API)
+
+After Phase 1 is committed and green:
+
+1. Move `packages/web/src/core/types.ts` → `packages/shared/src/types.ts`, re-export from web
+2. Move Zod schemas from `packages/web/src/features/*/db.ts` → `packages/shared/src/schemas/`
+3. Implement each route in `packages/api/src/routes/*.ts` using service role Supabase client
+4. Add `.env` to `packages/api/` with `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`
+5. Test each endpoint with curl/REST client against real Supabase data
+6. Deploy BE to VPS, configure Caddy `/api/*` proxy
+
+Full API spec in `BE_INTEGRATION_PLAN.md`.
+
+---
+
+## Key Files To Read Before Starting
+
+- `BE_INTEGRATION_PLAN.md` — full architecture decisions
+- `packages/web/src/core/types.ts` — domain types (Account, Transaction, Category, Budget, Subscription)
+- `packages/web/src/features/*/db.ts` — current Supabase query layer (will become BE route implementations)
+- `packages/web/src/core/database.types.ts` — generated Supabase DB types
+
+## Env Vars Needed for Phase 2
+
+These go in `packages/api/.env` (never commit):
+```
+SUPABASE_URL=           # same as current VITE_SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY=   # from Supabase dashboard → Settings → API
+SUPABASE_JWT_SECRET=         # from Supabase dashboard → Settings → API → JWT Secret
+PORT=3000
+```
