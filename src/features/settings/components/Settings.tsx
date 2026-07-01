@@ -1,4 +1,4 @@
-import { Check, LogOut, Moon, Sun } from 'lucide-react'
+import { Check, LogOut, Moon, Sun, Trash2 } from 'lucide-react'
 import { Plus } from 'lucide-react'
 import { useTheme } from '@/shared/components/ThemeProvider'
 import { useState } from 'react'
@@ -40,7 +40,7 @@ const EMPTY_CATEGORY: CategoryFormState = {
 }
 
 export function DesktopSettings() {
-  const { categories, addCategory, updateCategory } = useStore()
+  const { categories, addCategory, updateCategory, deleteCategory } = useStore()
   const { theme, setTheme } = useTheme()
   const { t, lang, setLang } = useLang()
   const { user, signOut } = useAuth()
@@ -61,16 +61,19 @@ export function DesktopSettings() {
   const handleSaveCategory = () => {
     const name = categoryForm.name.trim()
     if (!name) return
-
-    const payload = {
-      name,
-      icon: categoryForm.icon,
-      color: categoryForm.color,
-    }
-
+    const payload = { name, icon: categoryForm.icon, color: categoryForm.color }
     if (editingId) updateCategory(editingId, payload)
     else addCategory(payload)
   }
+
+  const handleDeleteCategory = () => {
+    if (!editingId) return
+    deleteCategory(editingId)
+    setEditingId(null)
+    setCategoryForm(EMPTY_CATEGORY)
+  }
+
+  const canDeleteCategory = !!editingId && !editingCategory?.isSystem
 
   const canSaveCategory = categoryForm.name.trim().length > 0
 
@@ -247,15 +250,28 @@ export function DesktopSettings() {
                 </div>
               </div>
 
-              <Button
-                type="button"
-                size="lg"
-                disabled={!canSaveCategory}
-                onClick={handleSaveCategory}
-                className="w-full"
-              >
-                {editingId ? t('settings.saveCat') : t('settings.createCat')}
-              </Button>
+              <div className="flex gap-2">
+                {canDeleteCategory && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    onClick={handleDeleteCategory}
+                    className="text-expense hover:bg-expense/10 hover:text-expense"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled={!canSaveCategory}
+                  onClick={handleSaveCategory}
+                  className="flex-1"
+                >
+                  {editingId ? t('settings.saveCat') : t('settings.createCat')}
+                </Button>
+              </div>
             </div>
           </div>
         </Card>

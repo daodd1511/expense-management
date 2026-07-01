@@ -16,6 +16,7 @@ export interface Category {
   name: string
   icon: string
   color: string // chart token: chart-1..5 or income/expense
+  isSystem: boolean
 }
 
 export interface Transaction {

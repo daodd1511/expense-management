@@ -46,8 +46,8 @@ export interface StoreValue {
   addAccount: (a: Omit<Account, 'id'>) => void
   updateAccount: (id: string, patch: Partial<Omit<Account, 'id'>>) => void
   deleteAccount: (id: string) => void
-  addCategory: (c: Omit<Category, 'id'>) => void
-  updateCategory: (id: string, patch: Partial<Omit<Category, 'id'>>) => void
+  addCategory: (c: Pick<Category, 'name' | 'icon' | 'color'>) => void
+  updateCategory: (id: string, patch: Partial<Pick<Category, 'name' | 'icon' | 'color'>>) => void
   deleteCategory: (id: string) => void
   getCategory: (id: string | null | undefined) => Category | undefined
   getAccount: (id: string | null | undefined) => Account | undefined
@@ -131,11 +131,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   )
 
   const addCategory = useCallback(
-    (c: Omit<Category, 'id'>) => addCat.mutate(c),
+    (c: Pick<Category, 'name' | 'icon' | 'color'>) => addCat.mutate(c),
     [addCat],
   )
   const updateCategory = useCallback(
-    (id: string, patch: Partial<Omit<Category, 'id'>>) => updateCat.mutate({ id, patch }),
+    (id: string, patch: Partial<Pick<Category, 'name' | 'icon' | 'color'>>) => updateCat.mutate({ id, patch }),
     [updateCat],
   )
   const deleteCategory = useCallback(

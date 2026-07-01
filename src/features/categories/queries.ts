@@ -21,7 +21,7 @@ export function useAddCategory() {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (category: Omit<Category, 'id'>) => insertCategory(category, user!.id),
+    mutationFn: (category: Pick<Category, 'name' | 'icon' | 'color'>) => insertCategory(category, user!.id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['categories', user?.id] }),
   })
 }
@@ -30,7 +30,7 @@ export function useUpdateCategory() {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: Partial<Omit<Category, 'id'>> }) =>
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<Pick<Category, 'name' | 'icon' | 'color'>> }) =>
       patchCategory(id, patch, user!.id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['categories', user?.id] }),
   })

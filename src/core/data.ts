@@ -1,15 +1,15 @@
 import type { Account, Budget, Category, Subscription, Transaction } from './types'
 
 export const categories: Category[] = [
-  { id: 'food', name: 'Ăn uống', icon: 'Utensils', color: 'chart-1' },
-  { id: 'transport', name: 'Đi lại', icon: 'Bus', color: 'chart-2' },
-  { id: 'home', name: 'Nhà cửa', icon: 'House', color: 'chart-3' },
-  { id: 'bills', name: 'Hóa đơn', icon: 'ReceiptText', color: 'chart-4' },
-  { id: 'fun', name: 'Giải trí', icon: 'Gamepad2', color: 'chart-5' },
-  { id: 'health', name: 'Sức khỏe', icon: 'HeartPulse', color: 'chart-2' },
-  { id: 'shopping', name: 'Mua sắm', icon: 'ShoppingBag', color: 'chart-3' },
-  { id: 'salary', name: 'Lương', icon: 'Briefcase', color: 'chart-1' },
-  { id: 'other-income', name: 'Thu nhập khác', icon: 'Gift', color: 'chart-1' },
+  { id: 'food', name: 'Ăn uống', icon: 'Utensils', color: 'chart-1', isSystem: true },
+  { id: 'transport', name: 'Đi lại', icon: 'Bus', color: 'chart-2', isSystem: true },
+  { id: 'home', name: 'Nhà cửa', icon: 'House', color: 'chart-3', isSystem: true },
+  { id: 'bills', name: 'Hóa đơn', icon: 'ReceiptText', color: 'chart-4', isSystem: true },
+  { id: 'fun', name: 'Giải trí', icon: 'Gamepad2', color: 'chart-5', isSystem: true },
+  { id: 'health', name: 'Sức khỏe', icon: 'HeartPulse', color: 'chart-2', isSystem: true },
+  { id: 'shopping', name: 'Mua sắm', icon: 'ShoppingBag', color: 'chart-3', isSystem: true },
+  { id: 'salary', name: 'Lương', icon: 'Briefcase', color: 'chart-1', isSystem: true },
+  { id: 'other-income', name: 'Thu nhập khác', icon: 'Gift', color: 'chart-1', isSystem: true },
 ]
 
 export const accounts: Account[] = [

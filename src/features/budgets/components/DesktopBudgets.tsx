@@ -1,21 +1,32 @@
 
+import { useState } from 'react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { BudgetForm } from '@/features/budgets/components/BudgetForm'
 import { budgetState } from '@/features/budgets/components/BudgetBars'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
+import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Progress } from '@/shared/components/ui/progress'
 import { formatVND, monthLabel } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { spentForCategory, useStore } from '@/core/store'
+import type { Budget } from '@/core/types'
 
 export function DesktopBudgets() {
-  const { budgets, transactions } = useStore()
+  const { budgets, transactions, getCategory, addBudget, updateBudget, deleteBudget } = useStore()
   const { t, lang } = useLang()
+  const [editing, setEditing] = useState<Budget | 'add' | null>(null)
+
   const totalLimit = budgets.reduce((s, b) => s + b.limit, 0)
   const totalSpent = budgets.reduce((s, b) => s + spentForCategory(transactions, b.categoryId), 0)
-  const pct = Math.round((totalSpent / totalLimit) * 100)
-  const over = budgets.filter(
-    (b) => spentForCategory(transactions, b.categoryId) >= b.limit,
-  ).length
+  const pct = totalLimit > 0 ? Math.round((totalSpent / totalLimit) * 100) : 0
+  const over = budgets.filter((b) => spentForCategory(transactions, b.categoryId) >= b.limit).length
+
+  const handleSubmit = (b: Budget) => {
+    if (editing === 'add') addBudget(b)
+    else updateBudget(b.categoryId, b.limit)
+    setEditing(null)
+  }
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -47,57 +58,83 @@ export function DesktopBudgets() {
             </CardContent>
           </Card>
         </div>
+
+        {editing !== null && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{editing === 'add' ? t('budget.add') : t('budget.edit')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BudgetForm
+                initial={editing === 'add' ? undefined : editing}
+                onSubmit={handleSubmit}
+                onCancel={() => setEditing(null)}
+              />
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Card className="lg:col-span-2">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t('budget.byCategory')}</CardTitle>
+          <Button size="sm" variant="outline" onClick={() => setEditing('add')}>
+            <Plus className="size-3.5" />
+            {t('budget.add')}
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
-            <BudgetGrid />
+            {budgets.map((b) => {
+              const cat = getCategory(b.categoryId)
+              const spent = spentForCategory(transactions, b.categoryId)
+              const p = Math.round((spent / b.limit) * 100)
+              const state = budgetState(p)
+              return (
+                <div key={b.categoryId} className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-sm font-medium">
+                      <span
+                        className="inline-flex size-7 items-center justify-center rounded-lg"
+                        style={{ backgroundColor: `color-mix(in oklab, ${colorVar(cat?.color ?? 'chart-1')} 18%, transparent)` }}
+                      >
+                        <CategoryIcon
+                          name={cat?.icon}
+                          className="size-3.5"
+                          style={{ color: colorVar(cat?.color ?? 'chart-1') }}
+                        />
+                      </span>
+                      {cat?.name}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className={`text-xs font-medium ${state.tone}`}>{p}%</span>
+                      <button
+                        type="button"
+                        onClick={() => setEditing(b)}
+                        className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteBudget(b.categoryId)}
+                        className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-expense"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  <Progress value={p} indicatorClassName={state.bar} />
+                  <div className="flex justify-between text-xs text-muted-foreground tabular">
+                    <span>{formatVND(spent)}</span>
+                    <span>{formatVND(b.limit)}</span>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </CardContent>
       </Card>
     </div>
-  )
-}
-
-function BudgetGrid() {
-  const { budgets, transactions, getCategory } = useStore()
-  return (
-    <>
-      {budgets.map((b) => {
-        const cat = getCategory(b.categoryId)
-        const spent = spentForCategory(transactions, b.categoryId)
-        const p = Math.round((spent / b.limit) * 100)
-        const state = budgetState(p)
-        return (
-          <div key={b.categoryId} className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2 text-sm font-medium">
-                <span
-                  className="inline-flex size-7 items-center justify-center rounded-lg"
-                  style={{ backgroundColor: `color-mix(in oklab, ${colorVar(cat?.color ?? 'chart-1')} 18%, transparent)` }}
-                >
-                  <CategoryIcon
-                    name={cat?.icon}
-                    className="size-3.5"
-                    style={{ color: colorVar(cat?.color ?? 'chart-1') }}
-                  />
-                </span>
-                {cat?.name}
-              </span>
-              <span className={`text-xs font-medium ${state.tone}`}>{p}%</span>
-            </div>
-            <Progress value={p} indicatorClassName={state.bar} />
-            <div className="flex justify-between text-xs text-muted-foreground tabular">
-              <span>{formatVND(spent)}</span>
-              <span>{formatVND(b.limit)}</span>
-            </div>
-          </div>
-        )
-      })}
-    </>
   )
 }

@@ -19,7 +19,7 @@ type CategoryRow = z.infer<typeof categoryRowSchema>
 // ---- Mapper ----
 
 function toCategory(row: CategoryRow): Category {
-  return { id: row.id, name: row.name, icon: row.icon, color: row.color }
+  return { id: row.id, name: row.name, icon: row.icon, color: row.color, isSystem: row.owner_id === null }
 }
 
 // ---- Repository ----
@@ -37,7 +37,7 @@ export async function fetchCategories(ownerId: string): Promise<Category[]> {
     .map(toCategory)
 }
 
-export async function insertCategory(category: Omit<Category, 'id'>, ownerId: string): Promise<void> {
+export async function insertCategory(category: Pick<Category, 'name' | 'icon' | 'color'>, ownerId: string): Promise<void> {
   const { error } = await supabase.from('categories').insert({
     owner_id: ownerId,
     name: category.name,
@@ -49,7 +49,7 @@ export async function insertCategory(category: Omit<Category, 'id'>, ownerId: st
 
 export async function patchCategory(
   id: string,
-  patch: Partial<Omit<Category, 'id'>>,
+  patch: Partial<Pick<Category, 'name' | 'icon' | 'color'>>,
   ownerId: string,
 ): Promise<void> {
   const { error } = await supabase

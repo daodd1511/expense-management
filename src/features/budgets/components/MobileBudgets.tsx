@@ -1,18 +1,32 @@
 
-import { BudgetBars } from '@/features/budgets/components/BudgetBars'
+import { useState } from 'react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { BudgetForm } from '@/features/budgets/components/BudgetForm'
+import { budgetState } from '@/features/budgets/components/BudgetBars'
+import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
+import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import { BottomSheet } from '@/shared/components/ui/overlay'
 import { Progress } from '@/shared/components/ui/progress'
 import { formatVND, monthLabel } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
-import { spentForCategory } from '@/core/store'
+import { spentForCategory, useStore } from '@/core/store'
+import type { Budget } from '@/core/types'
 
 export function MobileBudgets() {
-  const { budgets, transactions } = useStore()
+  const { budgets, transactions, getCategory, addBudget, updateBudget, deleteBudget } = useStore()
   const { t, lang } = useLang()
+  const [sheet, setSheet] = useState<'add' | Budget | null>(null)
+
   const totalLimit = budgets.reduce((s, b) => s + b.limit, 0)
   const totalSpent = budgets.reduce((s, b) => s + spentForCategory(transactions, b.categoryId), 0)
-  const pct = Math.round((totalSpent / totalLimit) * 100)
+  const pct = totalLimit > 0 ? Math.round((totalSpent / totalLimit) * 100) : 0
+
+  const handleSubmit = (b: Budget) => {
+    if (sheet === 'add') addBudget(b)
+    else updateBudget(b.categoryId, b.limit)
+    setSheet(null)
+  }
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -30,12 +44,75 @@ export function MobileBudgets() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="p-5">
-          <h2 className="mb-4 text-sm font-semibold tracking-tight">{t('budget.perCategory')}</h2>
-          <BudgetBars />
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">{t('budget.perCategory')}</h2>
+        <Button size="sm" variant="outline" onClick={() => setSheet('add')}>
+          <Plus className="size-3.5" />
+          {t('budget.add')}
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {budgets.map((b) => {
+          const cat = getCategory(b.categoryId)
+          const spent = spentForCategory(transactions, b.categoryId)
+          const p = Math.round((spent / b.limit) * 100)
+          const state = budgetState(p)
+          return (
+            <Card key={b.categoryId}>
+              <CardContent className="p-4">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    <span
+                      className="inline-flex size-7 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: `color-mix(in oklab, ${colorVar(cat?.color ?? 'chart-1')} 18%, transparent)` }}
+                    >
+                      <CategoryIcon name={cat?.icon} className="size-3.5" style={{ color: colorVar(cat?.color ?? 'chart-1') }} />
+                    </span>
+                    {cat?.name}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className={`text-xs font-medium ${state.tone}`}>{p}%</span>
+                    <button
+                      type="button"
+                      onClick={() => setSheet(b)}
+                      className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteBudget(b.categoryId)}
+                      className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-expense"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <Progress value={p} indicatorClassName={state.bar} />
+                <div className="mt-1.5 flex justify-between text-xs text-muted-foreground tabular">
+                  <span>{formatVND(spent)}</span>
+                  <span>{formatVND(b.limit)}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
+      <BottomSheet
+        open={sheet !== null}
+        onClose={() => setSheet(null)}
+        title={sheet === 'add' ? t('budget.add') : t('budget.edit')}
+      >
+        {sheet !== null && (
+          <BudgetForm
+            initial={sheet === 'add' ? undefined : sheet}
+            onSubmit={handleSubmit}
+            onCancel={() => setSheet(null)}
+          />
+        )}
+      </BottomSheet>
     </div>
   )
 }
