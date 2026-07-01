@@ -85,6 +85,20 @@ Design system lives in `app/globals.css`. Semantic color tokens: `--income`, `--
 - The `caveman:caveman-commit` skill can generate messages; override its default
   Conventional Commits format to match the convention above
 
+## Spec-Driven Execution Workflow
+
+Large/architectural changes flow: `/grill-me` → `specs/<feature>/PLAN.md` →
+`specs/<feature>/EXECUTION.md` → phased implementation via the `spec-phase` skill.
+
+Two rules that must hold even outside that skill's invocation:
+- Starting a phase authorizes its commits; it does **not** authorize push or PR-creation —
+  those need a separate explicit go-ahead every time (see Hard Stops below).
+- A phase is only complete when typecheck + tests actually pass, not when the checklist is
+  checked off — checking boxes doesn't substitute for running the gate.
+
+Everything else (branching, rebase timing, checklist mechanics, resuming mid-phase) is in
+`.claude/skills/spec-phase/SKILL.md` — invoke it rather than re-deriving the procedure.
+
 ## Coding Standards
 
 ### Reuse First
