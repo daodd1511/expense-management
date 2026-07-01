@@ -2,16 +2,16 @@
 import { format } from 'date-fns'
 import { enUS, vi } from 'date-fns/locale'
 import { CalendarIcon } from 'lucide-react'
-import { Calendar } from '@/components/ui/calendar'
+import { Calendar } from '@/shared/components/ui/calendar'
 import {
   Popover,
   PopoverPortal,
   PopoverPositioner,
   PopoverPopup,
   PopoverTrigger,
-} from '@/components/ui/popover'
-import { useLang } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
+} from '@/shared/components/ui/popover'
+import { useLang } from '@/core/i18n'
+import { cn } from '@/shared/lib/utils'
 
 interface DatePickerProps {
   value: string

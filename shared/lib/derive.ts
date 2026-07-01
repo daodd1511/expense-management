@@ -1,7 +1,7 @@
-import { colorVar } from '@/components/category-icon'
-import type { DonutDatum } from '@/components/charts'
-import { expenseByCategory } from './store'
-import type { Category, Transaction } from './types'
+import { colorVar } from '@/shared/components/CategoryIcon'
+import type { DonutDatum } from '@/shared/components/Charts'
+import { expenseByCategory } from '@/core/store'
+import type { Category, Transaction } from '@/core/types'
 
 export function buildDonutData(
   transactions: Transaction[],

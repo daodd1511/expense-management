@@ -1,9 +1,9 @@
 
-import { CategoryIcon, colorVar } from '@/components/category-icon'
-import { Progress } from '@/components/ui/progress'
-import { formatVND } from '@/lib/format'
-import { useLang } from '@/lib/i18n'
-import { spentForCategory, useStore } from '@/lib/store'
+import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
+import { Progress } from '@/shared/components/ui/progress'
+import { formatVND } from '@/shared/lib/format'
+import { useLang } from '@/core/i18n'
+import { spentForCategory, useStore } from '@/core/store'
 
 export function budgetState(pct: number) {
   if (pct >= 100) return { tone: 'text-expense', bar: 'bg-expense' }

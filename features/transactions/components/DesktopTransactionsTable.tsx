@@ -1,14 +1,14 @@
 
 import { ArrowLeftRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Paperclip, Pencil, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { CategoryIcon, colorVar } from '@/components/category-icon'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { amountColorClass, formatShortDate, formatSigned } from '@/lib/format'
-import { useLang } from '@/lib/i18n'
-import { useStore } from '@/lib/store'
-import type { Transaction, TxType } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
+import { Button } from '@/shared/components/ui/button'
+import { Input } from '@/shared/components/ui/input'
+import { amountColorClass, formatShortDate, formatSigned } from '@/shared/lib/format'
+import { useLang } from '@/core/i18n'
+import { useStore } from '@/core/store'
+import type { Transaction, TxType } from '@/core/types'
+import { cn } from '@/shared/lib/utils'
 
 type SortKey = 'date' | 'merchant' | 'category' | 'account' | 'amount'
 const PAGE_SIZE = 9

@@ -1,6 +1,6 @@
 import { CreditCard } from 'lucide-react'
-import { useAuth } from '@/lib/auth'
-import { useLang } from '@/lib/i18n'
+import { useAuth } from '@/features/auth/auth'
+import { useLang } from '@/core/i18n'
 
 export function SignIn() {
   const { signIn } = useAuth()

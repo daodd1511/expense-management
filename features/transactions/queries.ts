@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/features/auth/auth'
 import {
   deleteTransaction,
   deleteTransactions,
   fetchTransactions,
   insertTransaction,
   patchTransaction,
-} from '@/lib/db/transactions'
-import type { Transaction } from '@/lib/types'
+} from '@/features/transactions/db'
+import type { Transaction } from '@/core/types'
 
 export function useTransactions() {
   const { user } = useAuth()

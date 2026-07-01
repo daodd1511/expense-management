@@ -10,8 +10,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { formatVND } from '@/lib/format'
-import { cn } from '@/lib/utils'
+import { formatVND } from '@/shared/lib/format'
+import { cn } from '@/shared/lib/utils'
 
 export interface DonutDatum {
   name: string

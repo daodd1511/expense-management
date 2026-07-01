@@ -2,14 +2,14 @@
 import { Banknote, CreditCard, Landmark, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { AccountForm } from '@/components/shared/account-form'
-import { Card, CardContent } from '@/components/ui/card'
-import { BottomSheet } from '@/components/ui/overlay'
-import { formatVND } from '@/lib/format'
-import { useLang } from '@/lib/i18n'
-import { computeBalance, useStore } from '@/lib/store'
-import type { Account, AccountKind } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { AccountForm } from '@/features/accounts/components/AccountForm'
+import { Card, CardContent } from '@/shared/components/ui/card'
+import { BottomSheet } from '@/shared/components/ui/overlay'
+import { formatVND } from '@/shared/lib/format'
+import { useLang } from '@/core/i18n'
+import { computeBalance, useStore } from '@/core/store'
+import type { Account, AccountKind } from '@/core/types'
+import { cn } from '@/shared/lib/utils'
 
 const KIND_ICONS: Record<AccountKind, LucideIcon> = {
   cash: Banknote,

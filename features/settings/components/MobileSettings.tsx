@@ -1,5 +1,5 @@
 
-import { DesktopSettings } from '@/components/desktop/settings'
+import { DesktopSettings } from '@/features/settings/components/Settings'
 
 export function MobileSettings() {
   return (

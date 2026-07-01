@@ -2,14 +2,14 @@
 import { Banknote, CreditCard, Landmark, Pencil, Plus, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
-import { AccountForm } from '@/components/shared/account-form'
-import { Card } from '@/components/ui/card'
-import { Modal } from '@/components/ui/overlay'
-import { formatVND } from '@/lib/format'
-import { useLang } from '@/lib/i18n'
-import { computeBalance, useStore } from '@/lib/store'
-import type { Account, AccountKind } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { AccountForm } from '@/features/accounts/components/AccountForm'
+import { Card } from '@/shared/components/ui/card'
+import { Modal } from '@/shared/components/ui/overlay'
+import { formatVND } from '@/shared/lib/format'
+import { useLang } from '@/core/i18n'
+import { computeBalance, useStore } from '@/core/store'
+import type { Account, AccountKind } from '@/core/types'
+import { cn } from '@/shared/lib/utils'
 
 export function DesktopAccounts() {
   const { accounts, transactions, addAccount, updateAccount } = useStore()

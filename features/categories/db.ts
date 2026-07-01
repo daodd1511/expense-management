@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { supabase } from '@/lib/supabase'
-import type { Category } from '@/lib/types'
-import { secureParse } from './secure-parse'
+import { supabase } from '@/core/supabase'
+import type { Category } from '@/core/types'
+import { secureParse } from '@/core/db/secure-parse'
 
 // ---- DTO schema ----
 

@@ -1,11 +1,11 @@
 
-import { budgetState } from '@/components/shared/budget-bars'
-import { CategoryIcon, colorVar } from '@/components/category-icon'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { formatVND, monthLabel } from '@/lib/format'
-import { useLang } from '@/lib/i18n'
-import { spentForCategory, useStore } from '@/lib/store'
+import { budgetState } from '@/features/budgets/components/BudgetBars'
+import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Progress } from '@/shared/components/ui/progress'
+import { formatVND, monthLabel } from '@/shared/lib/format'
+import { useLang } from '@/core/i18n'
+import { spentForCategory, useStore } from '@/core/store'
 
 export function DesktopBudgets() {
   const { budgets, transactions } = useStore()

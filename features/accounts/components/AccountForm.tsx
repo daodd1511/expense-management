@@ -2,11 +2,11 @@
 import { Banknote, CreditCard, Landmark, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input, Label } from '@/components/ui/input'
-import { useLang } from '@/lib/i18n'
-import type { Account, AccountKind } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { Button } from '@/shared/components/ui/button'
+import { Input, Label } from '@/shared/components/ui/input'
+import { useLang } from '@/core/i18n'
+import type { Account, AccountKind } from '@/core/types'
+import { cn } from '@/shared/lib/utils'
 
 const KINDS: { value: AccountKind; icon: LucideIcon }[] = [
   { value: 'cash', icon: Banknote },

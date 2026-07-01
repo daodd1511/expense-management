@@ -1,10 +1,10 @@
 
 import { ArrowRight, Camera, Delete, X } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { CategoryIcon, colorVar } from '@/components/category-icon'
-import { Button } from '@/components/ui/button'
-import { DatePicker } from '@/components/ui/date-picker'
-import { Input, Label, Textarea } from '@/components/ui/input'
+import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
+import { Button } from '@/shared/components/ui/button'
+import { DatePicker } from '@/shared/components/ui/date-picker'
+import { Input, Label, Textarea } from '@/shared/components/ui/input'
 import {
   Select,
   SelectItem,
@@ -13,12 +13,12 @@ import {
   SelectPortal,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { formatVND } from '@/lib/format'
-import { useLang } from '@/lib/i18n'
-import { useStore } from '@/lib/store'
-import type { Transaction, TxType } from '@/lib/types'
-import { cn } from '@/lib/utils'
+} from '@/shared/components/ui/select'
+import { formatVND } from '@/shared/lib/format'
+import { useLang } from '@/core/i18n'
+import { useStore } from '@/core/store'
+import type { Transaction, TxType } from '@/core/types'
+import { cn } from '@/shared/lib/utils'
 
 const INCOME_CATS = ['salary', 'other-income']
 

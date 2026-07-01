@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/features/auth/auth'
 import {
   deleteCategory,
   fetchCategories,
   insertCategory,
   patchCategory,
-} from '@/lib/db/categories'
-import type { Category } from '@/lib/types'
+} from '@/features/categories/db'
+import type { Category } from '@/core/types'
 
 export function useCategories() {
   const { user } = useAuth()

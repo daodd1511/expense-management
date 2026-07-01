@@ -1,13 +1,13 @@
 
 import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { TransactionRow } from '@/components/shared/transaction-row'
-import { Input } from '@/components/ui/input'
-import { formatDayLabel, formatVND } from '@/lib/format'
-import { useLang } from '@/lib/i18n'
-import { useStore } from '@/lib/store'
-import type { Transaction, TxType } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { TransactionRow } from '@/features/transactions/components/TransactionRow'
+import { Input } from '@/shared/components/ui/input'
+import { formatDayLabel, formatVND } from '@/shared/lib/format'
+import { useLang } from '@/core/i18n'
+import { useStore } from '@/core/store'
+import type { Transaction, TxType } from '@/core/types'
+import { cn } from '@/shared/lib/utils'
 
 export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => void }) {
   const { transactions } = useStore()

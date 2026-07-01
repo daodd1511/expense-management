@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/lib/utils'
 
 export function Badge({ className, ...props }: React.ComponentProps<'span'>) {
   return (

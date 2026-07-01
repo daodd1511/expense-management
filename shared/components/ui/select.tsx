@@ -1,7 +1,7 @@
 
 import { Select as SelectPrimitive } from '@base-ui/react/select'
 import { Check, ChevronDown } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/lib/utils'
 
 const SelectRoot = SelectPrimitive.Root
 const SelectPortal = SelectPrimitive.Portal

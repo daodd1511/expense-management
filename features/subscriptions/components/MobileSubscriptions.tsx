@@ -1,14 +1,14 @@
 import { CalendarClock, Pause, Play, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { SubscriptionForm } from '@/components/shared/subscription-form'
-import { Card, CardContent } from '@/components/ui/card'
-import { BottomSheet } from '@/components/ui/overlay'
-import { formatVND } from '@/lib/format'
-import { useLang } from '@/lib/i18n'
-import { useStore } from '@/lib/store'
-import { daysUntilDue, isDue, isDueSoon, monthlyEquivalent, totalMonthlyCost } from '@/lib/subscriptions'
-import type { Subscription } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm'
+import { Card, CardContent } from '@/shared/components/ui/card'
+import { BottomSheet } from '@/shared/components/ui/overlay'
+import { formatVND } from '@/shared/lib/format'
+import { useLang } from '@/core/i18n'
+import { useStore } from '@/core/store'
+import { daysUntilDue, isDue, isDueSoon, monthlyEquivalent, totalMonthlyCost } from '@/features/subscriptions/helpers'
+import type { Subscription } from '@/core/types'
+import { cn } from '@/shared/lib/utils'
 
 function dueBadge(sub: Subscription, t: (k: string, v?: Record<string, string | number>) => string) {
   const days = daysUntilDue(sub)

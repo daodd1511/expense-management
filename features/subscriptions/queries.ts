@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/features/auth/auth'
 import {
   deleteSubscription,
   fetchSubscriptions,
   insertSubscription,
   logSubscription,
   patchSubscription,
-} from '@/lib/db/subscriptions'
-import type { Subscription } from '@/lib/types'
+} from '@/features/subscriptions/db'
+import type { Subscription } from '@/core/types'
 
 export function useSubscriptions() {
   const { user } = useAuth()

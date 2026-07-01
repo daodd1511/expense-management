@@ -1,16 +1,16 @@
 
 import { ArrowDownLeft, ArrowUpRight, ChevronRight, TrendingUp } from 'lucide-react'
-import { CategoryDonut, TrendChart } from '@/components/charts'
-import { AccountList } from '@/components/shared/account-list'
-import { BudgetBars } from '@/components/shared/budget-bars'
-import { TransactionRow } from '@/components/shared/transaction-row'
-import { Card, CardContent } from '@/components/ui/card'
-import { monthlyTrend } from '@/lib/data'
-import { buildDonutData } from '@/lib/derive'
-import { formatVND, monthLabel } from '@/lib/format'
-import { useLang } from '@/lib/i18n'
-import { monthSummary, useStore } from '@/lib/store'
-import type { Transaction } from '@/lib/types'
+import { CategoryDonut, TrendChart } from '@/shared/components/Charts'
+import { AccountList } from '@/features/accounts/components/AccountList'
+import { BudgetBars } from '@/features/budgets/components/BudgetBars'
+import { TransactionRow } from '@/features/transactions/components/TransactionRow'
+import { Card, CardContent } from '@/shared/components/ui/card'
+import { monthlyTrend } from '@/core/data'
+import { buildDonutData } from '@/shared/lib/derive'
+import { formatVND, monthLabel } from '@/shared/lib/format'
+import { useLang } from '@/core/i18n'
+import { monthSummary, useStore } from '@/core/store'
+import type { Transaction } from '@/core/types'
 
 export function MobileHome({
   onNavigate,

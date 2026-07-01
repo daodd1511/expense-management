@@ -1,11 +1,11 @@
 
 import { ArrowLeftRight, Paperclip, Pencil, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { CategoryIcon, colorVar } from '@/components/category-icon'
-import { amountColorClass, formatSigned, formatTime } from '@/lib/format'
-import { useStore } from '@/lib/store'
-import type { Transaction } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
+import { amountColorClass, formatSigned, formatTime } from '@/shared/lib/format'
+import { useStore } from '@/core/store'
+import type { Transaction } from '@/core/types'
+import { cn } from '@/shared/lib/utils'
 
 function Leading({ tx }: { tx: Transaction }) {
   const { getCategory } = useStore()

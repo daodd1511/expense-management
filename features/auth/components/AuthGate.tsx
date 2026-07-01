@@ -1,5 +1,5 @@
-import { useAuth } from '@/lib/auth'
-import { SignIn } from './sign-in'
+import { useAuth } from '@/features/auth/auth'
+import { SignIn } from '@/features/auth/components/SignIn'
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()

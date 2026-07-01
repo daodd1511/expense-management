@@ -1,5 +1,5 @@
-import { DATE_LOCALE } from './i18n'
-import type { Lang, TxType } from './types'
+import { DATE_LOCALE } from '@/core/i18n'
+import type { Lang, TxType } from '@/core/types'
 
 // VND: dot thousands, trailing ₫  -> 100.000 ₫
 export function formatVND(amount: number, withSymbol = true): string {

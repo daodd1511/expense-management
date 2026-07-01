@@ -1,6 +1,6 @@
 
 import { useEffect } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/lib/utils'
 
 function useDismiss(open: boolean, onClose: () => void) {
   useEffect(() => {

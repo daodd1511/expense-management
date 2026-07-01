@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react'
-import { DesktopApp } from '@/components/desktop/desktop-app'
-import { MobileApp } from '@/components/mobile/mobile-app'
+import { DesktopApp } from '@/layouts/desktop/DesktopApp'
+import { MobileApp } from '@/layouts/mobile/MobileApp'
 
 const DESKTOP_QUERY = '(min-width: 1024px)'
 

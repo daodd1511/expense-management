@@ -1,6 +1,6 @@
 import { Moon, Sun } from 'lucide-react'
-import { useTheme } from '@/components/theme-provider'
-import { cn } from '@/lib/utils'
+import { useTheme } from '@/shared/components/ThemeProvider'
+import { cn } from '@/shared/lib/utils'
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme()

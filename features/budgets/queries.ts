@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '@/lib/auth'
-import { deleteBudget, fetchBudgets, insertBudget, updateBudget } from '@/lib/db/budgets'
-import type { Budget } from '@/lib/types'
+import { useAuth } from '@/features/auth/auth'
+import { deleteBudget, fetchBudgets, insertBudget, updateBudget } from '@/features/budgets/db'
+import type { Budget } from '@/core/types'
 
 export function useBudgets() {
   const { user } = useAuth()

@@ -1,4 +1,4 @@
-import type { Subscription, Transaction } from './types'
+import type { Subscription, Transaction } from '@/core/types'
 
 export function monthlyEquivalent(s: Subscription): number {
   return s.cadence === 'yearly' ? Math.round(s.amount / 12) : s.amount

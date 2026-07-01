@@ -1,11 +1,11 @@
 
 import { Banknote, CreditCard, Landmark, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { formatVND } from '@/lib/format'
-import { useLang } from '@/lib/i18n'
-import { computeBalance, useStore } from '@/lib/store'
-import type { AccountKind } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { formatVND } from '@/shared/lib/format'
+import { useLang } from '@/core/i18n'
+import { computeBalance, useStore } from '@/core/store'
+import type { AccountKind } from '@/core/types'
+import { cn } from '@/shared/lib/utils'
 
 export function AccountList({ className }: { className?: string }) {
   const { accounts, transactions } = useStore()

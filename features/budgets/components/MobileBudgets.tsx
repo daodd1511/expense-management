@@ -1,11 +1,11 @@
 
-import { BudgetBars } from '@/components/shared/budget-bars'
-import { Card, CardContent } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { formatVND, monthLabel } from '@/lib/format'
-import { useLang } from '@/lib/i18n'
-import { useStore } from '@/lib/store'
-import { spentForCategory } from '@/lib/store'
+import { BudgetBars } from '@/features/budgets/components/BudgetBars'
+import { Card, CardContent } from '@/shared/components/ui/card'
+import { Progress } from '@/shared/components/ui/progress'
+import { formatVND, monthLabel } from '@/shared/lib/format'
+import { useLang } from '@/core/i18n'
+import { useStore } from '@/core/store'
+import { spentForCategory } from '@/core/store'
 
 export function MobileBudgets() {
   const { budgets, transactions } = useStore()

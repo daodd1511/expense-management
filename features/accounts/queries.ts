@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '@/lib/auth'
-import { archiveAccount, fetchAccounts, insertAccount, patchAccount } from '@/lib/db/accounts'
-import type { Account } from '@/lib/types'
+import { useAuth } from '@/features/auth/auth'
+import { archiveAccount, fetchAccounts, insertAccount, patchAccount } from '@/features/accounts/db'
+import type { Account } from '@/core/types'
 
 export function useAccounts() {
   const { user } = useAuth()

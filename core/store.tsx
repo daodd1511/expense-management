@@ -4,32 +4,32 @@ import {
   useAddAccount,
   useDeleteAccount,
   useUpdateAccount,
-} from './queries/accounts'
+} from '@/features/accounts/queries'
 import {
   useAddCategory,
   useCategories,
   useDeleteCategory,
   useUpdateCategory,
-} from './queries/categories'
+} from '@/features/categories/queries'
 import {
   useAddTransaction,
   useDeleteTransaction,
   useTransactions,
   useUpdateTransaction,
-} from './queries/transactions'
+} from '@/features/transactions/queries'
 import {
   useAddBudget,
   useBudgets,
   useDeleteBudget,
   useUpdateBudget,
-} from './queries/budgets'
+} from '@/features/budgets/queries'
 import {
   useAddSubscription,
   useDeleteSubscription,
   useLogSubscription,
   useSubscriptions,
   useUpdateSubscription,
-} from './queries/subscriptions'
+} from '@/features/subscriptions/queries'
 import type { Account, Budget, Category, Subscription, Transaction, TxType } from './types'
 
 export interface StoreValue {

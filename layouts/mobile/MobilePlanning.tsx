@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useLang } from '@/lib/i18n'
-import { useStore } from '@/lib/store'
-import { dueBanner } from '@/lib/subscriptions'
-import { cn } from '@/lib/utils'
-import { MobileBudgets } from './budgets'
-import { MobileSubscriptions } from './subscriptions'
+import { useLang } from '@/core/i18n'
+import { useStore } from '@/core/store'
+import { dueBanner } from '@/features/subscriptions/helpers'
+import { cn } from '@/shared/lib/utils'
+import { MobileBudgets } from '@/features/budgets/components/MobileBudgets'
+import { MobileSubscriptions } from '@/features/subscriptions/components/MobileSubscriptions'
 
 type PlanTab = 'budgets' | 'subscriptions'
 
