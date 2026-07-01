@@ -1,28 +1,6 @@
-import { z } from 'zod'
 import { supabase } from '@/core/supabase'
 import type { Subscription } from '@/core/types'
-import { secureParse } from '@/core/db/secure-parse'
-
-// ---- DTO schema ----
-
-const subscriptionRowSchema = z.object({
-  id: z.string(),
-  owner_id: z.string(),
-  name: z.string(),
-  amount: z.number(),
-  type: z.enum(['expense', 'income']),
-  category_id: z.string().nullable(),
-  account_id: z.string(),
-  cadence: z.enum(['monthly', 'yearly']),
-  day_of_month: z.number(),
-  month_of_year: z.number(),
-  next_due_date: z.string(),
-  note: z.string().nullable(),
-  active: z.boolean(),
-  created_at: z.string(),
-})
-
-type SubscriptionRow = z.infer<typeof subscriptionRowSchema>
+import { secureParse, subscriptionRowSchema, type SubscriptionRow } from '@wallet/shared'
 
 // ---- Mapper ----
 

@@ -1,21 +1,6 @@
-import { z } from 'zod'
 import { supabase } from '@/core/supabase'
 import type { Account } from '@/core/types'
-import { secureParse } from '@/core/db/secure-parse'
-
-// ---- DTO schema ----
-
-const accountRowSchema = z.object({
-  id: z.string(),
-  owner_id: z.string(),
-  name: z.string(),
-  kind: z.enum(['cash', 'bank', 'card', 'ewallet']),
-  opening_balance: z.number(),
-  archived: z.boolean(),
-  created_at: z.string(),
-})
-
-type AccountRow = z.infer<typeof accountRowSchema>
+import { accountRowSchema, secureParse, type AccountRow } from '@wallet/shared'
 
 // ---- Mapper ----
 

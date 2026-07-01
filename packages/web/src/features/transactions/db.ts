@@ -1,27 +1,6 @@
-import { z } from 'zod'
 import { supabase } from '@/core/supabase'
 import type { Transaction } from '@/core/types'
-import { secureParse } from '@/core/db/secure-parse'
-
-// ---- DTO schema ----
-
-const transactionRowSchema = z.object({
-  id: z.string(),
-  owner_id: z.string(),
-  type: z.enum(['expense', 'income', 'transfer']),
-  amount: z.number(),
-  category_id: z.string().nullable(),
-  account_id: z.string(),
-  to_account_id: z.string().nullable(),
-  merchant: z.string(),
-  note: z.string().nullable(),
-  tx_date: z.string(),
-  receipt_url: z.string().nullable(),
-  subscription_id: z.string().nullable(),
-  created_at: z.string(),
-})
-
-type TransactionRow = z.infer<typeof transactionRowSchema>
+import { secureParse, transactionRowSchema, type TransactionRow } from '@wallet/shared'
 
 // ---- Mapper ----
 

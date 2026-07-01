@@ -1,20 +1,6 @@
-import { z } from 'zod'
 import { supabase } from '@/core/supabase'
 import type { Category } from '@/core/types'
-import { secureParse } from '@/core/db/secure-parse'
-
-// ---- DTO schema ----
-
-const categoryRowSchema = z.object({
-  id: z.string(),
-  owner_id: z.string().nullable(),
-  name: z.string(),
-  icon: z.string(),
-  color: z.string(),
-  created_at: z.string(),
-})
-
-type CategoryRow = z.infer<typeof categoryRowSchema>
+import { categoryRowSchema, secureParse, type CategoryRow } from '@wallet/shared'
 
 // ---- Mapper ----
 

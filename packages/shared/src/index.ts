@@ -1,2 +1,24 @@
-// Shared types and utilities — populated in Phase 2 when API needs them
-export type { } from './types'
+export type {
+  Account,
+  AccountKind,
+  AccountRow,
+  Budget,
+  BudgetRow,
+  Category,
+  CategoryRow,
+  Lang,
+  Subscription,
+  SubscriptionCadence,
+  SubscriptionRow,
+  Transaction,
+  TransactionRow,
+  TxType,
+} from './types'
+export { secureParse } from './secure-parse'
+export {
+  accountRowSchema,
+  budgetRowSchema,
+  categoryRowSchema,
+  subscriptionRowSchema,
+  transactionRowSchema,
+} from './schemas'
