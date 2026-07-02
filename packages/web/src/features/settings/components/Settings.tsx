@@ -1,86 +1,62 @@
-import { Check, LogOut, Moon, Sun, Trash2 } from 'lucide-react'
-import { Plus } from 'lucide-react'
-import { useTheme } from '@/shared/components/ThemeProvider'
+import { Check, LogOut, Moon, Plus, Sun } from 'lucide-react'
 import { useState } from 'react'
+import { useTheme } from '@/shared/components/ThemeProvider'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
 import { Card } from '@/shared/components/ui/card'
-import { Input, Label } from '@/shared/components/ui/input'
+import { BottomSheet, Drawer } from '@/shared/components/ui/overlay'
 import { useAuth } from '@/features/auth/auth'
 import { groupCategories } from '@/features/categories/group'
+import { CategoryForm, type CategoryFormState } from '@/features/categories/components/CategoryForm'
 import { useLang } from '@/core/i18n'
 import { useStore } from '@/core/store'
 import type { Category, Lang } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
-const COLOR_OPTIONS = ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5', 'income', 'expense'] as const
-
-const ICON_OPTIONS = [
-  'Utensils',
-  'Bus',
-  'House',
-  'ReceiptText',
-  'Gamepad2',
-  'HeartPulse',
-  'ShoppingBag',
-  'Briefcase',
-  'Gift',
-  'Tag',
-] as const
-
-interface CategoryFormState {
-  name: string
-  icon: string
-  color: string
-  type: 'expense' | 'income'
-}
-
-const EMPTY_CATEGORY: CategoryFormState = {
-  name: '',
-  icon: 'Tag',
-  color: 'chart-1',
-  type: 'expense',
-}
-
-export function DesktopSettings() {
+export function DesktopSettings({ variant = 'desktop' }: { variant?: 'mobile' | 'desktop' }) {
   const { categories, addCategory, updateCategory, deleteCategory } = useStore()
   const { theme, setTheme } = useTheme()
   const { t, lang, setLang } = useLang()
   const { user, signOut } = useAuth()
-  const [editingId, setEditingId] = useState<string | null>(categories[0]?.id ?? null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
   const editingCategory = categories.find((c) => c.id === editingId)
-  const [categoryForm, setCategoryForm] = useState<CategoryFormState>(() => toFormState(editingCategory))
 
   const handleSelectCategory = (category: Category) => {
     setEditingId(category.id)
-    setCategoryForm(toFormState(category))
+    setFormOpen(true)
   }
 
   const handleNewCategory = () => {
     setEditingId(null)
-    setCategoryForm(EMPTY_CATEGORY)
+    setFormOpen(true)
   }
 
-  const handleSaveCategory = () => {
-    const name = categoryForm.name.trim()
-    if (!name) return
+  const closeForm = () => setFormOpen(false)
+
+  const handleSaveCategory = (form: CategoryFormState) => {
     if (editingId) {
-      updateCategory(editingId, { name, icon: categoryForm.icon, color: categoryForm.color })
+      updateCategory(editingId, { name: form.name, icon: form.icon, color: form.color })
     } else {
-      addCategory({ name, icon: categoryForm.icon, color: categoryForm.color, type: categoryForm.type })
+      addCategory({ name: form.name, icon: form.icon, color: form.color, type: form.type })
     }
+    closeForm()
   }
 
   const handleDeleteCategory = () => {
     if (!editingId) return
     deleteCategory(editingId)
-    setEditingId(null)
-    setCategoryForm(EMPTY_CATEGORY)
+    closeForm()
   }
 
-  const canDeleteCategory = !!editingId && !editingCategory?.isSystem
-
-  const canSaveCategory = categoryForm.name.trim().length > 0
+  const categoryForm = (
+    <CategoryForm
+      initial={editingCategory}
+      onSave={handleSaveCategory}
+      onDelete={handleDeleteCategory}
+      onCancel={closeForm}
+    />
+  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -161,158 +137,16 @@ export function DesktopSettings() {
             </Button>
           </div>
 
-          <ul className="flex max-h-80 flex-col gap-2 overflow-y-auto pr-1">
+          <div className="flex max-h-[32rem] flex-col gap-3 overflow-y-auto pr-1">
             {groupCategories(categories).map(({ parent, childCategories }) => (
-              <li key={parent.id} className="flex flex-col gap-1">
-                <button
-                  type="button"
-                  onClick={() => handleSelectCategory(parent)}
-                  className={cn(
-                    'flex w-full min-w-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors',
-                    editingId === parent.id ? 'border-primary bg-accent' : 'border-border hover:bg-muted',
-                  )}
-                >
-                  <span
-                    className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-white"
-                    style={{ backgroundColor: colorVar(parent.color) }}
-                  >
-                    <CategoryIcon name={parent.icon} className="size-3.5" />
-                  </span>
-                  <span className="truncate text-sm font-medium">{parent.name}</span>
-                </button>
-                {childCategories.length > 0 && (
-                  <ul className="ml-6 flex flex-col gap-1 border-l border-border pl-3">
-                    {childCategories.map((child) => (
-                      <li key={child.id}>
-                        <button
-                          type="button"
-                          onClick={() => handleSelectCategory(child)}
-                          className={cn(
-                            'flex w-full min-w-0 items-center rounded-lg border px-3 py-1.5 text-left text-sm transition-colors',
-                            editingId === child.id ? 'border-primary bg-accent' : 'border-transparent hover:bg-muted',
-                          )}
-                        >
-                          <span className="truncate text-muted-foreground">{child.name}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
+              <CategoryGroupBox
+                key={parent.id}
+                parent={parent}
+                childCategories={childCategories}
+                editingId={editingId}
+                onSelect={handleSelectCategory}
+              />
             ))}
-          </ul>
-
-          <div className="rounded-xl border border-border p-4">
-            <div className="mb-4 flex items-center gap-3">
-              <span
-                className="inline-flex size-9 items-center justify-center rounded-lg text-white"
-                style={{ backgroundColor: colorVar(categoryForm.color) }}
-              >
-                <CategoryIcon name={categoryForm.icon} className="size-4" />
-              </span>
-              <div>
-                <h3 className="text-sm font-semibold">
-                  {editingId ? t('settings.editCat') : t('settings.newCat')}
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  {t('settings.catDesc')}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-4">
-              <div className="flex flex-col gap-2">
-                <Label>{t('settings.catType')}</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(['expense', 'income'] as const).map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      disabled={!!editingId}
-                      onClick={() => setCategoryForm((prev) => ({ ...prev, type }))}
-                      className={cn(
-                        'rounded-lg border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60',
-                        categoryForm.type === type ? 'border-primary bg-accent' : 'border-border hover:bg-muted',
-                      )}
-                    >
-                      {type === 'expense' ? t('settings.catTypeExpense') : t('settings.catTypeIncome')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="category-name">{t('settings.catName')}</Label>
-                <Input
-                  id="category-name"
-                  value={categoryForm.name}
-                  onChange={(e) => setCategoryForm((prev) => ({ ...prev, name: e.target.value }))}
-                  placeholder={t('settings.catPlaceholder')}
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label>{t('settings.icon')}</Label>
-                <div className="flex flex-wrap gap-2">
-                  {ICON_OPTIONS.map((icon) => (
-                    <button
-                      key={icon}
-                      type="button"
-                      onClick={() => setCategoryForm((prev) => ({ ...prev, icon }))}
-                      aria-label={t('settings.iconLabel', { icon })}
-                      className={cn(
-                        'inline-flex size-9 items-center justify-center rounded-lg border transition-colors',
-                        categoryForm.icon === icon ? 'border-primary bg-accent text-primary' : 'border-border hover:bg-muted',
-                      )}
-                    >
-                      <CategoryIcon name={icon} className="size-4" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label>{t('settings.color')}</Label>
-                <div className="flex flex-wrap gap-2">
-                  {COLOR_OPTIONS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setCategoryForm((prev) => ({ ...prev, color }))}
-                      aria-label={t('settings.colorLabel', { color })}
-                      className={cn(
-                        'size-8 rounded-full border-2 transition-transform active:scale-95',
-                        categoryForm.color === color ? 'border-foreground' : 'border-transparent',
-                      )}
-                      style={{ backgroundColor: colorVar(color) }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                {canDeleteCategory && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="lg"
-                    onClick={handleDeleteCategory}
-                    className="text-expense hover:bg-expense/10 hover:text-expense"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  size="lg"
-                  disabled={!canSaveCategory}
-                  onClick={handleSaveCategory}
-                  className="flex-1"
-                >
-                  {editingId ? t('settings.saveCat') : t('settings.createCat')}
-                </Button>
-              </div>
-            </div>
           </div>
         </Card>
 
@@ -328,16 +162,73 @@ export function DesktopSettings() {
           </Button>
         </Card>
       </div>
+
+      {variant === 'mobile' ? (
+        <BottomSheet open={formOpen} onClose={closeForm} title={editingId ? t('settings.editCat') : t('settings.newCat')}>
+          {categoryForm}
+        </BottomSheet>
+      ) : (
+        <Drawer open={formOpen} onClose={closeForm}>
+          {categoryForm}
+        </Drawer>
+      )}
     </div>
   )
 }
 
-function toFormState(category: Category | undefined): CategoryFormState {
-  if (!category) return EMPTY_CATEGORY
-  return {
-    name: category.name,
-    icon: category.icon,
-    color: category.color,
-    type: category.type,
-  }
+function CategoryGroupBox({
+  parent,
+  childCategories,
+  editingId,
+  onSelect,
+}: {
+  parent: Category
+  childCategories: Category[]
+  editingId: string | null
+  onSelect: (category: Category) => void
+}) {
+  return (
+    <div className="rounded-xl border border-border p-3">
+      <button
+        type="button"
+        onClick={() => onSelect(parent)}
+        className={cn(
+          'flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors',
+          editingId === parent.id ? 'bg-accent' : 'hover:bg-muted',
+        )}
+      >
+        <span
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-white"
+          style={{ backgroundColor: colorVar(parent.color) }}
+        >
+          <CategoryIcon name={parent.icon} className="size-4" />
+        </span>
+        <span className="truncate text-sm font-semibold">{parent.name}</span>
+      </button>
+
+      {childCategories.length > 0 && (
+        <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6">
+          {childCategories.map((child) => (
+            <button
+              key={child.id}
+              type="button"
+              onClick={() => onSelect(child)}
+              className={cn(
+                'flex flex-col items-center gap-1 rounded-lg p-2 text-center transition-colors',
+                editingId === child.id ? 'bg-accent' : 'hover:bg-muted',
+              )}
+            >
+              <span
+                className="inline-flex size-9 items-center justify-center rounded-lg text-white"
+                style={{ backgroundColor: colorVar(child.color) }}
+              >
+                <CategoryIcon name={child.icon} className="size-4" />
+              </span>
+              <span className="w-full truncate text-xs text-muted-foreground">{child.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
