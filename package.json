@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.4",
+    "supabase": "^2.108.0",
     "vitest": "^3.2.4"
   }
 }
