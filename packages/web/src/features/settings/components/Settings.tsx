@@ -31,12 +31,14 @@ interface CategoryFormState {
   name: string
   icon: string
   color: string
+  type: 'expense' | 'income'
 }
 
 const EMPTY_CATEGORY: CategoryFormState = {
   name: '',
   icon: 'Tag',
   color: 'chart-1',
+  type: 'expense',
 }
 
 export function DesktopSettings() {
@@ -61,9 +63,11 @@ export function DesktopSettings() {
   const handleSaveCategory = () => {
     const name = categoryForm.name.trim()
     if (!name) return
-    const payload = { name, icon: categoryForm.icon, color: categoryForm.color }
-    if (editingId) updateCategory(editingId, payload)
-    else addCategory(payload)
+    if (editingId) {
+      updateCategory(editingId, { name, icon: categoryForm.icon, color: categoryForm.color })
+    } else {
+      addCategory({ name, icon: categoryForm.icon, color: categoryForm.color, type: categoryForm.type })
+    }
   }
 
   const handleDeleteCategory = () => {
@@ -202,6 +206,26 @@ export function DesktopSettings() {
 
             <div className="grid gap-4">
               <div className="flex flex-col gap-2">
+                <Label>{t('settings.catType')}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['expense', 'income'] as const).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      disabled={!!editingId}
+                      onClick={() => setCategoryForm((prev) => ({ ...prev, type }))}
+                      className={cn(
+                        'rounded-lg border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+                        categoryForm.type === type ? 'border-primary bg-accent' : 'border-border hover:bg-muted',
+                      )}
+                    >
+                      {type === 'expense' ? t('settings.catTypeExpense') : t('settings.catTypeIncome')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="category-name">{t('settings.catName')}</Label>
                 <Input
                   id="category-name"
@@ -298,5 +322,6 @@ function toFormState(category: Category | undefined): CategoryFormState {
     name: category.name,
     icon: category.icon,
     color: category.color,
+    type: category.type,
   }
 }
