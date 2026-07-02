@@ -29,6 +29,7 @@ function createSupabaseStub(results: StubResult[]) {
     from: vi.fn(() => builder),
     select: vi.fn(() => builder),
     eq: vi.fn(() => builder),
+    in: vi.fn(() => builder),
     or: vi.fn(() => builder),
     order: vi.fn(() => builder),
     update: vi.fn(() => builder),
@@ -173,6 +174,29 @@ describe('categoriesRouter', () => {
     expect(response.status).toBe(400)
     await expect(response.json()).resolves.toMatchObject({
       error: 'parentId target type does not match category type',
+    })
+  })
+
+  it('rejects re-parenting a budgeted category under an already-budgeted parent', async () => {
+    getSupabase.mockReturnValue(
+      createSupabaseStub([
+        { data: { id: 'cat-1', type: 'expense', parent_id: null, owner_id: 'user-1' }, error: null },
+        { data: { id: 'parent-2', type: 'expense', parent_id: null, owner_id: null }, error: null },
+        { data: null, error: null, count: 0 },
+        { data: [{ category_id: 'cat-1' }, { category_id: 'parent-2' }], error: null },
+      ]),
+    )
+
+    const app = buildApp()
+    const response = await app.request('/categories/cat-1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ parentId: 'parent-2' }),
+    })
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toMatchObject({
+      error: 'both category and parentId already have budgets; remove one first',
     })
   })
 
