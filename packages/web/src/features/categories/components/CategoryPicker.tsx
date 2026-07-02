@@ -2,29 +2,10 @@
 import { ChevronDown } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
+import { groupCategories } from '@/features/categories/group'
 import { useLang } from '@/core/i18n'
 import type { Category } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
-
-interface CategoryGroup {
-  parent: Category
-  childCategories: Category[]
-}
-
-function groupCategories(categories: Category[]): CategoryGroup[] {
-  const parents = categories.filter((c) => c.parentId === null)
-  const childrenByParentId = new Map<string, Category[]>()
-  for (const c of categories) {
-    if (c.parentId === null) continue
-    const siblings = childrenByParentId.get(c.parentId) ?? []
-    siblings.push(c)
-    childrenByParentId.set(c.parentId, siblings)
-  }
-  return parents.map((parent) => ({
-    parent,
-    childCategories: childrenByParentId.get(parent.id) ?? [],
-  }))
-}
 
 function findParentId(categories: Category[], selectedId: string | null): string | null {
   const selected = categories.find((c) => c.id === selectedId)

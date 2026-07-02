@@ -7,6 +7,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Card } from '@/shared/components/ui/card'
 import { Input, Label } from '@/shared/components/ui/input'
 import { useAuth } from '@/features/auth/auth'
+import { groupCategories } from '@/features/categories/group'
 import { useLang } from '@/core/i18n'
 import { useStore } from '@/core/store'
 import type { Category, Lang } from '@/core/types'
@@ -160,28 +161,43 @@ export function DesktopSettings() {
             </Button>
           </div>
 
-          <ul className="grid grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
-            {categories.map((c) => (
-              <li
-                key={c.id}
-                className="min-w-0"
-              >
+          <ul className="flex max-h-80 flex-col gap-2 overflow-y-auto pr-1">
+            {groupCategories(categories).map(({ parent, childCategories }) => (
+              <li key={parent.id} className="flex flex-col gap-1">
                 <button
                   type="button"
-                  onClick={() => handleSelectCategory(c)}
+                  onClick={() => handleSelectCategory(parent)}
                   className={cn(
                     'flex w-full min-w-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors',
-                    editingId === c.id ? 'border-primary bg-accent' : 'border-border hover:bg-muted',
+                    editingId === parent.id ? 'border-primary bg-accent' : 'border-border hover:bg-muted',
                   )}
                 >
                   <span
                     className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-white"
-                    style={{ backgroundColor: colorVar(c.color) }}
+                    style={{ backgroundColor: colorVar(parent.color) }}
                   >
-                    <CategoryIcon name={c.icon} className="size-3.5" />
+                    <CategoryIcon name={parent.icon} className="size-3.5" />
                   </span>
-                  <span className="truncate text-sm font-medium">{c.name}</span>
+                  <span className="truncate text-sm font-medium">{parent.name}</span>
                 </button>
+                {childCategories.length > 0 && (
+                  <ul className="ml-6 flex flex-col gap-1 border-l border-border pl-3">
+                    {childCategories.map((child) => (
+                      <li key={child.id}>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectCategory(child)}
+                          className={cn(
+                            'flex w-full min-w-0 items-center rounded-lg border px-3 py-1.5 text-left text-sm transition-colors',
+                            editingId === child.id ? 'border-primary bg-accent' : 'border-transparent hover:bg-muted',
+                          )}
+                        >
+                          <span className="truncate text-muted-foreground">{child.name}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>
