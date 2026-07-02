@@ -1,7 +1,7 @@
 
 import { ArrowRight, X } from 'lucide-react'
 import { useState } from 'react'
-import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
+import { CategoryPicker } from '@/features/categories/components/CategoryPicker'
 import { Button } from '@/shared/components/ui/button'
 import { DatePicker } from '@/shared/components/ui/date-picker'
 import { Input, Label, Textarea } from '@/shared/components/ui/input'
@@ -161,28 +161,7 @@ export function TransactionForm({
         {type !== 'transfer' && (
           <div className="flex flex-col gap-2">
             <Label>{t('form.category')}</Label>
-            <div className="flex flex-wrap gap-2">
-              {visibleCats.map((c) => {
-                const active = categoryId === c.id
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => setCategoryId(c.id)}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
-                      active
-                        ? 'border-transparent text-primary-foreground'
-                        : 'border-border bg-background text-foreground hover:bg-muted',
-                    )}
-                    style={active ? { backgroundColor: colorVar(c.color) } : undefined}
-                  >
-                    <CategoryIcon name={c.icon} className="size-3.5" />
-                    {c.name}
-                  </button>
-                )
-              })}
-            </div>
+            <CategoryPicker categories={visibleCats} selectedId={categoryId} onSelect={setCategoryId} />
           </div>
         )}
 
