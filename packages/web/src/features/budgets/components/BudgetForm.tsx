@@ -15,7 +15,7 @@ import {
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { useStore } from '@/core/store'
-import type { Budget } from '@/core/types'
+import type { Budget, Category } from '@/core/types'
 
 interface BudgetFormProps {
   initial?: Budget
@@ -23,12 +23,30 @@ interface BudgetFormProps {
   onCancel: () => void
 }
 
+/**
+ * A category may only be budgeted at the leaf level or at its own
+ * parent-direct level, never both in the same branch: if its parent already
+ * has a budget, or any of its children already has one, it's excluded.
+ */
+export function conflictsWithExistingBudget(
+  candidate: Category,
+  categories: Category[],
+  budgets: Budget[],
+  excludeCategoryId?: string,
+) {
+  const activeBudgets = budgets.filter((b) => b.categoryId !== excludeCategoryId)
+  if (activeBudgets.some((b) => b.categoryId === candidate.id)) return true
+  if (candidate.parentId && activeBudgets.some((b) => b.categoryId === candidate.parentId)) return true
+  const childIds = categories.filter((c) => c.parentId === candidate.id).map((c) => c.id)
+  return childIds.length > 0 && activeBudgets.some((b) => childIds.includes(b.categoryId))
+}
+
 export function BudgetForm({ initial, onSubmit, onCancel }: BudgetFormProps) {
   const { categories, budgets } = useStore()
   const { t } = useLang()
 
   const availableCategories = categories.filter(
-    (c) => !budgets.some((b) => b.categoryId === c.id && b.categoryId !== initial?.categoryId),
+    (c) => !conflictsWithExistingBudget(c, categories, budgets, initial?.categoryId),
   )
 
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? availableCategories[0]?.id ?? '')

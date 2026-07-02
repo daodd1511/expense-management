@@ -60,19 +60,32 @@ push/PR.
 
 Branch: `category-redesign/phase-2-fe-data` (off `phase-1`)
 
-- [ ] Rebase onto `main` first if Phase 1 has since merged (per immediate-rebase rule)
-- [ ] `packages/web/src/features/categories/db.ts` + `queries.ts`: pass through `type`/
-      `parentId` in create/patch payloads
-- [ ] `TransactionForm.tsx`: remove `INCOME_CATS` hack (line ~23) and its two usages;
-      filter categories by `category.type === type`
-- [ ] Budget screen: enforce leaf-or-parent-direct only — block selecting a category whose
+- [x] Rebase onto `main` first if Phase 1 has since merged (per immediate-rebase rule) —
+      not applicable, Phase 1 hasn't merged yet
+- [x] `packages/web/src/features/categories/db.ts` + `queries.ts`: pass through `type`/
+      `parentId` in create/patch payloads. Also had to update `store.tsx`'s
+      `addCategory`/`updateCategory` signatures, `Settings.tsx` (added a type toggle, locked
+      once set since type is immutable server-side), and `data.ts`'s dead mock seed — all
+      required to satisfy the wider `Category` type, not in the original checklist wording
+      but necessary for the typecheck gate to pass
+- [x] `TransactionForm.tsx`: remove `INCOME_CATS` hack (line ~23) and its two usages;
+      filter categories by `category.type === type`. Also removed a hardcoded `'salary'`
+      default-select on the income tab (relied on a mock id that no longer exists now
+      categories have real uuids) — switching type now just clears the selection if it
+      doesn't match the new type
+- [x] Budget screen: enforce leaf-or-parent-direct only — block selecting a category whose
       parent (or child) already has a budget in the same branch
-- [ ] Update/add FE tests covering the new type-based filter replacing `INCOME_CATS`
+- [x] Update/add FE tests covering the new type-based filter replacing `INCOME_CATS`
 
 **Verification gate (hard):**
-- [ ] `tsc --noEmit -p packages/web/tsconfig.json` passes
-- [ ] FE test suite passes
-- [ ] Manual check: switching transaction type tabs shows only matching-type categories
+- [x] `tsc --noEmit -p packages/web/tsconfig.json` passes
+- [x] FE test suite passes (11/11: `api.test.ts`, `BudgetForm.test.ts` new,
+      `TransactionForm.test.tsx` with 2 new cases)
+- [ ] Manual check: switching transaction type tabs shows only matching-type categories —
+      **not run**, no browser automation tool available this session (checked for a
+      chrome/playwright MCP, none registered). Dev server started and served 200 OK on
+      `/`, confirming it builds and boots, but the actual tab-switch/filter behavior was
+      only exercised via the two new automated tests above, not visually in a browser
 
 **On completion:** update this checklist, update root `HANDOFF.md`, stop and ask before
 push/PR.
@@ -83,21 +96,40 @@ push/PR.
 
 Branch: `category-redesign/phase-3-fe-ui` (off `phase-2`)
 
-- [ ] Rebase onto updated base if Phase 2 has since merged
-- [ ] Add `--chart-6` through `--chart-12` to `packages/web/src/shared/styles/globals.css`
+- [x] Rebase onto updated base if Phase 2 has since merged — not applicable, Phase 2
+      hasn't merged yet
+- [x] Add `--chart-6` through `--chart-12` to `packages/web/src/shared/styles/globals.css`
       (`:root` and `.dark` blocks)
-- [ ] Category picker (mobile bottom sheet): grouped-collapsible — parent header (itself
-      selectable) + indented children
-- [ ] Category picker (desktop drawer): same grouped-collapsible pattern
-- [ ] Assign colors: 12 distinct `chart-*` tokens across expense parents; income parents
-      reuse `chart-1`...`chart-4`; children inherit parent color, override optional
-- [ ] Assign icons per `PLAN.md` icon table (all pre-verified against installed
-      `lucide-react`)
+- [x] Category picker (mobile bottom sheet): grouped-collapsible — parent header (itself
+      selectable) + indented children — new `CategoryPicker` component, `TransactionForm`
+      is shared between mobile `BottomSheet` and desktop `Drawer` so one implementation
+      covers both surfaces
+- [x] Category picker (desktop drawer): same grouped-collapsible pattern — same component,
+      see above
+- [x] Assign colors: 12 distinct `chart-*` tokens across expense parents; income parents
+      reuse `chart-1`...`chart-4`; children inherit parent color, override optional —
+      already done in Phase 1's reseed migration, verified against the taxonomy table,
+      no code change needed here
+- [x] Assign icons per `PLAN.md` icon table (all pre-verified against installed
+      `lucide-react`) — same, already done in Phase 1's reseed migration
 
 **Verification gate (hard):**
-- [ ] `tsc --noEmit -p packages/web/tsconfig.json` passes
+- [x] `tsc --noEmit -p packages/web/tsconfig.json` passes
 - [ ] Manual check in browser: mobile + desktop picker both render grouped hierarchy
       correctly, donut chart shows 12 visually distinct expense colors, no color collisions
+      — **not run**, no browser automation tool available this session (same gap as
+      Phase 2). Covered instead by 6 new `CategoryPicker.test.tsx` cases (grouping,
+      collapsed-by-default, no-toggle-on-leaf, auto-expand-on-selection, parent/child
+      select) plus dev server smoke check (`pnpm --filter @wallet/web dev`, `/` → 200).
+      `lib/derive.ts`'s `buildDonutData` reads `colorVar(category.color)` per-category —
+      no hardcoded chart-1..5 list to update, so the 12-color claim rests on the reseed
+      data + new tokens being correct, not on any donut-specific code
 
 **On completion:** update this checklist, update root `HANDOFF.md`, stop and ask before
 push/PR. This is the final phase — after merge, delete all three phase branches.
+
+**Addendum (post-completion):** user reported Settings' category management list showed no
+parent/child distinction at all — a real gap, out of this checklist's original scope (which
+only covered the transaction form's picker). Fixed: extracted `groupCategories()` out of
+`CategoryPicker` into `packages/web/src/features/categories/group.ts`, Settings' flat grid
+now renders the same grouped/indented hierarchy. `tsc` clean, FE suite green (17/17).

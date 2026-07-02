@@ -152,6 +152,19 @@ categoriesRouter.patch('/:id', async (c) => {
     if ((childCount.count ?? 0) > 0) {
       return jsonError(c, 400, 'category has children and cannot be re-parented')
     }
+
+    // Budgets are leaf-or-parent-direct only within a branch — re-parenting a
+    // budgeted leaf under a budgeted parent would silently create both at once.
+    const budgetConflict = await supabase
+      .from('budgets')
+      .select('category_id')
+      .in('category_id', [categoryId, parsed.data.parentId])
+      .eq('owner_id', userId)
+    if (budgetConflict.error) return jsonError(c, 500, budgetConflict.error.message)
+    const budgetedIds = new Set((budgetConflict.data ?? []).map((b) => b.category_id))
+    if (budgetedIds.has(categoryId) && budgetedIds.has(parsed.data.parentId)) {
+      return jsonError(c, 400, 'both category and parentId already have budgets; remove one first')
+    }
   }
 
   const { data, error } = await supabase

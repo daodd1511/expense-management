@@ -83,12 +83,8 @@ Mobile: "Kế hoạch" (Planning) tab replaces the Budgets tab; inner tab bar sw
 Design system lives in `packages/web/src/app/globals.css`. Semantic color tokens: `--income`, `--expense`, `--transfer` (and `-foreground`, `-muted` variants). Motion tokens: `--duration-fast/base/slow`, `--ease-out`, `--ease-in-out`. Z-index scale: `--z-dropdown` through `--z-tooltip`. OKLCH color space throughout.
 
 ### Commit Messages
-- Short and concise. Imperative mood, no trailing period.
-- Split unrelated changes into separate, meaningful commits — do not lump everything
-  into one.
-- Never add AI attribution or `Co-authored-by` for the agent.
-- The `caveman:caveman-commit` skill can generate messages; override its default
-  Conventional Commits format to match the convention above
+- The `terse-commit` skill generates messages matching this convention (plain
+  imperative subject, no Conventional Commits prefix).
 
 ## Coding Standards
 

@@ -20,7 +20,9 @@ export async function fetchCategories(): Promise<Category[]> {
   return response.data
 }
 
-export async function insertCategory(category: Pick<Category, 'name' | 'icon' | 'color'>): Promise<void> {
+export async function insertCategory(
+  category: Pick<Category, 'name' | 'icon' | 'color' | 'type'> & Partial<Pick<Category, 'parentId'>>,
+): Promise<void> {
   await apiJson('/categories', categoryResponseSchema, {
     method: 'POST',
     body: JSON.stringify(category),
@@ -29,7 +31,7 @@ export async function insertCategory(category: Pick<Category, 'name' | 'icon' | 
 
 export async function patchCategory(
   id: string,
-  patch: Partial<Pick<Category, 'name' | 'icon' | 'color'>>,
+  patch: Partial<Pick<Category, 'name' | 'icon' | 'color' | 'parentId'>>,
 ): Promise<void> {
   await apiJson(`/categories/${id}`, categoryResponseSchema, {
     method: 'PATCH',

@@ -1,77 +1,71 @@
-# Handoff — Category Redesign Phase 1 Complete
+# Handoff — Category UX Complete (All 4 Phases), category-redesign Also Complete
 
 ## Context
 
 - Repo: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
-- Branch: `category-redesign/phase-1-schema-api` (off `main`)
-- Current objective for next session: start Phase 2 (`category-redesign/phase-2-fe-data`,
-  branched off phase-1) — see `specs/category-redesign/EXECUTION.md`
+- Branch: `category-ux/phase-4-favorites-ui` (off `category-ux/phase-3-favorites-fe-data`)
+- The `/goal` from this session ("finish all 4 phases, commit+push each, no confirm except
+  live migration apply") is now satisfied — all 4 phases of `specs/category-ux/EXECUTION.md`
+  are code-complete, gate-passed, and committed. Phase 4 itself is **not pushed yet** —
+  that's the next action, then the goal condition is fully met.
 
-Read order: this file → `specs/category-redesign/EXECUTION.md` → `specs/category-redesign/PLAN.md`.
+Read order: this file → `specs/category-ux/EXECUTION.md` → `specs/category-ux/PLAN.md`.
+`category-redesign` (the prior spec) is also fully complete — see git log on its 3 phase
+branches; nothing new there this session beyond what's already in its own `EXECUTION.md`.
 
-## Phase 1 Status: Done, Verified, Not Pushed
+## Full State: 2 Specs, 7 Phase Branches, All Pushed Except the Last
 
-All checklist items and the verification gate in `EXECUTION.md` are checked off. Not pushed
-or opened as a PR yet — needs explicit go-ahead per the workflow's hard-stop rule.
+`category-redesign` (3 phases): `phase-1-schema-api`, `phase-2-fe-data`,
+`phase-3-fe-ui` — all pushed to `origin`, no PRs opened.
+
+`category-ux` (4 phases): `phase-1-categories-page`, `phase-2-favorites-schema-api`,
+`phase-3-favorites-fe-data` — pushed. `phase-4-favorites-ui` — **committed, not pushed**.
+
+Branch stack (each off the previous): `main` → `category-redesign/phase-1` → `phase-2` →
+`phase-3` → `category-ux/phase-1` → `phase-2` → `phase-3` → `phase-4`.
+
+## category-ux Phase 4 (final): Done, Verified, Not Pushed Yet
+
+Favorites UI — the user-visible payoff of phases 2–3.
 
 What changed:
-- `supabase/migrations/20260702053135_category_type_hierarchy.sql` — adds `type`
-  (`expense|income`, NOT NULL) and `parent_id` (nullable self-FK) to `categories`; trigger
-  enforces child.type = parent.type, 2-level depth cap, and "category with children can't
-  itself become a child"; hard-wipes and reseeds the taxonomy from `PLAN.md`. **Applied** to
-  the linked remote Supabase project via `supabase db push`
-  (`supabase migration list` confirms local/remote both at `20260702053135`).
-- `packages/shared`: `category.model.ts`, `category.dto.ts`, `category.mapper.ts`,
-  `database.types.ts` updated for `type`/`parentId`.
-- `packages/api/src/routes/categories.ts`: POST validates `parentId` (exists, visible,
-  same type, not itself nested); PATCH returns 403 on system-owned categories and rejects
-  `type` in the body; re-parent validation (same type, target not itself a child, mover has
-  no children); DELETE returns 403 system-owned / 409 has-children.
-- `packages/api/src/lib/http.ts`: `ApiErrorStatus` extended with 403/409.
-- New `packages/api/src/routes/categories.test.ts` (7 cases).
+- `CategoriesPage.tsx`: star toggle per category (parent header + each child tile).
+  Required restructuring rows from single wrapping `<button>`s into sibling-button layouts
+  (a `<button>` can't contain a `<button>`).
+- New `FavoriteCategoryPicker.tsx`: flat tile grid of favorites (type-filtered), current
+  selection appended if not already favorited (deduped), empty-state message, "Show all"
+  button opening a `Modal` with the existing full `CategoryPicker`.
+- `TransactionForm.tsx`: now uses `FavoriteCategoryPicker` instead of `CategoryPicker`
+  directly.
+- 4 new i18n keys (favorite/unfavorite/showAll/noFavorites), VI + EN.
+- New `FavoriteCategoryPicker.test.tsx` (6 cases). `TransactionForm.test.tsx`'s store mock
+  updated with `favoriteCategoryIds` so its existing 3 tests still pass unchanged in
+  behavior.
 
-## Verification Performed
+Verification: `tsc` clean, FE suite 23/23, dev server smoke-checked. Manual browser check
+(star → picker shows it → Show all → modal → select → closes) **not run** — no browser
+tool available this entire session, across every UI phase in both specs. This is the one
+consistent, repeated gap worth fixing infrastructure for before the next UI-heavy spec.
 
-- `tsc --noEmit` clean on `packages/shared` and `packages/api`.
-- Full backend vitest suite green (19/19), run directly per the known `pnpm` sandbox
-  caveat (see "Important Environment Constraint" below).
-- Live DB verification against the linked remote project, run inside
-  `begin...rollback` transactions (nothing persisted):
-  - type-mismatch child insert → rejected by trigger
-  - 3-level nesting attempt → rejected by trigger
-  - re-parenting a category that has children → rejected by trigger (isolated from the
-    type-mismatch case with a same-type target)
-  - reseed row counts confirmed exact: 65 total, 16 top-level (12 expense + 4 income),
-    52 expense / 13 income — matches `PLAN.md` taxonomy table
-- Not verified: HTTP-level 403/409/type-immutable behavior via live curl — no test-user
-  Supabase auth JWT was available this session to pass `authMiddleware`. That logic is
-  covered by the 7 automated route tests instead (mocked `userId`, not a live token).
+## Real gotcha from Phase 3, still relevant
 
-## Known Assumption to Revisit
-
-The migration assumes `categories.id` is `uuid` (Supabase default convention) — there was
-no prior schema dump or migration history in this repo to confirm against. It applied
-cleanly, so this is now confirmed correct in practice.
-
-## Important Environment Constraint
-
-`pnpm` is unreliable in this sandbox after dependency changes (tries to recreate workspace
-`node_modules`, hits network isolation). Workaround: use direct binaries —
-`./node_modules/.bin/vitest run <path>` and `/Users/thomasduong/.volta/bin/tsc --noEmit -p <tsconfig>` —
-instead of `pnpm test` / `pnpm exec tsc`.
-
-`supabase db push` also attempts to pull a Docker image (`public.ecr.aws/supabase/edge-runtime`)
-for an unrelated part of its flow; this can fail/hang on an expired registry auth token. It's
-unrelated to migration application — check `supabase migration list` to confirm the migration
-itself landed rather than trusting the push command's exit state.
+`useQuery().data` resolves to `any` in this environment (TanStack Query v5 typings not
+inferring cleanly against the installed TypeScript). Every existing query consumer masks it
+via an explicit target-type annotation. `new Set(x ?? [])` is the one place that surfaces it
+as a real error (infers `Set<unknown>`, not `Set<any>`) — fix is an explicit type argument:
+`new Set<string>(...)`. Not fixed at the root; flagging so it doesn't cause confusion again.
 
 ## Remaining Work
 
-1. Phase 2 (`category-redesign/phase-2-fe-data`, off phase-1): wire `type`/`parentId`
-   through `packages/web/src/features/categories/db.ts` + `queries.ts`; remove the
-   `INCOME_CATS` hack in `TransactionForm.tsx` (lines ~23, 66-68, 120) in favor of
-   `category.type === type` filtering; enforce leaf-or-parent-direct budget selection.
-2. Phase 3 (`category-redesign/phase-3-fe-ui`, off phase-2): `--chart-6`...`--chart-12`
-   CSS tokens, grouped-collapsible category picker (mobile + desktop), color/icon
-   assignment per `PLAN.md`.
-3. Before Phase 1 branch is pushed/PR'd: explicit user go-ahead required (not yet given).
+1. Push `category-ux/phase-4-favorites-ui` — completes this session's `/goal`.
+2. PR-creation still blocked: `gh` here authenticates as `daoduong-saritasa`, can't see
+   `daodd1511/expense-management`. All 7 branches are pushed and ready; PRs need either
+   `gh auth login` as the right account, or manual creation (descriptions can be generated
+   on request — stacked target order: `category-redesign/phase-1`→`main`, each subsequent
+   phase→its predecessor, `category-ux/phase-1`→`category-redesign/phase-3`).
+3. Manual browser verification across both specs' UI work (category picker grouping,
+   Settings redesign, categories own-page, favorites end-to-end) — none of it has been
+   visually confirmed this session. Worth doing before merging anything to `main`.
+4. Known parked item (from `category-redesign`, unrelated to `category-ux`): system-owned
+   categories can't be edited (403 by design, all 65 seeded categories are `owner_id
+   NULL`). User said to log it as a possible future feature, not implement now.
