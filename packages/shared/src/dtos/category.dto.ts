@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { categoryTypeSchema } from '../models/category.model'
 import { atLeastOneKey } from './common.dto'
 
 export const categoryRowSchema = z.object({
@@ -8,18 +9,23 @@ export const categoryRowSchema = z.object({
   icon: z.string(),
   color: z.string(),
   created_at: z.string(),
+  type: categoryTypeSchema,
+  parent_id: z.string().nullable(),
 })
 
 export const categoryCreateSchema = z.object({
   name: z.string().trim().min(1),
   icon: z.string().trim().min(1),
   color: z.string().trim().min(1),
+  type: categoryTypeSchema,
+  parentId: z.string().nullable().optional(),
 })
 
 export const categoryPatchSchema = atLeastOneKey({
   name: z.string().trim().min(1),
   icon: z.string().trim().min(1),
   color: z.string().trim().min(1),
+  parentId: z.string().nullable(),
 })
 
 export type CategoryRow = z.infer<typeof categoryRowSchema>

@@ -1,5 +1,5 @@
 import type { Category } from '../models'
-import type { CategoryPatch, CategoryRow } from '../dtos'
+import type { CategoryCreate, CategoryPatch, CategoryRow } from '../dtos'
 
 export function toCategory(row: CategoryRow): Category {
   return {
@@ -8,11 +8,13 @@ export function toCategory(row: CategoryRow): Category {
     icon: row.icon,
     color: row.color,
     isSystem: row.owner_id === null,
+    type: row.type,
+    parentId: row.parent_id,
   }
 }
 
 export function fromCategory(params: {
-  category: Pick<Category, 'name' | 'icon' | 'color'>
+  category: CategoryCreate
   ownerId: string
 }) {
   const { category, ownerId } = params
@@ -21,6 +23,8 @@ export function fromCategory(params: {
     name: category.name,
     icon: category.icon,
     color: category.color,
+    type: category.type,
+    parent_id: category.parentId ?? null,
   }
 }
 
@@ -29,5 +33,6 @@ export function categoryPatchToRow(patch: CategoryPatch) {
     ...(patch.name !== undefined && { name: patch.name }),
     ...(patch.icon !== undefined && { icon: patch.icon }),
     ...(patch.color !== undefined && { color: patch.color }),
+    ...(patch.parentId !== undefined && { parent_id: patch.parentId }),
   }
 }

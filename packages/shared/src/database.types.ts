@@ -84,6 +84,8 @@ export type Database = {
           id: string
           name: string
           owner_id: string | null
+          parent_id: string | null
+          type: string
         }
         Insert: {
           color: string
@@ -92,6 +94,8 @@ export type Database = {
           id?: string
           name: string
           owner_id?: string | null
+          parent_id?: string | null
+          type: string
         }
         Update: {
           color?: string
@@ -100,8 +104,18 @@ export type Database = {
           id?: string
           name?: string
           owner_id?: string | null
+          parent_id?: string | null
+          type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {

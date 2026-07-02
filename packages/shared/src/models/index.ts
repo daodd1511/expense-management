@@ -10,6 +10,11 @@ export {
 } from './common.model'
 export { accountSchema, type Account } from './account.model'
 export { budgetSchema, type Budget } from './budget.model'
-export { categorySchema, type Category } from './category.model'
+export {
+  categorySchema,
+  categoryTypeSchema,
+  type Category,
+  type CategoryType,
+} from './category.model'
 export { subscriptionSchema, type Subscription } from './subscription.model'
 export { transactionSchema, type Transaction } from './transaction.model'
