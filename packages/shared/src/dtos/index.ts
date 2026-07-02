@@ -24,6 +24,12 @@ export {
 } from './category.dto'
 export { atLeastOneKey, isoDateSchema, monthFilterSchema } from './common.dto'
 export {
+  favoriteCreateSchema,
+  favoriteRowSchema,
+  type FavoriteCreate,
+  type FavoriteRow,
+} from './favorite.dto'
+export {
   subscriptionCreateSchema,
   subscriptionPatchSchema,
   subscriptionRowSchema,

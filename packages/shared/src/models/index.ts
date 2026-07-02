@@ -16,5 +16,6 @@ export {
   type Category,
   type CategoryType,
 } from './category.model'
+export { favoriteSchema, type Favorite } from './favorite.model'
 export { subscriptionSchema, type Subscription } from './subscription.model'
 export { transactionSchema, type Transaction } from './transaction.model'
