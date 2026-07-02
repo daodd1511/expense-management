@@ -1,68 +1,75 @@
-# Handoff — Category Redesign Phase 2 Complete
+# Handoff — Category Redesign Phase 3 Complete (Final Phase)
 
 ## Context
 
 - Repo: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
-- Branch: `category-redesign/phase-2-fe-data` (off `category-redesign/phase-1-schema-api`)
-- Current objective for next session: start Phase 3 (`category-redesign/phase-3-fe-ui`,
-  branched off phase-2) — see `specs/category-redesign/EXECUTION.md`
+- Branch: `category-redesign/phase-3-fe-ui` (off `category-redesign/phase-2-fe-data`)
+- This was the final phase per `specs/category-redesign/EXECUTION.md`. All three phases
+  are code-complete and gate-passed. Next step is push/PR/merge, all pending explicit
+  go-ahead.
 
 Read order: this file → `specs/category-redesign/EXECUTION.md` → `specs/category-redesign/PLAN.md`.
 
-## Phase 1 + 2 Status: Done, Verified, Not Pushed
+## Status: All 3 Phases Done, Verified, Partially Pushed
 
-Neither phase has been pushed or opened as a PR — needs explicit go-ahead per the
-workflow's hard-stop rule. Phase 1 details are in git history
-(`git log category-redesign/phase-1-schema-api`); this section focuses on Phase 2.
+- Phase 1 (`category-redesign/phase-1-schema-api`): pushed to `origin`, no PR opened.
+- Phase 2 (`category-redesign/phase-2-fe-data`): pushed to `origin` (including a later fix,
+  see below), no PR opened.
+- Phase 3 (`category-redesign/phase-3-fe-ui`): **not pushed yet**, this is new work from
+  this session.
 
-What changed in Phase 2:
-- `packages/web/src/features/categories/db.ts` + `queries.ts`: `type`/`parentId` now pass
-  through create/patch payloads.
-- `packages/web/src/core/store.tsx`: `addCategory`/`updateCategory` signatures widened.
-- `packages/web/src/features/settings/components/Settings.tsx`: category form gained a
-  type toggle (Expense/Income), disabled once a category exists since type is immutable
-  server-side.
-- `packages/web/src/core/data.ts`: dead mock category seed updated to satisfy the wider
-  `Category` type (not actually read anywhere live — only `monthlyTrend` is imported from
-  this file elsewhere).
-- `packages/web/src/features/transactions/components/TransactionForm.tsx`: removed the
-  hardcoded `INCOME_CATS` array; category list now filters by `category.type === type`.
-  Also removed a hardcoded `'salary'` default-select on the income tab that relied on a
-  mock id no longer valid now categories have real uuids.
-- `packages/web/src/features/budgets/components/BudgetForm.tsx`: added
-  `conflictsWithExistingBudget` — excludes a category from the budget picker if its parent
-  or any of its children already has a budget (leaf-or-parent-direct-only rule).
-- Tests: 2 new cases in `TransactionForm.test.tsx` (type filtering, category-clear on type
-  switch), new `BudgetForm.test.ts` (5 cases for the conflict rule).
+PR descriptions for phase 1 and phase 2 were already handed to the user directly (not
+regenerated here) — phase 1 targets `main`, phase 2 targets phase 1's branch. Phase 3 would
+target phase 2's branch. After phase 3 merges, `EXECUTION.md` says delete all three phase
+branches — don't do that until it's actually merged.
+
+## Phase 2 addendum: budget re-parent fix
+
+After Phase 2 was marked done and pushed, a Codex review of `specs/category-redesign/`
+found a real gap: re-parent validation in `packages/api/src/routes/categories.ts` checked
+type/depth/children but never checked budgets, so moving a budgeted leaf under an
+already-budgeted parent silently violated the leaf-or-parent-direct rule server-side. Fixed
+and pushed as an extra commit on `phase-2-fe-data` (`47f9d02`) rather than rewriting the
+already-pushed `phase-1` branch. New test case added to `categories.test.ts` (now 8 cases).
+
+## What changed in Phase 3
+
+- `packages/web/src/shared/styles/globals.css`: added `--chart-6` through `--chart-12`
+  (`:root` + `.dark`), hues spread across the gaps between the existing `chart-1..5` to
+  stay visually distinct from each other and from the semantic income/expense/transfer
+  colors.
+- New `packages/web/src/features/categories/components/CategoryPicker.tsx`: replaces
+  `TransactionForm`'s flat chip-list category selector with a grouped-collapsible list —
+  parent header (itself selectable, collapsed by default) + indented children revealed on
+  toggle, auto-expanding the group containing the current selection. Serves both mobile
+  (`BottomSheet`) and desktop (`Drawer`) since `TransactionForm` is already the shared
+  content inside both wrappers — no separate mobile/desktop picker was needed.
+- Colors and icons for the reseeded taxonomy were **already correct** from Phase 1's
+  migration (verified against `PLAN.md`'s table, no code change needed).
+- `lib/derive.ts`'s `buildDonutData` already reads `colorVar(category.color)` per category
+  — no hardcoded `chart-1..5` list to update, so the "12 visually distinct expense colors"
+  claim rests on the reseed data + new CSS tokens, not on any donut-chart-specific code.
 
 ## Verification Performed
 
 - `tsc --noEmit -p packages/web/tsconfig.json` clean.
-- Full FE test suite green: 11/11 (`api.test.ts`, `BudgetForm.test.ts`,
-  `TransactionForm.test.tsx`), run directly via `vitest run` from inside `packages/web`
-  (needed for `vite-tsconfig-paths` alias resolution — running from repo root without the
-  package's own `vite.config.ts` fails to resolve `@/...` imports).
-- Dev server (`pnpm --filter @wallet/web dev`) started cleanly, `/` returned 200.
-- **Not verified**: the manual "switch transaction type tabs, confirm only matching-type
-  categories show" check from the gate — no browser automation tool was available this
-  session (checked via `ToolSearch`, no chrome/playwright MCP registered). The two new
-  automated tests exercise the same logic path but this wasn't confirmed visually.
-
-## Note: CLAUDE.md changed outside this session's own edits
-
-`CLAUDE.md` picked up a line during this session ("Always use `react-frontend-developer`
-skill for frontend code generation") that wasn't authored by me — flagged here so the next
-session knows Phase 2's frontend edits (`TransactionForm.tsx`, `BudgetForm.tsx`,
-`Settings.tsx`, `store.tsx`) predate that rule and weren't run through that skill. Phase 3
-is entirely frontend UI work — route it through `react-frontend-developer` per the current
-`CLAUDE.md`.
+- Full FE suite green: 17/17 (added `CategoryPicker.test.tsx`, 6 new cases covering
+  grouping, collapsed-by-default, no-toggle-on-a-childless-parent, auto-expand-on-selection,
+  parent-select, child-select).
+- Backend suite still green: 20/20 (includes the Phase 2 budget re-parent fix above).
+- Dev server booted cleanly, `/` returned 200.
+- **Not verified**: the manual browser check (mobile + desktop picker rendering, donut
+  chart color distinctness) — no browser automation tool available this session, same gap
+  as Phase 2. If a browser tool becomes available, or the user checks manually, this is the
+  one remaining item before treating Phase 3 as fully gate-clean.
 
 ## Remaining Work
 
-1. Phase 3 (`category-redesign/phase-3-fe-ui`, off phase-2): `--chart-6`...`--chart-12`
-   CSS tokens, grouped-collapsible category picker (mobile bottom sheet + desktop drawer),
-   color/icon assignment per `PLAN.md`. Route through `react-frontend-developer` skill.
-2. Before any phase branch is pushed/PR'd: explicit user go-ahead required (not yet given
-   for either phase 1 or phase 2).
-3. The Phase 2 manual browser check above should be picked up properly once a browser tool
-   is available, or done by the user directly.
+1. Push `category-redesign/phase-3-fe-ui` (needs explicit go-ahead, not yet given).
+2. Open PRs for all three phases (stacked: phase-1→main, phase-2→phase-1,
+   phase-3→phase-2) — needs explicit go-ahead. Note: `gh` in this session is authenticated
+   as an account that can't see `daodd1511/expense-management`, so `gh pr create` fails
+   here; PR descriptions were given to the user to create manually, or `gh auth login` as
+   the right account first.
+3. The manual browser check noted above, whenever a browser tool or the user is available.
+4. After phase 3 merges: delete all three phase branches per `EXECUTION.md`'s instruction.
