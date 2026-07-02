@@ -96,21 +96,40 @@ push/PR.
 
 Branch: `category-redesign/phase-3-fe-ui` (off `phase-2`)
 
-- [ ] Rebase onto updated base if Phase 2 has since merged
-- [ ] Add `--chart-6` through `--chart-12` to `packages/web/src/shared/styles/globals.css`
+- [x] Rebase onto updated base if Phase 2 has since merged — not applicable, Phase 2
+      hasn't merged yet
+- [x] Add `--chart-6` through `--chart-12` to `packages/web/src/shared/styles/globals.css`
       (`:root` and `.dark` blocks)
-- [ ] Category picker (mobile bottom sheet): grouped-collapsible — parent header (itself
-      selectable) + indented children
-- [ ] Category picker (desktop drawer): same grouped-collapsible pattern
-- [ ] Assign colors: 12 distinct `chart-*` tokens across expense parents; income parents
-      reuse `chart-1`...`chart-4`; children inherit parent color, override optional
-- [ ] Assign icons per `PLAN.md` icon table (all pre-verified against installed
-      `lucide-react`)
+- [x] Category picker (mobile bottom sheet): grouped-collapsible — parent header (itself
+      selectable) + indented children — new `CategoryPicker` component, `TransactionForm`
+      is shared between mobile `BottomSheet` and desktop `Drawer` so one implementation
+      covers both surfaces
+- [x] Category picker (desktop drawer): same grouped-collapsible pattern — same component,
+      see above
+- [x] Assign colors: 12 distinct `chart-*` tokens across expense parents; income parents
+      reuse `chart-1`...`chart-4`; children inherit parent color, override optional —
+      already done in Phase 1's reseed migration, verified against the taxonomy table,
+      no code change needed here
+- [x] Assign icons per `PLAN.md` icon table (all pre-verified against installed
+      `lucide-react`) — same, already done in Phase 1's reseed migration
 
 **Verification gate (hard):**
-- [ ] `tsc --noEmit -p packages/web/tsconfig.json` passes
+- [x] `tsc --noEmit -p packages/web/tsconfig.json` passes
 - [ ] Manual check in browser: mobile + desktop picker both render grouped hierarchy
       correctly, donut chart shows 12 visually distinct expense colors, no color collisions
+      — **not run**, no browser automation tool available this session (same gap as
+      Phase 2). Covered instead by 6 new `CategoryPicker.test.tsx` cases (grouping,
+      collapsed-by-default, no-toggle-on-leaf, auto-expand-on-selection, parent/child
+      select) plus dev server smoke check (`pnpm --filter @wallet/web dev`, `/` → 200).
+      `lib/derive.ts`'s `buildDonutData` reads `colorVar(category.color)` per-category —
+      no hardcoded chart-1..5 list to update, so the 12-color claim rests on the reseed
+      data + new tokens being correct, not on any donut-specific code
 
 **On completion:** update this checklist, update root `HANDOFF.md`, stop and ask before
 push/PR. This is the final phase — after merge, delete all three phase branches.
+
+**Addendum (post-completion):** user reported Settings' category management list showed no
+parent/child distinction at all — a real gap, out of this checklist's original scope (which
+only covered the transaction form's picker). Fixed: extracted `groupCategories()` out of
+`CategoryPicker` into `packages/web/src/features/categories/group.ts`, Settings' flat grid
+now renders the same grouped/indented hierarchy. `tsc` clean, FE suite green (17/17).

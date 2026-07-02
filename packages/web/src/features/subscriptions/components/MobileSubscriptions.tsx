@@ -2,6 +2,7 @@ import { CalendarClock, Pause, Play, Plus, RefreshCw, Trash2 } from 'lucide-reac
 import { useRef, useState } from 'react'
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { BottomSheet } from '@/shared/components/ui/overlay'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
@@ -135,6 +136,7 @@ export function MobileSubscriptions() {
   const { t } = useLang()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Subscription | null>(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   const active = subscriptions.filter((s) => s.active)
   const paused = subscriptions.filter((s) => !s.active)
@@ -177,7 +179,7 @@ export function MobileSubscriptions() {
                 key={s.id}
                 sub={s}
                 onEdit={() => openEdit(s)}
-                onDelete={() => deleteSubscription(s.id)}
+                onDelete={() => setPendingDeleteId(s.id)}
                 onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
                 onLog={() => logSubscription(s.id)}
               />
@@ -199,7 +201,7 @@ export function MobileSubscriptions() {
                 key={s.id}
                 sub={s}
                 onEdit={() => openEdit(s)}
-                onDelete={() => deleteSubscription(s.id)}
+                onDelete={() => setPendingDeleteId(s.id)}
                 onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
                 onLog={() => logSubscription(s.id)}
               />
@@ -221,7 +223,7 @@ export function MobileSubscriptions() {
                 key={s.id}
                 sub={s}
                 onEdit={() => openEdit(s)}
-                onDelete={() => deleteSubscription(s.id)}
+                onDelete={() => setPendingDeleteId(s.id)}
                 onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
                 onLog={() => logSubscription(s.id)}
               />
@@ -264,6 +266,14 @@ export function MobileSubscriptions() {
           onCancel={close}
         />
       </BottomSheet>
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={() => {
+          if (pendingDeleteId) deleteSubscription(pendingDeleteId)
+          setPendingDeleteId(null)
+        }}
+      />
     </div>
   )
 }

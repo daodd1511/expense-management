@@ -6,6 +6,7 @@ import { budgetState } from '@/features/budgets/components/BudgetBars'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Progress } from '@/shared/components/ui/progress'
 import { formatVND, monthLabel } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
@@ -16,6 +17,7 @@ export function DesktopBudgets() {
   const { budgets, transactions, getCategory, addBudget, updateBudget, deleteBudget } = useStore()
   const { t, lang } = useLang()
   const [editing, setEditing] = useState<Budget | 'add' | null>(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   const totalLimit = budgets.reduce((s, b) => s + b.limit, 0)
   const totalSpent = budgets.reduce((s, b) => s + spentForCategory(transactions, b.categoryId), 0)
@@ -117,7 +119,7 @@ export function DesktopBudgets() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => deleteBudget(b.categoryId)}
+                        onClick={() => setPendingDeleteId(b.categoryId)}
                         className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-expense"
                       >
                         <Trash2 className="size-3.5" />
@@ -135,6 +137,14 @@ export function DesktopBudgets() {
           </div>
         </CardContent>
       </Card>
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={() => {
+          if (pendingDeleteId) deleteBudget(pendingDeleteId)
+          setPendingDeleteId(null)
+        }}
+      />
     </div>
   )
 }

@@ -12,6 +12,8 @@ const MOCK_CATEGORIES = [
 vi.mock('@/core/store', () => ({
   useStore: () => ({
     categories: MOCK_CATEGORIES,
+    // both marked favorite so they appear directly, without needing "Show all"
+    favoriteCategoryIds: new Set(['food', 'salary']),
     accounts: [
       { id: 'cash', name: 'Cash' },
       { id: 'bank', name: 'Bank' },
