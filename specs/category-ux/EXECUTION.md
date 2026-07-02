@@ -128,34 +128,36 @@ push/PR.
 
 Branch: `category-ux/phase-4-favorites-ui` (off `phase-3`)
 
-- [ ] `CategoriesPage.tsx` (from Phase 1): add a star toggle per category row/tile (both
-      the parent box header and each child tile), calling `addFavorite`/`removeFavorite`
-      from `useStore()`
-- [ ] New `packages/web/src/features/categories/components/FavoriteCategoryPicker.tsx`:
-      renders the favorites tile grid (icon-over-label, same visual style as the child
-      tiles in `CategoriesPage.tsx`/`CategoryGroupBox`) filtered by transaction `type`,
-      with the current `categoryId` appended as an extra tile if it isn't already a
-      favorite. Empty-state message ("No favorites yet — tap Show all") when there are no
-      favorites for this type — do not auto-open anything. "Show all" button below the grid
-- [ ] `TransactionForm.tsx`: replace the direct `CategoryPicker` usage with
-      `FavoriteCategoryPicker`. "Show all" opens a `Modal` (from
-      `@/shared/components/ui/overlay`) containing the existing full `CategoryPicker`;
-      selecting a category inside the modal closes it and sets `categoryId`
-- [ ] i18n: add keys for the Settings summary row copy (Phase 1, if not already added
-      there) and the empty-favorites message, VI + EN
-- [ ] Add FE tests: `FavoriteCategoryPicker.test.tsx` covering favorites-grid rendering,
-      empty state, current-selection-appended-when-not-favorited, "Show all" opens the
-      modal with the full picker and selecting closes it. Update `TransactionForm.test.tsx`
-      mocks to include whatever favorites shape `useStore()` now exposes
+- [x] `CategoriesPage.tsx`: added a star toggle per category row/tile (parent box header
+      + each child tile), calling `addFavorite`/`removeFavorite` from `useStore()`. Had to
+      restructure the parent/child rows from single wrapping `<button>`s into sibling-button
+      layouts (select button + separate star button) since a `<button>` can't nest inside a
+      `<button>`
+- [x] New `packages/web/src/features/categories/components/FavoriteCategoryPicker.tsx`:
+      favorites tile grid filtered by transaction `type`, current `categoryId` appended if
+      not already a favorite (deduped if it already is), empty-state message when nothing's
+      favorited, "Show all" button
+- [x] `TransactionForm.tsx`: `CategoryPicker` usage replaced with `FavoriteCategoryPicker`.
+      "Show all" opens a `Modal` containing the existing full `CategoryPicker`; selecting
+      inside it closes the modal and sets `categoryId`
+- [x] i18n: `category.favorite`/`category.unfavorite`/`category.showAll`/
+      `category.noFavorites`, VI + EN
+- [x] FE tests: `FavoriteCategoryPicker.test.tsx` (6 cases: grid rendering, empty state,
+      selection-appended, no-duplicate-when-already-favorited, select-calls-onSelect,
+      show-all-opens-modal-and-selecting-closes-it). `TransactionForm.test.tsx`'s store mock
+      updated with `favoriteCategoryIds: new Set(['food', 'salary'])` so the existing 3
+      tests keep exercising the same selection flow without needing to open "Show all"
 
 **Verification gate (hard):**
-- [ ] `tsc --noEmit -p packages/web/tsconfig.json` passes
-- [ ] FE test suite passes
+- [x] `tsc --noEmit -p packages/web/tsconfig.json` passes
+- [x] FE test suite passes (23/23)
 - [ ] Manual check in browser: star a category on the management page → confirm it shows
       in the transaction form's favorites grid → confirm the empty state when nothing is
       favorited for a type → confirm "Show all" opens the full hierarchy and selecting
       closes the modal → confirm editing a transaction whose category isn't a favorite
-      still shows it appended in the grid
+      still shows it appended in the grid — **not run**, no browser automation tool
+      available this session, consistent gap across every UI phase this session (Phase 1/3
+      of `category-redesign`, Phase 1 of `category-ux`). Dev server smoke-checked instead.
 
 **On completion:** update this checklist, update root `HANDOFF.md`, stop and ask before
 push/PR. This is the final phase — after merge, delete all four phase branches.

@@ -54,6 +54,16 @@ describe('CategoryPicker', () => {
     expect(screen.getByRole('button', { name: 'Coffee' })).toBeDefined()
   })
 
+  it('keeps a selected child visible when its parent is collapsed', async () => {
+    const user = userEvent.setup()
+    render(<CategoryPicker categories={categories} selectedId="coffee" onSelect={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: 'Collapse Food' }))
+
+    expect(screen.queryByRole('button', { name: 'Restaurant' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Coffee' })).toBeDefined()
+  })
+
   it('selecting a parent calls onSelect with the parent id', async () => {
     const user = userEvent.setup()
     const onSelect = vi.fn()

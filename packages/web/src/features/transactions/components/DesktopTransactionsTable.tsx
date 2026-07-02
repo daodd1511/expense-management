@@ -3,6 +3,7 @@ import { ArrowLeftRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Pape
 import { useMemo, useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Input } from '@/shared/components/ui/input'
 import { amountColorClass, formatShortDate, formatSigned } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
@@ -22,6 +23,7 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
   const [asc, setAsc] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [page, setPage] = useState(1)
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([])
 
   const TYPE_FILTERS: { value: TxType | 'all'; label: string }[] = [
     { value: 'all', label: t('tx.filterAll') },
@@ -81,8 +83,12 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
     })
   }
   const bulkDelete = () => {
-    selected.forEach((id) => deleteTransaction(id))
+    setPendingDeleteIds(Array.from(selected))
+  }
+  const confirmDelete = () => {
+    pendingDeleteIds.forEach((id) => deleteTransaction(id))
     setSelected(new Set())
+    setPendingDeleteIds([])
   }
 
   return (
@@ -217,7 +223,7 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
                       </button>
                       <button
                         type="button"
-                        onClick={() => deleteTransaction(row.id)}
+                        onClick={() => setPendingDeleteIds([row.id])}
                         aria-label={t('tx.deleteOne')}
                         className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-expense-muted hover:text-expense"
                       >
@@ -247,6 +253,11 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
           </Button>
         </div>
       </div>
+      <ConfirmDialog
+        open={pendingDeleteIds.length > 0}
+        onCancel={() => setPendingDeleteIds([])}
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }
