@@ -26,6 +26,7 @@ export function CategoriesPage({
   const editingCategory = categories.find((c) => c.id === editingId)
 
   const handleSelectCategory = (category: Category) => {
+    if (category.isSystem) return
     setEditingId(category.id)
     setFormOpen(true)
   }
@@ -39,9 +40,9 @@ export function CategoriesPage({
 
   const handleSaveCategory = (form: CategoryFormState) => {
     if (editingId) {
-      updateCategory(editingId, { name: form.name, icon: form.icon, color: form.color })
+      updateCategory(editingId, { name: form.name, icon: form.icon, color: form.color, parentId: form.parentId })
     } else {
-      addCategory({ name: form.name, icon: form.icon, color: form.color, type: form.type })
+      addCategory({ name: form.name, icon: form.icon, color: form.color, type: form.type, parentId: form.parentId })
     }
     closeForm()
   }
@@ -60,6 +61,7 @@ export function CategoriesPage({
   const categoryForm = (
     <CategoryForm
       initial={editingCategory}
+      categories={categories}
       onSave={handleSaveCategory}
       onDelete={handleDeleteCategory}
       onCancel={closeForm}
@@ -138,10 +140,11 @@ function CategoryGroupBox({
       <div className="flex items-center gap-1">
         <button
           type="button"
+          disabled={parent.isSystem}
           onClick={() => onSelect(parent)}
           className={cn(
-            'flex flex-1 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors',
-            editingId === parent.id ? 'bg-accent' : 'hover:bg-muted',
+            'flex flex-1 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-70',
+            editingId === parent.id ? 'bg-accent' : !parent.isSystem && 'hover:bg-muted',
           )}
         >
           <span
@@ -165,10 +168,11 @@ function CategoryGroupBox({
             <div key={child.id} className="relative">
               <button
                 type="button"
+                disabled={child.isSystem}
                 onClick={() => onSelect(child)}
                 className={cn(
-                  'flex w-full flex-col items-center gap-1 rounded-lg p-2 text-center transition-colors',
-                  editingId === child.id ? 'bg-accent' : 'hover:bg-muted',
+                  'flex w-full flex-col items-center gap-1 rounded-lg p-2 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-70',
+                  editingId === child.id ? 'bg-accent' : !child.isSystem && 'hover:bg-muted',
                 )}
               >
                 <span
