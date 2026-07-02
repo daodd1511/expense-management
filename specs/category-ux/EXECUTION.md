@@ -60,44 +60,35 @@ PR-creation is still not authorized (also blocked anyway: `gh` account mismatch,
 
 Branch: `category-ux/phase-2-favorites-schema-api` (off `phase-1`)
 
-- [ ] New Supabase migration: `category_favorites` table exactly per `PLAN.md`'s "Schema
-      Changes" section (`id uuid pk default gen_random_uuid()`, `user_id uuid not null
-      references auth.users(id)`, `category_id uuid not null references categories(id) on
-      delete cascade`, `created_at timestamptz not null default now()`, unique
-      `(user_id, category_id)`). Write the migration file only — do **not** apply it
-      without a separate explicit confirmation, same as `category-redesign` Phase 1
-- [ ] `packages/shared/src/models/favorite.model.ts`: domain model `{ categoryId: string }`
-- [ ] `packages/shared/src/dtos/favorite.dto.ts`: row schema (`id`, `user_id`,
-      `category_id`, `created_at`) + create schema (`{ categoryId: string }` in the
-      request body)
-- [ ] `packages/shared/src/mappers/favorite.mapper.ts`: row ↔ domain mapping
-- [ ] Export the new model/dto/mapper from `packages/shared/src/models/index.ts` and
-      wherever DTOs/mappers are re-exported (check `packages/shared/src/index.ts` for the
-      existing pattern)
-- [ ] New `packages/api/src/routes/favorites.ts`, mounted at `/favorites`, mirroring
-      `budgets.ts`'s owner-scoped resource pattern:
-  - [ ] `GET /favorites` — list current user's favorite category ids
-  - [ ] `POST /favorites` — body `{ categoryId }`; idempotent (`ON CONFLICT DO NOTHING` at
-        the DB level, or an app-layer existence check — PLAN.md leaves the exact mechanism
-        open, pick one and note the choice in the PR, it doesn't change behavior)
-  - [ ] `DELETE /favorites/:categoryId` — remove the row; `404` if not favorited
-- [ ] Mount `favoritesRouter` alongside the other routers (find where `categoriesRouter` /
-      `budgetsRouter` are mounted in `packages/api/src/index.ts` or equivalent)
-- [ ] Add backend tests: `packages/api/src/routes/favorites.test.ts` covering list, add,
-      idempotent duplicate add, remove, and 404-on-remove-of-a-non-favorited-category —
-      follow `categories.test.ts`'s Supabase-stub pattern
+- [x] New Supabase migration: `category_favorites` table exactly per `PLAN.md`'s "Schema
+      Changes" section — applied to the linked remote project via `supabase db push`
+      (`supabase migration list` confirms local/remote both at `20260702073013`)
+- [x] `packages/shared/src/models/favorite.model.ts`: domain model `{ categoryId: string }`
+- [x] `packages/shared/src/dtos/favorite.dto.ts`: row schema + create schema
+- [x] `packages/shared/src/mappers/favorite.mapper.ts`: row ↔ domain mapping
+- [x] Exported from `models/index.ts`, `dtos/index.ts`, `mappers/index.ts`, and the
+      top-level `packages/shared/src/index.ts`. Also added `category_favorites` to
+      `database.types.ts` (needed for the typed Supabase client)
+- [x] New `packages/api/src/routes/favorites.ts`, mounted at `/favorites`:
+  - [x] `GET /favorites`
+  - [x] `POST /favorites` — idempotent via an app-layer existence check (select-then-insert,
+        matching the style already used elsewhere in this router set rather than a DB
+        upsert); the unique constraint is still the DB-level backstop
+  - [x] `DELETE /favorites/:categoryId` — `404` if not favorited
+- [x] Mounted `favoritesRouter` in `packages/api/src/index.ts`
+- [x] Backend tests: `packages/api/src/routes/favorites.test.ts`, 5 cases
 
 **Verification gate (hard):**
-- [ ] `tsc --noEmit -p packages/shared/tsconfig.json` passes
-- [ ] `tsc --noEmit -p packages/api/tsconfig.json` passes
-- [ ] Backend test suite passes (direct vitest run, per the known `pnpm` sandbox caveat —
-      see root `HANDOFF.md`)
-- [ ] Manual verify against the live linked DB once the migration is applied: add a
-      favorite, list favorites, duplicate `POST` is idempotent (no error, no duplicate
-      row), `DELETE` removes it, `DELETE` on an already-unfavorited category returns `404`
+- [x] `tsc --noEmit -p packages/shared/tsconfig.json` passes
+- [x] `tsc --noEmit -p packages/api/tsconfig.json` passes
+- [x] Backend test suite passes (25/25, direct vitest run)
+- [x] Manual verify against the live linked DB, in rolled-back transactions (nothing
+      persisted): insert a favorite, duplicate insert rejected by the unique constraint,
+      delete removes the row. FK-to-`auth.users` confirmed correct the hard way — a random
+      uuid was rejected, had to use a real row from `auth.users`
 
 **On completion:** update this checklist, update root `HANDOFF.md`, stop and ask before
-push/PR.
+push/PR — per this session's `/goal`, push is pre-authorized without re-asking each phase.
 
 ---
 
