@@ -5,6 +5,7 @@ import { SubscriptionDueBanner } from '@/features/subscriptions/components/Subsc
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Drawer } from '@/shared/components/ui/overlay'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
@@ -146,6 +147,7 @@ export function DesktopSubscriptions() {
   const { t } = useLang()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<Subscription | undefined>(undefined)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   const active = subscriptions.filter((s) => s.active)
   const paused = subscriptions.filter((s) => !s.active)
@@ -218,7 +220,7 @@ export function DesktopSubscriptions() {
               key={s.id}
               sub={s}
               onEdit={() => openEdit(s)}
-              onDelete={() => deleteSubscription(s.id)}
+              onDelete={() => setPendingDeleteId(s.id)}
               onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
               onLog={() => logSubscription(s.id)}
             />
@@ -235,7 +237,7 @@ export function DesktopSubscriptions() {
               key={s.id}
               sub={s}
               onEdit={() => openEdit(s)}
-              onDelete={() => deleteSubscription(s.id)}
+              onDelete={() => setPendingDeleteId(s.id)}
               onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
               onLog={() => logSubscription(s.id)}
             />
@@ -252,7 +254,7 @@ export function DesktopSubscriptions() {
               key={s.id}
               sub={s}
               onEdit={() => openEdit(s)}
-              onDelete={() => deleteSubscription(s.id)}
+              onDelete={() => setPendingDeleteId(s.id)}
               onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
               onLog={() => logSubscription(s.id)}
             />
@@ -280,6 +282,14 @@ export function DesktopSubscriptions() {
           onCancel={close}
         />
       </Drawer>
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={() => {
+          if (pendingDeleteId) deleteSubscription(pendingDeleteId)
+          setPendingDeleteId(null)
+        }}
+      />
     </div>
   )
 }

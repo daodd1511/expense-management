@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Input, Label } from '@/shared/components/ui/input'
 import { useLang } from '@/core/i18n'
 import type { Category } from '@/core/types'
@@ -65,6 +66,7 @@ export function CategoryForm({
 }) {
   const { t } = useLang()
   const [form, setForm] = useState<CategoryFormState>(() => toFormState(initial))
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const isEditing = !!initial
   const hasChildren = initial ? categories.some((category) => category.parentId === initial.id) : false
   const canChangeParent = !hasChildren
@@ -81,6 +83,11 @@ export function CategoryForm({
   const handleSave = () => {
     if (!canSave) return
     onSave({ ...form, name: form.name.trim() })
+  }
+
+  const handleConfirmDelete = () => {
+    setConfirmDeleteOpen(false)
+    onDelete()
   }
 
   const handleSetType = (type: CategoryFormState['type']) => {
@@ -231,7 +238,7 @@ export function CategoryForm({
             variant="outline"
             size="lg"
             className="h-11 text-expense hover:bg-expense/10 hover:text-expense"
-            onClick={onDelete}
+            onClick={() => setConfirmDeleteOpen(true)}
           >
             <Trash2 className="size-4" />
           </Button>
@@ -240,6 +247,11 @@ export function CategoryForm({
           {isEditing ? t('settings.saveCat') : t('settings.createCat')}
         </Button>
       </div>
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onCancel={() => setConfirmDeleteOpen(false)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   )
 }

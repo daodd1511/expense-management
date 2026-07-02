@@ -1,9 +1,10 @@
 
-import { Banknote, CreditCard, Landmark, Pencil, Plus, Wallet } from 'lucide-react'
+import { Banknote, CreditCard, Landmark, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
 import { Card } from '@/shared/components/ui/card'
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Modal } from '@/shared/components/ui/overlay'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
@@ -12,11 +13,12 @@ import type { Account, AccountKind } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
 export function DesktopAccounts() {
-  const { accounts, transactions, addAccount, updateAccount } = useStore()
+  const { accounts, transactions, addAccount, updateAccount, deleteAccount } = useStore()
   const { t } = useLang()
   const total = accounts.reduce((s, a) => s + computeBalance(a.id, transactions, a.openingBalance), 0)
   const [editing, setEditing] = useState<Account | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   const KIND: Record<AccountKind, { icon: LucideIcon; label: string }> = {
     cash: { icon: Banknote, label: t('accounts.kindCash') },
@@ -90,6 +92,14 @@ export function DesktopAccounts() {
                   >
                     <Pencil className="size-3.5" />
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingDeleteId(a.id)}
+                    aria-label={t('confirm.delete')}
+                    className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all hover:bg-expense/10 hover:text-expense group-hover:opacity-100"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
                 </div>
               </div>
               <div>
@@ -112,6 +122,14 @@ export function DesktopAccounts() {
         </div>
         <AccountForm initial={editing ?? undefined} onSubmit={handleSubmit} onCancel={close} />
       </Modal>
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={() => {
+          if (pendingDeleteId) deleteAccount(pendingDeleteId)
+          setPendingDeleteId(null)
+        }}
+      />
     </div>
   )
 }

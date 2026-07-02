@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { BottomSheet } from '@/shared/components/ui/overlay'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
@@ -103,6 +104,7 @@ export function MobileAccounts() {
   const net = accounts.reduce((s, a) => s + computeBalance(a.id, transactions, a.openingBalance), 0)
   const [editing, setEditing] = useState<Account | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   const KIND_LABELS: Record<AccountKind, string> = {
     cash: t('accounts.kindCash'),
@@ -156,7 +158,7 @@ export function MobileAccounts() {
               balance={computeBalance(a.id, transactions, a.openingBalance)}
               kindLabel={KIND_LABELS[a.kind]}
               onEdit={() => openEdit(a)}
-              onDelete={() => deleteAccount(a.id)}
+              onDelete={() => setPendingDeleteId(a.id)}
             />
           ))}
         </div>
@@ -178,6 +180,14 @@ export function MobileAccounts() {
       >
         <AccountForm initial={editing ?? undefined} onSubmit={handleSubmit} onCancel={close} />
       </BottomSheet>
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={() => {
+          if (pendingDeleteId) deleteAccount(pendingDeleteId)
+          setPendingDeleteId(null)
+        }}
+      />
     </div>
   )
 }
