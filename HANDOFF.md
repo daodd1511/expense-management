@@ -15,8 +15,9 @@ Read order: this file → `specs/category-redesign/EXECUTION.md` → `specs/cate
 - Phase 1 (`category-redesign/phase-1-schema-api`): pushed to `origin`, no PR opened.
 - Phase 2 (`category-redesign/phase-2-fe-data`): pushed to `origin` (including a later fix,
   see below), no PR opened.
-- Phase 3 (`category-redesign/phase-3-fe-ui`): **not pushed yet**, this is new work from
-  this session.
+- Phase 3 (`category-redesign/phase-3-fe-ui`): pushed to `origin`. Two follow-up commits
+  landed after that push (Settings hierarchy display fix, Settings category UI redesign —
+  see below) and have **not** been re-pushed yet.
 
 PR descriptions for phase 1 and phase 2 were already handed to the user directly (not
 regenerated here) — phase 1 targets `main`, phase 2 targets phase 1's branch. Phase 3 would
@@ -49,6 +50,50 @@ already-pushed `phase-1` branch. New test case added to `categories.test.ts` (no
 - `lib/derive.ts`'s `buildDonutData` already reads `colorVar(category.color)` per category
   — no hardcoded `chart-1..5` list to update, so the "12 visually distinct expense colors"
   claim rests on the reseed data + new CSS tokens, not on any donut-chart-specific code.
+
+## Phase 3 addenda (post-push, unpushed)
+
+- User reported Settings' category list had no parent/child visual distinction at all —
+  out of the original Phase 3 checklist scope (only covered the transaction picker).
+  Extracted `groupCategories()` out of `CategoryPicker` into
+  `packages/web/src/features/categories/group.ts`; Settings now renders the same grouped
+  hierarchy.
+- Follow-up design feedback: Settings' category list redesigned into per-parent bordered
+  "boxes" (icon+title header, children as a horizontal icon-over-label tile grid instead of
+  a vertical indented list), and the always-inline edit/add panel was extracted into a new
+  `CategoryForm` component shown in a `Drawer` (desktop) / `BottomSheet` (mobile) — same
+  pattern `TransactionForm` already uses, instead of permanently pushing page content down.
+
+## Known gap, deferred: system categories aren't editable — possible future feature
+
+All 65 reseeded categories are `owner_id IS NULL` (system-owned) — confirmed via live query
+(`select count(*) filter (where owner_id is null) ...` → 65/65). Phase 1's PATCH rule
+correctly returns `403` on any system-owned category, per `PLAN.md`'s explicitly-confirmed
+decision table. Net effect: **no category is currently editable by the user** — only new
+categories created via Settings' "Add" button (which are user-owned) would be.
+
+User wants this changed so their own default/seeded categories are editable, confirmed
+this app will eventually be multi-user (other people signing in with their own accounts),
+which rules out the simplest fix (just dropping the 403 check — that would let any user
+edit the shared global taxonomy everyone else sees, a real correctness bug once a second
+account exists).
+
+The two options discussed, neither implemented yet:
+1. **Re-seed as user-owned** per account, e.g. via a trigger on `auth.users` insert (or
+   app-layer "seed defaults on first login") that gives every new user their own owned copy
+   of the taxonomy. Correct for multi-user, but is new scope beyond `PLAN.md` — that spec
+   explicitly ruled out copy-on-write personalization and specified system-parent +
+   user-owned-child as *the* intended personalization path, not full system-category
+   editability. This would reverse that confirmed decision, not just patch a bug.
+2. Some other still-locked-but-personalizable model TBD.
+
+Also, independent of that decision: the API 403 is currently a **silent failure** in the
+UI — `useUpdateCategory`'s mutation has no `onError`, so a blocked edit just does nothing
+visible. Worth fixing regardless of which direction #1 above goes.
+
+Explicitly parked — user said "put it in possible feature for now," not to implement this
+session. Next session should re-open this with the user before touching
+auth/schema/migration for it (all hard-stop territory per `CLAUDE.md`).
 
 ## Verification Performed
 
