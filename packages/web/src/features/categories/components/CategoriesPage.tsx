@@ -1,5 +1,5 @@
 
-import { ArrowLeft, Plus } from 'lucide-react'
+import { ArrowLeft, Plus, Star } from 'lucide-react'
 import { useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
@@ -18,7 +18,8 @@ export function CategoriesPage({
   variant: 'mobile' | 'desktop'
   onBack: () => void
 }) {
-  const { categories, addCategory, updateCategory, deleteCategory } = useStore()
+  const { categories, addCategory, updateCategory, deleteCategory, favoriteCategoryIds, addFavorite, removeFavorite } =
+    useStore()
   const { t } = useLang()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
@@ -49,6 +50,11 @@ export function CategoriesPage({
     if (!editingId) return
     deleteCategory(editingId)
     closeForm()
+  }
+
+  const handleToggleFavorite = (categoryId: string) => {
+    if (favoriteCategoryIds.has(categoryId)) removeFavorite(categoryId)
+    else addFavorite(categoryId)
   }
 
   const categoryForm = (
@@ -91,7 +97,9 @@ export function CategoriesPage({
             parent={parent}
             childCategories={childCategories}
             editingId={editingId}
+            favoriteCategoryIds={favoriteCategoryIds}
             onSelect={handleSelectCategory}
+            onToggleFavorite={handleToggleFavorite}
           />
         ))}
       </div>
@@ -113,55 +121,102 @@ function CategoryGroupBox({
   parent,
   childCategories,
   editingId,
+  favoriteCategoryIds,
   onSelect,
+  onToggleFavorite,
 }: {
   parent: Category
   childCategories: Category[]
   editingId: string | null
+  favoriteCategoryIds: Set<string>
   onSelect: (category: Category) => void
+  onToggleFavorite: (categoryId: string) => void
 }) {
+  const { t } = useLang()
   return (
     <div className="rounded-xl border border-border p-3">
-      <button
-        type="button"
-        onClick={() => onSelect(parent)}
-        className={cn(
-          'flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors',
-          editingId === parent.id ? 'bg-accent' : 'hover:bg-muted',
-        )}
-      >
-        <span
-          className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-white"
-          style={{ backgroundColor: colorVar(parent.color) }}
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onSelect(parent)}
+          className={cn(
+            'flex flex-1 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors',
+            editingId === parent.id ? 'bg-accent' : 'hover:bg-muted',
+          )}
         >
-          <CategoryIcon name={parent.icon} className="size-4" />
-        </span>
-        <span className="truncate text-sm font-semibold">{parent.name}</span>
-      </button>
+          <span
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-white"
+            style={{ backgroundColor: colorVar(parent.color) }}
+          >
+            <CategoryIcon name={parent.icon} className="size-4" />
+          </span>
+          <span className="truncate text-sm font-semibold">{parent.name}</span>
+        </button>
+        <FavoriteToggle
+          isFavorite={favoriteCategoryIds.has(parent.id)}
+          label={parent.name}
+          onToggle={() => onToggleFavorite(parent.id)}
+        />
+      </div>
 
       {childCategories.length > 0 && (
         <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6">
           {childCategories.map((child) => (
-            <button
-              key={child.id}
-              type="button"
-              onClick={() => onSelect(child)}
-              className={cn(
-                'flex flex-col items-center gap-1 rounded-lg p-2 text-center transition-colors',
-                editingId === child.id ? 'bg-accent' : 'hover:bg-muted',
-              )}
-            >
-              <span
-                className="inline-flex size-9 items-center justify-center rounded-lg text-white"
-                style={{ backgroundColor: colorVar(child.color) }}
+            <div key={child.id} className="relative">
+              <button
+                type="button"
+                onClick={() => onSelect(child)}
+                className={cn(
+                  'flex w-full flex-col items-center gap-1 rounded-lg p-2 text-center transition-colors',
+                  editingId === child.id ? 'bg-accent' : 'hover:bg-muted',
+                )}
               >
-                <CategoryIcon name={child.icon} className="size-4" />
-              </span>
-              <span className="w-full truncate text-xs text-muted-foreground">{child.name}</span>
-            </button>
+                <span
+                  className="inline-flex size-9 items-center justify-center rounded-lg text-white"
+                  style={{ backgroundColor: colorVar(child.color) }}
+                >
+                  <CategoryIcon name={child.icon} className="size-4" />
+                </span>
+                <span className="w-full truncate text-xs text-muted-foreground">{child.name}</span>
+              </button>
+              <FavoriteToggle
+                isFavorite={favoriteCategoryIds.has(child.id)}
+                label={child.name}
+                onToggle={() => onToggleFavorite(child.id)}
+                className="absolute -right-1 -top-1"
+              />
+            </div>
           ))}
         </div>
       )}
     </div>
+  )
+}
+
+function FavoriteToggle({
+  isFavorite,
+  label,
+  onToggle,
+  className,
+}: {
+  isFavorite: boolean
+  label: string
+  onToggle: () => void
+  className?: string
+}) {
+  const { t } = useLang()
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={isFavorite}
+      aria-label={isFavorite ? t('category.unfavorite', { name: label }) : t('category.favorite', { name: label })}
+      className={cn(
+        'inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground',
+        className,
+      )}
+    >
+      <Star className={cn('size-3.5', isFavorite && 'fill-primary text-primary')} />
+    </button>
   )
 }
