@@ -88,16 +88,19 @@ Design system lives in `app/globals.css`. Semantic color tokens: `--income`, `--
 ## Spec-Driven Execution Workflow
 
 Large/architectural changes flow: `/grill-me` → `specs/<feature>/PLAN.md` →
-`specs/<feature>/EXECUTION.md` → phased implementation via the `spec-phase` skill.
+`specs/<feature>/EXECUTION.md` (via the `spec-plan` skill) → phased implementation (via the
+`spec-phase` skill).
 
-Two rules that must hold even outside that skill's invocation:
+Two rules that must hold even outside those skills' invocation:
 - Starting a phase authorizes its commits; it does **not** authorize push or PR-creation —
   those need a separate explicit go-ahead every time (see Hard Stops below).
 - A phase is only complete when typecheck + tests actually pass, not when the checklist is
   checked off — checking boxes doesn't substitute for running the gate.
 
-Everything else (branching, rebase timing, checklist mechanics, resuming mid-phase) is in
-`.claude/skills/spec-phase/SKILL.md` — invoke it rather than re-deriving the procedure.
+Everything else — turning PLAN.md into EXECUTION.md is
+`.claude/skills/spec-plan/SKILL.md`; branching, rebase timing, checklist mechanics, and
+resuming mid-phase are in `.claude/skills/spec-phase/SKILL.md` — invoke the relevant one
+rather than re-deriving the procedure.
 
 ## Coding Standards
 
