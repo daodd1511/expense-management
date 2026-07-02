@@ -1,7 +1,7 @@
 
 import { ArrowRight, X } from 'lucide-react'
 import { useState } from 'react'
-import { CategoryPicker } from '@/features/categories/components/CategoryPicker'
+import { FavoriteCategoryPicker } from '@/features/categories/components/FavoriteCategoryPicker'
 import { Button } from '@/shared/components/ui/button'
 import { DatePicker } from '@/shared/components/ui/date-picker'
 import { Input, Label, Textarea } from '@/shared/components/ui/input'
@@ -39,7 +39,7 @@ export function TransactionForm({
   onSubmit: (tx: Omit<Transaction, 'id'>) => void
   onCancel: () => void
 }) {
-  const { categories, accounts, getCategory } = useStore()
+  const { categories, accounts, getCategory, favoriteCategoryIds } = useStore()
   const { t } = useLang()
   const [type, setType] = useState<TxType>(initial?.type ?? 'expense')
   const [amount, setAmount] = useState<string>(initial ? String(initial.amount) : '')
@@ -161,7 +161,12 @@ export function TransactionForm({
         {type !== 'transfer' && (
           <div className="flex flex-col gap-2">
             <Label>{t('form.category')}</Label>
-            <CategoryPicker categories={visibleCats} selectedId={categoryId} onSelect={setCategoryId} />
+            <FavoriteCategoryPicker
+              categories={visibleCats}
+              favoriteCategoryIds={favoriteCategoryIds}
+              selectedId={categoryId}
+              onSelect={setCategoryId}
+            />
           </div>
         )}
 

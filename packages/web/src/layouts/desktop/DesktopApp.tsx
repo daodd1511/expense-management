@@ -24,8 +24,9 @@ import { DesktopDashboard } from '@/features/dashboard/components/DesktopDashboa
 import { DesktopSettings } from '@/features/settings/components/Settings'
 import { DesktopSubscriptions } from '@/features/subscriptions/components/DesktopSubscriptions'
 import { DesktopTransactionsTable } from '@/features/transactions/components/DesktopTransactionsTable'
+import { CategoriesPage } from '@/features/categories/components/CategoriesPage'
 
-type Tab = 'dashboard' | 'transactions' | 'budgets' | 'subscriptions' | 'accounts' | 'settings'
+type Tab = 'dashboard' | 'transactions' | 'budgets' | 'subscriptions' | 'accounts' | 'settings' | 'categories'
 
 export function DesktopApp() {
   const { addTransaction, updateTransaction, subscriptions, transactions } = useStore()
@@ -120,7 +121,8 @@ export function DesktopApp() {
           {tab === 'budgets' && <DesktopBudgets />}
           {tab === 'subscriptions' && <DesktopSubscriptions />}
           {tab === 'accounts' && <DesktopAccounts />}
-          {tab === 'settings' && <DesktopSettings />}
+          {tab === 'settings' && <DesktopSettings onNavigateToCategories={() => setTab('categories')} />}
+          {tab === 'categories' && <CategoriesPage variant="desktop" onBack={() => setTab('settings')} />}
         </div>
       </main>
 

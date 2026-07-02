@@ -15,8 +15,9 @@ import { MobileHome } from '@/features/dashboard/components/MobileHome'
 import { MobilePlanning } from '@/layouts/mobile/MobilePlanning'
 import { MobileSettings } from '@/features/settings/components/MobileSettings'
 import { MobileTransactions } from '@/features/transactions/components/MobileTransactions'
+import { CategoriesPage } from '@/features/categories/components/CategoriesPage'
 
-type Screen = 'home' | 'transactions' | 'planning' | 'accounts' | 'settings'
+type Screen = 'home' | 'transactions' | 'planning' | 'accounts' | 'settings' | 'categories'
 
 export function MobileApp() {
   const { addTransaction, updateTransaction, subscriptions, transactions } = useStore()
@@ -32,6 +33,7 @@ export function MobileApp() {
     planning: t('nav.planning'),
     accounts: t('nav.accounts'),
     settings: t('nav.settings'),
+    categories: t('settings.categories'),
   }
 
   const NAV: { screen: Screen; label: string; icon: typeof Home; badge?: number }[] = [
@@ -92,7 +94,8 @@ export function MobileApp() {
         {screen === 'transactions' && <MobileTransactions onEdit={openEdit} />}
         {screen === 'planning' && <MobilePlanning />}
         {screen === 'accounts' && <MobileAccounts />}
-        {screen === 'settings' && <MobileSettings />}
+        {screen === 'settings' && <MobileSettings onNavigateToCategories={() => setScreen('categories')} />}
+        {screen === 'categories' && <CategoriesPage variant="mobile" onBack={() => setScreen('settings')} />}
       </main>
 
       {/* Bottom nav with center FAB */}

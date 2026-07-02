@@ -6,6 +6,7 @@ import { transactionsRouter } from './routes/transactions'
 import { accountsRouter } from './routes/accounts'
 import { categoriesRouter } from './routes/categories'
 import { budgetsRouter } from './routes/budgets'
+import { favoritesRouter } from './routes/favorites'
 import { subscriptionsRouter } from './routes/subscriptions'
 
 const app = new Hono<AuthEnv>()
@@ -22,6 +23,7 @@ api.route('/transactions', transactionsRouter)
 api.route('/accounts', accountsRouter)
 api.route('/categories', categoriesRouter)
 api.route('/budgets', budgetsRouter)
+api.route('/favorites', favoritesRouter)
 api.route('/subscriptions', subscriptionsRouter)
 
 export default {

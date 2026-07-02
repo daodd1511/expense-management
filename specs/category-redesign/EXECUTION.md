@@ -127,3 +127,9 @@ Branch: `category-redesign/phase-3-fe-ui` (off `phase-2`)
 
 **On completion:** update this checklist, update root `HANDOFF.md`, stop and ask before
 push/PR. This is the final phase — after merge, delete all three phase branches.
+
+**Addendum (post-completion):** user reported Settings' category management list showed no
+parent/child distinction at all — a real gap, out of this checklist's original scope (which
+only covered the transaction form's picker). Fixed: extracted `groupCategories()` out of
+`CategoryPicker` into `packages/web/src/features/categories/group.ts`, Settings' flat grid
+now renders the same grouped/indented hierarchy. `tsc` clean, FE suite green (17/17).
