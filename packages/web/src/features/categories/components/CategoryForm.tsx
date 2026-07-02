@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Input, Label } from '@/shared/components/ui/input'
 import { useLang } from '@/core/i18n'
 import type { Category } from '@/core/types'
@@ -28,6 +29,7 @@ export interface CategoryFormState {
   icon: string
   color: string
   type: 'expense' | 'income'
+  parentId: string | null
 }
 
 const EMPTY_CATEGORY: CategoryFormState = {
@@ -35,6 +37,7 @@ const EMPTY_CATEGORY: CategoryFormState = {
   icon: 'Tag',
   color: 'chart-1',
   type: 'expense',
+  parentId: null,
 }
 
 export function toFormState(category: Category | undefined): CategoryFormState {
@@ -44,23 +47,35 @@ export function toFormState(category: Category | undefined): CategoryFormState {
     icon: category.icon,
     color: category.color,
     type: category.type,
+    parentId: category.parentId,
   }
 }
 
 export function CategoryForm({
   initial,
+  categories,
   onSave,
   onDelete,
   onCancel,
 }: {
   initial?: Category
+  categories: Category[]
   onSave: (form: CategoryFormState) => void
   onDelete: () => void
   onCancel: () => void
 }) {
   const { t } = useLang()
   const [form, setForm] = useState<CategoryFormState>(() => toFormState(initial))
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const isEditing = !!initial
+  const hasChildren = initial ? categories.some((category) => category.parentId === initial.id) : false
+  const canChangeParent = !hasChildren
+  const parentOptions = categories.filter((category) => {
+    if (category.parentId !== null) return false
+    if (initial && category.id === initial.id) return false
+    if (category.type !== form.type) return false
+    return true
+  })
 
   const canDelete = isEditing && !initial?.isSystem
   const canSave = form.name.trim().length > 0
@@ -68,6 +83,24 @@ export function CategoryForm({
   const handleSave = () => {
     if (!canSave) return
     onSave({ ...form, name: form.name.trim() })
+  }
+
+  const handleConfirmDelete = () => {
+    setConfirmDeleteOpen(false)
+    onDelete()
+  }
+
+  const handleSetType = (type: CategoryFormState['type']) => {
+    setForm((prev) => ({ ...prev, type, parentId: null }))
+  }
+
+  const handleSetParent = (parent: Category | null) => {
+    setForm((prev) => ({
+      ...prev,
+      parentId: parent?.id ?? null,
+      type: parent?.type ?? prev.type,
+      color: parent?.color ?? prev.color,
+    }))
   }
 
   return (
@@ -95,14 +128,51 @@ export function CategoryForm({
               <button
                 key={type}
                 type="button"
-                disabled={isEditing}
-                onClick={() => setForm((prev) => ({ ...prev, type }))}
+                disabled={isEditing || form.parentId !== null}
+                onClick={() => handleSetType(type)}
                 className={cn(
                   'rounded-lg border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60',
                   form.type === type ? 'border-primary bg-accent' : 'border-border hover:bg-muted',
                 )}
               >
                 {type === 'expense' ? t('settings.catTypeExpense') : t('settings.catTypeIncome')}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label>{t('settings.parentCat')}</Label>
+          <div className="grid grid-cols-1 gap-2">
+            <button
+              type="button"
+              disabled={!canChangeParent}
+              onClick={() => handleSetParent(null)}
+              className={cn(
+                'rounded-lg border px-3 py-2 text-left text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+                form.parentId === null ? 'border-primary bg-accent' : 'border-border hover:bg-muted',
+              )}
+            >
+              {t('settings.parentCatTopLevel')}
+            </button>
+            {parentOptions.map((parent) => (
+              <button
+                key={parent.id}
+                type="button"
+                disabled={!canChangeParent}
+                onClick={() => handleSetParent(parent)}
+                className={cn(
+                  'flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+                  form.parentId === parent.id ? 'border-primary bg-accent' : 'border-border hover:bg-muted',
+                )}
+              >
+                <span
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-white"
+                  style={{ backgroundColor: colorVar(parent.color) }}
+                >
+                  <CategoryIcon name={parent.icon} className="size-3.5" />
+                </span>
+                <span className="truncate">{parent.name}</span>
               </button>
             ))}
           </div>
@@ -168,7 +238,7 @@ export function CategoryForm({
             variant="outline"
             size="lg"
             className="h-11 text-expense hover:bg-expense/10 hover:text-expense"
-            onClick={onDelete}
+            onClick={() => setConfirmDeleteOpen(true)}
           >
             <Trash2 className="size-4" />
           </Button>
@@ -177,6 +247,11 @@ export function CategoryForm({
           {isEditing ? t('settings.saveCat') : t('settings.createCat')}
         </Button>
       </div>
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onCancel={() => setConfirmDeleteOpen(false)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   )
 }

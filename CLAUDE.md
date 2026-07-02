@@ -78,12 +78,8 @@ Mobile: "Kế hoạch" (Planning) tab replaces the Budgets tab; inner tab bar sw
 Design system lives in `app/globals.css`. Semantic color tokens: `--income`, `--expense`, `--transfer` (and `-foreground`, `-muted` variants). Motion tokens: `--duration-fast/base/slow`, `--ease-out`, `--ease-in-out`. Z-index scale: `--z-dropdown` through `--z-tooltip`. OKLCH color space throughout.
 
 ### Commit Messages
-- Short and concise. Imperative mood, no trailing period.
-- Split unrelated changes into separate, meaningful commits — do not lump everything
-  into one.
-- Never add AI attribution or `Co-authored-by` for the agent.
-- The `caveman:caveman-commit` skill can generate messages; override its default
-  Conventional Commits format to match the convention above
+- The `terse-commit` skill generates messages matching this convention (plain
+  imperative subject, no Conventional Commits prefix).
 
 ## Spec-Driven Execution Workflow
 
@@ -103,7 +99,7 @@ resuming mid-phase are in `.claude/skills/spec-phase/SKILL.md` — invoke the re
 rather than re-deriving the procedure.
 
 ## Coding Standards
-
+- Always use `react-frontend-developer` skill for frontend code generation.
 ### Reuse First
 - Prefer existing components, hooks, utilities, and models before creating new ones.
 - Before creating a new component, check both [src/components](src/components) and the relevant feature module for a compatible pattern.

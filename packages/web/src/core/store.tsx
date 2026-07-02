@@ -12,6 +12,11 @@ import {
   useUpdateCategory,
 } from '@/features/categories/queries'
 import {
+  useAddFavorite,
+  useFavorites,
+  useRemoveFavorite,
+} from '@/features/categories/favorites-queries'
+import {
   useAddTransaction,
   useDeleteTransaction,
   useTransactions,
@@ -36,6 +41,7 @@ export interface StoreValue {
   transactions: Transaction[]
   accounts: Account[]
   categories: Category[]
+  favoriteCategoryIds: Set<string>
   budgets: Budget[]
   subscriptions: Subscription[]
   loading: boolean
@@ -54,6 +60,8 @@ export interface StoreValue {
     patch: Partial<Pick<Category, 'name' | 'icon' | 'color' | 'parentId'>>,
   ) => void
   deleteCategory: (id: string) => void
+  addFavorite: (categoryId: string) => void
+  removeFavorite: (categoryId: string) => void
   getCategory: (id: string | null | undefined) => Category | undefined
   getAccount: (id: string | null | undefined) => Account | undefined
   addBudget: (b: Budget) => void
@@ -71,6 +79,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const txQuery = useTransactions()
   const accQuery = useAccounts()
   const catQuery = useCategories()
+  const favQuery = useFavorites()
   const budgetQuery = useBudgets()
   const subQuery = useSubscriptions()
 
@@ -84,6 +93,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const addCat = useAddCategory()
   const updateCat = useUpdateCategory()
   const deleteCat = useDeleteCategory()
+  const addFav = useAddFavorite()
+  const removeFav = useRemoveFavorite()
   const addBud = useAddBudget()
   const updateBud = useUpdateBudget()
   const deleteBud = useDeleteBudget()
@@ -95,6 +106,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const transactions: Transaction[] = txQuery.data ?? []
   const accounts: Account[] = accQuery.data ?? []
   const categories: Category[] = catQuery.data ?? []
+  const favoriteCategoryIds = useMemo(() => new Set<string>(favQuery.data ?? []), [favQuery.data])
   const budgets: Budget[] = budgetQuery.data ?? []
   const subscriptions: Subscription[] = subQuery.data ?? []
 
@@ -102,6 +114,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     txQuery.isLoading ||
     accQuery.isLoading ||
     catQuery.isLoading ||
+    favQuery.isLoading ||
     budgetQuery.isLoading ||
     subQuery.isLoading
 
@@ -149,6 +162,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (id: string) => deleteCat.mutate(id),
     [deleteCat],
   )
+  const addFavorite = useCallback(
+    (categoryId: string) => addFav.mutate(categoryId),
+    [addFav],
+  )
+  const removeFavorite = useCallback(
+    (categoryId: string) => removeFav.mutate(categoryId),
+    [removeFav],
+  )
 
   const addBudget = useCallback(
     (b: Budget) => addBud.mutate(b),
@@ -190,6 +211,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       transactions,
       accounts,
       categories,
+      favoriteCategoryIds,
       budgets,
       subscriptions,
       loading,
@@ -203,6 +225,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       addCategory,
       updateCategory,
       deleteCategory,
+      addFavorite,
+      removeFavorite,
       getCategory: (id) => (id ? catMap.get(id) : undefined),
       getAccount: (id) => (id ? accMap.get(id) : undefined),
       addBudget,
@@ -214,10 +238,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       logSubscription,
     }
   }, [
-    transactions, accounts, categories, budgets, subscriptions, loading,
+    transactions, accounts, categories, favoriteCategoryIds, budgets, subscriptions, loading,
     addTransaction, updateTransaction, deleteTransaction, deleteTransactions,
     addAccount, updateAccount, deleteAccount,
-    addCategory, updateCategory, deleteCategory,
+    addCategory, updateCategory, deleteCategory, addFavorite, removeFavorite,
     addBudget, updateBudget, deleteBudget,
     addSubscription, updateSubscription, deleteSubscription, logSubscription,
   ])

@@ -22,7 +22,6 @@ export function CategoryPicker({
   selectedId: string | null
   onSelect: (id: string) => void
 }) {
-  const { t } = useLang()
   const groups = useMemo(() => groupCategories(categories), [categories])
   const [expandedId, setExpandedId] = useState<string | null>(() => findParentId(categories, selectedId))
 
@@ -65,6 +64,8 @@ function CategoryGroupRow({
   const { t } = useLang()
   const hasChildren = childCategories.length > 0
   const parentActive = selectedId === parent.id
+  const selectedChild = childCategories.find((child) => child.id === selectedId)
+  const visibleChildren = expanded ? childCategories : selectedChild ? [selectedChild] : []
 
   const handleSelectParent = useCallback(() => onSelect(parent.id), [onSelect, parent.id])
   const handleToggle = useCallback(() => onToggleExpanded(parent.id), [onToggleExpanded, parent.id])
@@ -103,28 +104,49 @@ function CategoryGroupRow({
         )}
       </div>
 
-      {hasChildren && expanded && (
+      {visibleChildren.length > 0 && (
         <div className="ml-6 flex flex-col gap-0.5 border-l border-border pl-3">
-          {childCategories.map((child) => {
-            const active = selectedId === child.id
-            return (
-              <button
-                key={child.id}
-                type="button"
-                onClick={() => onSelect(child.id)}
-                aria-pressed={active}
-                className={cn(
-                  'flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors',
-                  active ? 'text-primary-foreground' : 'text-foreground hover:bg-muted',
-                )}
-                style={active ? { backgroundColor: colorVar(child.color) } : undefined}
-              >
-                {child.name}
-              </button>
-            )
-          })}
+          {visibleChildren.map((child) => (
+            <ChildCategoryButton
+              key={child.id}
+              category={child}
+              active={selectedId === child.id}
+              onSelect={onSelect}
+            />
+          ))}
         </div>
       )}
     </div>
+  )
+}
+
+function ChildCategoryButton({
+  category,
+  active,
+  onSelect,
+}: {
+  category: Category
+  active: boolean
+  onSelect: (id: string) => void
+}) {
+  const handleSelect = useCallback(() => onSelect(category.id), [category.id, onSelect])
+
+  return (
+    <button
+      type="button"
+      onClick={handleSelect}
+      aria-pressed={active}
+      className={cn(
+        'flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors',
+        active ? 'text-primary-foreground' : 'text-foreground hover:bg-muted',
+      )}
+      style={active ? { backgroundColor: colorVar(category.color) } : undefined}
+    >
+      <span
+        className="size-1.5 shrink-0 rounded-full"
+        style={{ backgroundColor: active ? 'currentColor' : colorVar(category.color) }}
+      />
+      {category.name}
+    </button>
   )
 }
