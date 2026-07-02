@@ -2,7 +2,7 @@ import type { Context } from 'hono'
 import { secureParse } from '@wallet/shared'
 import type { ZodSchema } from 'zod'
 
-type ApiErrorStatus = 400 | 401 | 404 | 500
+type ApiErrorStatus = 400 | 401 | 403 | 404 | 409 | 500
 
 export function jsonError(c: Context, status: ApiErrorStatus, error: string, details?: unknown) {
   return c.json(
