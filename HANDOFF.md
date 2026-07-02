@@ -1,77 +1,68 @@
-# Handoff — Category Redesign Phase 1 Complete
+# Handoff — Category Redesign Phase 2 Complete
 
 ## Context
 
 - Repo: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
-- Branch: `category-redesign/phase-1-schema-api` (off `main`)
-- Current objective for next session: start Phase 2 (`category-redesign/phase-2-fe-data`,
-  branched off phase-1) — see `specs/category-redesign/EXECUTION.md`
+- Branch: `category-redesign/phase-2-fe-data` (off `category-redesign/phase-1-schema-api`)
+- Current objective for next session: start Phase 3 (`category-redesign/phase-3-fe-ui`,
+  branched off phase-2) — see `specs/category-redesign/EXECUTION.md`
 
 Read order: this file → `specs/category-redesign/EXECUTION.md` → `specs/category-redesign/PLAN.md`.
 
-## Phase 1 Status: Done, Verified, Not Pushed
+## Phase 1 + 2 Status: Done, Verified, Not Pushed
 
-All checklist items and the verification gate in `EXECUTION.md` are checked off. Not pushed
-or opened as a PR yet — needs explicit go-ahead per the workflow's hard-stop rule.
+Neither phase has been pushed or opened as a PR — needs explicit go-ahead per the
+workflow's hard-stop rule. Phase 1 details are in git history
+(`git log category-redesign/phase-1-schema-api`); this section focuses on Phase 2.
 
-What changed:
-- `supabase/migrations/20260702053135_category_type_hierarchy.sql` — adds `type`
-  (`expense|income`, NOT NULL) and `parent_id` (nullable self-FK) to `categories`; trigger
-  enforces child.type = parent.type, 2-level depth cap, and "category with children can't
-  itself become a child"; hard-wipes and reseeds the taxonomy from `PLAN.md`. **Applied** to
-  the linked remote Supabase project via `supabase db push`
-  (`supabase migration list` confirms local/remote both at `20260702053135`).
-- `packages/shared`: `category.model.ts`, `category.dto.ts`, `category.mapper.ts`,
-  `database.types.ts` updated for `type`/`parentId`.
-- `packages/api/src/routes/categories.ts`: POST validates `parentId` (exists, visible,
-  same type, not itself nested); PATCH returns 403 on system-owned categories and rejects
-  `type` in the body; re-parent validation (same type, target not itself a child, mover has
-  no children); DELETE returns 403 system-owned / 409 has-children.
-- `packages/api/src/lib/http.ts`: `ApiErrorStatus` extended with 403/409.
-- New `packages/api/src/routes/categories.test.ts` (7 cases).
+What changed in Phase 2:
+- `packages/web/src/features/categories/db.ts` + `queries.ts`: `type`/`parentId` now pass
+  through create/patch payloads.
+- `packages/web/src/core/store.tsx`: `addCategory`/`updateCategory` signatures widened.
+- `packages/web/src/features/settings/components/Settings.tsx`: category form gained a
+  type toggle (Expense/Income), disabled once a category exists since type is immutable
+  server-side.
+- `packages/web/src/core/data.ts`: dead mock category seed updated to satisfy the wider
+  `Category` type (not actually read anywhere live — only `monthlyTrend` is imported from
+  this file elsewhere).
+- `packages/web/src/features/transactions/components/TransactionForm.tsx`: removed the
+  hardcoded `INCOME_CATS` array; category list now filters by `category.type === type`.
+  Also removed a hardcoded `'salary'` default-select on the income tab that relied on a
+  mock id no longer valid now categories have real uuids.
+- `packages/web/src/features/budgets/components/BudgetForm.tsx`: added
+  `conflictsWithExistingBudget` — excludes a category from the budget picker if its parent
+  or any of its children already has a budget (leaf-or-parent-direct-only rule).
+- Tests: 2 new cases in `TransactionForm.test.tsx` (type filtering, category-clear on type
+  switch), new `BudgetForm.test.ts` (5 cases for the conflict rule).
 
 ## Verification Performed
 
-- `tsc --noEmit` clean on `packages/shared` and `packages/api`.
-- Full backend vitest suite green (19/19), run directly per the known `pnpm` sandbox
-  caveat (see "Important Environment Constraint" below).
-- Live DB verification against the linked remote project, run inside
-  `begin...rollback` transactions (nothing persisted):
-  - type-mismatch child insert → rejected by trigger
-  - 3-level nesting attempt → rejected by trigger
-  - re-parenting a category that has children → rejected by trigger (isolated from the
-    type-mismatch case with a same-type target)
-  - reseed row counts confirmed exact: 65 total, 16 top-level (12 expense + 4 income),
-    52 expense / 13 income — matches `PLAN.md` taxonomy table
-- Not verified: HTTP-level 403/409/type-immutable behavior via live curl — no test-user
-  Supabase auth JWT was available this session to pass `authMiddleware`. That logic is
-  covered by the 7 automated route tests instead (mocked `userId`, not a live token).
+- `tsc --noEmit -p packages/web/tsconfig.json` clean.
+- Full FE test suite green: 11/11 (`api.test.ts`, `BudgetForm.test.ts`,
+  `TransactionForm.test.tsx`), run directly via `vitest run` from inside `packages/web`
+  (needed for `vite-tsconfig-paths` alias resolution — running from repo root without the
+  package's own `vite.config.ts` fails to resolve `@/...` imports).
+- Dev server (`pnpm --filter @wallet/web dev`) started cleanly, `/` returned 200.
+- **Not verified**: the manual "switch transaction type tabs, confirm only matching-type
+  categories show" check from the gate — no browser automation tool was available this
+  session (checked via `ToolSearch`, no chrome/playwright MCP registered). The two new
+  automated tests exercise the same logic path but this wasn't confirmed visually.
 
-## Known Assumption to Revisit
+## Note: CLAUDE.md changed outside this session's own edits
 
-The migration assumes `categories.id` is `uuid` (Supabase default convention) — there was
-no prior schema dump or migration history in this repo to confirm against. It applied
-cleanly, so this is now confirmed correct in practice.
-
-## Important Environment Constraint
-
-`pnpm` is unreliable in this sandbox after dependency changes (tries to recreate workspace
-`node_modules`, hits network isolation). Workaround: use direct binaries —
-`./node_modules/.bin/vitest run <path>` and `/Users/thomasduong/.volta/bin/tsc --noEmit -p <tsconfig>` —
-instead of `pnpm test` / `pnpm exec tsc`.
-
-`supabase db push` also attempts to pull a Docker image (`public.ecr.aws/supabase/edge-runtime`)
-for an unrelated part of its flow; this can fail/hang on an expired registry auth token. It's
-unrelated to migration application — check `supabase migration list` to confirm the migration
-itself landed rather than trusting the push command's exit state.
+`CLAUDE.md` picked up a line during this session ("Always use `react-frontend-developer`
+skill for frontend code generation") that wasn't authored by me — flagged here so the next
+session knows Phase 2's frontend edits (`TransactionForm.tsx`, `BudgetForm.tsx`,
+`Settings.tsx`, `store.tsx`) predate that rule and weren't run through that skill. Phase 3
+is entirely frontend UI work — route it through `react-frontend-developer` per the current
+`CLAUDE.md`.
 
 ## Remaining Work
 
-1. Phase 2 (`category-redesign/phase-2-fe-data`, off phase-1): wire `type`/`parentId`
-   through `packages/web/src/features/categories/db.ts` + `queries.ts`; remove the
-   `INCOME_CATS` hack in `TransactionForm.tsx` (lines ~23, 66-68, 120) in favor of
-   `category.type === type` filtering; enforce leaf-or-parent-direct budget selection.
-2. Phase 3 (`category-redesign/phase-3-fe-ui`, off phase-2): `--chart-6`...`--chart-12`
-   CSS tokens, grouped-collapsible category picker (mobile + desktop), color/icon
-   assignment per `PLAN.md`.
-3. Before Phase 1 branch is pushed/PR'd: explicit user go-ahead required (not yet given).
+1. Phase 3 (`category-redesign/phase-3-fe-ui`, off phase-2): `--chart-6`...`--chart-12`
+   CSS tokens, grouped-collapsible category picker (mobile bottom sheet + desktop drawer),
+   color/icon assignment per `PLAN.md`. Route through `react-frontend-developer` skill.
+2. Before any phase branch is pushed/PR'd: explicit user go-ahead required (not yet given
+   for either phase 1 or phase 2).
+3. The Phase 2 manual browser check above should be picked up properly once a browser tool
+   is available, or done by the user directly.

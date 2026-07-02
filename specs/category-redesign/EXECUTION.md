@@ -60,19 +60,32 @@ push/PR.
 
 Branch: `category-redesign/phase-2-fe-data` (off `phase-1`)
 
-- [ ] Rebase onto `main` first if Phase 1 has since merged (per immediate-rebase rule)
-- [ ] `packages/web/src/features/categories/db.ts` + `queries.ts`: pass through `type`/
-      `parentId` in create/patch payloads
-- [ ] `TransactionForm.tsx`: remove `INCOME_CATS` hack (line ~23) and its two usages;
-      filter categories by `category.type === type`
-- [ ] Budget screen: enforce leaf-or-parent-direct only — block selecting a category whose
+- [x] Rebase onto `main` first if Phase 1 has since merged (per immediate-rebase rule) —
+      not applicable, Phase 1 hasn't merged yet
+- [x] `packages/web/src/features/categories/db.ts` + `queries.ts`: pass through `type`/
+      `parentId` in create/patch payloads. Also had to update `store.tsx`'s
+      `addCategory`/`updateCategory` signatures, `Settings.tsx` (added a type toggle, locked
+      once set since type is immutable server-side), and `data.ts`'s dead mock seed — all
+      required to satisfy the wider `Category` type, not in the original checklist wording
+      but necessary for the typecheck gate to pass
+- [x] `TransactionForm.tsx`: remove `INCOME_CATS` hack (line ~23) and its two usages;
+      filter categories by `category.type === type`. Also removed a hardcoded `'salary'`
+      default-select on the income tab (relied on a mock id that no longer exists now
+      categories have real uuids) — switching type now just clears the selection if it
+      doesn't match the new type
+- [x] Budget screen: enforce leaf-or-parent-direct only — block selecting a category whose
       parent (or child) already has a budget in the same branch
-- [ ] Update/add FE tests covering the new type-based filter replacing `INCOME_CATS`
+- [x] Update/add FE tests covering the new type-based filter replacing `INCOME_CATS`
 
 **Verification gate (hard):**
-- [ ] `tsc --noEmit -p packages/web/tsconfig.json` passes
-- [ ] FE test suite passes
-- [ ] Manual check: switching transaction type tabs shows only matching-type categories
+- [x] `tsc --noEmit -p packages/web/tsconfig.json` passes
+- [x] FE test suite passes (11/11: `api.test.ts`, `BudgetForm.test.ts` new,
+      `TransactionForm.test.tsx` with 2 new cases)
+- [ ] Manual check: switching transaction type tabs shows only matching-type categories —
+      **not run**, no browser automation tool available this session (checked for a
+      chrome/playwright MCP, none registered). Dev server started and served 200 OK on
+      `/`, confirming it builds and boots, but the actual tab-switch/filter behavior was
+      only exercised via the two new automated tests above, not visually in a browser
 
 **On completion:** update this checklist, update root `HANDOFF.md`, stop and ask before
 push/PR.
