@@ -4,22 +4,21 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { TransactionForm } from './TransactionForm'
 
+const MOCK_CATEGORIES = [
+  { id: 'food', name: 'Food', icon: 'utensils', color: 'blue', type: 'expense', parentId: null },
+  { id: 'salary', name: 'Salary', icon: 'wallet', color: 'green', type: 'income', parentId: null },
+]
+
 vi.mock('@/core/store', () => ({
   useStore: () => ({
-    categories: [
-      { id: 'food', name: 'Food', icon: 'utensils', color: 'blue' },
-      { id: 'salary', name: 'Salary', icon: 'wallet', color: 'green' },
-    ],
+    categories: MOCK_CATEGORIES,
+    // both marked favorite so they appear directly, without needing "Show all"
+    favoriteCategoryIds: new Set(['food', 'salary']),
     accounts: [
       { id: 'cash', name: 'Cash' },
       { id: 'bank', name: 'Bank' },
     ],
-    getCategory: (id: string | null | undefined) =>
-      id === 'food'
-        ? { id: 'food', name: 'Food', icon: 'utensils', color: 'blue' }
-        : id === 'salary'
-          ? { id: 'salary', name: 'Salary', icon: 'wallet', color: 'green' }
-          : undefined,
+    getCategory: (id: string | null | undefined) => MOCK_CATEGORIES.find((c) => c.id === id),
   }),
 }))
 
@@ -101,5 +100,48 @@ describe('TransactionForm', () => {
 
     const [{ date }] = onSubmit.mock.calls[0]
     expect(date.includes('T')).toBe(false)
+  })
+
+  it('filters categories by type, replacing the old hardcoded INCOME_CATS list', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <TransactionForm
+        variant="desktop"
+        onSubmit={vi.fn()}
+        onCancel={() => undefined}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Food' })).toBeDefined()
+    expect(screen.queryByRole('button', { name: 'Salary' })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Income' }))
+
+    expect(screen.getByRole('button', { name: 'Salary' })).toBeDefined()
+    expect(screen.queryByRole('button', { name: 'Food' })).toBeNull()
+  })
+
+  it('clears the selected category when switching type away from its type', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+
+    render(
+      <TransactionForm
+        variant="desktop"
+        onSubmit={onSubmit}
+        onCancel={() => undefined}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Food' }))
+    await user.click(screen.getByRole('button', { name: 'Income' }))
+    await user.click(screen.getByRole('button', { name: 'Salary' }))
+    await user.type(screen.getByPlaceholderText('0'), '5000')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'income', categoryId: 'salary' }),
+    )
   })
 })

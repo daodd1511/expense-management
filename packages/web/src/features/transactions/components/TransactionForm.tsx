@@ -1,7 +1,7 @@
 
 import { ArrowRight, X } from 'lucide-react'
 import { useState } from 'react'
-import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
+import { FavoriteCategoryPicker } from '@/features/categories/components/FavoriteCategoryPicker'
 import { Button } from '@/shared/components/ui/button'
 import { DatePicker } from '@/shared/components/ui/date-picker'
 import { Input, Label, Textarea } from '@/shared/components/ui/input'
@@ -19,8 +19,6 @@ import { useLang } from '@/core/i18n'
 import { useStore } from '@/core/store'
 import type { Transaction, TxType } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
-
-const INCOME_CATS = ['salary', 'other-income']
 
 function todayIsoDate() {
   const today = new Date()
@@ -41,7 +39,7 @@ export function TransactionForm({
   onSubmit: (tx: Omit<Transaction, 'id'>) => void
   onCancel: () => void
 }) {
-  const { categories, accounts, getCategory } = useStore()
+  const { categories, accounts, getCategory, favoriteCategoryIds } = useStore()
   const { t } = useLang()
   const [type, setType] = useState<TxType>(initial?.type ?? 'expense')
   const [amount, setAmount] = useState<string>(initial ? String(initial.amount) : '')
@@ -63,9 +61,7 @@ export function TransactionForm({
   ]
 
   const numericAmount = Number(amount) || 0
-  const visibleCats = categories.filter((c) =>
-    type === 'income' ? INCOME_CATS.includes(c.id) : !INCOME_CATS.includes(c.id),
-  )
+  const visibleCats = categories.filter((c) => c.type === type)
 
   const canSubmit =
     numericAmount > 0 &&
@@ -116,9 +112,9 @@ export function TransactionForm({
               type="button"
               onClick={() => {
                 setType(tab.value)
-                if (tab.value === 'income') setCategoryId('salary')
-                else if (tab.value === 'expense' && INCOME_CATS.includes(categoryId ?? ''))
+                if (tab.value !== 'transfer' && getCategory(categoryId)?.type !== tab.value) {
                   setCategoryId(null)
+                }
               }}
               className={cn(
                 'rounded-lg py-2 text-sm font-medium transition-colors',
@@ -165,28 +161,12 @@ export function TransactionForm({
         {type !== 'transfer' && (
           <div className="flex flex-col gap-2">
             <Label>{t('form.category')}</Label>
-            <div className="flex flex-wrap gap-2">
-              {visibleCats.map((c) => {
-                const active = categoryId === c.id
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => setCategoryId(c.id)}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
-                      active
-                        ? 'border-transparent text-primary-foreground'
-                        : 'border-border bg-background text-foreground hover:bg-muted',
-                    )}
-                    style={active ? { backgroundColor: colorVar(c.color) } : undefined}
-                  >
-                    <CategoryIcon name={c.icon} className="size-3.5" />
-                    {c.name}
-                  </button>
-                )
-              })}
-            </div>
+            <FavoriteCategoryPicker
+              categories={visibleCats}
+              favoriteCategoryIds={favoriteCategoryIds}
+              selectedId={categoryId}
+              onSelect={setCategoryId}
+            />
           </div>
         )}
 

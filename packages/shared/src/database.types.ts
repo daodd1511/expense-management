@@ -76,6 +76,35 @@ export type Database = {
           },
         ]
       }
+      category_favorites: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_favorites_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           color: string
@@ -84,6 +113,8 @@ export type Database = {
           id: string
           name: string
           owner_id: string | null
+          parent_id: string | null
+          type: string
         }
         Insert: {
           color: string
@@ -92,6 +123,8 @@ export type Database = {
           id?: string
           name: string
           owner_id?: string | null
+          parent_id?: string | null
+          type: string
         }
         Update: {
           color?: string
@@ -100,8 +133,18 @@ export type Database = {
           id?: string
           name?: string
           owner_id?: string | null
+          parent_id?: string | null
+          type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {

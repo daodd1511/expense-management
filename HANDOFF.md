@@ -1,128 +1,71 @@
-# Handoff — REST Integration and Test Baseline
+# Handoff — Category UX Complete (All 4 Phases), category-redesign Also Complete
 
 ## Context
 
 - Repo: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
-- Branch: `master`
-- Current objective for next session: continue post-migration hardening and operational completion of the BE/FE REST setup
+- Branch: `category-ux/phase-4-favorites-ui` (off `category-ux/phase-3-favorites-fe-data`)
+- The `/goal` from this session ("finish all 4 phases, commit+push each, no confirm except
+  live migration apply") is now satisfied — all 4 phases of `specs/category-ux/EXECUTION.md`
+  are code-complete, gate-passed, and committed. Phase 4 itself is **not pushed yet** —
+  that's the next action, then the goal condition is fully met.
 
-Canonical artifacts to read first:
-- [BE_INTEGRATION_PLAN.md](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/BE_INTEGRATION_PLAN.md)
-- Commit `0e03146` `Finish REST auth wiring and sync docs`
-- Commit `5ffabc5` `Add tests for REST migration`
+Read order: this file → `specs/category-ux/EXECUTION.md` → `specs/category-ux/PLAN.md`.
+`category-redesign` (the prior spec) is also fully complete — see git log on its 3 phase
+branches; nothing new there this session beyond what's already in its own `EXECUTION.md`.
 
-Do not use this handoff as the source of truth for architecture details already captured in the plan and commits above.
+## Full State: 2 Specs, 7 Phase Branches, All Pushed Except the Last
 
-## Current State
+`category-redesign` (3 phases): `phase-1-schema-api`, `phase-2-fe-data`,
+`phase-3-fe-ui` — all pushed to `origin`, no PRs opened.
 
-The monorepo migration is complete and the app is already split into:
-- `packages/web`
-- `packages/api`
-- `packages/shared`
+`category-ux` (4 phases): `phase-1-categories-page`, `phase-2-favorites-schema-api`,
+`phase-3-favorites-fe-data` — pushed. `phase-4-favorites-ui` — **committed, not pushed**.
 
-The FE data path is switched to the REST API. Browser-side Supabase is retained for auth/session only.
+Branch stack (each off the previous): `main` → `category-redesign/phase-1` → `phase-2` →
+`phase-3` → `category-ux/phase-1` → `phase-2` → `phase-3` → `phase-4`.
 
-The API auth model was updated away from deprecated JWT-secret verification:
-- backend verifies Supabase access tokens via JWKS/signing keys
-- backend uses `SUPABASE_SECRET_KEY` server-side
-- legacy `SUPABASE_SERVICE_ROLE_KEY` is still accepted as fallback in code
+## category-ux Phase 4 (final): Done, Verified, Not Pushed Yet
 
-Recent functional fixes already landed:
-- `/api` no longer falls back to SPA HTML
-- Vite dev proxy routes `/api` and `/health` to the backend
-- transaction form submits `YYYY-MM-DD` instead of full ISO timestamps
-- shared DTOs normalize timestamp-shaped date input defensively
-- future transaction dates are blocked in both UI and API validation
-- textarea resize artifact under note field was removed
+Favorites UI — the user-visible payoff of phases 2–3.
 
-## Verification Status
+What changed:
+- `CategoriesPage.tsx`: star toggle per category (parent header + each child tile).
+  Required restructuring rows from single wrapping `<button>`s into sibling-button layouts
+  (a `<button>` can't contain a `<button>`).
+- New `FavoriteCategoryPicker.tsx`: flat tile grid of favorites (type-filtered), current
+  selection appended if not already favorited (deduped), empty-state message, "Show all"
+  button opening a `Modal` with the existing full `CategoryPicker`.
+- `TransactionForm.tsx`: now uses `FavoriteCategoryPicker` instead of `CategoryPicker`
+  directly.
+- 4 new i18n keys (favorite/unfavorite/showAll/noFavorites), VI + EN.
+- New `FavoriteCategoryPicker.test.tsx` (6 cases). `TransactionForm.test.tsx`'s store mock
+  updated with `favoriteCategoryIds` so its existing 3 tests still pass unchanged in
+  behavior.
 
-Confirmed in this session:
-- direct backend `/health` returns JSON
-- proxied `/health` through Vite returns JSON
-- unauthenticated `/api/accounts` returns JSON `401`, not HTML
-- strict TypeScript passes when invoked directly with:
-  - `/Users/thomasduong/.volta/bin/tsc --noEmit -p packages/web/tsconfig.json`
-  - `/Users/thomasduong/.volta/bin/tsc --noEmit -p packages/api/tsconfig.json`
-  - `/Users/thomasduong/.volta/bin/tsc --noEmit -p packages/shared/tsconfig.json`
+Verification: `tsc` clean, FE suite 23/23, dev server smoke-checked. Manual browser check
+(star → picker shows it → Show all → modal → select → closes) **not run** — no browser
+tool available this entire session, across every UI phase in both specs. This is the one
+consistent, repeated gap worth fixing infrastructure for before the next UI-heavy spec.
 
-Test baseline added and passing when run directly with Vitest:
-- shared DTO/date tests
-- backend auth/http/route tests
-- frontend API/form tests
+## Real gotcha from Phase 3, still relevant
 
-## Important Environment Constraint
-
-`pnpm` is unreliable in this Codex sandbox after dependency changes because it repeatedly tries to recreate workspace `node_modules`, then hits:
-- network isolation (`ENOTFOUND`)
-- dependency/build approval friction
-- non-interactive purge/install behavior
-
-Practical workaround used in this session:
-- use direct binaries or direct `tsc` paths for verification
-- use direct `vitest` binary runs instead of relying on `pnpm test`
-
-Do not assume `pnpm test` is green in this environment just because the tests are valid. The suite itself passed when run directly.
-
-## Files and Areas Most Likely Relevant Next
-
-Backend auth/runtime:
-- [packages/api/src/middleware/auth.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/api/src/middleware/auth.ts)
-- [packages/api/src/db/supabase.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/api/src/db/supabase.ts)
-- [packages/api/.env.example](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/api/.env.example)
-
-Frontend API/data path:
-- [packages/web/src/core/api.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/core/api.ts)
-- [packages/web/vite.config.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/vite.config.ts)
-- `packages/web/src/features/*/db.ts`
-
-Transaction/date rules:
-- [packages/shared/src/dtos/common.dto.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/shared/src/dtos/common.dto.ts)
-- [packages/shared/src/dtos/transaction.dto.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/shared/src/dtos/transaction.dto.ts)
-- [packages/web/src/features/transactions/components/TransactionForm.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/transactions/components/TransactionForm.tsx)
-- [packages/web/src/shared/components/ui/date-picker.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/shared/components/ui/date-picker.tsx)
-
-Test harness:
-- [package.json](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/package.json)
-- [pnpm-workspace.yaml](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/pnpm-workspace.yaml)
-- [packages/web/vite.config.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/vite.config.ts)
+`useQuery().data` resolves to `any` in this environment (TanStack Query v5 typings not
+inferring cleanly against the installed TypeScript). Every existing query consumer masks it
+via an explicit target-type annotation. `new Set(x ?? [])` is the one place that surfaces it
+as a real error (infers `Set<unknown>`, not `Set<any>`) — fix is an explicit type argument:
+`new Set<string>(...)`. Not fixed at the root; flagging so it doesn't cause confusion again.
 
 ## Remaining Work
 
-Highest-priority incomplete items:
-1. Verify every authenticated REST route against real Supabase data:
-   - `/api/accounts`
-   - `/api/categories`
-   - `/api/budgets`
-   - `/api/subscriptions`
-   - `/api/subscriptions/:id/log`
-   - `/api/transactions`
-2. Deploy the API process on VPS and configure Caddy `/api/*` proxy in the real environment
-3. Decide whether to make `pnpm test` robust in this environment or accept direct-run verification as the local workaround
-
-Secondary cleanup:
-1. Remove or keep `vite-tsconfig-paths` warning deliberately
-2. Expand route coverage if new defects appear during authenticated manual verification
-3. Optionally add API integration tests around subscriptions log flow once a cleaner mocking path is worth the setup
-
-## Git State
-
-Recent commits:
-- `5ffabc5` `Add tests for REST migration`
-- `0e03146` `Finish REST auth wiring and sync docs`
-
-Current working tree:
-- clean except one unrelated untracked file:
-  - `.agents/skills/react-frontend-developer/references/architecture.md.md`
-
-Leave that untracked file alone unless the user explicitly asks about it.
-
-## Suggested Skills
-
-- `handoff`
-  - use again at the end of the next substantial session
-- `react-frontend-developer`
-  - use for any further FE test, component, or client-side architecture work
-- `caveman-commit`
-  - use if another commit is requested and a terse message is needed
-
+1. Push `category-ux/phase-4-favorites-ui` — completes this session's `/goal`.
+2. PR-creation still blocked: `gh` here authenticates as `daoduong-saritasa`, can't see
+   `daodd1511/expense-management`. All 7 branches are pushed and ready; PRs need either
+   `gh auth login` as the right account, or manual creation (descriptions can be generated
+   on request — stacked target order: `category-redesign/phase-1`→`main`, each subsequent
+   phase→its predecessor, `category-ux/phase-1`→`category-redesign/phase-3`).
+3. Manual browser verification across both specs' UI work (category picker grouping,
+   Settings redesign, categories own-page, favorites end-to-end) — none of it has been
+   visually confirmed this session. Worth doing before merging anything to `main`.
+4. Known parked item (from `category-redesign`, unrelated to `category-ux`): system-owned
+   categories can't be edited (403 by design, all 65 seeded categories are `owner_id
+   NULL`). User said to log it as a possible future feature, not implement now.
