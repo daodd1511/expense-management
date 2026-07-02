@@ -6,6 +6,7 @@ import { budgetState } from '@/features/budgets/components/BudgetBars'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { BottomSheet } from '@/shared/components/ui/overlay'
 import { Progress } from '@/shared/components/ui/progress'
 import { formatVND, monthLabel } from '@/shared/lib/format'
@@ -17,6 +18,7 @@ export function MobileBudgets() {
   const { budgets, transactions, getCategory, addBudget, updateBudget, deleteBudget } = useStore()
   const { t, lang } = useLang()
   const [sheet, setSheet] = useState<'add' | Budget | null>(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   const totalLimit = budgets.reduce((s, b) => s + b.limit, 0)
   const totalSpent = budgets.reduce((s, b) => s + spentForCategory(transactions, b.categoryId), 0)
@@ -82,7 +84,7 @@ export function MobileBudgets() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => deleteBudget(b.categoryId)}
+                      onClick={() => setPendingDeleteId(b.categoryId)}
                       className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-expense"
                     >
                       <Trash2 className="size-3.5" />
@@ -113,6 +115,14 @@ export function MobileBudgets() {
           />
         )}
       </BottomSheet>
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={() => {
+          if (pendingDeleteId) deleteBudget(pendingDeleteId)
+          setPendingDeleteId(null)
+        }}
+      />
     </div>
   )
 }

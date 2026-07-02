@@ -2,6 +2,7 @@
 import { ArrowLeftRight, Paperclip, Pencil, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { amountColorClass, formatSigned, formatTime } from '@/shared/lib/format'
 import { useStore } from '@/core/store'
 import type { Transaction } from '@/core/types'
@@ -42,6 +43,7 @@ export function TransactionRow({
 }) {
   const { getCategory, getAccount, deleteTransaction } = useStore()
   const [dx, setDx] = useState(0)
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const startX = useRef<number | null>(null)
   const cat = getCategory(tx.categoryId)
   const acc = getAccount(tx.accountId)
@@ -109,7 +111,7 @@ export function TransactionRow({
         </button>
         <button
           type="button"
-          onClick={() => deleteTransaction(tx.id)}
+          onClick={() => setConfirmDeleteOpen(true)}
           aria-label="Xóa"
           className="flex w-16 items-center justify-center bg-expense text-expense-foreground"
         >
@@ -117,6 +119,14 @@ export function TransactionRow({
         </button>
       </div>
       {content}
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onCancel={() => setConfirmDeleteOpen(false)}
+        onConfirm={() => {
+          setConfirmDeleteOpen(false)
+          deleteTransaction(tx.id)
+        }}
+      />
     </div>
   )
 }

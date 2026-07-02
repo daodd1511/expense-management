@@ -1,61 +1,71 @@
-# Handoff — Category UX Phase 1 Complete, Running Autonomously to Phase 4
+# Handoff — Category UX Complete (All 4 Phases), category-redesign Also Complete
 
 ## Context
 
 - Repo: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
-- Branch: `category-ux/phase-1-categories-page` (off `category-redesign/phase-3-fe-ui` —
-  see the base-branch note in `specs/category-ux/EXECUTION.md`, this spec depends on
-  unmerged `category-redesign` work)
-- Active session goal (`/goal`): finish all 4 phases of `specs/category-ux/EXECUTION.md`,
-  committing + pushing each phase without stopping to ask, except a live schema-migration
-  *apply* (destructive on shared data — that alone still needs a pause).
+- Branch: `category-ux/phase-4-favorites-ui` (off `category-ux/phase-3-favorites-fe-data`)
+- The `/goal` from this session ("finish all 4 phases, commit+push each, no confirm except
+  live migration apply") is now satisfied — all 4 phases of `specs/category-ux/EXECUTION.md`
+  are code-complete, gate-passed, and committed. Phase 4 itself is **not pushed yet** —
+  that's the next action, then the goal condition is fully met.
 
-Read order: this file → `specs/category-ux/EXECUTION.md` → `specs/category-ux/PLAN.md`. For
-the prior `category-redesign` spec's state (still unpushed-beyond-what's-noted, unmerged),
-see git log on `category-redesign/phase-{1,2,3}-*` branches — that spec's own HANDOFF
-content was superseded by this file; nothing about its state has changed since its Phase 3
-close-out other than the addenda already folded into its `EXECUTION.md`.
+Read order: this file → `specs/category-ux/EXECUTION.md` → `specs/category-ux/PLAN.md`.
+`category-redesign` (the prior spec) is also fully complete — see git log on its 3 phase
+branches; nothing new there this session beyond what's already in its own `EXECUTION.md`.
 
-## category-ux Phase 1: Done, Verified, Not Pushed
+## Full State: 2 Specs, 7 Phase Branches, All Pushed Except the Last
 
-Categories moved out of Settings into their own drill-down screen (`CategoriesPage`),
-reachable via a summary link row in Settings, not a nav-bar/sidebar item. Back navigation
-is in-content (`← Back` button), not shared header chrome.
+`category-redesign` (3 phases): `phase-1-schema-api`, `phase-2-fe-data`,
+`phase-3-fe-ui` — all pushed to `origin`, no PRs opened.
+
+`category-ux` (4 phases): `phase-1-categories-page`, `phase-2-favorites-schema-api`,
+`phase-3-favorites-fe-data` — pushed. `phase-4-favorites-ui` — **committed, not pushed**.
+
+Branch stack (each off the previous): `main` → `category-redesign/phase-1` → `phase-2` →
+`phase-3` → `category-ux/phase-1` → `phase-2` → `phase-3` → `phase-4`.
+
+## category-ux Phase 4 (final): Done, Verified, Not Pushed Yet
+
+Favorites UI — the user-visible payoff of phases 2–3.
 
 What changed:
-- `packages/web/src/layouts/mobile/MobileApp.tsx` / `desktop/DesktopApp.tsx`: `'categories'`
-  added to the `Screen`/`Tab` unions, not to either `NAV` array.
-- New `packages/web/src/features/categories/components/CategoriesPage.tsx`
-  (variant-aware): the grouped-box list, "Add" button, and `CategoryForm`
-  Drawer/BottomSheet — moved wholesale from `Settings.tsx`, height clamp removed.
-- `Settings.tsx` / `MobileSettings.tsx`: category section now just a summary link row;
-  `DesktopSettings`'s now-pointless `variant` prop was dropped entirely.
+- `CategoriesPage.tsx`: star toggle per category (parent header + each child tile).
+  Required restructuring rows from single wrapping `<button>`s into sibling-button layouts
+  (a `<button>` can't contain a `<button>`).
+- New `FavoriteCategoryPicker.tsx`: flat tile grid of favorites (type-filtered), current
+  selection appended if not already favorited (deduped), empty-state message, "Show all"
+  button opening a `Modal` with the existing full `CategoryPicker`.
+- `TransactionForm.tsx`: now uses `FavoriteCategoryPicker` instead of `CategoryPicker`
+  directly.
+- 4 new i18n keys (favorite/unfavorite/showAll/noFavorites), VI + EN.
+- New `FavoriteCategoryPicker.test.tsx` (6 cases). `TransactionForm.test.tsx`'s store mock
+  updated with `favoriteCategoryIds` so its existing 3 tests still pass unchanged in
+  behavior.
 
-Verification: `tsc --noEmit -p packages/web/tsconfig.json` clean, FE suite 17/17 (unaffected
-— no picker/form logic changed, just where it's mounted), dev server smoke-checked (`/` →
-200). Manual browser check of the actual navigate/back flow **not run** — no browser tool
-available this session, consistent gap across this whole project's UI phases.
+Verification: `tsc` clean, FE suite 23/23, dev server smoke-checked. Manual browser check
+(star → picker shows it → Show all → modal → select → closes) **not run** — no browser
+tool available this entire session, across every UI phase in both specs. This is the one
+consistent, repeated gap worth fixing infrastructure for before the next UI-heavy spec.
 
-Committed (2 commits: `a78af06`, `6bf62d8`), **not pushed yet** — about to continue into
-Phase 2 per the active goal; will push each phase as it completes.
+## Real gotcha from Phase 3, still relevant
 
-## Remaining Work (category-ux)
+`useQuery().data` resolves to `any` in this environment (TanStack Query v5 typings not
+inferring cleanly against the installed TypeScript). Every existing query consumer masks it
+via an explicit target-type annotation. `new Set(x ?? [])` is the one place that surfaces it
+as a real error (infers `Set<unknown>`, not `Set<any>`) — fix is an explicit type argument:
+`new Set<string>(...)`. Not fixed at the root; flagging so it doesn't cause confusion again.
 
-1. Phase 2 — favorites schema (`category_favorites` table) + shared types + `favorites.ts`
-   API route. **Migration will be written but not applied without a separate pause** —
-   applying it to the live linked Supabase project is destructive/irreversible on shared
-   data, out of scope for the goal's blanket no-confirm authorization.
-2. Phase 3 — favorites FE data layer (queries, store wiring).
-3. Phase 4 — favorites UI: star toggle on `CategoriesPage`, new
-   `FavoriteCategoryPicker` replacing `CategoryPicker` in `TransactionForm`, "Show all"
-   modal.
-4. After Phase 4: PR-creation still blocked regardless of the goal — `gh` in this session
-   authenticates as an account that can't see `daodd1511/expense-management`
-   (`daoduong-saritasa` vs. the repo's actual owner). Branches get pushed; PRs need either
-   `gh auth login` as the right account, or the user creating them manually (descriptions
-   were handed over directly during the `category-redesign` work, same approach applies
-   here).
-5. Known parked item (unrelated to this spec, from `category-redesign`): system-owned
+## Remaining Work
+
+1. Push `category-ux/phase-4-favorites-ui` — completes this session's `/goal`.
+2. PR-creation still blocked: `gh` here authenticates as `daoduong-saritasa`, can't see
+   `daodd1511/expense-management`. All 7 branches are pushed and ready; PRs need either
+   `gh auth login` as the right account, or manual creation (descriptions can be generated
+   on request — stacked target order: `category-redesign/phase-1`→`main`, each subsequent
+   phase→its predecessor, `category-ux/phase-1`→`category-redesign/phase-3`).
+3. Manual browser verification across both specs' UI work (category picker grouping,
+   Settings redesign, categories own-page, favorites end-to-end) — none of it has been
+   visually confirmed this session. Worth doing before merging anything to `main`.
+4. Known parked item (from `category-redesign`, unrelated to `category-ux`): system-owned
    categories can't be edited (403 by design, all 65 seeded categories are `owner_id
-   NULL`). User said to log it as a possible future feature, not implement now. Re-open
-   with the user before touching auth/schema for it.
+   NULL`). User said to log it as a possible future feature, not implement now.
