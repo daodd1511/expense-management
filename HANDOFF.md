@@ -1,63 +1,66 @@
-# Handoff — Category UX Phase 2 Complete, Running Autonomously to Phase 4
+# Handoff — Category UX Phase 3 Complete, Running Autonomously to Phase 4
 
 ## Context
 
 - Repo: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
-- Branch: `category-ux/phase-2-favorites-schema-api` (off `category-ux/phase-1-categories-page`)
+- Branch: `category-ux/phase-3-favorites-fe-data` (off `category-ux/phase-2-favorites-schema-api`)
 - Active session goal (`/goal`): finish all 4 phases of `specs/category-ux/EXECUTION.md`,
-  committing + pushing each phase without stopping to ask. Live schema-migration *apply*
-  was the one carved-out exception requiring a pause — asked for Phase 2's migration,
-  user said apply now, done (see below).
+  committing + pushing each phase without stopping to ask. The migration-apply exception
+  was used once already (Phase 2, user approved). Phase 4 (final) is next, no more schema
+  changes expected there.
 
-Read order: this file → `specs/category-ux/EXECUTION.md` → `specs/category-ux/PLAN.md`. For
-the prior `category-redesign` spec's state, see git log on `category-redesign/phase-{1,2,3}-*`
-branches — unchanged since its Phase 3 close-out.
+Read order: this file → `specs/category-ux/EXECUTION.md` → `specs/category-ux/PLAN.md`.
 
-## category-ux Phase 1: Done, Verified, Pushed
+## category-ux Phases 1–2: Done, Verified, Pushed
 
-Categories moved out of Settings into their own drill-down screen (`CategoriesPage`),
-reachable via a summary link row in Settings, not a nav-bar/sidebar item. Pushed to
-`origin/category-ux/phase-1-categories-page`. FE suite 17/17, `tsc` clean. Manual browser
-check not run (no browser tool this session, consistent gap throughout this project).
+See git log on `category-ux/phase-1-categories-page` and
+`category-ux/phase-2-favorites-schema-api` for details — both pushed to `origin`. Phase 2
+included applying `supabase/migrations/20260702073013_category_favorites.sql` to the live
+linked project (confirmed via `supabase migration list`).
 
-## category-ux Phase 2: Done, Verified, Not Pushed Yet
+## category-ux Phase 3: Done, Verified, Not Pushed Yet
 
-Explicit per-user category favorites — schema, shared types, API.
+Favorites FE data layer — no UI yet, just the plumbing.
 
 What changed:
-- `supabase/migrations/20260702073013_category_favorites.sql`: new `category_favorites`
-  table (`user_id`, `category_id` FK cascade, unique pair). **Applied** to the linked
-  remote project (`supabase migration list` confirms local/remote both at `20260702073013`).
-- `packages/shared`: `favorite.model.ts` / `favorite.dto.ts` / `favorite.mapper.ts`, wired
-  into all the barrel `index.ts` files plus `database.types.ts`.
-- New `packages/api/src/routes/favorites.ts` (GET/POST/DELETE, owner-scoped like
-  `budgets.ts`), mounted in `packages/api/src/index.ts`. `POST` is idempotent via an
-  app-layer existence check, not a DB upsert — matches the style already used elsewhere in
-  this router set; the table's unique constraint is still the DB-level backstop.
-- `packages/api/src/routes/favorites.test.ts`: 5 cases.
+- New `packages/web/src/features/categories/favorites-db.ts` /
+  `favorites-queries.ts`: API client + TanStack Query hooks (`useFavorites`,
+  `useAddFavorite`, `useRemoveFavorite`), mirroring the categories equivalents.
+- `packages/web/src/core/store.tsx`: `favoriteCategoryIds: Set<string>`,
+  `addFavorite`/`removeFavorite` wired into `useStore()`.
 
-Verification: `tsc` clean on `shared` + `api`, backend suite 25/25, and — since the
-migration is now live — real DB verification in rolled-back transactions (insert, duplicate
-rejected by the unique constraint, delete). Note for whoever touches this next: the FK is to
-`auth.users`, not an app table — a random uuid gets rejected, you need a real row from
-`auth.users` to test against (queried one read-only, `select id from auth.users limit 1`).
+**Real gotcha hit and fixed, worth knowing for next time:** `useQuery().data` resolves to
+`any` in this environment (TanStack Query v5 typings not inferring cleanly against the
+installed TypeScript — root cause not chased further, out of scope). This has been silently
+true the whole project — every existing usage masks it with an explicit target-type
+annotation like `const categories: Category[] = catQuery.data ?? []` (assigning `any` to a
+typed variable is always legal, so no error ever surfaced). `new Set(favQuery.data ?? [])`
+was the first place in the codebase that exposed it as a real compile error, because TS
+infers a generic parameter from an `any` argument as `unknown`, not `any` — so `Set<unknown>`
+came out instead of `Set<string>`, which then failed structural assignability against
+`StoreValue`. Fixed by adding an explicit type argument: `new Set<string>(...)`. If anyone
+hits a similar "why is this obviously-wrong assignment not erroring" or "why is this generic
+inferring as unknown" confusion later, this is why — worth a real fix (TS/TanStack Query
+version bump) at some point but wasn't this spec's job.
 
-Committed (4 commits on top of Phase 1's 2), **not pushed yet** — pushing next, then
-continuing straight into Phase 3 per the active goal.
+Verification: `tsc --noEmit -p packages/web/tsconfig.json` clean, FE suite 17/17
+(unaffected — nothing consumes the new layer yet). No manual check needed per the phase's
+own gate (nothing user-visible changed).
+
+Committed (2 commits on top of Phase 2's tip), **not pushed yet** — pushing next, then
+continuing straight into Phase 4 (final phase) per the active goal.
 
 ## Remaining Work (category-ux)
 
-1. Phase 3 — favorites FE data layer: `favorites-db.ts`, `favorites-queries.ts`, wire
-   `favoriteCategoryIds`/`addFavorite`/`removeFavorite` into `useStore()`.
-2. Phase 4 — favorites UI: star toggle on `CategoriesPage`, new `FavoriteCategoryPicker`
-   (tile grid + "Show all" → `Modal` wrapping the existing `CategoryPicker`) replacing
-   `CategoryPicker` directly in `TransactionForm`.
-3. After Phase 4: PR-creation still blocked regardless of the goal — `gh` in this session
-   authenticates as `daoduong-saritasa`, which can't see `daodd1511/expense-management`.
-   Branches get pushed; PRs need either `gh auth login` as the right account, or the user
-   creating them manually (PR descriptions handed over directly during `category-redesign`,
-   same approach applies here for all `category-ux` branches once asked for).
-4. Known parked item (unrelated to this spec, from `category-redesign`): system-owned
+1. Phase 4 (final) — favorites UI: star toggle on `CategoriesPage`, new
+   `FavoriteCategoryPicker` (tile grid + "Show all" → `Modal` wrapping the existing
+   `CategoryPicker`) replacing `CategoryPicker` directly in `TransactionForm`. No schema
+   changes expected, so no pause anticipated for the rest of this goal.
+2. After Phase 4: PR-creation still blocked — `gh` in this session authenticates as
+   `daoduong-saritasa`, can't see `daodd1511/expense-management`. Branches get pushed; PRs
+   need `gh auth login` as the right account, or the user creating them manually (PR
+   descriptions handed over directly for `category-redesign`'s branches already; same
+   approach applies to all `category-ux` branches whenever asked for).
+3. Known parked item (unrelated to this spec, from `category-redesign`): system-owned
    categories can't be edited (403 by design, all 65 seeded categories are `owner_id
-   NULL`). User said to log it as a possible future feature, not implement now. Re-open
-   with the user before touching auth/schema for it.
+   NULL`). User said to log it as a possible future feature, not implement now.

@@ -96,20 +96,28 @@ push/PR — per this session's `/goal`, push is pre-authorized without re-asking
 
 Branch: `category-ux/phase-3-favorites-fe-data` (off `phase-2`)
 
-- [ ] `packages/web/src/features/categories/favorites-db.ts`: `fetchFavorites`,
-      `addFavorite`, `removeFavorite` API client functions, mirroring
-      `packages/web/src/features/categories/db.ts`'s shape
-- [ ] `packages/web/src/features/categories/favorites-queries.ts`: `useFavorites()`,
-      `useAddFavorite()`, `useRemoveFavorite()` TanStack Query hooks, mirroring
-      `queries.ts`
-- [ ] `packages/web/src/core/store.tsx`: wire `favoriteCategoryIds: Set<string>` (derived
-      from `useFavorites()`), plus `addFavorite`/`removeFavorite` callbacks, exposed via
-      `useStore()`. Update the `StoreContext` type accordingly
+- [x] `packages/web/src/features/categories/favorites-db.ts`: `fetchFavorites`,
+      `addFavoriteCategory`, `removeFavoriteCategory` API client functions
+- [x] `packages/web/src/features/categories/favorites-queries.ts`: `useFavorites()`,
+      `useAddFavorite()`, `useRemoveFavorite()`
+- [x] `packages/web/src/core/store.tsx`: wired `favoriteCategoryIds: Set<string>`,
+      `addFavorite`/`removeFavorite`, exposed via `useStore()`
+
+**Note for future work in this area:** hit a real TS quirk — `useQuery().data` resolves to
+`any` in this environment (TanStack Query v5 types not inferring cleanly here, pre-existing
+and unrelated to this spec). Every other usage in the codebase silently masks it via an
+explicit target-type annotation (`const categories: Category[] = catQuery.data ?? []` — `any`
+is assignable to anything, no error). `new Set(favQuery.data ?? [])` was the first place this
+surfaced as a real error, because inferring a generic from an `any` argument resolves to
+`Set<unknown>`, not `Set<any>` — fixed with an explicit type argument:
+`new Set<string>(...)`. Worth a real fix (TS/TanStack Query version bump) at some point, but
+out of scope here.
 
 **Verification gate (hard):**
-- [ ] `tsc --noEmit -p packages/web/tsconfig.json` passes
-- [ ] FE test suite passes
-- [ ] Manual check: not applicable yet — no UI consumes this layer until Phase 4, skip
+- [x] `tsc --noEmit -p packages/web/tsconfig.json` passes
+- [x] FE test suite passes (17/17, unaffected — no UI consumes this layer yet)
+- [x] Manual check: not applicable — no UI consumes this layer until Phase 4, skipped
+      as planned
 
 **On completion:** update this checklist, update root `HANDOFF.md`, stop and ask before
 push/PR.
