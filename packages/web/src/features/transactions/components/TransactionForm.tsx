@@ -20,8 +20,6 @@ import { useStore } from '@/core/store'
 import type { Transaction, TxType } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
-const INCOME_CATS = ['salary', 'other-income']
-
 function todayIsoDate() {
   const today = new Date()
   const year = today.getFullYear()
@@ -63,9 +61,7 @@ export function TransactionForm({
   ]
 
   const numericAmount = Number(amount) || 0
-  const visibleCats = categories.filter((c) =>
-    type === 'income' ? INCOME_CATS.includes(c.id) : !INCOME_CATS.includes(c.id),
-  )
+  const visibleCats = categories.filter((c) => c.type === type)
 
   const canSubmit =
     numericAmount > 0 &&
@@ -116,9 +112,9 @@ export function TransactionForm({
               type="button"
               onClick={() => {
                 setType(tab.value)
-                if (tab.value === 'income') setCategoryId('salary')
-                else if (tab.value === 'expense' && INCOME_CATS.includes(categoryId ?? ''))
+                if (tab.value !== 'transfer' && getCategory(categoryId)?.type !== tab.value) {
                   setCategoryId(null)
+                }
               }}
               className={cn(
                 'rounded-lg py-2 text-sm font-medium transition-colors',
