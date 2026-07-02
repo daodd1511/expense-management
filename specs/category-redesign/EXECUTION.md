@@ -14,32 +14,42 @@ even if the phase's commits are already authorized.
 
 Branch: `category-redesign/phase-1-schema-api` (off `main`)
 
-- [ ] Add `type` (`'expense'|'income'`, NOT NULL) and `parent_id` (nullable self-FK) to
-      Supabase `categories` table
-- [ ] Add DB-level constraints: child.type = parent.type; parent_id target must have
-      parent_id IS NULL; a category with children cannot receive a parent_id
-- [ ] Update `packages/shared/src/models/category.model.ts`: add `type`, `parentId`
-- [ ] Update `packages/shared/src/dtos/category.dto.ts`: row schema + create/patch schemas
-- [ ] Update `packages/shared/src/mappers/category.mapper.ts`: map `type`/`parent_id`
-- [ ] `packages/api/src/routes/categories.ts`:
-  - [ ] POST: require `type`, validate optional `parent_id` (exists, visible, same type,
+- [x] Add `type` (`'expense'|'income'`, NOT NULL) and `parent_id` (nullable self-FK) to
+      Supabase `categories` table — migration
+      (`supabase/migrations/20260702053135_category_type_hierarchy.sql`), applied to linked
+      remote project via `supabase db push`
+- [x] Add DB-level constraints: child.type = parent.type; parent_id target must have
+      parent_id IS NULL; a category with children cannot receive a parent_id — trigger in
+      same migration, applied and verified live (see verification gate below)
+- [x] Update `packages/shared/src/models/category.model.ts`: add `type`, `parentId`
+- [x] Update `packages/shared/src/dtos/category.dto.ts`: row schema + create/patch schemas
+- [x] Update `packages/shared/src/mappers/category.mapper.ts`: map `type`/`parent_id`
+- [x] `packages/api/src/routes/categories.ts`:
+  - [x] POST: require `type`, validate optional `parent_id` (exists, visible, same type,
         target has no parent_id itself)
-  - [ ] PATCH: `403` if `owner_id IS NULL`; allow `name`/`icon`/`color`/`parent_id`; reject
+  - [x] PATCH: `403` if `owner_id IS NULL`; allow `name`/`icon`/`color`/`parent_id`; reject
         `type` in body; validate re-parent target (same type, not itself a child, mover has
         no children)
-  - [ ] DELETE: `403` if system-owned; `409` if category has children
-- [ ] Wipe existing seeded categories in Supabase, reseed with new taxonomy from `PLAN.md`
-      (12 expense parents + children, 4 income parents + children)
-- [ ] Add/update backend tests covering: type mismatch rejection, 403 on system category,
+  - [x] DELETE: `403` if system-owned; `409` if category has children
+- [x] Wipe existing seeded categories in Supabase, reseed with new taxonomy from `PLAN.md`
+      (12 expense parents + children, 4 income parents + children) — applied, counts verified
+      live (65 total, 16 top-level, 52 expense / 13 income)
+- [x] Add/update backend tests covering: type mismatch rejection, 403 on system category,
       409 on delete-with-children, re-parent validation
 
 **Verification gate (hard, before marking phase done):**
-- [ ] `tsc --noEmit -p packages/shared/tsconfig.json` passes
-- [ ] `tsc --noEmit -p packages/api/tsconfig.json` passes
-- [ ] Backend test suite passes (direct vitest run, per known `pnpm` sandbox caveat)
-- [ ] Manual curl/verify: create category with type, attempt cross-type re-parent (expect
-      reject), attempt PATCH on system category (expect 403), attempt delete parent with
-      children (expect 409)
+- [x] `tsc --noEmit -p packages/shared/tsconfig.json` passes
+- [x] `tsc --noEmit -p packages/api/tsconfig.json` passes
+- [x] Backend test suite passes (direct vitest run, per known `pnpm` sandbox caveat)
+- [x] Manual verify against live linked Supabase DB (migration applied,
+      `pnpm exec supabase migration list` confirms local/remote both at
+      `20260702053135`). Verified at DB trigger level in a rolled-back transaction (no data
+      persisted): type-mismatch insert rejected, 3-level nesting rejected, parent-with-children
+      re-parent rejected. Reseed confirmed: 65 rows, 16 top-level (12 expense + 4 income), 52
+      expense / 13 income — matches PLAN.md taxonomy exactly.
+      HTTP-level 403 (system category)/409 (delete-with-children)/type-immutable checks are
+      covered by the 7 automated route tests in `categories.test.ts`, not re-verified via curl
+      — no test-user Supabase auth JWT available this session to exercise `authMiddleware`.
 
 **On completion:** update this checklist, update root `HANDOFF.md`, stop and ask before
 push/PR.

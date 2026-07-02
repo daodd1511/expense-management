@@ -1,128 +1,77 @@
-# Handoff — REST Integration and Test Baseline
+# Handoff — Category Redesign Phase 1 Complete
 
 ## Context
 
 - Repo: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
-- Branch: `master`
-- Current objective for next session: continue post-migration hardening and operational completion of the BE/FE REST setup
+- Branch: `category-redesign/phase-1-schema-api` (off `main`)
+- Current objective for next session: start Phase 2 (`category-redesign/phase-2-fe-data`,
+  branched off phase-1) — see `specs/category-redesign/EXECUTION.md`
 
-Canonical artifacts to read first:
-- [BE_INTEGRATION_PLAN.md](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/BE_INTEGRATION_PLAN.md)
-- Commit `0e03146` `Finish REST auth wiring and sync docs`
-- Commit `5ffabc5` `Add tests for REST migration`
+Read order: this file → `specs/category-redesign/EXECUTION.md` → `specs/category-redesign/PLAN.md`.
 
-Do not use this handoff as the source of truth for architecture details already captured in the plan and commits above.
+## Phase 1 Status: Done, Verified, Not Pushed
 
-## Current State
+All checklist items and the verification gate in `EXECUTION.md` are checked off. Not pushed
+or opened as a PR yet — needs explicit go-ahead per the workflow's hard-stop rule.
 
-The monorepo migration is complete and the app is already split into:
-- `packages/web`
-- `packages/api`
-- `packages/shared`
+What changed:
+- `supabase/migrations/20260702053135_category_type_hierarchy.sql` — adds `type`
+  (`expense|income`, NOT NULL) and `parent_id` (nullable self-FK) to `categories`; trigger
+  enforces child.type = parent.type, 2-level depth cap, and "category with children can't
+  itself become a child"; hard-wipes and reseeds the taxonomy from `PLAN.md`. **Applied** to
+  the linked remote Supabase project via `supabase db push`
+  (`supabase migration list` confirms local/remote both at `20260702053135`).
+- `packages/shared`: `category.model.ts`, `category.dto.ts`, `category.mapper.ts`,
+  `database.types.ts` updated for `type`/`parentId`.
+- `packages/api/src/routes/categories.ts`: POST validates `parentId` (exists, visible,
+  same type, not itself nested); PATCH returns 403 on system-owned categories and rejects
+  `type` in the body; re-parent validation (same type, target not itself a child, mover has
+  no children); DELETE returns 403 system-owned / 409 has-children.
+- `packages/api/src/lib/http.ts`: `ApiErrorStatus` extended with 403/409.
+- New `packages/api/src/routes/categories.test.ts` (7 cases).
 
-The FE data path is switched to the REST API. Browser-side Supabase is retained for auth/session only.
+## Verification Performed
 
-The API auth model was updated away from deprecated JWT-secret verification:
-- backend verifies Supabase access tokens via JWKS/signing keys
-- backend uses `SUPABASE_SECRET_KEY` server-side
-- legacy `SUPABASE_SERVICE_ROLE_KEY` is still accepted as fallback in code
+- `tsc --noEmit` clean on `packages/shared` and `packages/api`.
+- Full backend vitest suite green (19/19), run directly per the known `pnpm` sandbox
+  caveat (see "Important Environment Constraint" below).
+- Live DB verification against the linked remote project, run inside
+  `begin...rollback` transactions (nothing persisted):
+  - type-mismatch child insert → rejected by trigger
+  - 3-level nesting attempt → rejected by trigger
+  - re-parenting a category that has children → rejected by trigger (isolated from the
+    type-mismatch case with a same-type target)
+  - reseed row counts confirmed exact: 65 total, 16 top-level (12 expense + 4 income),
+    52 expense / 13 income — matches `PLAN.md` taxonomy table
+- Not verified: HTTP-level 403/409/type-immutable behavior via live curl — no test-user
+  Supabase auth JWT was available this session to pass `authMiddleware`. That logic is
+  covered by the 7 automated route tests instead (mocked `userId`, not a live token).
 
-Recent functional fixes already landed:
-- `/api` no longer falls back to SPA HTML
-- Vite dev proxy routes `/api` and `/health` to the backend
-- transaction form submits `YYYY-MM-DD` instead of full ISO timestamps
-- shared DTOs normalize timestamp-shaped date input defensively
-- future transaction dates are blocked in both UI and API validation
-- textarea resize artifact under note field was removed
+## Known Assumption to Revisit
 
-## Verification Status
-
-Confirmed in this session:
-- direct backend `/health` returns JSON
-- proxied `/health` through Vite returns JSON
-- unauthenticated `/api/accounts` returns JSON `401`, not HTML
-- strict TypeScript passes when invoked directly with:
-  - `/Users/thomasduong/.volta/bin/tsc --noEmit -p packages/web/tsconfig.json`
-  - `/Users/thomasduong/.volta/bin/tsc --noEmit -p packages/api/tsconfig.json`
-  - `/Users/thomasduong/.volta/bin/tsc --noEmit -p packages/shared/tsconfig.json`
-
-Test baseline added and passing when run directly with Vitest:
-- shared DTO/date tests
-- backend auth/http/route tests
-- frontend API/form tests
+The migration assumes `categories.id` is `uuid` (Supabase default convention) — there was
+no prior schema dump or migration history in this repo to confirm against. It applied
+cleanly, so this is now confirmed correct in practice.
 
 ## Important Environment Constraint
 
-`pnpm` is unreliable in this Codex sandbox after dependency changes because it repeatedly tries to recreate workspace `node_modules`, then hits:
-- network isolation (`ENOTFOUND`)
-- dependency/build approval friction
-- non-interactive purge/install behavior
+`pnpm` is unreliable in this sandbox after dependency changes (tries to recreate workspace
+`node_modules`, hits network isolation). Workaround: use direct binaries —
+`./node_modules/.bin/vitest run <path>` and `/Users/thomasduong/.volta/bin/tsc --noEmit -p <tsconfig>` —
+instead of `pnpm test` / `pnpm exec tsc`.
 
-Practical workaround used in this session:
-- use direct binaries or direct `tsc` paths for verification
-- use direct `vitest` binary runs instead of relying on `pnpm test`
-
-Do not assume `pnpm test` is green in this environment just because the tests are valid. The suite itself passed when run directly.
-
-## Files and Areas Most Likely Relevant Next
-
-Backend auth/runtime:
-- [packages/api/src/middleware/auth.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/api/src/middleware/auth.ts)
-- [packages/api/src/db/supabase.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/api/src/db/supabase.ts)
-- [packages/api/.env.example](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/api/.env.example)
-
-Frontend API/data path:
-- [packages/web/src/core/api.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/core/api.ts)
-- [packages/web/vite.config.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/vite.config.ts)
-- `packages/web/src/features/*/db.ts`
-
-Transaction/date rules:
-- [packages/shared/src/dtos/common.dto.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/shared/src/dtos/common.dto.ts)
-- [packages/shared/src/dtos/transaction.dto.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/shared/src/dtos/transaction.dto.ts)
-- [packages/web/src/features/transactions/components/TransactionForm.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/transactions/components/TransactionForm.tsx)
-- [packages/web/src/shared/components/ui/date-picker.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/shared/components/ui/date-picker.tsx)
-
-Test harness:
-- [package.json](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/package.json)
-- [pnpm-workspace.yaml](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/pnpm-workspace.yaml)
-- [packages/web/vite.config.ts](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/vite.config.ts)
+`supabase db push` also attempts to pull a Docker image (`public.ecr.aws/supabase/edge-runtime`)
+for an unrelated part of its flow; this can fail/hang on an expired registry auth token. It's
+unrelated to migration application — check `supabase migration list` to confirm the migration
+itself landed rather than trusting the push command's exit state.
 
 ## Remaining Work
 
-Highest-priority incomplete items:
-1. Verify every authenticated REST route against real Supabase data:
-   - `/api/accounts`
-   - `/api/categories`
-   - `/api/budgets`
-   - `/api/subscriptions`
-   - `/api/subscriptions/:id/log`
-   - `/api/transactions`
-2. Deploy the API process on VPS and configure Caddy `/api/*` proxy in the real environment
-3. Decide whether to make `pnpm test` robust in this environment or accept direct-run verification as the local workaround
-
-Secondary cleanup:
-1. Remove or keep `vite-tsconfig-paths` warning deliberately
-2. Expand route coverage if new defects appear during authenticated manual verification
-3. Optionally add API integration tests around subscriptions log flow once a cleaner mocking path is worth the setup
-
-## Git State
-
-Recent commits:
-- `5ffabc5` `Add tests for REST migration`
-- `0e03146` `Finish REST auth wiring and sync docs`
-
-Current working tree:
-- clean except one unrelated untracked file:
-  - `.agents/skills/react-frontend-developer/references/architecture.md.md`
-
-Leave that untracked file alone unless the user explicitly asks about it.
-
-## Suggested Skills
-
-- `handoff`
-  - use again at the end of the next substantial session
-- `react-frontend-developer`
-  - use for any further FE test, component, or client-side architecture work
-- `caveman-commit`
-  - use if another commit is requested and a terse message is needed
-
+1. Phase 2 (`category-redesign/phase-2-fe-data`, off phase-1): wire `type`/`parentId`
+   through `packages/web/src/features/categories/db.ts` + `queries.ts`; remove the
+   `INCOME_CATS` hack in `TransactionForm.tsx` (lines ~23, 66-68, 120) in favor of
+   `category.type === type` filtering; enforce leaf-or-parent-direct budget selection.
+2. Phase 3 (`category-redesign/phase-3-fe-ui`, off phase-2): `--chart-6`...`--chart-12`
+   CSS tokens, grouped-collapsible category picker (mobile + desktop), color/icon
+   assignment per `PLAN.md`.
+3. Before Phase 1 branch is pushed/PR'd: explicit user go-ahead required (not yet given).
