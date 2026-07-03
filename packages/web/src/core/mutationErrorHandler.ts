@@ -1,5 +1,5 @@
 import { toast } from 'sonner'
-import { ApiError } from '@/core/api'
+import { isClientError } from '@/core/api'
 import { translate } from '@/core/i18n'
 
 /**
@@ -8,6 +8,5 @@ import { translate } from '@/core/i18n'
  * (see specs/error-handling/PLAN.md's "FE: error message text" decision).
  */
 export function handleMutationError(error: unknown) {
-  const isClientError = error instanceof ApiError && error.status < 500
-  toast.error(translate(isClientError ? 'error.badRequest' : 'error.server'))
+  toast.error(translate(isClientError(error) ? 'error.badRequest' : 'error.server'))
 }

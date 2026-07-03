@@ -38,18 +38,18 @@ export function CategoriesPage({
 
   const closeForm = () => setFormOpen(false)
 
-  const handleSaveCategory = (form: CategoryFormState) => {
+  const handleSaveCategory = async (form: CategoryFormState) => {
     if (editingId) {
-      updateCategory(editingId, { name: form.name, icon: form.icon, color: form.color, parentId: form.parentId })
+      await updateCategory(editingId, { name: form.name, icon: form.icon, color: form.color, parentId: form.parentId })
     } else {
-      addCategory({ name: form.name, icon: form.icon, color: form.color, type: form.type, parentId: form.parentId })
+      await addCategory({ name: form.name, icon: form.icon, color: form.color, type: form.type, parentId: form.parentId })
     }
     closeForm()
   }
 
-  const handleDeleteCategory = () => {
+  const handleDeleteCategory = async () => {
     if (!editingId) return
-    deleteCategory(editingId)
+    await deleteCategory(editingId)
     closeForm()
   }
 

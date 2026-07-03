@@ -148,9 +148,9 @@ export function MobileSubscriptions() {
   const openEdit = (s: Subscription) => { setEditing(s); setSheetOpen(true) }
   const close = () => { setSheetOpen(false); setEditing(null) }
 
-  const handleSubmit = (data: Omit<Subscription, 'id'>) => {
-    if (editing) updateSubscription(editing.id, data)
-    else addSubscription(data)
+  const handleSubmit = async (data: Omit<Subscription, 'id'>) => {
+    if (editing) await updateSubscription(editing.id, data)
+    else await addSubscription(data)
     close()
   }
 

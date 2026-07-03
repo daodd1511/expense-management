@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
+import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
 import { Input, Label } from '@/shared/components/ui/input'
 import {
   Select,
@@ -13,13 +14,14 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { formatVND } from '@/shared/lib/format'
+import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
 import { useLang } from '@/core/i18n'
 import { useStore } from '@/core/store'
 import type { Budget, Category } from '@/core/types'
 
 interface BudgetFormProps {
   initial?: Budget
-  onSubmit: (b: Budget) => void
+  onSubmit: (b: Budget) => Promise<void>
   onCancel: () => void
 }
 
@@ -56,6 +58,8 @@ export function BudgetForm({ initial, onSubmit, onCancel }: BudgetFormProps) {
   const canSubmit = categoryId && numericAmount > 0
   const categoryLabels = Object.fromEntries(categories.map((c) => [c.id, c.name]))
   const selectedCat = categories.find((c) => c.id === categoryId)
+
+  const { submit, errorMessage } = useFormSubmit(onSubmit)
 
   return (
     <div className="flex flex-col gap-4">
@@ -121,11 +125,13 @@ export function BudgetForm({ initial, onSubmit, onCancel }: BudgetFormProps) {
         )}
       </div>
 
+      {errorMessage && <FormErrorBanner message={errorMessage} />}
+
       <div className="flex gap-2">
         <Button variant="outline" className="flex-1" onClick={onCancel}>
           {t('form.cancel')}
         </Button>
-        <Button className="flex-1" disabled={!canSubmit} onClick={() => onSubmit({ categoryId, limit: numericAmount })}>
+        <Button className="flex-1" disabled={!canSubmit} onClick={() => submit({ categoryId, limit: numericAmount })}>
           {initial ? t('form.save') : t('budget.add')}
         </Button>
       </div>

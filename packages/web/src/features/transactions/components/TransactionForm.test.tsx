@@ -51,6 +51,7 @@ vi.mock('@/core/i18n', () => ({
         'form.defaultTx': 'Transaction',
       })[key] ?? key,
   }),
+  translate: (key: string) => key,
 }))
 
 vi.mock('@/shared/components/ui/select', () => ({
@@ -71,7 +72,7 @@ vi.mock('@/shared/components/ui/date-picker', () => ({
 describe('TransactionForm', () => {
   it('submits a date-only ISO string', async () => {
     const user = userEvent.setup()
-    const onSubmit = vi.fn()
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
 
     render(
       <TransactionForm
@@ -108,7 +109,7 @@ describe('TransactionForm', () => {
     render(
       <TransactionForm
         variant="desktop"
-        onSubmit={vi.fn()}
+        onSubmit={vi.fn().mockResolvedValue(undefined)}
         onCancel={() => undefined}
       />,
     )
@@ -124,7 +125,7 @@ describe('TransactionForm', () => {
 
   it('clears the selected category when switching type away from its type', async () => {
     const user = userEvent.setup()
-    const onSubmit = vi.fn()
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
 
     render(
       <TransactionForm
@@ -143,5 +144,27 @@ describe('TransactionForm', () => {
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'income', categoryId: 'salary' }),
     )
+  })
+
+  it('keeps the form open with input intact and shows an inline banner when onSubmit rejects', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn().mockRejectedValue(new Error('boom'))
+
+    render(
+      <TransactionForm
+        variant="desktop"
+        onSubmit={onSubmit}
+        onCancel={() => undefined}
+      />,
+    )
+
+    await user.type(screen.getByPlaceholderText('0'), '1213')
+    await user.click(screen.getByRole('button', { name: 'Food' }))
+    await user.type(screen.getByLabelText('Merchant'), 'AAA')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(await screen.findByRole('alert')).toBeDefined()
+    expect(screen.getByLabelText('Merchant')).toHaveProperty('value', 'AAA')
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDefined()
   })
 })

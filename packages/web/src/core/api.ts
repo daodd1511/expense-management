@@ -19,6 +19,16 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Client (4xx, user-fixable) vs. server (5xx, or a non-`ApiError` failure like a
+ * network drop) — used to pick between `error.badRequest`/`error.server` copy.
+ * Shared by the global toast handler and per-form inline error state so both
+ * classify failures the same way.
+ */
+export function isClientError(error: unknown): boolean {
+  return error instanceof ApiError && error.status < 500
+}
+
 function apiBase() {
   return import.meta.env.VITE_API_BASE ?? '/api'
 }
