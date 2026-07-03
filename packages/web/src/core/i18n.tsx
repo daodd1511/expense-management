@@ -90,6 +90,10 @@ const VI = {
   'accounts.create': 'Tạo tài khoản',
   'accounts.edit': 'Sửa',
   'offline.banner': 'Bạn đang ngoại tuyến — một số chức năng có thể không hoạt động',
+  'error.badRequest': 'Không thể lưu — vui lòng kiểm tra lại thông tin và thử lại',
+  'error.server': 'Đã xảy ra lỗi — vui lòng thử lại',
+  'error.boundary.title': 'Đã xảy ra lỗi',
+  'error.boundary.reload': 'Tải lại trang',
   'settings.title': 'Cài đặt',
   'settings.subtitle': 'Quản lý danh mục và tùy chọn ứng dụng',
   'settings.appearance': 'Giao diện',
@@ -284,6 +288,10 @@ const EN: Record<TranslationKey, string> = {
   'accounts.create': 'Create account',
   'accounts.edit': 'Edit',
   'offline.banner': "You're offline — some features may not work",
+  'error.badRequest': "Couldn't save — check your input and try again",
+  'error.server': 'Something went wrong — try again',
+  'error.boundary.title': 'Something went wrong',
+  'error.boundary.reload': 'Reload page',
   'settings.title': 'Settings',
   'settings.subtitle': 'Manage categories and app preferences',
   'settings.appearance': 'Appearance',
@@ -404,6 +412,17 @@ const TRANSLATIONS: Record<Lang, Record<TranslationKey, string>> = { vi: VI as R
 function interpolate(str: string, vars?: Record<string, string | number>): string {
   if (!vars) return str
   return str.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''))
+}
+
+/**
+ * Translates a key outside of React (e.g. TanStack Query's `MutationCache.onError`,
+ * which runs outside render). Reads the current language directly from `localStorage`
+ * rather than context, since there is no component tree to read from at that point.
+ */
+export function translate(key: TranslationKey, vars?: Record<string, string | number>): string {
+  const stored = localStorage.getItem('lang') as Lang | null
+  const lang: Lang = stored === 'vi' || stored === 'en' ? stored : 'vi'
+  return interpolate(TRANSLATIONS[lang][key] ?? key, vars)
 }
 
 interface LangContextValue {

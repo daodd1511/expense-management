@@ -3,7 +3,21 @@ import { supabase } from '@/core/supabase'
 
 const apiErrorSchema = z.object({
   error: z.string(),
+  details: z.unknown().optional(),
 })
+
+/** Thrown by `apiFetch` on any non-2xx response (or a missing auth session, as 401). */
+export class ApiError extends Error {
+  status: number
+  details?: unknown
+
+  constructor(message: string, status: number, details?: unknown) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.details = details
+  }
+}
 
 function apiBase() {
   return import.meta.env.VITE_API_BASE ?? '/api'
@@ -15,7 +29,7 @@ export async function apiFetch(path: string, init?: RequestInit) {
   } = await supabase.auth.getSession()
 
   if (!session?.access_token) {
-    throw new Error('Missing auth session')
+    throw new ApiError('Missing auth session', 401)
   }
 
   const response = await fetch(`${apiBase()}${path}`, {
@@ -29,13 +43,15 @@ export async function apiFetch(path: string, init?: RequestInit) {
 
   if (!response.ok) {
     let message = `API request failed: ${response.status}`
+    let details: unknown
     try {
       const body = apiErrorSchema.parse(await response.json())
       message = body.error
+      details = body.details
     } catch {
       // keep fallback message
     }
-    throw new Error(message)
+    throw new ApiError(message, response.status, details)
   }
 
   return response
