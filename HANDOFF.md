@@ -1,140 +1,139 @@
-# Handoff — pwa Spec Complete (Both Phases), error-handling Not Started
+# Handoff — error-handling Spec Complete (All 3 Phases), pwa Merged to develop
 
 ## Context
 
 - Repo: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
-- Branch: `pwa/phase-2-offline-messaging` (off `pwa/phase-1-installable-icons`, off `develop`)
-- `main` and `develop`: `category-redesign` (3 phases) and `category-ux` (4 phases) are both
-  fully merged to `main` via GitHub PRs. `develop` was created this session off `main`'s
-  current tip — feature work lands on `develop` first; `main` only merges once features on
-  `develop` are mature. `develop` is not pushed yet (user will push manually).
-- **New workflow rule this session, added to `CLAUDE.md`** (own commit, `pwa/phase-2-
-  offline-messaging`'s first commit — not yet on `develop`): one spec in flight at a time.
-  A prior attempt to start `error-handling` Phase 1 mid-session while `pwa` still had an
-  unfinished phase was explicitly corrected by the user — that in-progress work was stashed
-  and the branch deleted, `pwa` was finished first. Do not start or resume a different
-  spec's phase while another spec has an unfinished phase; finish (commit + gate + docs
-  updated) or get explicit sign-off to park it first.
+- Branch: `error-handling/phase-3-fe-forms-inline-errors` (off `phase-2` off `phase-1` off
+  `develop`)
+- `pwa` (both phases) is merged into `develop` — user merged it directly and this session
+  confirmed via `git pull --rebase` (fast-forwarded cleanly, 12 commits, includes the icon
+  redesign, offline banner, and the `CLAUDE.md` one-spec-at-a-time rule).
+- `main`/`develop`: `category-redesign` and `category-ux` are both fully merged to `main`
+  via GitHub PRs from a prior session. `develop` is the integration branch going forward —
+  features land there first, `main` only merges once mature. `develop` itself is not
+  pushed to `origin` by this session (user manages that).
+- **Workflow rule, now on `develop`**: one spec in flight at a time — don't start/resume a
+  different spec's phase while another has an unfinished phase. This was added after a
+  real incident this session (see below) and is worth re-reading in `CLAUDE.md` → "Spec-
+  Driven Execution Workflow" before picking up either spec listed here.
 - Also on `main`/`develop` but **uncommitted in the working tree as of last check**: a
-  Bun→Node runtime migration for `packages/api` (esbuild bundle + `@hono/node-server`
-  instead of Bun's native server, CI re-enabled typecheck/test, `node-version: 22`). Was
-  reviewed this session — one confirmed bug: `packages/api/package.json`'s `dev` script
-  (`pnpm build && node --watch dist/index.js`) watches the bundled output, not source, so
-  local dev edits don't trigger a reload. Not fixed yet, not blocking either spec below.
+  Bun→Node runtime migration for `packages/api`. Reviewed this session — one confirmed bug:
+  `packages/api/package.json`'s `dev` script (`pnpm build && node --watch dist/index.js`)
+  watches the bundled output, not source, so local dev edits don't trigger a reload. Not
+  fixed, not blocking.
 
-## Spec 1: `error-handling` — Planned, Not Started
+## Spec 1: `error-handling` — Complete (All 3 Phases), Not Pushed
 
-`specs/error-handling/PLAN.md` + `specs/error-handling/EXECUTION.md` exist, produced via
-`/grill-me` → `spec-plan`. **No branch exists.** A branch was briefly created and worked
-mid-session (BE `mapDbError` helper + route-file conversions) but was stopped, stashed, and
-the branch deleted per the user's "finish pwa first" instruction — see stash below.
+`specs/error-handling/PLAN.md` + `specs/error-handling/EXECUTION.md`, executed via 3
+stacked branches, all done: `error-handling/phase-1-be-error-mapping` (off `develop`) →
+`phase-2-fe-error-infra` → `phase-3-fe-forms-inline-errors`.
 
-3 phases, stacked: `error-handling/phase-1-be-error-mapping` (base off `develop`, not `main`
-— `EXECUTION.md`'s base-branch note predates `develop`'s creation, same fix already applied
-to `pwa`, apply it here too when starting) → `phase-2-fe-error-infra` →
-`phase-3-fe-forms-inline-errors`.
+**Note on how Phase 1 started**: it was begun once earlier this session, then explicitly
+stopped mid-work because `pwa` still had an unfinished phase (user: "let's finish pwa
+first... update rule on this, I don't want this to happen again" — this is what produced
+the one-spec-at-a-time `CLAUDE.md` rule above). The in-progress work was `git stash`'d and
+the branch deleted at that point. When `error-handling` was picked back up (after `pwa`
+fully landed on `develop`), the stash was found still valid, popped, and completed —
+`git stash list` should be empty now, but worth checking if picking this up mid-flight.
 
-Summary: BE collapses all Postgres errors to raw-message 500s (add `mapDbError` inspecting
-`error.code`, global `app.onError`, centralized `console.error` logging). FE has zero error
-handling anywhere — 19 fire-and-forget `.mutate()` calls, no toast, no error boundary. Fix:
-`sonner` for toasts (global `MutationCache.onError`), custom `ApiError` class carrying HTTP
-status, `store.tsx` callbacks become async, all 5 forms get inline-banner-on-failure with
-retained input. Full detail in `PLAN.md`'s Decisions table.
+### Phase 1 — BE Error Mapping: done
 
-**There is a `git stash` entry** (message: "error-handling phase 1: mapDbError + route
-conversions, in-progress") containing a working draft of Phase 1's `mapDbError` helper
-(`packages/api/src/lib/http.ts`) and its application across all 6 route files via sed —
-`categories.ts`'s `loadParentCandidate` helper still needed a fix (it discards the Postgres
-error code, returning only `.message`, so its two call sites couldn't route through
-`mapDbError` yet) when work stopped. Check `git stash list` before restarting Phase 1 — the
-draft may still be usable as a starting point, but verify it against current `develop` state
-first since time has passed.
+- `packages/api/src/lib/http.ts`: `mapDbError(c, error)` maps Postgres `error.code` —
+  `23505` → 409, `23503` → 409, else → 500 generic (raw Postgres message never reaches the
+  client, only `console.error`). Applied across all 6 route files (~50 sites), replacing
+  `jsonError(c, 500, error.message)`.
+- Fixed `categories.ts`'s `loadParentCandidate` helper, which discarded the Postgres error
+  code entirely (returned only `.message` as a string) — changed to carry the full
+  exported `DbError` type so its two call sites route through `mapDbError` correctly.
+- Extracted `parseRawJsonBody` (JSON-parse-only, no schema) into `http.ts`, shared by
+  `parseJsonBody` and by `categories.ts`'s PATCH handler directly — that handler needs the
+  raw body to reject an attempted `type` field with a specific message before schema
+  validation would silently strip it.
+- `auth.ts` now uses `jsonError` instead of raw `c.json(...)`; `index.ts` has a global
+  `app.onError` catching anything that isn't a Supabase `{data,error}` shape.
+- Gate: `tsc` clean, 24/24 tests (4 new `mapDbError` cases). Live-conflict manual check
+  **not run** (needs a real Supabase JWT, not scriptable here) — substituted with
+  `PostgrestError`'s own type docs confirming `.code` carries real Postgres SQLSTATEs.
 
-**Not started — next action is `spec-phase error-handling` when picked up.**
+### Phase 2 — FE Error Infrastructure: done
 
-## Spec 2: `pwa` — Complete (Both Phases), Not Pushed
+- `sonner` added. `core/api.ts`: new `ApiError` class (`status`, `details`), `apiFetch`
+  throws it instead of a plain `Error`; also exports `isClientError(error)` (status < 500)
+  shared by both the toast handler and Phase 3's form hook.
+- `core/mutationErrorHandler.ts` (extracted, not inline in `main.tsx`, so it's unit
+  testable): `handleMutationError` shows a generic toast, wired via
+  `new QueryClient({ mutationCache: new MutationCache({ onError: handleMutationError }) })`.
+- `core/ErrorBoundary.tsx`: class component wrapped by a function component (hooks can't
+  be called inside a class boundary) supplying i18n'd fallback copy. **Placement matters**:
+  it must render *inside* `LangProvider` (it calls `useLang()`), not directly below
+  `QueryClientProvider` as the original plan sketch said — wraps just `AuthGate` /
+  `StoreProvider` / `ResponsiveApp`, not the provider setup itself.
+- New i18n keys: `error.badRequest`, `error.server`, `error.boundary.title`,
+  `error.boundary.reload`. Also a new exported `translate(key, vars?)` in `i18n.tsx` that
+  reads language from `localStorage` directly — needed because `MutationCache.onError`
+  runs outside the React tree, where `useLang()`'s context doesn't exist.
+- **Real slip caught during Phase 3 staging**: `ErrorBoundary.tsx` was described in this
+  phase's commit message but never actually `git add`ed — stayed untracked the whole time.
+  Caught while staging Phase 3 (`git status` showed it still untracked one phase later).
+  Fixed by switching back to the Phase 2 branch, committing it there (new commit, not
+  amend — nothing was pushed yet so this was safe), then moving Phase 3's branch pointer
+  onto the corrected Phase 2 tip via `git reset --mixed` (preserves uncommitted work). The
+  file briefly got deleted from disk by the intermediate branch checkout (tracked-on-one-
+  branch, absent-on-another) — recovered via `git show <commit>:<path>`, not a real loss.
+  **Lesson**: after describing a new file's purpose in a commit message, verify it's
+  actually in `git show --stat` for that commit, not just present in the working tree.
+- Gate: `tsc` clean, 34/34 tests. Toast/boundary manual browser check **not run** (no
+  browser tool this session) — dev server smoke-checked instead.
 
-`specs/pwa/PLAN.md` + `specs/pwa/EXECUTION.md` exist, produced via `/grill-me` →
-`spec-plan`, executed via `spec-phase` across two branches, both done.
+### Phase 3 — FE Forms: Inline Errors + Retained Input: done
 
-### Phase 1 — Installable Icons + Manifest + Favicon: done
+- All 19 `store.tsx` mutation callbacks converted from fire-and-forget `.mutate()` to
+  `async` + `await xMutation.mutateAsync(...)`, rethrowing on failure (no local catch —
+  `MutationCache.onError` already handles the toast). `StoreValue`'s callback signatures
+  all changed to `=> Promise<void>`.
+- New shared `shared/hooks/useFormSubmit.ts` (extracted, not duplicated 5×): wraps an
+  async `onSubmit`, exposes `{ submit, isSubmitting, errorMessage }`, using `isClientError`
+  to pick `error.badRequest`/`error.server` copy. New `shared/components/FormErrorBanner.tsx`
+  for the shared banner UI.
+- All 5 forms (`TransactionForm`, `CategoryForm`, `BudgetForm`, `AccountForm`,
+  `SubscriptionForm`) wired through `useFormSubmit`. `CategoryForm` has two independent
+  mutations (save/delete) — two separate `useFormSubmit` calls, banner shows whichever
+  failed most recently.
+- **The actual behavior-changing part**: every screen-level caller of these forms
+  (`CategoriesPage`, `Mobile/DesktopBudgets`, `Mobile/DesktopAccounts`,
+  `Mobile/DesktopSubscriptions`, `Mobile/DesktopApp`) previously closed the
+  form/sheet/drawer unconditionally right after firing `.mutate()` — success and failure
+  looked identical. Now each caller `await`s the store call and only closes on success.
+  Without this, `useFormSubmit`'s error state would never be visible (the form would
+  already be closed by the time the rejection surfaced).
+- Gate: `tsc` clean, 39/39 tests (4 new `useFormSubmit` cases + 1 new integration test in
+  `TransactionForm.test.tsx` proving the real component tree — not just the hook in
+  isolation — stays open with a banner and retained input on a rejected `onSubmit`).
+  Existing `TransactionForm.test.tsx` mocks had to change from bare `vi.fn()` to
+  `vi.fn().mockResolvedValue(undefined)` — the old mocks returned `undefined`, and
+  `useFormSubmit`'s `.catch()` chain threw on a non-Promise return. TypeScript didn't catch
+  this (a `Promise<void>`-returning prop silently accepts a `void`-returning mock
+  structurally) — only running the suite surfaced it. Per-form manual browser check **not
+  run** (no browser tool) — 1 of 5 forms has a real-component-tree test, the other 4 share
+  identical wiring but aren't individually browser-verified.
 
-Branch: `pwa/phase-1-installable-icons` (off `develop`), 3 commits.
-
-- `@vite-pwa/assets-generator` generates the manifest icon set (192/512/maskable/apple-
-  touch/favicon.ico) from `packages/web/public/app-icon.svg` (fixed gold-on-ink,
-  `#b07200` on `#14110c`), distinct from `public/icon.svg` (the live tab favicon, since it
-  still responds to `prefers-color-scheme` — a static install icon can't).
-- Manifest `theme_color`/`background_color` converted from `oklch(0.985 0.004 90)` to
-  `#fbfaf7` — manifest parsers have less consistent CSS Color 4 support than page CSS.
-- `pwaAssets.includeHtmlHeadLinks`/`injectThemeColor` set to `false`, head links added
-  manually in `index.html` instead — the plugin's auto-injected favicon `<link>` points at
-  the fixed-color install icon, not the adaptive one.
-- **Icon mark redesigned after initial completion**: the first pass just recolored the
-  existing (unrelated, abstract) mark from `icon.svg`. User asked for a genuinely
-  custom-designed mark instead of a recolor of the default — replaced with a hand-built
-  `$` glyph (bold stroke-based S-curve + vertical stroke) in both `app-icon.svg` and
-  `icon.svg`, previewed via direct `sharp` rendering at 512px/64px before committing to
-  confirm legibility at small sizes. Also removed several unreferenced legacy/placeholder
-  assets from `public/` (`apple-icon.png`, `icon-dark-32x32.png`, `icon-light-32x32.png`,
-  starter-template `placeholder-*` files) — grepped first, confirmed zero references
-  anywhere in source.
-- `pwa/phase-2-offline-messaging` (already pushed at the time) was rebased onto this new
-  commit and force-pushed with lease, since it had branched off Phase 1's earlier tip and
-  would otherwise have reverted to the old icon on merge. Both branches' gates re-verified
-  post-rebase before pushing.
-
-**Real gotcha, worth knowing if touching this area again:** the source image for
-`pwaAssets` must live inside `public/`, not `src/assets/` — the generator writes output
-*next to the source image*, and only files in `public/` get copied into `dist/` by Vite's
-normal static-asset handling. `src/assets/` output silently never ships — manifest
-references it by root path but `dist/` never has the file, no error thrown.
-
-Verification: `tsc` clean, FE suite 26/26, `pnpm build` succeeds, manifest/HTML inspected
-directly. Chrome DevTools → Application → Manifest panel check **not run** — no browser
-automation tool available. Substituted with `curl`-verified asset resolution.
-
-### Phase 2 — Offline Messaging: done
-
-Branch: `pwa/phase-2-offline-messaging` (off `phase-1`), 3 commits (one of which is the
-`CLAUDE.md` workflow-rule change, unrelated to `pwa` itself — see Context above).
-
-- `packages/web/src/core/useOnlineStatus.ts` — `navigator.onLine` +
-  `window` `online`/`offline` event-listener hook.
-- `packages/web/src/shared/components/OfflineBanner.tsx` — fixed, non-dismissible
-  top-of-viewport banner shown whenever offline, mounted app-wide in `main.tsx` (inside
-  `LangProvider`, above `AuthGate`). New i18n key `offline.banner`, VI + EN.
-- Deliberately **not** built on `sonner`/`MutationCache.onError` (that infra doesn't exist
-  yet, `error-handling` hasn't landed) — a single global banner covers both reads and
-  writes uniformly with no per-mutation wiring, resolving the soft-coupling the plan
-  originally flagged. No rework expected once `error-handling` lands; its toasts would
-  layer on top for per-action feedback, not replace this banner.
-- No write-queue, no auto-retry-on-reconnect — confirmed no queuing logic was added
-  anywhere, per PLAN.md's explicit non-goal.
-
-Verification: `tsc` clean, FE suite 29/29 (26 prior + 3 new `OfflineBanner.test.tsx` cases).
-`pnpm build` succeeds. Chrome DevTools throttle-to-offline manual check **not run** — same
-browser-automation gap as Phase 1; unit tests cover the `navigator.onLine`/event-listener
-logic but not the real end-to-end `fetch`-fails-while-offline path or the banner's visual
-layout in the actual app.
-
-**Both phases done and pushed** — `pwa/phase-1-installable-icons` and
-`pwa/phase-2-offline-messaging` are both on `origin` as of the icon-redesign commit and
-subsequent rebase.
+**All 3 phases done. Nothing pushed yet.**
 
 ## Remaining Work
 
-1. Ask before starting `error-handling` — needs fresh explicit go-ahead; check
-   `git stash list` first per the note above.
-2. `develop` itself isn't pushed to `origin` yet.
-4. `CLAUDE.md`'s new one-spec-at-a-time rule is only committed on `pwa/phase-2-offline-
-   messaging` — consider whether it should land on `develop` directly instead/also, since
-   it's a workflow rule, not `pwa` feature scope.
-5. Bun→Node migration's broken dev-watch script (`packages/api/package.json`) — flagged,
-   not fixed, not blocking.
-6. `gh` account mismatch still blocks PR creation from this environment (`daoduong-saritasa`
-   can't see `daodd1511/expense-management`) — unresolved.
-7. GitHub default-branch flip to `develop` — requires the correct `gh` account or the
-   GitHub web UI; not doable from here.
-8. Real browser verification owed for both `pwa` phases (installability panel, offline
-   throttle test) — no browser automation tool available all session.
+1. Push `error-handling/phase-1-be-error-mapping`, `phase-2-fe-error-infra`,
+   `phase-3-fe-forms-inline-errors` — not done, needs explicit go-ahead.
+2. `develop` isn't pushed to `origin` by this session either.
+3. Bun→Node migration's broken dev-watch script (`packages/api/package.json`) — flagged,
+   not fixed.
+4. `gh` account mismatch still blocks PR creation (`daoduong-saritasa` can't see
+   `daodd1511/expense-management`) — unresolved, longstanding.
+5. GitHub default-branch flip to `develop` — requires the correct `gh` account or the
+   GitHub web UI.
+6. Real browser verification owed across both specs — installability panel, offline
+   throttle test, toast/boundary visual check, per-form manual failure check. No browser
+   automation tool available at any point this session.
+7. `deleteTransactions` (bulk) in `store.tsx` still loops individual `deleteTx.mutateAsync`
+   calls rather than using the existing-but-unused `useDeleteTransactions` bulk-endpoint
+   hook — noticed during Phase 3, left as-is (behavior-preserving, out of scope for an
+   error-handling spec to also change which endpoint gets called).
