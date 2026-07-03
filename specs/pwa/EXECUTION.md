@@ -81,28 +81,41 @@ Branch: `pwa/phase-2-offline-messaging` (off `phase-1`)
 Graceful offline state for reads/writes — no queue, no retry-on-reconnect, per PLAN.md's
 explicit scope limit.
 
-- [ ] Offline detection mechanism (implementation choice per PLAN.md's Open Items:
-      `navigator.onLine` + `window` `online`/`offline` event listeners, or inferring from
-      fetch failures in `packages/web/src/core/api.ts`'s `apiFetch` — pick whichever is
-      simpler once started, document the choice in this checklist item when checked off)
-- [ ] Distinct "you're offline" messaging surfaced when a fetch fails specifically due to
-      being offline, as opposed to a genuine API/server error — exact UI treatment (banner,
-      toast, inline state) is an implementation choice; if the `error-handling` spec's
-      `sonner`/`MutationCache.onError` infra has landed by this point, prefer reusing it
-      for consistency rather than building a second notification path
-- [ ] No write-queue, no auto-retry-on-reconnect — writes attempted while offline fail with
-      the same offline messaging as reads, nothing gets queued (explicit non-goal per
-      PLAN.md)
+- [x] Offline detection mechanism: `packages/web/src/core/useOnlineStatus.ts` — a
+      `navigator.onLine` + `window` `online`/`offline` event-listener hook. Chosen over
+      fetch-failure inference because `error-handling`'s async-callback/toast infra
+      (needed to consume a distinguished fetch error usefully) hadn't landed yet at
+      execution time — a proactive connectivity hook stands alone with no dependency on
+      that spec, resolving the soft-coupling PLAN.md flagged
+- [x] Distinct "you're offline" messaging: `packages/web/src/shared/components/
+      OfflineBanner.tsx` — a fixed, non-dismissible top-of-viewport banner (`role="status"`,
+      `bg-expense`) shown whenever `useOnlineStatus()` reports offline, mounted at the app
+      root in `main.tsx` (inside `LangProvider`, above `AuthGate`, so it shows regardless of
+      auth state). New i18n key `offline.banner`, VI + EN. This is a single global
+      notification, not a per-request toast — deliberately not built on `sonner`/
+      `MutationCache.onError` since `error-handling` hasn't landed; a persistent banner
+      covers both reads and writes uniformly without needing per-mutation wiring, so no
+      rework is expected once `error-handling` does land (that spec's toasts would be
+      layered on top for per-action feedback, not a replacement for this banner)
+- [x] No write-queue, no auto-retry-on-reconnect — writes attempted while offline fail with
+      the same offline messaging as reads (the global banner, not a per-request message),
+      nothing gets queued (explicit non-goal per PLAN.md) — confirmed no new queuing logic
+      was added anywhere in this phase
 
 **Verification gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck` passes
-- [ ] `pnpm --filter @wallet/web test` passes; add test coverage for the offline-detection
-      logic itself (mock `navigator.onLine` / dispatch offline event, or mock a fetch
-      rejection depending on which mechanism was chosen)
+- [x] `pnpm --filter @wallet/web typecheck` passes
+- [x] `pnpm --filter @wallet/web test` passes — 29/29 (26 prior + 3 new in
+      `OfflineBanner.test.tsx`: hidden while online, shown on `offline` event, hidden again
+      on `online` event — via mocked `navigator.onLine` + dispatched window events)
 - [ ] Manual check: in Chrome DevTools → Network tab, set throttling to "Offline", attempt a
       read (load a screen that fetches) and a write (submit a form) — confirm both surface
       the offline-specific message rather than a generic error, and that going back online
-      and retrying manually succeeds normally
+      and retrying manually succeeds normally — **not run**, no browser automation tool
+      available this session (same consistent gap as Phase 1 and every prior UI phase).
+      `navigator.onLine`/event-listener behavior is standard and covered by the unit tests
+      above, but the real DevTools-throttle path (does the actual `fetch` fail the way
+      expected, does the banner's fixed positioning look right in the real layout) hasn't
+      been visually confirmed
 
 **On completion:** update this checklist, update root `HANDOFF.md`, stop and ask before
 push/PR. This is the final phase — after merge, delete both phase branches.
