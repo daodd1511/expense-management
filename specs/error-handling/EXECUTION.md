@@ -150,36 +150,69 @@ Branch: `error-handling/phase-3-fe-forms-inline-errors` (off `phase-2`)
 The user-visible payoff: failed mutations no longer silently no-op — form stays open,
 input intact, inline banner shown (toast already fires automatically from Phase 2).
 
-- [ ] `packages/web/src/core/store.tsx`: all 19 mutation-triggering callbacks (per PLAN.md's
-      count — `addTransaction`, `addFavorite`, etc.) become `async`, using
-      `await xMutation.mutateAsync(...)` instead of `.mutate(...)`; on failure they rethrow
-      (no local catch — `MutationCache.onError` from Phase 2 already handles the toast)
-- [ ] Update `StoreValue` interface / callback prop types to reflect the new
-      `Promise<void>`-returning signatures
-- [ ] All 5 forms — `TransactionForm.tsx`, `CategoryForm.tsx`, `BudgetForm.tsx`,
-      `AccountForm.tsx`, `SubscriptionForm.tsx`: change `onSubmit` prop type from
-      `(data) => void` to `(data) => Promise<void>`; submit handler wraps
-      `await onSubmit(data)` in try/catch; catch sets local `formError` boolean/message
-      state; render a banner at the top of the form body when set, using
-      `error.badRequest`/`error.server`-style generic copy (implementation choice: extract
-      a shared `useFormSubmit` hook vs. duplicate per form — either is fine per PLAN.md's
-      Open Items, pick whichever reads cleaner once the first form is done)
-- [ ] Confirm no form clears its own input state before `onSubmit` resolves (should already
-      be true today since nothing awaits currently — verify, don't just assume)
+- [x] `packages/web/src/core/store.tsx`: all 19 mutation-triggering callbacks (`addTransaction`,
+      `updateTransaction`, `deleteTransaction`, `deleteTransactions` (bulk — converted the
+      existing per-id `.mutate()` loop to `Promise.all(ids.map(id => deleteTx.mutateAsync(id)))`,
+      preserving its existing per-id endpoint usage rather than switching to the unused
+      `useDeleteTransactions` bulk hook — out of scope, flagged but not touched),
+      `addAccount`, `updateAccount`, `deleteAccount`, `addCategory`, `updateCategory`,
+      `deleteCategory`, `addFavorite`, `removeFavorite`, `addBudget`, `updateBudget`,
+      `deleteBudget`, `addSubscription`, `updateSubscription`, `deleteSubscription`,
+      `logSubscription`) are now `async`, using `await xMutation.mutateAsync(...)` instead
+      of `.mutate(...)`; on failure they rethrow (no local catch — `MutationCache.onError`
+      from Phase 2 already handles the toast)
+- [x] `StoreValue` interface's callback signatures all changed from `=> void` to
+      `=> Promise<void>`
+- [x] Shared `packages/web/src/shared/hooks/useFormSubmit.ts` (extracted rather than
+      duplicated per form — picked after seeing the try/catch + banner-state pattern would
+      be identical across all 5): wraps an async `onSubmit`, exposes `{ submit,
+      isSubmitting, errorMessage }`; on rejection sets `errorMessage` via a shared
+      `isClientError(error)` classifier (new export in `core/api.ts`, also used by
+      Phase 2's `mutationErrorHandler` — extracted so both classify failures identically)
+      picking between `error.badRequest`/`error.server` copy. Also added
+      `packages/web/src/shared/components/FormErrorBanner.tsx` for the shared banner UI
+- [x] All 5 forms — `TransactionForm.tsx`, `CategoryForm.tsx`, `BudgetForm.tsx`,
+      `AccountForm.tsx`, `SubscriptionForm.tsx`: `onSubmit` prop type changed to
+      `Promise<void>`-returning, each wired through `useFormSubmit`, `FormErrorBanner`
+      rendered when `errorMessage` is set. `CategoryForm.tsx` has two independent mutations
+      (`onSave`/`onDelete`) — wired through two separate `useFormSubmit` calls, banner shows
+      whichever failed most recently (`saveError ?? deleteError`)
+- [x] Every screen-level caller of these 5 forms (`CategoriesPage.tsx`,
+      `MobileBudgets.tsx`/`DesktopBudgets.tsx`, `MobileAccounts.tsx`/`DesktopAccounts.tsx`,
+      `MobileSubscriptions.tsx`/`DesktopSubscriptions.tsx`, `MobileApp.tsx`/`DesktopApp.tsx`)
+      had its submit handler changed to `async`, `await`-ing the store call and only
+      closing the form/sheet/drawer *after* that await succeeds — previously these closed
+      unconditionally right after firing `.mutate()`, so a failure and a success looked
+      identical to the user (form always closed). This was the actual behavior change that
+      makes "form stays open on failure" true, not just the `useFormSubmit` plumbing itself
+- [x] Confirmed no form clears its own input state before `onSubmit` resolves — true before
+      this phase (nothing awaited) and still true now (state is only reset via `onCancel`/
+      unmount, never inside the submit path)
 
 **Verification gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck` passes
-- [ ] `pnpm --filter @wallet/web test` passes — existing form tests updated for the new
-      async `onSubmit` signature (mock `onSubmit` becomes `vi.fn(async () => {})` or
-      similar); add at least one new test per form (or one for the shared hook, if
-      extracted) asserting: `onSubmit` rejecting → form stays rendered, inline banner
-      appears, input values unchanged
-- [ ] Manual check per form (all 5): trigger a failure (reuse Phase 1's real-conflict
-      scenario where applicable, e.g. add a duplicate-favorite-adjacent budget conflict; for
-      others, temporarily stop the API) → confirm toast fires, form stays open, banner
-      shows, previously-entered values are still in the inputs. Then fix the underlying
-      cause and resubmit successfully to confirm the happy path still closes the form as
-      before
+- [x] `pnpm --filter @wallet/web typecheck` passes
+- [x] `pnpm --filter @wallet/web test` passes — 39/39 (34 prior + 4 new
+      `useFormSubmit.test.ts` cases covering success/4xx/5xx/error-clearing-on-retry, + 1
+      new integration test in `TransactionForm.test.tsx` asserting the full wiring:
+      `onSubmit` rejecting → banner (`role="alert"`) appears, the Merchant input keeps its
+      typed value, the Save button is still present — i.e. the form genuinely stayed
+      mounted, not just the hook's internal state in isolation). Existing
+      `TransactionForm.test.tsx` mocks updated from bare `vi.fn()` to
+      `vi.fn().mockResolvedValue(undefined)` — the old mocks returned `undefined` instead
+      of a `Promise`, which `useFormSubmit`'s `.catch()` chain would have thrown on;
+      caught this by actually running the suite, not just typechecking (TS allows a
+      `Promise<void>`-returning prop to silently accept a `void`-returning mock at the
+      type level, so this was a runtime-only gap)
+- [x] `pnpm --filter @wallet/web build` succeeds
+- [ ] Manual check per form (all 5): trigger a failure and confirm toast fires, form stays
+      open, banner shows, previously-entered values are still in the inputs; then fix the
+      underlying cause and resubmit successfully to confirm the happy path still closes the
+      form as before — **not run**, no browser automation tool available this session,
+      consistent with every manual-check item across both specs this session. Dev server
+      smoke-checked instead (`pnpm dev` → curl `/` → 200). The integration test above
+      covers one form (`TransactionForm`) exercising the real component tree, not a mock;
+      the other 4 forms share the identical `useFormSubmit`/`FormErrorBanner` wiring but
+      haven't each been individually exercised in a real browser
 
 **On completion:** update this checklist, update root `HANDOFF.md`, stop and ask before
 push/PR. This is the final phase — after merge, delete all three phase branches.
