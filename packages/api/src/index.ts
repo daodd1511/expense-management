@@ -1,3 +1,5 @@
+import 'dotenv/config'
+import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
@@ -26,7 +28,11 @@ api.route('/budgets', budgetsRouter)
 api.route('/favorites', favoritesRouter)
 api.route('/subscriptions', subscriptionsRouter)
 
-export default {
-  port: Number(process.env.PORT ?? 3000),
+const port = Number(process.env.PORT ?? 3000)
+
+serve({
   fetch: app.fetch,
-}
+  port,
+})
+
+console.log(`API listening on port ${port}`)
