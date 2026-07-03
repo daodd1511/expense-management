@@ -16,36 +16,63 @@ the phase's commits are already authorized.
 
 ## Phase 1 — BE Error Mapping
 
-Branch: `error-handling/phase-1-be-error-mapping` (off `main`)
+Branch: `error-handling/phase-1-be-error-mapping` (off `develop` — `main` note predates
+`develop`'s creation, same fix applied as `pwa`)
 
 Backend only — no FE dependency, independently verifiable and revertable.
 
-- [ ] `packages/api/src/lib/http.ts`: new `mapDbError(c, error)` helper — inspect
-      `error.code`: `23505` → `409` clean message, `23503` → `409`/`400` (decide per call
-      site per PLAN.md's Open Items note), default → `console.error(error)` + `500` generic
-      `"Internal server error"` (raw Postgres message dropped from response body)
-- [ ] Replace every `if (error) return jsonError(c, 500, error.message)` across all 6 route
-      files with `if (error) return mapDbError(c, error)`:
-      `packages/api/src/routes/categories.ts`, `favorites.ts`, `budgets.ts`,
-      `transactions.ts`, `accounts.ts`, `subscriptions.ts` (~50 sites total per PLAN.md's
-      survey)
-- [ ] `packages/api/src/routes/categories.ts` PATCH handler: fold its hand-rolled
-      JSON-parse-plus-manual-check into the shared `parseJsonBody` helper (noticed during
-      survey, fix while already touching this file for `mapDbError`)
-- [ ] `packages/api/src/middleware/auth.ts`: replace direct `c.json({error: '...'}, 401)`
-      calls (~lines 33, 43, 47) with `jsonError(c, 401, '...')`
-- [ ] `packages/api/src/index.ts`: add global `app.onError((err, c) => { console.error(err);
-      return jsonError(c, 500, 'Internal server error') })`
+- [x] `packages/api/src/lib/http.ts`: new `mapDbError(c, error)` helper — inspects
+      `error.code`: `23505` → `409` "This item already exists", `23503` → `409` "This
+      action conflicts with related data", default → `console.error('[db] unexpected
+      error:', error)` + `500` generic `"Internal server error"` (raw Postgres message
+      dropped from the response body, only reaches server logs). `DbError` type exported
+      for consumers that need to carry an error through an intermediate result type (see
+      `categories.ts` note below)
+- [x] Replaced every `if (error) return jsonError(c, 500, error.message)` (and inline
+      variants like `if (x.error) return jsonError(c, 500, x.error.message)`) across all 6
+      route files with `mapDbError(c, error)` — `categories.ts`, `favorites.ts`,
+      `budgets.ts`, `transactions.ts`, `accounts.ts`, `subscriptions.ts`. Row-shape
+      validation failures (Zod `safeParse` after insert/update, e.g. `'Inserted category
+      failed validation'`) were left as `jsonError` — those aren't Postgres errors, `mapDbError`
+      doesn't apply
+- [x] `categories.ts`'s `loadParentCandidate` helper previously discarded the Postgres
+      error code (returned only `.message` as a plain string), so its two call sites
+      couldn't route through `mapDbError`. Fixed by changing `ParentCandidateResult`'s
+      error variant to carry the full `DbError` instead of a string
+- [x] `categories.ts` PATCH handler: extracted a new `parseRawJsonBody(c)` helper in
+      `http.ts` (JSON-parse-with-try/catch only, no schema) shared by `parseJsonBody`
+      internally and by this handler directly — needed because `categoryPatchSchema`
+      doesn't include `type` at all, so schema validation alone would silently strip an
+      attempted `type` field rather than rejecting it with the specific "type is immutable"
+      message this handler intentionally gives. The hand-rolled `c.req.json()` try/catch
+      duplication is gone; the immutability check itself stays (it can't be expressed as
+      schema validation without losing the specific error message)
+- [x] `packages/api/src/middleware/auth.ts`: replaced direct `c.json({error: '...'}, 401)`
+      calls with `jsonError(c, 401, '...')`
+- [x] `packages/api/src/index.ts`: added global
+      `app.onError((err, c) => { console.error('[uncaught]', err); return jsonError(c, 500,
+      'Internal server error') })`
 
 **Verification gate (hard):**
-- [ ] `pnpm --filter @wallet/api typecheck` passes
-- [ ] `pnpm --filter @wallet/api test` passes — add/update test cases per route file
-      covering: a `23505` conflict now returns `409` (not `500`), a generic DB error still
-      returns `500` with a generic (non-Postgres-leaking) message, `auth.ts`'s 401 responses
-      still match the `{error}` shape
+- [x] `pnpm --filter @wallet/api typecheck` passes
+- [x] `pnpm --filter @wallet/api test` passes — 24/24 (20 prior + 4 new in `http.test.ts`'s
+      `mapDbError` suite: `23505` → 409 clean message, `23503` → 409 clean message,
+      unrecognized code → 500 generic message with no Postgres text leaked, and a
+      `console.error` call assertion for the logging path). `auth.test.ts`'s existing 3
+      cases pass unchanged, confirming the `{error}` response shape is unaffected by
+      routing through `jsonError` instead of raw `c.json`
 - [ ] Manual check: with the dev API running, trigger a real unique-constraint conflict
-      (e.g. `POST /favorites` twice with the same `categoryId`) and confirm `409` +
-      clean message, not `500` + raw Postgres text
+      (e.g. `POST /favorites` twice with the same `categoryId`) and confirm `409` + clean
+      message, not `500` + raw Postgres text — **not run**, this requires a real
+      authenticated Supabase session (JWT) to pass `authMiddleware`, not practical to
+      script without a login flow. Substituted: `PostgrestError`'s own type documentation
+      (`node_modules/.../PostgrestError.ts`) confirms `.code` carries the real Postgres
+      SQLSTATE (e.g. `23505`, `42501`) for constraint-level errors, not just
+      PostgREST-specific codes — so `mapDbError`'s branching targets the right values, and
+      the unit tests above exercise the exact mapping logic against that documented
+      contract. The remaining gap is purely "does this specific deployment's Supabase
+      instance behave per that documented contract," which is an external-service
+      assumption, not something this codebase controls.
 
 **On completion:** update this checklist, update root `HANDOFF.md`, stop and ask before
 push/PR.
