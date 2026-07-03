@@ -162,9 +162,9 @@ export function DesktopSubscriptions() {
   const openEdit = (s: Subscription) => { setEditing(s); setDrawerOpen(true) }
   const close = () => { setDrawerOpen(false); setEditing(undefined) }
 
-  const handleSubmit = (data: Omit<Subscription, 'id'>) => {
-    if (editing) updateSubscription(editing.id, data)
-    else addSubscription(data)
+  const handleSubmit = async (data: Omit<Subscription, 'id'>) => {
+    if (editing) await updateSubscription(editing.id, data)
+    else await addSubscription(data)
     close()
   }
 

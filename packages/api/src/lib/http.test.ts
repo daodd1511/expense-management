@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { accountCreateSchema } from '@wallet/shared'
-import { parseJsonBody } from './http'
+import { mapDbError, parseJsonBody } from './http'
 
 describe('parseJsonBody', () => {
   it('returns a 400 response for invalid JSON', async () => {
@@ -47,5 +47,44 @@ describe('parseJsonBody', () => {
         },
       },
     })
+  })
+})
+
+describe('mapDbError', () => {
+  function respond(error: { code: string; message: string }) {
+    const app = new Hono()
+    app.post('/', (c) => mapDbError(c, error))
+    return app.request('/', { method: 'POST' })
+  }
+
+  it('maps a unique constraint violation (23505) to 409 with a clean message', async () => {
+    const response = await respond({ code: '23505', message: 'duplicate key value violates unique constraint "category_favorites_user_id_category_id_key"' })
+
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toEqual({ error: 'This item already exists' })
+  })
+
+  it('maps a foreign key violation (23503) to 409 with a clean message', async () => {
+    const response = await respond({ code: '23503', message: 'insert or update on table "budgets" violates foreign key constraint' })
+
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toEqual({ error: 'This action conflicts with related data' })
+  })
+
+  it('maps an unrecognized error code to a generic 500, without leaking the raw message', async () => {
+    const response = await respond({ code: '57P01', message: 'terminating connection due to administrator command' })
+
+    expect(response.status).toBe(500)
+    await expect(response.json()).resolves.toEqual({ error: 'Internal server error' })
+  })
+
+  it('logs the full error server-side for unrecognized codes', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const error = { code: '57P01', message: 'terminating connection due to administrator command' }
+
+    await respond(error)
+
+    expect(spy).toHaveBeenCalledWith('[db] unexpected error:', error)
+    spy.mockRestore()
   })
 })

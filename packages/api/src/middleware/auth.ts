@@ -1,5 +1,6 @@
 import { createMiddleware } from 'hono/factory'
 import { createRemoteJWKSet, jwtVerify } from 'jose'
+import { jsonError } from '../lib/http'
 
 export type AuthEnv = {
   Variables: {
@@ -30,7 +31,7 @@ function getProjectJwks() {
 export const authMiddleware = createMiddleware<AuthEnv>(async (c, next) => {
   const header = c.req.header('Authorization')
   if (!header?.startsWith('Bearer ')) {
-    return c.json({ error: 'Unauthorized' }, 401)
+    return jsonError(c, 401, 'Unauthorized')
   }
   const token = header.slice(7)
   try {
@@ -40,11 +41,11 @@ export const authMiddleware = createMiddleware<AuthEnv>(async (c, next) => {
     })
 
     if (typeof payload.sub !== 'string' || payload.sub.length === 0) {
-      return c.json({ error: 'Invalid token' }, 401)
+      return jsonError(c, 401, 'Invalid token')
     }
     c.set('userId', payload.sub)
   } catch {
-    return c.json({ error: 'Invalid token' }, 401)
+    return jsonError(c, 401, 'Invalid token')
   }
   await next()
 })

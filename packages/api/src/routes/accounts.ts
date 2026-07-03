@@ -8,7 +8,7 @@ import {
   toAccount,
 } from '@wallet/shared'
 import { getSupabase } from '../db/supabase'
-import { jsonError, parseJsonBody, parseRows } from '../lib/http'
+import { jsonError, mapDbError, parseJsonBody, parseRows } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
 
 export const accountsRouter = new Hono<AuthEnv>()
@@ -24,7 +24,7 @@ accountsRouter.get('/', async (c) => {
     .order('created_at', { ascending: true })
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
 
   return c.json({ data: parseRows(data, accountRowSchema, toAccount) })
@@ -43,7 +43,7 @@ accountsRouter.post('/', async (c) => {
     .single()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
 
   const account = accountRowSchema.safeParse(data)
@@ -69,7 +69,7 @@ accountsRouter.patch('/:id', async (c) => {
     .maybeSingle()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
   if (!data) {
     return jsonError(c, 404, 'Account not found')
@@ -95,7 +95,7 @@ accountsRouter.delete('/:id', async (c) => {
     .maybeSingle()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
   if (!data) {
     return jsonError(c, 404, 'Account not found')

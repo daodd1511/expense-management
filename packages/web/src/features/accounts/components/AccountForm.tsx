@@ -3,7 +3,9 @@ import { Banknote, CreditCard, Landmark, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
+import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
 import { Input, Label } from '@/shared/components/ui/input'
+import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
 import { useLang } from '@/core/i18n'
 import type { Account, AccountKind } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
@@ -21,7 +23,7 @@ export function AccountForm({
   onCancel,
 }: {
   initial?: Account
-  onSubmit: (data: Omit<Account, 'id'>) => void
+  onSubmit: (data: Omit<Account, 'id'>) => Promise<void>
   onCancel: () => void
 }) {
   const { t } = useLang()
@@ -38,9 +40,11 @@ export function AccountForm({
 
   const canSubmit = name.trim().length > 0
 
+  const { submit: submitForm, errorMessage } = useFormSubmit(onSubmit)
+
   const submit = () => {
     if (!canSubmit) return
-    onSubmit({ name: name.trim(), kind, openingBalance: Number(balance) || 0 })
+    submitForm({ name: name.trim(), kind, openingBalance: Number(balance) || 0 })
   }
 
   return (
@@ -90,6 +94,8 @@ export function AccountForm({
           onChange={(e) => setBalance(e.target.value)}
         />
       </div>
+
+      {errorMessage && <FormErrorBanner message={errorMessage} />}
 
       <div className="flex gap-2 pt-1">
         <Button variant="outline" size="lg" className="h-11 flex-1" onClick={onCancel}>

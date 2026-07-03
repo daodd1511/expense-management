@@ -8,14 +8,14 @@ import {
   toCategory,
 } from '@wallet/shared'
 import { getSupabase } from '../db/supabase'
-import { jsonError, parseJsonBody, parseRows } from '../lib/http'
+import { jsonError, mapDbError, parseJsonBody, parseRawJsonBody, parseRows, type DbError } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
 
 /** Minimal shape needed to validate a parent_id target without a full row fetch. */
 type ParentCandidate = { id: string; type: string; parent_id: string | null; owner_id: string | null }
 
 type ParentCandidateResult =
-  | { error: string }
+  | { error: DbError }
   | { notFound: true }
   | { candidate: ParentCandidate }
 
@@ -31,7 +31,7 @@ async function loadParentCandidate(
     .or(`owner_id.eq.${userId},owner_id.is.null`)
     .maybeSingle()
 
-  if (error) return { error: error.message }
+  if (error) return { error }
   if (!data) return { notFound: true }
   return { candidate: data as ParentCandidate }
 }
@@ -48,7 +48,7 @@ categoriesRouter.get('/', async (c) => {
     .order('created_at', { ascending: true })
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
 
   return c.json({ data: parseRows(data, categoryRowSchema, toCategory) })
@@ -63,7 +63,7 @@ categoriesRouter.post('/', async (c) => {
 
   if (parsed.data.parentId) {
     const result = await loadParentCandidate(supabase, parsed.data.parentId, userId)
-    if ('error' in result) return jsonError(c, 500, result.error)
+    if ('error' in result) return mapDbError(c, result.error)
     if ('notFound' in result) return jsonError(c, 400, 'parentId does not exist')
     if (result.candidate.parent_id !== null) {
       return jsonError(c, 400, 'parentId target is itself a child; nesting is capped at 2 levels')
@@ -80,7 +80,7 @@ categoriesRouter.post('/', async (c) => {
     .single()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
 
   const category = categoryRowSchema.safeParse(data)
@@ -92,18 +92,14 @@ categoriesRouter.post('/', async (c) => {
 })
 
 categoriesRouter.patch('/:id', async (c) => {
-  let rawBody: unknown
-  try {
-    rawBody = await c.req.json()
-  } catch {
-    return jsonError(c, 400, 'Invalid JSON body')
-  }
+  const raw = await parseRawJsonBody(c)
+  if (!raw.success) return raw.response
 
-  if (typeof rawBody === 'object' && rawBody !== null && 'type' in rawBody) {
+  if (typeof raw.data === 'object' && raw.data !== null && 'type' in raw.data) {
     return jsonError(c, 400, 'type is immutable and cannot be patched')
   }
 
-  const parsed = categoryPatchSchema.safeParse(rawBody)
+  const parsed = categoryPatchSchema.safeParse(raw.data)
   if (!parsed.success) {
     return jsonError(c, 400, 'Invalid request body', parsed.error.flatten())
   }
@@ -119,7 +115,7 @@ categoriesRouter.patch('/:id', async (c) => {
     .maybeSingle()
 
   if (existingResult.error) {
-    return jsonError(c, 500, existingResult.error.message)
+    return mapDbError(c, existingResult.error)
   }
   if (!existingResult.data) {
     return jsonError(c, 404, 'Category not found')
@@ -135,7 +131,7 @@ categoriesRouter.patch('/:id', async (c) => {
 
   if (parsed.data.parentId !== undefined && parsed.data.parentId !== null) {
     const parentResult = await loadParentCandidate(supabase, parsed.data.parentId, userId)
-    if ('error' in parentResult) return jsonError(c, 500, parentResult.error)
+    if ('error' in parentResult) return mapDbError(c, parentResult.error)
     if ('notFound' in parentResult) return jsonError(c, 400, 'parentId does not exist')
     if (parentResult.candidate.parent_id !== null) {
       return jsonError(c, 400, 'parentId target is itself a child; nesting is capped at 2 levels')
@@ -148,7 +144,7 @@ categoriesRouter.patch('/:id', async (c) => {
       .from('categories')
       .select('id', { count: 'exact', head: true })
       .eq('parent_id', categoryId)
-    if (childCount.error) return jsonError(c, 500, childCount.error.message)
+    if (childCount.error) return mapDbError(c, childCount.error)
     if ((childCount.count ?? 0) > 0) {
       return jsonError(c, 400, 'category has children and cannot be re-parented')
     }
@@ -160,7 +156,7 @@ categoriesRouter.patch('/:id', async (c) => {
       .select('category_id')
       .in('category_id', [categoryId, parsed.data.parentId])
       .eq('owner_id', userId)
-    if (budgetConflict.error) return jsonError(c, 500, budgetConflict.error.message)
+    if (budgetConflict.error) return mapDbError(c, budgetConflict.error)
     const budgetedIds = new Set((budgetConflict.data ?? []).map((b) => b.category_id))
     if (budgetedIds.has(categoryId) && budgetedIds.has(parsed.data.parentId)) {
       return jsonError(c, 400, 'both category and parentId already have budgets; remove one first')
@@ -176,7 +172,7 @@ categoriesRouter.patch('/:id', async (c) => {
     .maybeSingle()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
   if (!data) {
     return jsonError(c, 404, 'Category not found')
@@ -201,7 +197,7 @@ categoriesRouter.delete('/:id', async (c) => {
     .eq('id', categoryId)
     .maybeSingle()
   if (existingResult.error) {
-    return jsonError(c, 500, existingResult.error.message)
+    return mapDbError(c, existingResult.error)
   }
   if (!existingResult.data) {
     return jsonError(c, 404, 'Category not found')
@@ -218,7 +214,7 @@ categoriesRouter.delete('/:id', async (c) => {
     .select('id', { count: 'exact', head: true })
     .eq('parent_id', categoryId)
   if (childCount.error) {
-    return jsonError(c, 500, childCount.error.message)
+    return mapDbError(c, childCount.error)
   }
   if ((childCount.count ?? 0) > 0) {
     return jsonError(c, 409, 'Category has children; delete or reassign them first')
@@ -230,7 +226,7 @@ categoriesRouter.delete('/:id', async (c) => {
     .eq('category_id', categoryId)
     .eq('owner_id', userId)
   if (txUpdate.error) {
-    return jsonError(c, 500, txUpdate.error.message)
+    return mapDbError(c, txUpdate.error)
   }
 
   const subUpdate = await supabase
@@ -239,7 +235,7 @@ categoriesRouter.delete('/:id', async (c) => {
     .eq('category_id', categoryId)
     .eq('owner_id', userId)
   if (subUpdate.error) {
-    return jsonError(c, 500, subUpdate.error.message)
+    return mapDbError(c, subUpdate.error)
   }
 
   const budgetDelete = await supabase
@@ -248,7 +244,7 @@ categoriesRouter.delete('/:id', async (c) => {
     .eq('category_id', categoryId)
     .eq('owner_id', userId)
   if (budgetDelete.error) {
-    return jsonError(c, 500, budgetDelete.error.message)
+    return mapDbError(c, budgetDelete.error)
   }
 
   const { data, error } = await supabase
@@ -260,7 +256,7 @@ categoriesRouter.delete('/:id', async (c) => {
     .maybeSingle()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
   if (!data) {
     return jsonError(c, 404, 'Category not found')

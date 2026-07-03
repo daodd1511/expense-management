@@ -4,7 +4,9 @@ import { useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
+import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
 import { Input, Label } from '@/shared/components/ui/input'
+import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
 import { useLang } from '@/core/i18n'
 import type { Category } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
@@ -60,8 +62,8 @@ export function CategoryForm({
 }: {
   initial?: Category
   categories: Category[]
-  onSave: (form: CategoryFormState) => void
-  onDelete: () => void
+  onSave: (form: CategoryFormState) => Promise<void>
+  onDelete: () => Promise<void>
   onCancel: () => void
 }) {
   const { t } = useLang()
@@ -80,14 +82,18 @@ export function CategoryForm({
   const canDelete = isEditing && !initial?.isSystem
   const canSave = form.name.trim().length > 0
 
+  const { submit: submitSave, errorMessage: saveError } = useFormSubmit(onSave)
+  const { submit: submitDelete, errorMessage: deleteError } = useFormSubmit<void>(onDelete)
+  const errorMessage = saveError ?? deleteError
+
   const handleSave = () => {
     if (!canSave) return
-    onSave({ ...form, name: form.name.trim() })
+    submitSave({ ...form, name: form.name.trim() })
   }
 
   const handleConfirmDelete = () => {
     setConfirmDeleteOpen(false)
-    onDelete()
+    submitDelete(undefined)
   }
 
   const handleSetType = (type: CategoryFormState['type']) => {
@@ -227,6 +233,12 @@ export function CategoryForm({
           </div>
         </div>
       </div>
+
+      {errorMessage && (
+        <div className="px-4 pt-3 sm:px-5">
+          <FormErrorBanner message={errorMessage} />
+        </div>
+      )}
 
       <div className="sticky bottom-0 flex gap-2 bg-card p-4 sm:px-5">
         <Button variant="outline" size="lg" className="h-11 flex-1" onClick={onCancel}>

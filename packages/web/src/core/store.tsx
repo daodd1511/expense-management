@@ -45,32 +45,32 @@ export interface StoreValue {
   budgets: Budget[]
   subscriptions: Subscription[]
   loading: boolean
-  addTransaction: (t: Omit<Transaction, 'id'>) => void
-  updateTransaction: (id: string, patch: Partial<Transaction>) => void
-  deleteTransaction: (id: string) => void
-  deleteTransactions: (ids: string[]) => void
-  addAccount: (a: Omit<Account, 'id'>) => void
-  updateAccount: (id: string, patch: Partial<Omit<Account, 'id'>>) => void
-  deleteAccount: (id: string) => void
+  addTransaction: (t: Omit<Transaction, 'id'>) => Promise<void>
+  updateTransaction: (id: string, patch: Partial<Transaction>) => Promise<void>
+  deleteTransaction: (id: string) => Promise<void>
+  deleteTransactions: (ids: string[]) => Promise<void>
+  addAccount: (a: Omit<Account, 'id'>) => Promise<void>
+  updateAccount: (id: string, patch: Partial<Omit<Account, 'id'>>) => Promise<void>
+  deleteAccount: (id: string) => Promise<void>
   addCategory: (
     c: Pick<Category, 'name' | 'icon' | 'color' | 'type'> & Partial<Pick<Category, 'parentId'>>,
-  ) => void
+  ) => Promise<void>
   updateCategory: (
     id: string,
     patch: Partial<Pick<Category, 'name' | 'icon' | 'color' | 'parentId'>>,
-  ) => void
-  deleteCategory: (id: string) => void
-  addFavorite: (categoryId: string) => void
-  removeFavorite: (categoryId: string) => void
+  ) => Promise<void>
+  deleteCategory: (id: string) => Promise<void>
+  addFavorite: (categoryId: string) => Promise<void>
+  removeFavorite: (categoryId: string) => Promise<void>
   getCategory: (id: string | null | undefined) => Category | undefined
   getAccount: (id: string | null | undefined) => Account | undefined
-  addBudget: (b: Budget) => void
-  updateBudget: (categoryId: string, limit: number) => void
-  deleteBudget: (categoryId: string) => void
-  addSubscription: (s: Omit<Subscription, 'id'>) => void
-  updateSubscription: (id: string, patch: Partial<Omit<Subscription, 'id'>>) => void
-  deleteSubscription: (id: string) => void
-  logSubscription: (id: string) => void
+  addBudget: (b: Budget) => Promise<void>
+  updateBudget: (categoryId: string, limit: number) => Promise<void>
+  deleteBudget: (categoryId: string) => Promise<void>
+  addSubscription: (s: Omit<Subscription, 'id'>) => Promise<void>
+  updateSubscription: (id: string, patch: Partial<Omit<Subscription, 'id'>>) => Promise<void>
+  deleteSubscription: (id: string) => Promise<void>
+  logSubscription: (id: string) => Promise<void>
 }
 
 const StoreContext = createContext<StoreValue | null>(null)
@@ -119,87 +119,121 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     subQuery.isLoading
 
   const addTransaction = useCallback(
-    (t: Omit<Transaction, 'id'>) => addTx.mutate(t),
+    async (t: Omit<Transaction, 'id'>) => {
+      await addTx.mutateAsync(t)
+    },
     [addTx],
   )
   const updateTransaction = useCallback(
-    (id: string, patch: Partial<Transaction>) => updateTx.mutate({ id, patch }),
+    async (id: string, patch: Partial<Transaction>) => {
+      await updateTx.mutateAsync({ id, patch })
+    },
     [updateTx],
   )
   const deleteTransaction = useCallback(
-    (id: string) => deleteTx.mutate(id),
+    async (id: string) => {
+      await deleteTx.mutateAsync(id)
+    },
     [deleteTx],
   )
   const deleteTransactions = useCallback(
-    (ids: string[]) => ids.forEach((id) => deleteTx.mutate(id)),
+    async (ids: string[]) => {
+      await Promise.all(ids.map((id) => deleteTx.mutateAsync(id)))
+    },
     [deleteTx],
   )
 
   const addAccount = useCallback(
-    (a: Omit<Account, 'id'>) => addAcc.mutate(a),
+    async (a: Omit<Account, 'id'>) => {
+      await addAcc.mutateAsync(a)
+    },
     [addAcc],
   )
   const updateAccount = useCallback(
-    (id: string, patch: Partial<Omit<Account, 'id'>>) => updateAcc.mutate({ id, patch }),
+    async (id: string, patch: Partial<Omit<Account, 'id'>>) => {
+      await updateAcc.mutateAsync({ id, patch })
+    },
     [updateAcc],
   )
   const deleteAccount = useCallback(
-    (id: string) => deleteAcc.mutate(id),
+    async (id: string) => {
+      await deleteAcc.mutateAsync(id)
+    },
     [deleteAcc],
   )
 
   const addCategory = useCallback(
-    (c: Pick<Category, 'name' | 'icon' | 'color' | 'type'> & Partial<Pick<Category, 'parentId'>>) =>
-      addCat.mutate(c),
+    async (c: Pick<Category, 'name' | 'icon' | 'color' | 'type'> & Partial<Pick<Category, 'parentId'>>) => {
+      await addCat.mutateAsync(c)
+    },
     [addCat],
   )
   const updateCategory = useCallback(
-    (id: string, patch: Partial<Pick<Category, 'name' | 'icon' | 'color' | 'parentId'>>) =>
-      updateCat.mutate({ id, patch }),
+    async (id: string, patch: Partial<Pick<Category, 'name' | 'icon' | 'color' | 'parentId'>>) => {
+      await updateCat.mutateAsync({ id, patch })
+    },
     [updateCat],
   )
   const deleteCategory = useCallback(
-    (id: string) => deleteCat.mutate(id),
+    async (id: string) => {
+      await deleteCat.mutateAsync(id)
+    },
     [deleteCat],
   )
   const addFavorite = useCallback(
-    (categoryId: string) => addFav.mutate(categoryId),
+    async (categoryId: string) => {
+      await addFav.mutateAsync(categoryId)
+    },
     [addFav],
   )
   const removeFavorite = useCallback(
-    (categoryId: string) => removeFav.mutate(categoryId),
+    async (categoryId: string) => {
+      await removeFav.mutateAsync(categoryId)
+    },
     [removeFav],
   )
 
   const addBudget = useCallback(
-    (b: Budget) => addBud.mutate(b),
+    async (b: Budget) => {
+      await addBud.mutateAsync(b)
+    },
     [addBud],
   )
   const updateBudget = useCallback(
-    (categoryId: string, limit: number) => updateBud.mutate({ categoryId, limit }),
+    async (categoryId: string, limit: number) => {
+      await updateBud.mutateAsync({ categoryId, limit })
+    },
     [updateBud],
   )
   const deleteBudget = useCallback(
-    (categoryId: string) => deleteBud.mutate(categoryId),
+    async (categoryId: string) => {
+      await deleteBud.mutateAsync(categoryId)
+    },
     [deleteBud],
   )
 
   const addSubscription = useCallback(
-    (s: Omit<Subscription, 'id'>) => addSub.mutate(s),
+    async (s: Omit<Subscription, 'id'>) => {
+      await addSub.mutateAsync(s)
+    },
     [addSub],
   )
   const updateSubscription = useCallback(
-    (id: string, patch: Partial<Omit<Subscription, 'id'>>) => updateSub.mutate({ id, patch }),
+    async (id: string, patch: Partial<Omit<Subscription, 'id'>>) => {
+      await updateSub.mutateAsync({ id, patch })
+    },
     [updateSub],
   )
   const deleteSubscription = useCallback(
-    (id: string) => deleteSub.mutate(id),
+    async (id: string) => {
+      await deleteSub.mutateAsync(id)
+    },
     [deleteSub],
   )
   const logSubscription = useCallback(
-    (id: string) => {
+    async (id: string) => {
       const sub = subscriptions.find((s: Subscription) => s.id === id)
-      if (sub) logSub.mutate(sub)
+      if (sub) await logSub.mutateAsync(sub)
     },
     [subscriptions, logSub],
   )

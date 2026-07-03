@@ -12,7 +12,7 @@ vi.mock('@/core/supabase', () => ({
   },
 }))
 
-import { apiFetch } from './api'
+import { ApiError, apiFetch } from './api'
 
 describe('apiFetch', () => {
   beforeEach(() => {
@@ -66,5 +66,33 @@ describe('apiFetch', () => {
     )
 
     await expect(apiFetch('/transactions')).rejects.toThrow('Unauthorized')
+  })
+
+  it('throws an ApiError carrying the response status and details', async () => {
+    getSession.mockResolvedValue({ data: { session: { access_token: 'token-123' } } })
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({ error: 'Invalid request body', details: { fieldErrors: { name: ['Required'] } } }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    )
+
+    await expect(apiFetch('/transactions')).rejects.toMatchObject({
+      status: 400,
+      details: { fieldErrors: { name: ['Required'] } },
+    })
+  })
+
+  it('throws a 401 ApiError when there is no auth session', async () => {
+    getSession.mockResolvedValue({ data: { session: null } })
+
+    const error = await apiFetch('/transactions').catch((e: unknown) => e)
+
+    expect(error).toBeInstanceOf(ApiError)
+    expect((error as ApiError).status).toBe(401)
   })
 })

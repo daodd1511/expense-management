@@ -24,9 +24,9 @@ export function MobileBudgets() {
   const totalSpent = budgets.reduce((s, b) => s + spentForCategory(transactions, b.categoryId), 0)
   const pct = totalLimit > 0 ? Math.round((totalSpent / totalLimit) * 100) : 0
 
-  const handleSubmit = (b: Budget) => {
-    if (sheet === 'add') addBudget(b)
-    else updateBudget(b.categoryId, b.limit)
+  const handleSubmit = async (b: Budget) => {
+    if (sheet === 'add') await addBudget(b)
+    else await updateBudget(b.categoryId, b.limit)
     setSheet(null)
   }
 
