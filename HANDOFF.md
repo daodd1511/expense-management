@@ -1,71 +1,140 @@
-# Handoff — Category UX Complete (All 4 Phases), category-redesign Also Complete
+# Handoff — pwa Spec Complete (Both Phases), error-handling Not Started
 
 ## Context
 
 - Repo: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
-- Branch: `category-ux/phase-4-favorites-ui` (off `category-ux/phase-3-favorites-fe-data`)
-- The `/goal` from this session ("finish all 4 phases, commit+push each, no confirm except
-  live migration apply") is now satisfied — all 4 phases of `specs/category-ux/EXECUTION.md`
-  are code-complete, gate-passed, and committed. Phase 4 itself is **not pushed yet** —
-  that's the next action, then the goal condition is fully met.
+- Branch: `pwa/phase-2-offline-messaging` (off `pwa/phase-1-installable-icons`, off `develop`)
+- `main` and `develop`: `category-redesign` (3 phases) and `category-ux` (4 phases) are both
+  fully merged to `main` via GitHub PRs. `develop` was created this session off `main`'s
+  current tip — feature work lands on `develop` first; `main` only merges once features on
+  `develop` are mature. `develop` is not pushed yet (user will push manually).
+- **New workflow rule this session, added to `CLAUDE.md`** (own commit, `pwa/phase-2-
+  offline-messaging`'s first commit — not yet on `develop`): one spec in flight at a time.
+  A prior attempt to start `error-handling` Phase 1 mid-session while `pwa` still had an
+  unfinished phase was explicitly corrected by the user — that in-progress work was stashed
+  and the branch deleted, `pwa` was finished first. Do not start or resume a different
+  spec's phase while another spec has an unfinished phase; finish (commit + gate + docs
+  updated) or get explicit sign-off to park it first.
+- Also on `main`/`develop` but **uncommitted in the working tree as of last check**: a
+  Bun→Node runtime migration for `packages/api` (esbuild bundle + `@hono/node-server`
+  instead of Bun's native server, CI re-enabled typecheck/test, `node-version: 22`). Was
+  reviewed this session — one confirmed bug: `packages/api/package.json`'s `dev` script
+  (`pnpm build && node --watch dist/index.js`) watches the bundled output, not source, so
+  local dev edits don't trigger a reload. Not fixed yet, not blocking either spec below.
 
-Read order: this file → `specs/category-ux/EXECUTION.md` → `specs/category-ux/PLAN.md`.
-`category-redesign` (the prior spec) is also fully complete — see git log on its 3 phase
-branches; nothing new there this session beyond what's already in its own `EXECUTION.md`.
+## Spec 1: `error-handling` — Planned, Not Started
 
-## Full State: 2 Specs, 7 Phase Branches, All Pushed Except the Last
+`specs/error-handling/PLAN.md` + `specs/error-handling/EXECUTION.md` exist, produced via
+`/grill-me` → `spec-plan`. **No branch exists.** A branch was briefly created and worked
+mid-session (BE `mapDbError` helper + route-file conversions) but was stopped, stashed, and
+the branch deleted per the user's "finish pwa first" instruction — see stash below.
 
-`category-redesign` (3 phases): `phase-1-schema-api`, `phase-2-fe-data`,
-`phase-3-fe-ui` — all pushed to `origin`, no PRs opened.
+3 phases, stacked: `error-handling/phase-1-be-error-mapping` (base off `develop`, not `main`
+— `EXECUTION.md`'s base-branch note predates `develop`'s creation, same fix already applied
+to `pwa`, apply it here too when starting) → `phase-2-fe-error-infra` →
+`phase-3-fe-forms-inline-errors`.
 
-`category-ux` (4 phases): `phase-1-categories-page`, `phase-2-favorites-schema-api`,
-`phase-3-favorites-fe-data` — pushed. `phase-4-favorites-ui` — **committed, not pushed**.
+Summary: BE collapses all Postgres errors to raw-message 500s (add `mapDbError` inspecting
+`error.code`, global `app.onError`, centralized `console.error` logging). FE has zero error
+handling anywhere — 19 fire-and-forget `.mutate()` calls, no toast, no error boundary. Fix:
+`sonner` for toasts (global `MutationCache.onError`), custom `ApiError` class carrying HTTP
+status, `store.tsx` callbacks become async, all 5 forms get inline-banner-on-failure with
+retained input. Full detail in `PLAN.md`'s Decisions table.
 
-Branch stack (each off the previous): `main` → `category-redesign/phase-1` → `phase-2` →
-`phase-3` → `category-ux/phase-1` → `phase-2` → `phase-3` → `phase-4`.
+**There is a `git stash` entry** (message: "error-handling phase 1: mapDbError + route
+conversions, in-progress") containing a working draft of Phase 1's `mapDbError` helper
+(`packages/api/src/lib/http.ts`) and its application across all 6 route files via sed —
+`categories.ts`'s `loadParentCandidate` helper still needed a fix (it discards the Postgres
+error code, returning only `.message`, so its two call sites couldn't route through
+`mapDbError` yet) when work stopped. Check `git stash list` before restarting Phase 1 — the
+draft may still be usable as a starting point, but verify it against current `develop` state
+first since time has passed.
 
-## category-ux Phase 4 (final): Done, Verified, Not Pushed Yet
+**Not started — next action is `spec-phase error-handling` when picked up.**
 
-Favorites UI — the user-visible payoff of phases 2–3.
+## Spec 2: `pwa` — Complete (Both Phases), Not Pushed
 
-What changed:
-- `CategoriesPage.tsx`: star toggle per category (parent header + each child tile).
-  Required restructuring rows from single wrapping `<button>`s into sibling-button layouts
-  (a `<button>` can't contain a `<button>`).
-- New `FavoriteCategoryPicker.tsx`: flat tile grid of favorites (type-filtered), current
-  selection appended if not already favorited (deduped), empty-state message, "Show all"
-  button opening a `Modal` with the existing full `CategoryPicker`.
-- `TransactionForm.tsx`: now uses `FavoriteCategoryPicker` instead of `CategoryPicker`
-  directly.
-- 4 new i18n keys (favorite/unfavorite/showAll/noFavorites), VI + EN.
-- New `FavoriteCategoryPicker.test.tsx` (6 cases). `TransactionForm.test.tsx`'s store mock
-  updated with `favoriteCategoryIds` so its existing 3 tests still pass unchanged in
-  behavior.
+`specs/pwa/PLAN.md` + `specs/pwa/EXECUTION.md` exist, produced via `/grill-me` →
+`spec-plan`, executed via `spec-phase` across two branches, both done.
 
-Verification: `tsc` clean, FE suite 23/23, dev server smoke-checked. Manual browser check
-(star → picker shows it → Show all → modal → select → closes) **not run** — no browser
-tool available this entire session, across every UI phase in both specs. This is the one
-consistent, repeated gap worth fixing infrastructure for before the next UI-heavy spec.
+### Phase 1 — Installable Icons + Manifest + Favicon: done
 
-## Real gotcha from Phase 3, still relevant
+Branch: `pwa/phase-1-installable-icons` (off `develop`), 3 commits.
 
-`useQuery().data` resolves to `any` in this environment (TanStack Query v5 typings not
-inferring cleanly against the installed TypeScript). Every existing query consumer masks it
-via an explicit target-type annotation. `new Set(x ?? [])` is the one place that surfaces it
-as a real error (infers `Set<unknown>`, not `Set<any>`) — fix is an explicit type argument:
-`new Set<string>(...)`. Not fixed at the root; flagging so it doesn't cause confusion again.
+- `@vite-pwa/assets-generator` generates the manifest icon set (192/512/maskable/apple-
+  touch/favicon.ico) from `packages/web/public/app-icon.svg` (fixed gold-on-ink,
+  `#b07200` on `#14110c`), distinct from `public/icon.svg` (the live tab favicon, since it
+  still responds to `prefers-color-scheme` — a static install icon can't).
+- Manifest `theme_color`/`background_color` converted from `oklch(0.985 0.004 90)` to
+  `#fbfaf7` — manifest parsers have less consistent CSS Color 4 support than page CSS.
+- `pwaAssets.includeHtmlHeadLinks`/`injectThemeColor` set to `false`, head links added
+  manually in `index.html` instead — the plugin's auto-injected favicon `<link>` points at
+  the fixed-color install icon, not the adaptive one.
+- **Icon mark redesigned after initial completion**: the first pass just recolored the
+  existing (unrelated, abstract) mark from `icon.svg`. User asked for a genuinely
+  custom-designed mark instead of a recolor of the default — replaced with a hand-built
+  `$` glyph (bold stroke-based S-curve + vertical stroke) in both `app-icon.svg` and
+  `icon.svg`, previewed via direct `sharp` rendering at 512px/64px before committing to
+  confirm legibility at small sizes. Also removed several unreferenced legacy/placeholder
+  assets from `public/` (`apple-icon.png`, `icon-dark-32x32.png`, `icon-light-32x32.png`,
+  starter-template `placeholder-*` files) — grepped first, confirmed zero references
+  anywhere in source.
+- `pwa/phase-2-offline-messaging` (already pushed at the time) was rebased onto this new
+  commit and force-pushed with lease, since it had branched off Phase 1's earlier tip and
+  would otherwise have reverted to the old icon on merge. Both branches' gates re-verified
+  post-rebase before pushing.
+
+**Real gotcha, worth knowing if touching this area again:** the source image for
+`pwaAssets` must live inside `public/`, not `src/assets/` — the generator writes output
+*next to the source image*, and only files in `public/` get copied into `dist/` by Vite's
+normal static-asset handling. `src/assets/` output silently never ships — manifest
+references it by root path but `dist/` never has the file, no error thrown.
+
+Verification: `tsc` clean, FE suite 26/26, `pnpm build` succeeds, manifest/HTML inspected
+directly. Chrome DevTools → Application → Manifest panel check **not run** — no browser
+automation tool available. Substituted with `curl`-verified asset resolution.
+
+### Phase 2 — Offline Messaging: done
+
+Branch: `pwa/phase-2-offline-messaging` (off `phase-1`), 3 commits (one of which is the
+`CLAUDE.md` workflow-rule change, unrelated to `pwa` itself — see Context above).
+
+- `packages/web/src/core/useOnlineStatus.ts` — `navigator.onLine` +
+  `window` `online`/`offline` event-listener hook.
+- `packages/web/src/shared/components/OfflineBanner.tsx` — fixed, non-dismissible
+  top-of-viewport banner shown whenever offline, mounted app-wide in `main.tsx` (inside
+  `LangProvider`, above `AuthGate`). New i18n key `offline.banner`, VI + EN.
+- Deliberately **not** built on `sonner`/`MutationCache.onError` (that infra doesn't exist
+  yet, `error-handling` hasn't landed) — a single global banner covers both reads and
+  writes uniformly with no per-mutation wiring, resolving the soft-coupling the plan
+  originally flagged. No rework expected once `error-handling` lands; its toasts would
+  layer on top for per-action feedback, not replace this banner.
+- No write-queue, no auto-retry-on-reconnect — confirmed no queuing logic was added
+  anywhere, per PLAN.md's explicit non-goal.
+
+Verification: `tsc` clean, FE suite 29/29 (26 prior + 3 new `OfflineBanner.test.tsx` cases).
+`pnpm build` succeeds. Chrome DevTools throttle-to-offline manual check **not run** — same
+browser-automation gap as Phase 1; unit tests cover the `navigator.onLine`/event-listener
+logic but not the real end-to-end `fetch`-fails-while-offline path or the banner's visual
+layout in the actual app.
+
+**Both phases done and pushed** — `pwa/phase-1-installable-icons` and
+`pwa/phase-2-offline-messaging` are both on `origin` as of the icon-redesign commit and
+subsequent rebase.
 
 ## Remaining Work
 
-1. Push `category-ux/phase-4-favorites-ui` — completes this session's `/goal`.
-2. PR-creation still blocked: `gh` here authenticates as `daoduong-saritasa`, can't see
-   `daodd1511/expense-management`. All 7 branches are pushed and ready; PRs need either
-   `gh auth login` as the right account, or manual creation (descriptions can be generated
-   on request — stacked target order: `category-redesign/phase-1`→`main`, each subsequent
-   phase→its predecessor, `category-ux/phase-1`→`category-redesign/phase-3`).
-3. Manual browser verification across both specs' UI work (category picker grouping,
-   Settings redesign, categories own-page, favorites end-to-end) — none of it has been
-   visually confirmed this session. Worth doing before merging anything to `main`.
-4. Known parked item (from `category-redesign`, unrelated to `category-ux`): system-owned
-   categories can't be edited (403 by design, all 65 seeded categories are `owner_id
-   NULL`). User said to log it as a possible future feature, not implement now.
+1. Ask before starting `error-handling` — needs fresh explicit go-ahead; check
+   `git stash list` first per the note above.
+2. `develop` itself isn't pushed to `origin` yet.
+4. `CLAUDE.md`'s new one-spec-at-a-time rule is only committed on `pwa/phase-2-offline-
+   messaging` — consider whether it should land on `develop` directly instead/also, since
+   it's a workflow rule, not `pwa` feature scope.
+5. Bun→Node migration's broken dev-watch script (`packages/api/package.json`) — flagged,
+   not fixed, not blocking.
+6. `gh` account mismatch still blocks PR creation from this environment (`daoduong-saritasa`
+   can't see `daodd1511/expense-management`) — unresolved.
+7. GitHub default-branch flip to `develop` — requires the correct `gh` account or the
+   GitHub web UI; not doable from here.
+8. Real browser verification owed for both `pwa` phases (installability panel, offline
+   throttle test) — no browser automation tool available all session.

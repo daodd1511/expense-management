@@ -12,6 +12,7 @@ import { LangProvider } from './core/i18n'
 import { ThemeProvider } from './shared/components/ThemeProvider'
 import { AuthGate } from './features/auth/components/AuthGate'
 import { ResponsiveApp } from './layouts/ResponsiveApp'
+import { OfflineBanner } from './shared/components/OfflineBanner'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <ThemeProvider>
           <LangProvider>
+            <OfflineBanner />
             <AuthGate>
               <StoreProvider>
                 <ResponsiveApp />
