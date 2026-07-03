@@ -28,9 +28,20 @@ real tab icon. Frontend-only, `packages/web`.
       inside `public/` so generated PNGs get copied into `dist/` by Vite's normal static
       handling; `src/assets/` output was silently orphaned, discovered and fixed during this
       phase): deep-ink background (`#14110c`, computed from `oklch(0.18 0.012 80)`), mark in
-      Register Gold (`#b07200`, computed from `oklch(0.60 0.15 78)`), same mark geometry as
-      `public/icon.svg` — path data copied, `prefers-color-scheme` media-query styling
-      dropped, two fills hardcoded instead
+      Register Gold (`#b07200`, computed from `oklch(0.60 0.15 78)`).
+      **Superseded after initial completion:** the first pass reused the existing
+      `icon.svg` mark geometry, just recolored — user later asked for a genuinely new,
+      custom-designed mark instead of a recolor of the default. Replaced with a
+      hand-built `$` glyph (bold geometric S-curve + vertical stroke, stroke-based path,
+      not the old filled-shape mark) — reads clearly at both 512px and 64px, previewed via
+      direct `sharp` rendering before committing. `public/icon.svg` (the adaptive
+      light/dark favicon) got the same `$` glyph for consistency, keeping its
+      `prefers-color-scheme` media-query swap structure, now stroke-based (`.foreground {
+      stroke: ... }`) instead of fill-based to match the new geometry. Also removed
+      several unreferenced legacy/placeholder assets from `public/` while touching this
+      area (`apple-icon.png`, `icon-dark-32x32.png`, `icon-light-32x32.png`,
+      `placeholder-*` starter-template leftovers) — confirmed zero references anywhere in
+      source before deleting
 - [x] `packages/web/vite.config.ts`: `VitePWA({ ..., pwaAssets: { image: 'public/app-icon.svg',
       includeHtmlHeadLinks: false, injectThemeColor: false } })` using the generator's
       default `minimal-2023` preset (192/512/maskable/apple-touch/favicon.ico — matches

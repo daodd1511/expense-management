@@ -59,18 +59,30 @@ first since time has passed.
 
 ### Phase 1 — Installable Icons + Manifest + Favicon: done
 
-Branch: `pwa/phase-1-installable-icons` (off `develop`), 2 commits.
+Branch: `pwa/phase-1-installable-icons` (off `develop`), 3 commits.
 
 - `@vite-pwa/assets-generator` generates the manifest icon set (192/512/maskable/apple-
-  touch/favicon.ico) from a new `packages/web/public/app-icon.svg` — fixed gold-on-ink
-  design (`#b07200` on `#14110c`, computed from DESIGN.md's Register Gold/deep-ink OKLCH
-  values), distinct from the existing `public/icon.svg` (kept as the live tab favicon,
-  since it still responds to `prefers-color-scheme` — a static install icon can't).
+  touch/favicon.ico) from `packages/web/public/app-icon.svg` (fixed gold-on-ink,
+  `#b07200` on `#14110c`), distinct from `public/icon.svg` (the live tab favicon, since it
+  still responds to `prefers-color-scheme` — a static install icon can't).
 - Manifest `theme_color`/`background_color` converted from `oklch(0.985 0.004 90)` to
   `#fbfaf7` — manifest parsers have less consistent CSS Color 4 support than page CSS.
 - `pwaAssets.includeHtmlHeadLinks`/`injectThemeColor` set to `false`, head links added
   manually in `index.html` instead — the plugin's auto-injected favicon `<link>` points at
   the fixed-color install icon, not the adaptive one.
+- **Icon mark redesigned after initial completion**: the first pass just recolored the
+  existing (unrelated, abstract) mark from `icon.svg`. User asked for a genuinely
+  custom-designed mark instead of a recolor of the default — replaced with a hand-built
+  `$` glyph (bold stroke-based S-curve + vertical stroke) in both `app-icon.svg` and
+  `icon.svg`, previewed via direct `sharp` rendering at 512px/64px before committing to
+  confirm legibility at small sizes. Also removed several unreferenced legacy/placeholder
+  assets from `public/` (`apple-icon.png`, `icon-dark-32x32.png`, `icon-light-32x32.png`,
+  starter-template `placeholder-*` files) — grepped first, confirmed zero references
+  anywhere in source.
+- `pwa/phase-2-offline-messaging` (already pushed at the time) was rebased onto this new
+  commit and force-pushed with lease, since it had branched off Phase 1's earlier tip and
+  would otherwise have reverted to the old icon on merge. Both branches' gates re-verified
+  post-rebase before pushing.
 
 **Real gotcha, worth knowing if touching this area again:** the source image for
 `pwaAssets` must live inside `public/`, not `src/assets/` — the generator writes output
@@ -106,15 +118,15 @@ browser-automation gap as Phase 1; unit tests cover the `navigator.onLine`/event
 logic but not the real end-to-end `fetch`-fails-while-offline path or the banner's visual
 layout in the actual app.
 
-**Both phases done. Nothing pushed yet** — user pushes manually.
+**Both phases done and pushed** — `pwa/phase-1-installable-icons` and
+`pwa/phase-2-offline-messaging` are both on `origin` as of the icon-redesign commit and
+subsequent rebase.
 
 ## Remaining Work
 
 1. Ask before starting `error-handling` — needs fresh explicit go-ahead; check
    `git stash list` first per the note above.
-2. Push `pwa/phase-1-installable-icons` and `pwa/phase-2-offline-messaging` — not done,
-   user pushes manually.
-3. `develop` itself isn't pushed to `origin` yet either.
+2. `develop` itself isn't pushed to `origin` yet.
 4. `CLAUDE.md`'s new one-spec-at-a-time rule is only committed on `pwa/phase-2-offline-
    messaging` — consider whether it should land on `develop` directly instead/also, since
    it's a workflow rule, not `pwa` feature scope.
