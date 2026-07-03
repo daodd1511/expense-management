@@ -87,34 +87,56 @@ Foundational plumbing consumed by Phase 3 — no visible behavior change to exis
 yet (their `onSubmit` signatures don't change until Phase 3), but every failed mutation
 already starts toasting once this lands, since it's wired at the `QueryClient` level.
 
-- [ ] Add `sonner` dependency to `packages/web`
-- [ ] `packages/web/src/core/api.ts`: new `class ApiError extends Error { status: number;
+- [x] Added `sonner` dependency to `packages/web`
+- [x] `packages/web/src/core/api.ts`: new `class ApiError extends Error { status: number;
       details?: unknown }`; `apiFetch` throws `ApiError` instead of plain `Error` on
-      non-2xx (using `response.status` and the BE's `details` field if present); the
-      "Missing auth session" throw becomes `new ApiError(msg, 401)`
-- [ ] `packages/web/src/core/i18n.tsx`: new keys, VI + EN — `error.badRequest`,
-      `error.server`, `error.boundary.title`, `error.boundary.reload` (exact copy is an
-      implementation-time judgment call per PLAN.md's Open Items)
-- [ ] `packages/web/src/main.tsx`: construct `QueryClient` with a `MutationCache` whose
-      `onError` shows a `sonner` toast — message selected by
-      `error instanceof ApiError ? (error.status < 500 ? t('error.badRequest') :
-      t('error.server')) : t('error.server')`; add `<Toaster />` near the root
-- [ ] New `packages/web/src/core/ErrorBoundary.tsx` (or `shared/components/`): class
-      component, fallback UI using `error.boundary.title`/`error.boundary.reload` i18n keys,
-      no telemetry (none exists to wire into)
-- [ ] `packages/web/src/main.tsx`: wrap the app in `ErrorBoundary`, placed below
-      `QueryClientProvider` per PLAN.md
+      non-2xx (using `response.status` and the BE's `details` field, now captured via an
+      extended `apiErrorSchema`); the "Missing auth session" throw becomes
+      `new ApiError('Missing auth session', 401)`
+- [x] `packages/web/src/core/i18n.tsx`: new keys, VI + EN — `error.badRequest`,
+      `error.server`, `error.boundary.title`, `error.boundary.reload`. Also added an
+      exported `translate(key, vars?)` helper that reads the current language directly
+      from `localStorage` (not `useLang()`'s context) — needed because the
+      `MutationCache.onError` handler runs outside the React tree, where no `LangContext`
+      exists to read from
+- [x] `packages/web/src/core/mutationErrorHandler.ts` (new, not inline in `main.tsx` as
+      originally sketched — extracted so the status-family branching logic is unit
+      testable without mounting the whole app): `handleMutationError(error)` shows a
+      `sonner` toast, message selected by `error instanceof ApiError && error.status < 500
+      ? translate('error.badRequest') : translate('error.server')`. `main.tsx` constructs
+      `QueryClient` with `mutationCache: new MutationCache({ onError: handleMutationError
+      })`, adds `<Toaster richColors position="top-center" />` near the root
+- [x] New `packages/web/src/core/ErrorBoundary.tsx`: class component
+      (`ErrorBoundaryImpl`) wrapped by a function component (`ErrorBoundary`) that supplies
+      i18n'd copy via props — React error boundaries must be class components with no hook
+      equivalent, so `useLang()` can't be called directly inside one. Fallback UI uses
+      `error.boundary.title`/`error.boundary.reload`, no telemetry (none exists to wire
+      into)
+- [x] `packages/web/src/main.tsx`: wrapped the app in `ErrorBoundary` — **placement
+      differs from the original sketch**: nested inside `LangProvider` (around
+      `AuthGate`/`StoreProvider`/`ResponsiveApp` only), not directly below
+      `QueryClientProvider` as first written. `ErrorBoundary` itself calls `useLang()` for
+      its fallback text, so it must render *inside* `LangProvider`'s subtree, not above it
+      — placing it directly below `QueryClientProvider` (above `LangProvider`) would throw
+      immediately ("useLang must be used within LangProvider"). This also means a crash in
+      `AuthProvider`/`ThemeProvider`/`LangProvider` themselves isn't caught, but those are
+      simple context providers, not realistic crash sites — the actual feature tree
+      (`AuthGate`, `StoreProvider`, `ResponsiveApp`) is fully covered
 
 **Verification gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck` passes
-- [ ] `pnpm --filter @wallet/web test` passes — add test cases: `apiFetch` throws `ApiError`
-      with correct `status` on a non-2xx mock response; `MutationCache.onError` triggers a
-      toast (can assert via mocking `sonner`'s `toast` export) on a failing mutation
-- [ ] Manual check: run dev server, force an existing mutation to fail (e.g. temporarily
-      stop the API, or trigger a real conflict from Phase 1's manual-check scenario) and
-      confirm a toast appears with the generic message. Also verify a forced render error
-      (e.g. temporarily throw in a component) is caught by the boundary instead of a white
-      screen — revert the forced-throw before committing
+- [x] `pnpm --filter @wallet/web typecheck` passes
+- [x] `pnpm --filter @wallet/web test` passes — 34/34 (26 prior + 2 new `api.test.ts` cases
+      for `ApiError`'s `status`/`details` + 3 new `mutationErrorHandler.test.ts` cases:
+      4xx → `error.badRequest`, 5xx → `error.server`, non-`ApiError` → `error.server`)
+- [x] `pnpm --filter @wallet/web build` succeeds
+- [ ] Manual check: run dev server, force an existing mutation to fail and confirm a toast
+      appears with the generic message; verify a forced render error is caught by the
+      boundary instead of a white screen — **not run**, no browser automation tool
+      available this session, consistent with every other manual-check item this session.
+      Dev server smoke-checked instead (`pnpm dev` → curl `/` → 200). The
+      `mutationErrorHandler`/`ErrorBoundary` unit tests cover the underlying logic
+      directly, but the actual toast rendering and boundary fallback UI in a real browser
+      haven't been visually confirmed
 
 **On completion:** update this checklist, update root `HANDOFF.md`, stop and ask before
 push/PR.
