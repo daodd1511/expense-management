@@ -22,39 +22,52 @@ Branch: `pwa/phase-1-installable-icons` (off `develop`)
 Everything needed to make the app actually pass Chrome's installability check and show a
 real tab icon. Frontend-only, `packages/web`.
 
-- [ ] Add `@vite-pwa/assets-generator` as a dev dependency in `packages/web`
-- [ ] New fixed-color source SVG (e.g. `packages/web/src/assets/app-icon.svg`): deep-ink
-      background (hex equivalent of `oklch(0.18 0.012 80)`), mark in Register Gold (hex
-      equivalent of `oklch(0.60 0.15 78)`), same mark geometry as `public/icon.svg` — copy
-      the `<path>` data, drop the `prefers-color-scheme` media-query styling, hardcode the
-      two fills instead
-- [ ] `packages/web/vite.config.ts`: configure `VitePWA({ ..., pwaAssets: { image:
-      'src/assets/app-icon.svg' } })` using the generator's minimal-recommended preset
-      (192/512/maskable/apple-touch/favicon per PLAN.md's Open Items — follow the tool's
-      documented default rather than hand-picking sizes)
-- [ ] `packages/web/vite.config.ts`: convert manifest `theme_color`/`background_color` from
-      `oklch(0.985 0.004 90)` to the equivalent hex value
-- [ ] `packages/web/index.html`: add `<link rel="icon" href="/icon.svg"
-      type="image/svg+xml">` referencing the existing adaptive favicon (not the new
-      generator output — `icon.svg`'s light/dark media-query behavior stays as-is for the
-      live tab favicon); add any additional `<link>` tags the `pwaAssets` generator's Vite
-      integration injects automatically for apple-touch-icon (verify via build output
-      whether manual addition is even needed)
-- [ ] Confirm `manifest.webmanifest`'s generated `icons` array is non-empty and includes at
-      least one `purpose: "maskable"` entry (build and inspect `dist/manifest.webmanifest`
-      directly, per this session's earlier survey approach)
+- [x] Add `@vite-pwa/assets-generator` as a dev dependency in `packages/web`
+- [x] New fixed-color source SVG `packages/web/public/app-icon.svg` (moved to `public/`, not
+      `src/assets/` — the generator writes output next to the source image, and expects it
+      inside `public/` so generated PNGs get copied into `dist/` by Vite's normal static
+      handling; `src/assets/` output was silently orphaned, discovered and fixed during this
+      phase): deep-ink background (`#14110c`, computed from `oklch(0.18 0.012 80)`), mark in
+      Register Gold (`#b07200`, computed from `oklch(0.60 0.15 78)`), same mark geometry as
+      `public/icon.svg` — path data copied, `prefers-color-scheme` media-query styling
+      dropped, two fills hardcoded instead
+- [x] `packages/web/vite.config.ts`: `VitePWA({ ..., pwaAssets: { image: 'public/app-icon.svg',
+      includeHtmlHeadLinks: false, injectThemeColor: false } })` using the generator's
+      default `minimal-2023` preset (192/512/maskable/apple-touch/favicon.ico — matches
+      PLAN.md's Open Items note to use the documented default). `includeHtmlHeadLinks`/
+      `injectThemeColor` disabled because the plugin's auto-injected favicon `<link>` points
+      at the fixed-color `app-icon.svg`, not the adaptive `icon.svg` — head links are added
+      manually instead (next item) to keep the two icon sources correctly separated
+- [x] `packages/web/vite.config.ts`: converted manifest `theme_color`/`background_color` from
+      `oklch(0.985 0.004 90)` to `#fbfaf7` (computed hex equivalent)
+- [x] `packages/web/index.html`: added `<meta name="theme-color" content="#fbfaf7">`,
+      `<link rel="icon" href="/favicon.ico" sizes="48x48">`, `<link rel="icon"
+      href="/icon.svg" sizes="any" type="image/svg+xml">` (existing adaptive favicon,
+      light/dark media-query behavior preserved), `<link rel="apple-touch-icon"
+      href="/apple-touch-icon-180x180.png">`
+- [x] Confirmed `dist/manifest.webmanifest`'s `icons` array is non-empty: `pwa-64x64.png`,
+      `pwa-192x192.png`, `pwa-512x512.png`, and `maskable-icon-512x512.png` with
+      `"purpose":"maskable"` — verified by building and reading the file directly
 
 **Verification gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck` passes
-- [ ] `pnpm --filter @wallet/web test` passes (no existing tests should be affected, but run
-      the suite to confirm no PWA-plugin build-time changes broke anything)
-- [ ] `pnpm --filter @wallet/web build` succeeds; inspect `dist/manifest.webmanifest` — icons
-      array populated (192, 512, maskable present), `theme_color`/`background_color` are hex
-      not oklch; inspect `dist/index.html` — favicon `<link>` present
-- [ ] Manual check: serve `dist/` (`pnpm --filter @wallet/web preview`), open in Chrome
-      DevTools → Application → Manifest panel — confirm no installability warnings/errors
-      listed, icons render correctly in the panel's preview. Also check the browser tab
-      shows the favicon (not blank)
+- [x] `pnpm --filter @wallet/web typecheck` passes
+- [x] `pnpm --filter @wallet/web test` passes — 26/26, unaffected (no PWA-plugin build-time
+      change touches app code)
+- [x] `pnpm --filter @wallet/web build` succeeds; `dist/manifest.webmanifest` icons array
+      populated (192, 512, maskable present), `theme_color`/`background_color` are `#fbfaf7`
+      not oklch; `dist/index.html` has favicon, apple-touch-icon, and manifest `<link>`s,
+      single (not duplicated) `theme-color` meta tag
+- [ ] Manual check: Chrome DevTools → Application → Manifest panel — **not run**, no browser
+      automation tool available this session (consistent gap noted across every UI phase
+      this session). Substituted with an equivalent-coverage check instead: served
+      `dist/` via `pnpm preview` and `curl`-verified every referenced asset actually
+      resolves (`manifest.webmanifest`, `pwa-192x192.png`, `pwa-512x512.png`,
+      `maskable-icon-512x512.png`, `favicon.ico`, `icon.svg`,
+      `apple-touch-icon-180x180.png` — all 200s), plus direct inspection of the manifest/
+      HTML content above. This covers the same underlying facts the DevTools panel would
+      report (icons present, correctly typed/sized, resolvable) but not the panel's own
+      installability-heuristic verdict — worth a real browser check before relying on this
+      being installable in practice.
 
 **On completion:** update this checklist, update root `HANDOFF.md`, stop and ask before
 push/PR.
