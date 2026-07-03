@@ -128,9 +128,9 @@ export function MobileAccounts() {
     setEditing(null)
   }
 
-  const handleSubmit = (data: Omit<Account, 'id'>) => {
-    if (editing) updateAccount(editing.id, data)
-    else addAccount(data)
+  const handleSubmit = async (data: Omit<Account, 'id'>) => {
+    if (editing) await updateAccount(editing.id, data)
+    else await addAccount(data)
     close()
   }
 

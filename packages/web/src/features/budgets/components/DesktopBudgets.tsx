@@ -24,9 +24,9 @@ export function DesktopBudgets() {
   const pct = totalLimit > 0 ? Math.round((totalSpent / totalLimit) * 100) : 0
   const over = budgets.filter((b) => spentForCategory(transactions, b.categoryId) >= b.limit).length
 
-  const handleSubmit = (b: Budget) => {
-    if (editing === 'add') addBudget(b)
-    else updateBudget(b.categoryId, b.limit)
+  const handleSubmit = async (b: Budget) => {
+    if (editing === 'add') await addBudget(b)
+    else await updateBudget(b.categoryId, b.limit)
     setEditing(null)
   }
 

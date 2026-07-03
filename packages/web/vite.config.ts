@@ -16,12 +16,18 @@ export default defineConfig({
       manifest: {
         name: 'Sổ Chi Tiêu',
         short_name: 'Wallet',
-        theme_color: 'oklch(0.985 0.004 90)',
-        background_color: 'oklch(0.985 0.004 90)',
+        theme_color: '#fbfaf7',
+        background_color: '#fbfaf7',
         display: 'standalone',
         start_url: '/',
         lang: 'vi',
-        icons: [],
+      },
+      pwaAssets: {
+        image: 'public/app-icon.svg',
+        // Manual links in index.html: the SVG favicon must stay on the light/dark
+        // adaptive icon.svg, not this fixed-color install icon.
+        includeHtmlHeadLinks: false,
+        injectThemeColor: false,
       },
     }),
   ],

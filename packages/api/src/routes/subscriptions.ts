@@ -10,7 +10,7 @@ import {
   toSubscription,
 } from '@wallet/shared'
 import { getSupabase } from '../db/supabase'
-import { jsonError, parseJsonBody, parseRows } from '../lib/http'
+import { jsonError, mapDbError, parseJsonBody, parseRows } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
 
 export const subscriptionsRouter = new Hono<AuthEnv>()
@@ -25,7 +25,7 @@ subscriptionsRouter.get('/', async (c) => {
     .order('created_at', { ascending: true })
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
 
   return c.json({ data: parseRows(data, subscriptionRowSchema, toSubscription) })
@@ -44,7 +44,7 @@ subscriptionsRouter.post('/', async (c) => {
     .single()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
 
   const subscription = subscriptionRowSchema.safeParse(data)
@@ -66,7 +66,7 @@ subscriptionsRouter.post('/:id/log', async (c) => {
     .maybeSingle()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
   if (!data) {
     return jsonError(c, 404, 'Subscription not found')
@@ -98,7 +98,7 @@ subscriptionsRouter.post('/:id/log', async (c) => {
       }),
     )
   if (txInsert.error) {
-    return jsonError(c, 500, txInsert.error.message)
+    return mapDbError(c, txInsert.error)
   }
 
   const nextDueDate = advanceNextDueDate(domainSubscription)
@@ -111,7 +111,7 @@ subscriptionsRouter.post('/:id/log', async (c) => {
     .maybeSingle()
 
   if (update.error) {
-    return jsonError(c, 500, update.error.message)
+    return mapDbError(c, update.error)
   }
   if (!update.data) {
     return jsonError(c, 404, 'Subscription not found')
@@ -140,7 +140,7 @@ subscriptionsRouter.patch('/:id', async (c) => {
     .maybeSingle()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
   if (!data) {
     return jsonError(c, 404, 'Subscription not found')
@@ -166,7 +166,7 @@ subscriptionsRouter.delete('/:id', async (c) => {
     .maybeSingle()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
   if (!data) {
     return jsonError(c, 404, 'Subscription not found')

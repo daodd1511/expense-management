@@ -7,7 +7,7 @@ import {
   toBudget,
 } from '@wallet/shared'
 import { getSupabase } from '../db/supabase'
-import { jsonError, parseJsonBody, parseRows } from '../lib/http'
+import { jsonError, mapDbError, parseJsonBody, parseRows } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
 
 export const budgetsRouter = new Hono<AuthEnv>()
@@ -22,7 +22,7 @@ budgetsRouter.get('/', async (c) => {
     .order('created_at', { ascending: true })
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
 
   return c.json({ data: parseRows(data, budgetRowSchema, toBudget) })
@@ -41,7 +41,7 @@ budgetsRouter.post('/', async (c) => {
     .single()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
 
   const budget = budgetRowSchema.safeParse(data)
@@ -67,7 +67,7 @@ budgetsRouter.patch('/:categoryId', async (c) => {
     .maybeSingle()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
   if (!data) {
     return jsonError(c, 404, 'Budget not found')
@@ -92,7 +92,7 @@ budgetsRouter.delete('/:categoryId', async (c) => {
     .select('id')
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
   if (!data || data.length === 0) {
     return jsonError(c, 404, 'Budget not found')

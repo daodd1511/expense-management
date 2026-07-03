@@ -5,13 +5,17 @@ import '@fontsource/be-vietnam-pro/700.css'
 import './shared/styles/globals.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Toaster } from 'sonner'
 import { AuthProvider } from './features/auth/auth'
 import { StoreProvider } from './core/store'
 import { LangProvider } from './core/i18n'
+import { ErrorBoundary } from './core/ErrorBoundary'
+import { handleMutationError } from './core/mutationErrorHandler'
 import { ThemeProvider } from './shared/components/ThemeProvider'
 import { AuthGate } from './features/auth/components/AuthGate'
 import { ResponsiveApp } from './layouts/ResponsiveApp'
+import { OfflineBanner } from './shared/components/OfflineBanner'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,6 +24,7 @@ const queryClient = new QueryClient({
       retry: 1,
     },
   },
+  mutationCache: new MutationCache({ onError: handleMutationError }),
 })
 
 createRoot(document.getElementById('root')!).render(
@@ -28,11 +33,15 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <ThemeProvider>
           <LangProvider>
-            <AuthGate>
-              <StoreProvider>
-                <ResponsiveApp />
-              </StoreProvider>
-            </AuthGate>
+            <Toaster richColors position="top-center" />
+            <OfflineBanner />
+            <ErrorBoundary>
+              <AuthGate>
+                <StoreProvider>
+                  <ResponsiveApp />
+                </StoreProvider>
+              </AuthGate>
+            </ErrorBoundary>
           </LangProvider>
         </ThemeProvider>
       </AuthProvider>

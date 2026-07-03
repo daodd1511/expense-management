@@ -4,7 +4,9 @@ import { useState } from 'react'
 import { FavoriteCategoryPicker } from '@/features/categories/components/FavoriteCategoryPicker'
 import { Button } from '@/shared/components/ui/button'
 import { DatePicker } from '@/shared/components/ui/date-picker'
+import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
 import { Input, Label, Textarea } from '@/shared/components/ui/input'
+import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
 import {
   Select,
   SelectItem,
@@ -36,7 +38,7 @@ export function TransactionForm({
 }: {
   variant: 'mobile' | 'desktop'
   initial?: Transaction
-  onSubmit: (tx: Omit<Transaction, 'id'>) => void
+  onSubmit: (tx: Omit<Transaction, 'id'>) => Promise<void>
   onCancel: () => void
 }) {
   const { categories, accounts, getCategory, favoriteCategoryIds } = useStore()
@@ -68,9 +70,11 @@ export function TransactionForm({
     (type === 'transfer' ? accountId !== toAccountId : true) &&
     (type === 'transfer' || categoryId)
 
+  const { submit: submitForm, errorMessage } = useFormSubmit(onSubmit)
+
   const submit = () => {
     if (!canSubmit) return
-    onSubmit({
+    submitForm({
       type,
       amount: numericAmount,
       categoryId: type === 'transfer' ? null : categoryId,
@@ -220,6 +224,12 @@ export function TransactionForm({
         </div>
 
       </div>
+
+      {errorMessage && (
+        <div className="px-4 pt-3 sm:px-5">
+          <FormErrorBanner message={errorMessage} />
+        </div>
+      )}
 
       {/* Submit */}
       <div className="sticky bottom-0 flex gap-2 bg-card p-4 sm:px-5">

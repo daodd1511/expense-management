@@ -131,9 +131,9 @@ export function DesktopApp() {
           <TransactionForm
             variant="desktop"
             initial={editing}
-            onSubmit={(tx) => {
-              if (editing) updateTransaction(editing.id, tx)
-              else addTransaction(tx)
+            onSubmit={async (tx) => {
+              if (editing) await updateTransaction(editing.id, tx)
+              else await addTransaction(tx)
               setDrawerOpen(false)
             }}
             onCancel={() => setDrawerOpen(false)}
