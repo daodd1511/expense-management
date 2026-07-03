@@ -85,24 +85,45 @@ Design system lives in `app/globals.css`. Semantic color tokens: `--income`, `--
 
 Large/architectural changes flow: `/grill-me` → `specs/<feature>/PLAN.md` →
 `specs/<feature>/EXECUTION.md` (via the `spec-plan` skill) → phased implementation (via the
-`spec-phase` skill).
+`spec-phase` skill). These rules bind even when neither skill is invoked. Design rationale:
+`specs/spec-workflow-v2/PLAN.md`.
 
-Three rules that must hold even outside those skills' invocation:
-- Starting a phase authorizes its commits; it does **not** authorize push or PR-creation —
-  those need a separate explicit go-ahead every time (see Hard Stops below).
-- A phase is only complete when typecheck + tests actually pass, not when the checklist is
-  checked off — checking boxes doesn't substitute for running the gate.
+### State model
+- **Git is the authoritative state store**: branch name encodes spec+phase
+  (`<feature-slug>/phase-<n>-<desc>`), commits encode progress. Each `EXECUTION.md` opens
+  with a **STATUS block** (current phase, per-phase state, verification debt) — the only
+  prose trusted as state. **On any conflict, git wins silently** for mechanical facts
+  (branch, commits, merged-or-not); STATUS is trusted only for what git can't express
+  (debt, park reasons). `HANDOFF.md` is a session baton from `/handoff` — advisory context,
+  never authority; do not resume from it.
+- Phase states: `pending` / `in-progress` / `done` / `done-with-debt`. Gate items are
+  `[ ]`/`[x]`; an item may be `[~]` (deferred) only when environment-blocked (missing
+  tool/credentials, not effort), with substitute evidence inline and a mirrored STATUS debt
+  entry. A phase is in-progress iff it has unchecked **non-deferred** items.
+
+### Branch model — sequential, no stacking
+- Each phase branches off the **integration branch** (currently `develop`; resolve at plan
+  time, never hardcode) → push → PR to it → user reviews & merges → pull → next phase.
+- Stacking is opt-in only: if the user explicitly says to continue while a PR awaits
+  review, the next phase stacks on the unmerged branch and rebases after merge.
+- After a phase's PR merges, ask before deleting the merged phase branch (local + remote).
+
+### Checkpoints
+- Starting a phase authorizes its commits — nothing else.
+- Gate pass → one ask: "push + open PR?". Remote actions are never bundled with anything
+  else (see Hard Stops below).
+- A phase is complete only when its **agent gate** (typecheck, tests, build) actually
+  passed — checking boxes doesn't substitute for running it. Manual verification scenarios
+  are the **review checklist**, listed in the PR description for the user to walk through
+  before merging — they are the user's, not agent debt.
 - **One spec in flight at a time.** Do not start or resume a different spec's phase while
-  another spec has an unfinished phase (uncommitted work, or committed but not yet marked
-  done in its `EXECUTION.md`). Finish the current phase (commit + gate pass +
-  `EXECUTION.md`/`HANDOFF.md` updated) before switching, or explicitly park it — get the
-  user's go-ahead to leave it mid-phase — rather than silently jumping to another spec's
-  branch.
+  another has an unfinished phase. Finish the current phase, or explicitly **park** it with
+  the user's go-ahead: a `WIP: parked <date>` commit on the phase branch plus a STATUS note
+  (never `git stash` — stashes are invisible to a cold agent and easy to orphan).
 
-Everything else — turning PLAN.md into EXECUTION.md is
-`.claude/skills/spec-plan/SKILL.md`; branching, rebase timing, checklist mechanics, and
-resuming mid-phase are in `.claude/skills/spec-phase/SKILL.md` — invoke the relevant one
-rather than re-deriving the procedure.
+Procedure lives in the skills — planning in `.claude/skills/spec-plan/SKILL.md`, execution
+and resume in `.claude/skills/spec-phase/SKILL.md` — invoke the relevant one rather than
+re-deriving it.
 
 ## Coding Standards
 - Always use `react-frontend-developer` skill for frontend code generation.
