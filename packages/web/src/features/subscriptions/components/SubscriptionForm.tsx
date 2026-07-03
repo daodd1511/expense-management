@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
+import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
 import { Input, Label } from '@/shared/components/ui/input'
+import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
 import { useLang } from '@/core/i18n'
 import { buildNextDueDate } from '@/features/subscriptions/helpers'
 import { useStore } from '@/core/store'
@@ -17,7 +19,7 @@ function parseAmount(raw: string): number {
 
 interface Props {
   initial?: Subscription
-  onSubmit: (data: Omit<Subscription, 'id'>) => void
+  onSubmit: (data: Omit<Subscription, 'id'>) => Promise<void>
   onCancel: () => void
 }
 
@@ -40,10 +42,12 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
   const amount = parseAmount(amountRaw)
   const canSubmit = name.trim().length > 0 && amount > 0 && accountId
 
+  const { submit: submitForm, errorMessage } = useFormSubmit(onSubmit)
+
   const handleSubmit = () => {
     if (!canSubmit) return
     const nextDueDate = initial?.nextDueDate ?? buildNextDueDate(dayOfMonth, monthOfYear, cadence)
-    onSubmit({
+    submitForm({
       name: name.trim(),
       amount,
       type,
@@ -225,6 +229,8 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
           placeholder={t('form.notePlaceholder')}
         />
       </div>
+
+      {errorMessage && <FormErrorBanner message={errorMessage} />}
 
       <div className="flex gap-2 pt-1">
         <Button variant="outline" size="lg" className="h-11 flex-1" onClick={onCancel}>

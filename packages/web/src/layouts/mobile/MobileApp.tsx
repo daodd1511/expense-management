@@ -128,9 +128,9 @@ export function MobileApp() {
             variant="mobile"
             initial={editing ?? undefined}
             onCancel={close}
-            onSubmit={(tx) => {
-              if (editing) updateTransaction(editing.id, tx)
-              else addTransaction(tx)
+            onSubmit={async (tx) => {
+              if (editing) await updateTransaction(editing.id, tx)
+              else await addTransaction(tx)
               close()
             }}
           />
