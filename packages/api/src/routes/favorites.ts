@@ -6,7 +6,7 @@ import {
   toFavorite,
 } from '@wallet/shared'
 import { getSupabase } from '../db/supabase'
-import { jsonError, parseJsonBody, parseRows } from '../lib/http'
+import { jsonError, mapDbError, parseJsonBody, parseRows } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
 
 export const favoritesRouter = new Hono<AuthEnv>()
@@ -21,7 +21,7 @@ favoritesRouter.get('/', async (c) => {
     .order('created_at', { ascending: true })
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
 
   return c.json({ data: parseRows(data, favoriteRowSchema, toFavorite) })
@@ -41,7 +41,7 @@ favoritesRouter.post('/', async (c) => {
     .eq('category_id', parsed.data.categoryId)
     .maybeSingle()
   if (existing.error) {
-    return jsonError(c, 500, existing.error.message)
+    return mapDbError(c, existing.error)
   }
   if (existing.data) {
     const favorite = favoriteRowSchema.safeParse(existing.data)
@@ -58,7 +58,7 @@ favoritesRouter.post('/', async (c) => {
     .single()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
 
   const favorite = favoriteRowSchema.safeParse(data)
@@ -81,7 +81,7 @@ favoritesRouter.delete('/:categoryId', async (c) => {
     .maybeSingle()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
   if (!data) {
     return jsonError(c, 404, 'Favorite not found')

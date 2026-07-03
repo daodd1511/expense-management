@@ -10,7 +10,7 @@ import {
   transactionRowSchema,
 } from '@wallet/shared'
 import { getSupabase } from '../db/supabase'
-import { jsonError, parseJsonBody, parseRows } from '../lib/http'
+import { jsonError, mapDbError, parseJsonBody, parseRows } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
 
 function monthBounds(month: string) {
@@ -48,7 +48,7 @@ transactionsRouter.get('/', async (c) => {
 
   const { data, error } = await query
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
 
   return c.json({ data: parseRows(data, transactionRowSchema, toTransaction) })
@@ -67,7 +67,7 @@ transactionsRouter.post('/', async (c) => {
     .single()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
 
   const transaction = transactionRowSchema.safeParse(data)
@@ -93,7 +93,7 @@ transactionsRouter.patch('/:id', async (c) => {
     .maybeSingle()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
   if (!data) {
     return jsonError(c, 404, 'Transaction not found')
@@ -121,7 +121,7 @@ transactionsRouter.delete('/', async (c) => {
     .select('id')
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
 
   return c.json({ data: { deletedIds: (data ?? []).map((row) => row.id) } })
@@ -139,7 +139,7 @@ transactionsRouter.delete('/:id', async (c) => {
     .maybeSingle()
 
   if (error) {
-    return jsonError(c, 500, error.message)
+    return mapDbError(c, error)
   }
   if (!data) {
     return jsonError(c, 404, 'Transaction not found')
