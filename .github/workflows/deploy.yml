@@ -90,12 +90,14 @@ jobs:
 
             cd /var/www/api.wallet.thomasduong.info.vn
             export PATH="/root/.bun/bin:$PATH"
+            export PORT=3001
 
             if pm2 describe api-wallet > /dev/null; then
               pm2 restart api-wallet --update-env
             else
-              pm2 start index.js --name api-wallet --interpreter /root/.bun/bin/bun
+              pm2 start /root/.bun/bin/bun --name api-wallet -- index.js
               pm2 save
             fi
 
+            sleep 2
             curl -f http://127.0.0.1:3001/health
