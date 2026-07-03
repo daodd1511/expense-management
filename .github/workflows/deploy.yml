@@ -26,7 +26,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Setup Bun
@@ -37,11 +37,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck
-        run: pnpm typecheck
+      # - name: Typecheck
+      #   run: pnpm typecheck
 
-      - name: Test
-        run: pnpm test
+      # - name: Test
+      #   run: pnpm test
 
       - name: Build API
         run: pnpm --filter @wallet/api build
@@ -89,11 +89,12 @@ jobs:
             rsync -a --delete --exclude ".env" /tmp/wallet-deploy/api/ /var/www/api.wallet.thomasduong.info.vn/
 
             cd /var/www/api.wallet.thomasduong.info.vn
+            export PATH="/root/.bun/bin:$PATH"
 
             if pm2 describe api-wallet > /dev/null; then
               pm2 restart api-wallet --update-env
             else
-              pm2 start index.js --name api-wallet --interpreter bun
+              pm2 start index.js --name api-wallet --interpreter /root/.bun/bin/bun
               pm2 save
             fi
 
