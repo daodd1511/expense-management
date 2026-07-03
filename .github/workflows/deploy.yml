@@ -1,0 +1,98 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_API_BASE: /api
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build API
+        run: pnpm --filter @wallet/api build
+
+      - name: Build Web
+        run: pnpm build
+
+      - name: Package deploy artifact
+        run: |
+          mkdir -p deploy/api deploy/web
+          cp packages/api/dist/index.js deploy/api/index.js
+          cp -R packages/web/dist/. deploy/web/
+          tar -czf deploy.tar.gz -C deploy .
+
+      - name: Upload artifact to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          source: deploy.tar.gz
+          target: /tmp
+
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            set -e
+
+            mkdir -p /var/www/wallet.thomasduong.info.vn
+            mkdir -p /var/www/api.wallet.thomasduong.info.vn
+
+            rm -rf /tmp/wallet-deploy
+            mkdir -p /tmp/wallet-deploy
+            tar -xzf /tmp/deploy.tar.gz -C /tmp/wallet-deploy
+
+            rsync -a --delete /tmp/wallet-deploy/web/ /var/www/wallet.thomasduong.info.vn/
+            rsync -a --delete --exclude ".env" /tmp/wallet-deploy/api/ /var/www/api.wallet.thomasduong.info.vn/
+
+            cd /var/www/api.wallet.thomasduong.info.vn
+
+            if pm2 describe api-wallet > /dev/null; then
+              pm2 restart api-wallet --update-env
+            else
+              pm2 start index.js --name api-wallet --interpreter bun
+              pm2 save
+            fi
+
+            curl -f http://127.0.0.1:3001/health
