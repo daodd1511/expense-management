@@ -1,19 +1,14 @@
 # Mobile UX Improvements — Execution Plan
 
-Spec: [PLAN.md](PLAN.md). Workflow rules: see `CLAUDE.md` → "Spec-Driven Execution Workflow".
-
-Read order for any agent picking this up: `HANDOFF.md` (root) → this file → `PLAN.md`.
-
-**Branch model:** stacked (default). Phase 1 branches off `develop`; each later phase
-branches off the previous phase's branch rather than waiting for it to merge. Push + PR
-happen per phase without waiting for the prior PR's review; rebase onto `develop` after
-an earlier phase's PR merges. Do not start a phase's push/PR without explicit confirmation
-even when its commits are authorized. Frontend code via `react-frontend-developer`;
-`terse-commit` before commits.
+Spec: [PLAN.md](PLAN.md). Rulebook: `CLAUDE.md` → "Spec-Driven Execution Workflow".
+Integration branch: `develop`. Branch model: stacked (default) — each phase branches off
+the previous phase's branch without waiting for its PR to merge; phase 1 branches off
+`develop`. Rebase a stacked phase's branch onto `develop` once an earlier phase in the
+chain merges. Frontend code via `react-frontend-developer`; `terse-commit` before commits.
 
 ## STATUS
 
-- Current phase: **none started**
+- Current phase: none started
 - Phase 1 — Transaction form fixes: `pending`
 - Phase 2 — Transaction list parent: `pending`
 - Phase 3 — Categories redesign: `pending`
@@ -25,13 +20,13 @@ even when its commits are authorized. Frontend code via `react-frontend-develope
 
 ## Phase 1 — Transaction form fixes (#1, #2, #3, #5)
 
-Branch: `mobile-ux/phase-1-form-fixes` (off `develop`, integration branch)
+Branch: `mobile-ux/phase-1-form-fixes` (off `develop` — phase 1 always bases on the
+integration branch)
 
 Pure frontend. Fixes the four form-level issues that all live in the add-transaction flow.
 
 - [ ] **#1 Autofocus** — add a ref to the amount `<input>` in `TransactionForm.tsx` and
-      focus it on mount (`useEffect` + `ref.current?.focus()`), both variants. Verify it
-      does not fight the bottom-sheet mount animation.
+      focus it on mount (`useEffect` + `ref.current?.focus()`), both variants.
 - [ ] **#5 Inline amount format** — reformat the amount input value with thousands
       separators on each change: strip non-digits → keep numeric string in state → display
       grouped (reuse the grouping used by `formatVND` in `shared/lib/format.ts`, digits only,
@@ -40,25 +35,24 @@ Pure frontend. Fixes the four form-level issues that all live in the add-transac
 - [ ] **#2 Date off-by-one** — in `shared/components/ui/date-picker.tsx`, replace
       `date.toISOString().slice(0,10)` in `handleSelect` with local Y/M/D formatting (same
       shape as `todayIsoDate()` in `TransactionForm.tsx`). Audit `new Date(value)` for
-      `selected`/`maxDate` — if the displayed date drifts, parse as local too. Confirm
-      round-trip: pick 1st → stored value is the 1st.
+      `selected`/`maxDate` — if the displayed date drifts, parse as local too.
 - [ ] **#3 Zoom-on-focus** — add `, maximum-scale=1` to the `viewport` meta in
       `packages/web/index.html`.
 
-### Verification gate (hard)
-
+**Agent gate (hard):**
 - [ ] `pnpm --filter @wallet/web typecheck`
 - [ ] `pnpm --filter @wallet/web test` (incl. `TransactionForm.test.tsx`)
-- [ ] Manual: on a mobile viewport (or real device) — (a) open Add Transaction, amount is
-      focused and keyboard is up; (b) type `1000000`, input shows `1.000.000` inline and no
-      duplicate formatted line appears below; (c) open the date picker, tap the 1st, the
-      field shows the 1st (not the 30th); (d) focus merchant/note — no auto-zoom.
 
-### On completion
+**Review checklist (user, at PR review):**
+- [ ] On a mobile viewport (or real device), open Add Transaction — amount is focused and
+      keyboard is up.
+- [ ] Type `1000000` — input shows `1.000.000` inline, no duplicate formatted line below.
+- [ ] Open the date picker, tap the 1st — the field shows the 1st (not the 30th).
+- [ ] Focus merchant/note — no auto-zoom.
+- [ ] The bottom-sheet mount animation isn't fought by the amount autofocus.
 
-- Update this checklist + STATUS block.
-- Update root `HANDOFF.md`.
-- Stop and ask before push/PR.
+**On completion:** run agent gate, update STATUS + checkboxes, stop and ask before
+push/PR. Review checklist goes into the PR description.
 
 ---
 
@@ -71,19 +65,18 @@ Branch: `mobile-ux/phase-2-list-parent` (off `mobile-ux/phase-1-form-fixes`, sta
       top-level (no `parentId`) stays `Child · Account`. Transfer subtitle unchanged.
       Keep the existing `truncate` so long breadcrumbs clip gracefully.
 
-### Verification gate (hard)
-
+**Agent gate (hard):**
 - [ ] `pnpm --filter @wallet/web typecheck`
 - [ ] `pnpm --filter @wallet/web test`
-- [ ] Manual: a transaction on a nested category (e.g. Food › Dating) shows both levels;
-      a top-level-category transaction shows only its own name; a transfer row is unchanged;
-      long names truncate without breaking the row layout.
 
-### On completion
+**Review checklist (user, at PR review):**
+- [ ] A transaction on a nested category (e.g. Food › Dating) shows both levels.
+- [ ] A top-level-category transaction shows only its own name.
+- [ ] A transfer row is unchanged.
+- [ ] Long names truncate without breaking the row layout.
 
-- Update this checklist + STATUS block.
-- Update root `HANDOFF.md`.
-- Stop and ask before push/PR.
+**On completion:** run agent gate, update STATUS + checkboxes, stop and ask before
+push/PR. Review checklist goes into the PR description.
 
 ---
 
@@ -104,24 +97,22 @@ Restyle `CategoriesPage.tsx` (serves both mobile + desktop). No data/API changes
       `absolute -right-1 -top-1` placement).
 - [ ] Keep system-category rows non-editable (existing `isSystem` disabled behavior) and the
       parent-level favorite toggle.
-- [ ] Verify the layout holds on both breakpoints (mobile single column; desktop wider) —
-      the row layout replaces the 4/5/6-col child grid on both.
 
-### Verification gate (hard)
-
+**Agent gate (hard):**
 - [ ] `pnpm --filter @wallet/web typecheck`
 - [ ] `pnpm --filter @wallet/web test` (incl. `CategoriesPage.test.tsx` — update assertions
       if the structure they query changed)
-- [ ] Manual: segmented control switches expense/income sets; no bordered boxes; star is a
-      visible trailing toggle that toggles favorite and does not overlap; tapping a
-      non-system row opens the edit sheet/drawer; system rows stay disabled; layout is clean
-      on both mobile and desktop widths.
 
-### On completion
+**Review checklist (user, at PR review):**
+- [ ] Segmented control switches expense/income sets.
+- [ ] No bordered boxes remain; star is a visible trailing toggle that toggles favorite and
+      does not overlap.
+- [ ] Tapping a non-system row opens the edit sheet/drawer; system rows stay disabled.
+- [ ] Layout is clean on both mobile and desktop widths (row layout replaces the old
+      4/5/6-col child grid on both).
 
-- Update this checklist + STATUS block.
-- Update root `HANDOFF.md`.
-- Stop and ask before push/PR.
+**On completion:** run agent gate, update STATUS + checkboxes, stop and ask before
+push/PR. Review checklist goes into the PR description.
 
 ---
 
@@ -136,24 +127,21 @@ In `features/transactions/queries.ts`, convert the three mutation hooks to optim
       snapshot; `onSettled` → `invalidateQueries`.
 - [ ] `useUpdateTransaction`: same pattern, patch the matching row in the cached array.
 - [ ] `useDeleteTransaction`: same pattern, remove the row from the cached array.
-- [ ] Ensure balance/dashboard derived views reconcile on `onSettled` invalidation (they
-      read from the same query — confirm no stale computed balance persists).
 - [ ] Remove the optimistic-updates line from `docs/BACKLOG.md` (Ideas section).
 
-### Verification gate (hard)
-
+**Agent gate (hard):**
 - [ ] `pnpm --filter @wallet/web typecheck`
 - [ ] `pnpm --filter @wallet/web test`
-- [ ] Manual: add a transaction — it appears in the list instantly before the request
-      resolves; edit one — change shows immediately; delete one — row disappears immediately;
-      force an error (e.g. offline) — the optimistic change rolls back and an error surfaces;
-      computed account balance is correct after settle.
 
-### On completion
+**Review checklist (user, at PR review):**
+- [ ] Add a transaction — it appears in the list instantly before the request resolves.
+- [ ] Edit one — change shows immediately. Delete one — row disappears immediately.
+- [ ] Force an error (e.g. offline) — the optimistic change rolls back and an error surfaces.
+- [ ] Computed account balance is correct after settle (no stale value from an aborted
+      optimistic update).
 
-- Update this checklist + STATUS block.
-- Update root `HANDOFF.md`.
-- Stop and ask before push/PR.
+**On completion:** run agent gate, update STATUS + checkboxes, stop and ask before
+push/PR. Review checklist goes into the PR description.
 
 ---
 
@@ -172,16 +160,15 @@ Branch: `mobile-ux/phase-5-pull-to-refresh` (off `mobile-ux/phase-4-optimistic`,
 - [ ] Remove pull-to-refresh from the "Small UX batch" line in `docs/BACKLOG.md` (leave the
       rest of that line's items).
 
-### Verification gate (hard)
-
+**Agent gate (hard):**
 - [ ] `pnpm --filter @wallet/web typecheck`
 - [ ] `pnpm --filter @wallet/web test`
-- [ ] Manual (mobile viewport/device): at the top of Home, drag down → indicator appears →
-      release → queries refetch; same on Transactions; a normal mid-list scroll does not
-      trigger a refresh; desktop is unchanged.
 
-### On completion
+**Review checklist (user, at PR review):**
+- [ ] Mobile viewport/device: at the top of Home, drag down → indicator appears → release →
+      queries refetch. Same on Transactions.
+- [ ] A normal mid-list scroll does not trigger a refresh.
+- [ ] Desktop is unchanged.
 
-- Update this checklist + STATUS block.
-- Update root `HANDOFF.md`.
-- Stop and ask before push/PR.
+**On completion:** run agent gate, update STATUS + checkboxes, stop and ask before
+push/PR. Review checklist goes into the PR description.
