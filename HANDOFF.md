@@ -1,68 +1,86 @@
 # Handoff
 
-Session baton only — advisory context, never authoritative state. Spec state lives in
-git + each `specs/*/EXECUTION.md` STATUS block (see `CLAUDE.md` → "Spec-Driven Execution
-Workflow"). Rewritten to this shape as part of spec-workflow-v2's migration.
+Session baton only. Trust git and any spec `STATUS` blocks over this file for
+authoritative state.
 
-## Current
+## Current State
 
-- `mobile-ux`: **planned and committed, no phase started.** `specs/mobile-ux/PLAN.md` +
-  `specs/mobile-ux/EXECUTION.md` (5 phases, all `pending`) are on `develop` (commits
-  `a575c64`, `c7681dd`). Next action is Phase 1 via `spec-phase`; needs the user's
-  go-ahead before branching/committing. Phase/decision detail lives in those two files —
-  do not restate here.
-  - Scope came from 6 hands-on mobile issues + 2 folded-in backlog items (optimistic
-    updates, pull-to-refresh). Backlog cleanup (remove those 2 lines from
-    `docs/BACKLOG.md`) is wired into Phases 4 and 5, not yet done.
-  - Grill overrides worth remembering: zoom fix is viewport `maximum-scale=1` (user chose
-    it over 16px inputs, accessibility cost accepted); categories redesign is "Direction A"
-    (sectioned rows) applied to **both** mobile + desktop.
-  - Branch model is **stacked by default** (see next bullet) — Phase 2 bases off Phase 1's
-    branch, not off `develop`, and doesn't wait for Phase 1's PR to merge.
-- **Branch model flipped**: `CLAUDE.md`/`AGENTS.md` now say phases stack by default
-  (previous phase's branch, no waiting for merge); sequential/wait-for-merge is opt-in per
-  spec only when the user explicitly asks (commit `a7c0887`). This reverses the prior
-  "sequential, no stacking" rule.
-- **Spec-skill triplication found and resolved**: `spec-plan`/`spec-phase` existed in three
-  places — `.claude/skills/` (project, "v2" — richest), `.agents/skills/` (project, older),
-  and `~/.claude/skills/` (global — this is the copy that actually ran for `/spec-plan`
-  earlier, and it was also the older, non-v2 version). All three are now byte-identical and
-  reflect stacked-by-default (commit `de07aa9`; global copy updated outside git, not in any
-  commit). If skill behavior ever seems off, check `~/.claude/skills/` hasn't drifted from
-  `.claude/skills/` again — nothing keeps them in sync automatically.
-- `specs/mobile-ux/EXECUTION.md` was rewritten (`c7681dd`) from the old single-gate shape to
-  the current v2 skeleton: each phase now has separate **Agent gate (hard)** (typecheck/test,
-  agent-runnable) and **Review checklist** (manual scenarios, user's job at PR review) lanes.
-  Scope unchanged, format only.
-- Added Codex subagent mirrors of `.claude/agents/*`: `.codex/agents/{explorer,reporter,
-  tweaker,implementer,checker}.toml` (commit `d6f2321`). Model tiers mapped explicitly —
-  opus/sonnet/haiku → gpt-5.5/gpt-5.4/gpt-5.4-mini — per user's instruction, not inferred.
-  Codex has no per-tool allowlist, so the old `tools:` restrictions became `sandbox_mode`
-  (`read-only` vs `workspace-write`) plus prose; `checker` needs `workspace-write` for
-  `pnpm build` despite never editing source.
-- Prior shipped context (still true): `error-handling` all 3 phases merged (PRs #10–12);
-  `category-redesign` + `category-ux` specs fully checked off / shipped — `CategoriesPage`
-  exists as its own page. Workflow v2 rulebook is live in `CLAUDE.md`/`AGENTS.md`.
-- `be-integration` (PLAN.md, no EXECUTION.md) remains queued but is **not** the active
-  spec — `mobile-ux` is. One spec in flight at a time.
+- Branch: `develop`
+- Latest relevant commit: `591cb2f` `Polish loading and category selection`
+- Worktree was clean before this handoff update; after saving this file, only
+  `HANDOFF.md` is expected to differ until committed.
+- `mobile-ux` work is no longer pending in practice. The stacked phase branches
+  were merged into `develop` earlier in this session chain. If spec artifacts
+  still say otherwise, git is the source of truth. Reference:
+  [specs/mobile-ux/EXECUTION.md](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/specs/mobile-ux/EXECUTION.md)
 
-## Repo-wide notes (not owned by any spec)
+## What Shipped Recently
 
-- `packages/api/package.json` `dev` script watches bundled output (`dist/`), not source —
-  local API edits don't trigger reload. Known, unfixed.
-- `packages/web/src/core/store.tsx` `deleteTransactions` loops per-id deletes instead of
-  using the unused `useDeleteTransactions` bulk hook. Behavior-preserving, out of scope
-  when noticed.
-- Manual browser verification for pwa + error-handling was never run by an agent (no
-  browser tool). Under v2 this class of check is the user's, at PR review.
-- `gh` CLI account mismatch (`daoduong-saritasa` vs `daodd1511`) previously blocked PR
-  creation — PRs #10–12 exist now, so possibly resolved; verify with `gh auth status`
-  before relying on it.
+- Merchant entry was hidden from transaction UI without removing the DB field.
+  Reference commit: `d2c11c7`
+- Category selection was unified around the transaction-form picker for
+  transaction, budget, and subscription forms. Reference commit: `16723f1`
+- Loading UX pass shipped in `591cb2f`:
+  - app bootstrap loading screen for mobile and desktop shells
+  - pending state on primary form submit buttons
+  - pending state on delete confirm actions
+  - pending state on sign-in and subscription quick-log
+  - shared category picker changed from clipped tile boxes to full-width rows
+  - selected child categories now show parent context in the picker
 
-## Suggested skills
+## Files Most Recently Touched
 
-- `spec-phase` — to start/resume `mobile-ux` phase execution (reads `EXECUTION.md` STATUS).
-- `react-frontend-developer` — all `mobile-ux` work is frontend; required by `CLAUDE.md`.
-- `terse-commit` — before any commit in this repo (repo convention).
-- `capture` — if out-of-scope issues surface mid-work, backlog them rather than expanding
-  the spec.
+- Shared loading and button/confirm plumbing:
+  - [packages/web/src/shared/components/LoadingScreen.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/shared/components/LoadingScreen.tsx)
+  - [packages/web/src/shared/components/ui/button.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/shared/components/ui/button.tsx)
+  - [packages/web/src/shared/components/ui/confirm-dialog.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/shared/components/ui/confirm-dialog.tsx)
+- Shared category picker:
+  - [packages/web/src/features/categories/components/FavoriteCategoryPicker.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/categories/components/FavoriteCategoryPicker.tsx)
+- Shells and main forms:
+  - [packages/web/src/layouts/mobile/MobileApp.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/layouts/mobile/MobileApp.tsx)
+  - [packages/web/src/layouts/desktop/DesktopApp.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/layouts/desktop/DesktopApp.tsx)
+  - [packages/web/src/features/transactions/components/TransactionForm.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/transactions/components/TransactionForm.tsx)
+  - [packages/web/src/features/budgets/components/BudgetForm.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/budgets/components/BudgetForm.tsx)
+  - [packages/web/src/features/subscriptions/components/SubscriptionForm.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/subscriptions/components/SubscriptionForm.tsx)
+
+## Verification Already Run
+
+- `pnpm --filter @wallet/web typecheck`
+- `pnpm --filter @wallet/web test`
+
+These were re-run after:
+- button loading regression fix
+- delete confirm loading change
+- category picker row-layout change
+
+## Backlog / Next Likely Work
+
+Reference backlog:
+[docs/BACKLOG.md](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/docs/BACKLOG.md)
+
+Likely next items based on this session:
+- continue the remaining "Loading states for all actions" backlog item
+  - current pass covered high-frequency bootstrap/forms/delete confirms, not
+    every inline mutation
+- audit category icons that do not match names
+- improve transaction table filtering
+- expand analytics/reports
+
+## Notes For Next Agent
+
+- The shared picker accessible name for child categories now includes both
+  parent and child text, e.g. `"Food Restaurant"`. Tests should reflect that.
+- `ConfirmDialog` now accepts async `onConfirm` and owns its pending state.
+  Avoid re-adding per-screen delete spinners unless there is a screen-specific
+  reason.
+- `store.tsx` is still a god-context. The backlog already calls this out; do
+  not casually expand it further.
+- Commit message convention in this repo is plain imperative subject. Use the
+  `terse-commit` skill before committing.
+
+## Suggested Skills
+
+- `react-frontend-developer`
+- `handoff`
+- `terse-commit`
+- `spec-phase` only if resuming a spec-backed change rather than a backlog fix

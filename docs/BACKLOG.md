@@ -15,6 +15,7 @@ their session summary). Delete a line when the item ships or graduates into a
 - [ ] Money math untested: `computeBalance`, `monthSummary`, subscription due-window have zero unit tests (2026-07-04)
 - [ ] `packages/api` dev script builds once and runs `dist/` — no watch on source (2026-07-04)
 - [ ] CLAUDE.md architecture/commands sections describe the pre-monorepo app — re-baseline (2026-07-04)
+- [ ] Fix UI selected category with favorites (2026-07-05)
 
 ## Features
 
@@ -30,3 +31,5 @@ their session summary). Delete a line when the item ships or graduates into a
 - [ ] Update category select UI in transaction form to match the picker style used in Settings (2026-07-05)
 - [ ] Better filter for transaction table (2026-07-05)
 - [ ] Better analytics on spendings (2026-07-05)
+- [ ] Add adjustment account feature (2026-07-05)
+- [ ] Add fee feature (2026-07-05)
