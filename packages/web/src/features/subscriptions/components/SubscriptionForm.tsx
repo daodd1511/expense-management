@@ -44,7 +44,7 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
   const visibleCategories = categories.filter((category) => category.type === type)
   const canSubmit = name.trim().length > 0 && amount > 0 && accountId
 
-  const { submit: submitForm, errorMessage } = useFormSubmit(onSubmit)
+  const { submit: submitForm, isSubmitting, errorMessage } = useFormSubmit(onSubmit)
 
   const handleSubmit = () => {
     if (!canSubmit) return
@@ -216,10 +216,10 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
       {errorMessage && <FormErrorBanner message={errorMessage} />}
 
       <div className="flex gap-2 pt-1">
-        <Button variant="outline" size="lg" className="h-11 flex-1" onClick={onCancel}>
+        <Button variant="outline" size="lg" className="h-11 flex-1" disabled={isSubmitting} onClick={onCancel}>
           {t('form.cancel')}
         </Button>
-        <Button size="lg" className="h-11 flex-[2]" disabled={!canSubmit} onClick={handleSubmit}>
+        <Button size="lg" className="h-11 flex-[2]" disabled={!canSubmit} loading={isSubmitting} onClick={handleSubmit}>
           {initial ? t('sub.save') : t('sub.create')}
         </Button>
       </div>

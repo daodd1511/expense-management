@@ -40,7 +40,7 @@ export function AccountForm({
 
   const canSubmit = name.trim().length > 0
 
-  const { submit: submitForm, errorMessage } = useFormSubmit(onSubmit)
+  const { submit: submitForm, isSubmitting, errorMessage } = useFormSubmit(onSubmit)
 
   const submit = () => {
     if (!canSubmit) return
@@ -98,10 +98,10 @@ export function AccountForm({
       {errorMessage && <FormErrorBanner message={errorMessage} />}
 
       <div className="flex gap-2 pt-1">
-        <Button variant="outline" size="lg" className="h-11 flex-1" onClick={onCancel}>
+        <Button variant="outline" size="lg" className="h-11 flex-1" disabled={isSubmitting} onClick={onCancel}>
           {t('form.cancel')}
         </Button>
-        <Button size="lg" className="h-11 flex-[2]" disabled={!canSubmit} onClick={submit}>
+        <Button size="lg" className="h-11 flex-[2]" disabled={!canSubmit} loading={isSubmitting} onClick={submit}>
           {initial ? t('accounts.save') : t('accounts.create')}
         </Button>
       </div>

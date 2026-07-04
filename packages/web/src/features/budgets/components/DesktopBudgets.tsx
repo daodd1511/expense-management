@@ -140,8 +140,8 @@ export function DesktopBudgets() {
       <ConfirmDialog
         open={pendingDeleteId !== null}
         onCancel={() => setPendingDeleteId(null)}
-        onConfirm={() => {
-          if (pendingDeleteId) deleteBudget(pendingDeleteId)
+        onConfirm={async () => {
+          if (pendingDeleteId) await deleteBudget(pendingDeleteId)
           setPendingDeleteId(null)
         }}
       />

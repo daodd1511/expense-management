@@ -82,7 +82,7 @@ export function CategoryForm({
   const canDelete = isEditing && !initial?.isSystem
   const canSave = form.name.trim().length > 0
 
-  const { submit: submitSave, errorMessage: saveError } = useFormSubmit(onSave)
+  const { submit: submitSave, isSubmitting: isSaving, errorMessage: saveError } = useFormSubmit(onSave)
   const { submit: submitDelete, errorMessage: deleteError } = useFormSubmit<void>(onDelete)
   const errorMessage = saveError ?? deleteError
 
@@ -241,7 +241,7 @@ export function CategoryForm({
       )}
 
       <div className="sticky bottom-0 flex gap-2 bg-card p-4 sm:px-5">
-        <Button variant="outline" size="lg" className="h-11 flex-1" onClick={onCancel}>
+        <Button variant="outline" size="lg" className="h-11 flex-1" disabled={isSaving} onClick={onCancel}>
           {t('form.cancel')}
         </Button>
         {canDelete && (
@@ -255,7 +255,7 @@ export function CategoryForm({
             <Trash2 className="size-4" />
           </Button>
         )}
-        <Button size="lg" className="h-11 flex-[2]" disabled={!canSave} onClick={handleSave}>
+        <Button size="lg" className="h-11 flex-[2]" disabled={!canSave} loading={isSaving} onClick={handleSave}>
           {isEditing ? t('settings.saveCat') : t('settings.createCat')}
         </Button>
       </div>

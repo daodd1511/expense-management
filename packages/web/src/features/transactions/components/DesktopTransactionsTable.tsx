@@ -117,8 +117,8 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
   const bulkDelete = () => {
     setPendingDeleteIds(Array.from(selected))
   }
-  const confirmDelete = () => {
-    pendingDeleteIds.forEach((id) => deleteTransaction(id))
+  const confirmDelete = async () => {
+    await Promise.all(pendingDeleteIds.map((id) => deleteTransaction(id)))
     setSelected(new Set())
     setPendingDeleteIds([])
   }

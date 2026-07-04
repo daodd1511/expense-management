@@ -183,8 +183,8 @@ export function MobileAccounts() {
       <ConfirmDialog
         open={pendingDeleteId !== null}
         onCancel={() => setPendingDeleteId(null)}
-        onConfirm={() => {
-          if (pendingDeleteId) deleteAccount(pendingDeleteId)
+        onConfirm={async () => {
+          if (pendingDeleteId) await deleteAccount(pendingDeleteId)
           setPendingDeleteId(null)
         }}
       />

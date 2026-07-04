@@ -12,8 +12,10 @@ const VI = {
   'app.name': 'Sổ Chi Tiêu',
   'app.tagline': 'Quản lý tài chính',
   'app.addTransaction': 'Thêm giao dịch',
+  'app.loading': 'Đang tải dữ liệu...',
   'confirm.cancel': 'Hủy',
   'confirm.delete': 'Xóa',
+  'confirm.deleting': 'Đang xóa...',
   'confirm.deleteTitle': 'Xóa mục này?',
   'confirm.deleteMessage': 'Hành động này không thể hoàn tác.',
   'dashboard.monthBalance': 'Số dư tháng',
@@ -192,6 +194,7 @@ const VI = {
   'sub.addFirst': 'Thêm đăng ký đầu tiên',
   'sub.lastPaid': 'Lần cuối: {date}',
   'auth.signInWithGoogle': 'Đăng nhập với Google',
+  'auth.signingIn': 'Đang đăng nhập...',
   'auth.signOut': 'Đăng xuất',
 } as const
 
@@ -207,8 +210,10 @@ const EN: Record<TranslationKey, string> = {
   'app.name': 'Expense Book',
   'app.tagline': 'Finance manager',
   'app.addTransaction': 'Add transaction',
+  'app.loading': 'Loading your data...',
   'confirm.cancel': 'Cancel',
   'confirm.delete': 'Delete',
+  'confirm.deleting': 'Deleting...',
   'confirm.deleteTitle': 'Delete this item?',
   'confirm.deleteMessage': 'This action cannot be undone.',
   'dashboard.monthBalance': 'Monthly balance',
@@ -387,6 +392,7 @@ const EN: Record<TranslationKey, string> = {
   'sub.addFirst': 'Add your first subscription',
   'sub.lastPaid': 'Last paid: {date}',
   'auth.signInWithGoogle': 'Sign in with Google',
+  'auth.signingIn': 'Signing in...',
   'auth.signOut': 'Sign out',
 }
 

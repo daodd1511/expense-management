@@ -2,6 +2,7 @@ import { Bell, X } from 'lucide-react'
 import { useState } from 'react'
 import { useLang } from '@/core/i18n'
 import { useStore } from '@/core/store'
+import { Button } from '@/shared/components/ui/button'
 import { dueBanner } from '@/features/subscriptions/helpers'
 import { formatVND } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/utils'
@@ -10,14 +11,20 @@ export function SubscriptionDueBanner({ onLog }: { onLog?: (id: string) => void 
   const { subscriptions, transactions, logSubscription } = useStore()
   const { t } = useLang()
   const [dismissed, setDismissed] = useState(false)
+  const [pendingId, setPendingId] = useState<string | null>(null)
 
   const due = dueBanner(subscriptions, transactions)
 
   if (dismissed || due.length === 0) return null
 
-  const handleLog = (id: string) => {
-    logSubscription(id)
-    onLog?.(id)
+  const handleLog = async (id: string) => {
+    setPendingId(id)
+    try {
+      await logSubscription(id)
+      onLog?.(id)
+    } finally {
+      setPendingId((current) => (current === id ? null : current))
+    }
   }
 
   return (
@@ -47,13 +54,16 @@ export function SubscriptionDueBanner({ onLog }: { onLog?: (id: string) => void 
             <span className="text-sm text-muted-foreground">
               {sub.name} · <span className="tabular font-medium text-foreground">{formatVND(sub.amount)}</span>
             </span>
-            <button
+            <Button
               type="button"
-              onClick={() => handleLog(sub.id)}
-              className="shrink-0 rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 active:scale-95"
+              size="sm"
+              loading={pendingId === sub.id}
+              disabled={pendingId !== null}
+              onClick={() => void handleLog(sub.id)}
+              className="shrink-0 px-3 py-1 text-xs font-semibold active:scale-95"
             >
               {t('sub.logNow')}
-            </button>
+            </Button>
           </div>
         ))}
       </div>

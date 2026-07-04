@@ -144,9 +144,9 @@ export function TransactionRow({
       <ConfirmDialog
         open={confirmDeleteOpen}
         onCancel={() => setConfirmDeleteOpen(false)}
-        onConfirm={() => {
+        onConfirm={async () => {
+          await deleteTransaction(tx.id)
           setConfirmDeleteOpen(false)
-          deleteTransaction(tx.id)
         }}
       />
     </div>

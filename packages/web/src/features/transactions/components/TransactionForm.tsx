@@ -68,7 +68,7 @@ export function TransactionForm({
     (type === 'transfer' ? accountId !== toAccountId : true) &&
     (type === 'transfer' || categoryId)
 
-  const { submit: submitForm, errorMessage } = useFormSubmit(onSubmit)
+  const { submit: submitForm, isSubmitting, errorMessage } = useFormSubmit(onSubmit)
   const fallbackMerchant =
     type === 'transfer' ? t('form.defaultTransfer') : getCategory(categoryId)?.name || t('form.defaultTx')
 
@@ -224,13 +224,14 @@ export function TransactionForm({
 
       {/* Submit */}
       <div className="sticky bottom-0 flex gap-2 bg-card p-4 sm:px-5">
-        <Button variant="outline" size="lg" className="h-11 flex-1" onClick={onCancel}>
+        <Button variant="outline" size="lg" className="h-11 flex-1" disabled={isSubmitting} onClick={onCancel}>
           {t('form.cancel')}
         </Button>
         <Button
           size="lg"
           className="h-11 flex-[2]"
           disabled={!canSubmit}
+          loading={isSubmitting}
           onClick={submit}
         >
           {initial ? t('form.save') : t('form.submit')}

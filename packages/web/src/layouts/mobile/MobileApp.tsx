@@ -7,6 +7,7 @@ import { TransactionForm } from '@/features/transactions/components/TransactionF
 import { SubscriptionDueBanner } from '@/features/subscriptions/components/SubscriptionDueBanner'
 import { BottomSheet } from '@/shared/components/ui/overlay'
 import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicator'
+import { LoadingScreen } from '@/shared/components/LoadingScreen'
 import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
 import { useLang } from '@/core/i18n'
 import { useStore } from '@/core/store'
@@ -24,7 +25,7 @@ import { useAuth } from '@/features/auth/auth'
 type Screen = 'home' | 'transactions' | 'planning' | 'accounts' | 'settings' | 'categories'
 
 export function MobileApp() {
-  const { addTransaction, updateTransaction, subscriptions, transactions } = useStore()
+  const { addTransaction, updateTransaction, subscriptions, transactions, loading } = useStore()
   const { user } = useAuth()
   const { t } = useLang()
   const queryClient = useQueryClient()
@@ -75,6 +76,8 @@ export function MobileApp() {
       ])
     },
   })
+
+  if (loading) return <LoadingScreen />
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background">

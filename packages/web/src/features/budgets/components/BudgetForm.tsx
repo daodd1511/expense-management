@@ -48,7 +48,7 @@ export function BudgetForm({ initial, onSubmit, onCancel }: BudgetFormProps) {
   const numericAmount = Number(amount) || 0
   const canSubmit = !!categoryId && numericAmount > 0
 
-  const { submit, errorMessage } = useFormSubmit(onSubmit)
+  const { submit, isSubmitting, errorMessage } = useFormSubmit(onSubmit)
 
   return (
     <div className="flex flex-col gap-4">
@@ -84,10 +84,10 @@ export function BudgetForm({ initial, onSubmit, onCancel }: BudgetFormProps) {
       {errorMessage && <FormErrorBanner message={errorMessage} />}
 
       <div className="flex gap-2">
-        <Button variant="outline" className="flex-1" onClick={onCancel}>
+        <Button variant="outline" className="flex-1" disabled={isSubmitting} onClick={onCancel}>
           {t('form.cancel')}
         </Button>
-        <Button className="flex-1" disabled={!canSubmit} onClick={() => categoryId && submit({ categoryId, limit: numericAmount })}>
+        <Button className="flex-1" disabled={!canSubmit} loading={isSubmitting} onClick={() => categoryId && submit({ categoryId, limit: numericAmount })}>
           {initial ? t('form.save') : t('budget.add')}
         </Button>
       </div>

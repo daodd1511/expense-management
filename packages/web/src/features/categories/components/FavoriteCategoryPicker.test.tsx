@@ -23,7 +23,7 @@ const transport: Category = { id: 'transport', name: 'Transport', icon: 'Bus', c
 const categories = [food, restaurant, transport]
 
 describe('FavoriteCategoryPicker', () => {
-  it('renders favorited categories as a flat tile grid', () => {
+  it('renders favorited categories as a row list', () => {
     render(
       <FavoriteCategoryPicker
         categories={categories}
@@ -35,6 +35,20 @@ describe('FavoriteCategoryPicker', () => {
 
     expect(screen.getByRole('button', { name: 'Food' })).toBeDefined()
     expect(screen.queryByRole('button', { name: 'Transport' })).toBeNull()
+  })
+
+  it('shows the parent name above a selected child category', () => {
+    render(
+      <FavoriteCategoryPicker
+        categories={categories}
+        favoriteCategoryIds={new Set(['restaurant'])}
+        selectedId="restaurant"
+        onSelect={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Food')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Food Restaurant' })).toBeDefined()
   })
 
   it('shows an empty-state message when nothing is favorited', () => {
