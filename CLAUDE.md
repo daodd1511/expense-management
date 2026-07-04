@@ -81,6 +81,15 @@ Design system lives in `app/globals.css`. Semantic color tokens: `--income`, `--
 - The `terse-commit` skill generates messages matching this convention (plain
   imperative subject, no Conventional Commits prefix).
 
+## Backlog
+
+`docs/BACKLOG.md` is the single inbox for fixes, features, and ideas (no separate
+features doc). Capture via the `capture` skill: one line per item, `- [ ] <desc> (<date>)`,
+appended to the matching section. Agents may capture proactively when they notice
+out-of-scope issues, but must list those additions in the session's final summary.
+Never auto-commit a capture. Delete a line only when the item ships or graduates into a
+`specs/<feature>/` plan.
+
 ## Spec-Driven Execution Workflow
 
 Large/architectural changes flow: `/grill-me` → `specs/<feature>/PLAN.md` →
