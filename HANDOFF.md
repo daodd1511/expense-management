@@ -6,9 +6,9 @@ Workflow"). Rewritten to this shape as part of spec-workflow-v2's migration.
 
 ## Current
 
-- `mobile-ux`: **just planned, nothing started.** `/grill-me` → `specs/mobile-ux/PLAN.md`
-  → `specs/mobile-ux/EXECUTION.md` (5 phases, all `pending`). Files are untracked on
-  `develop` — not committed. Next action is Phase 1 via `spec-phase`; needs the user's
+- `mobile-ux`: **planned and committed, no phase started.** `specs/mobile-ux/PLAN.md` +
+  `specs/mobile-ux/EXECUTION.md` (5 phases, all `pending`) are on `develop` (commits
+  `a575c64`, `c7681dd`). Next action is Phase 1 via `spec-phase`; needs the user's
   go-ahead before branching/committing. Phase/decision detail lives in those two files —
   do not restate here.
   - Scope came from 6 hands-on mobile issues + 2 folded-in backlog items (optimistic
@@ -17,11 +17,32 @@ Workflow"). Rewritten to this shape as part of spec-workflow-v2's migration.
   - Grill overrides worth remembering: zoom fix is viewport `maximum-scale=1` (user chose
     it over 16px inputs, accessibility cost accepted); categories redesign is "Direction A"
     (sectioned rows) applied to **both** mobile + desktop.
-  - Phases branch off `develop` sequentially (no stacking) per `CLAUDE.md`, overriding the
-    spec-plan skill's default stacking language.
+  - Branch model is **stacked by default** (see next bullet) — Phase 2 bases off Phase 1's
+    branch, not off `develop`, and doesn't wait for Phase 1's PR to merge.
+- **Branch model flipped**: `CLAUDE.md`/`AGENTS.md` now say phases stack by default
+  (previous phase's branch, no waiting for merge); sequential/wait-for-merge is opt-in per
+  spec only when the user explicitly asks (commit `a7c0887`). This reverses the prior
+  "sequential, no stacking" rule.
+- **Spec-skill triplication found and resolved**: `spec-plan`/`spec-phase` existed in three
+  places — `.claude/skills/` (project, "v2" — richest), `.agents/skills/` (project, older),
+  and `~/.claude/skills/` (global — this is the copy that actually ran for `/spec-plan`
+  earlier, and it was also the older, non-v2 version). All three are now byte-identical and
+  reflect stacked-by-default (commit `de07aa9`; global copy updated outside git, not in any
+  commit). If skill behavior ever seems off, check `~/.claude/skills/` hasn't drifted from
+  `.claude/skills/` again — nothing keeps them in sync automatically.
+- `specs/mobile-ux/EXECUTION.md` was rewritten (`c7681dd`) from the old single-gate shape to
+  the current v2 skeleton: each phase now has separate **Agent gate (hard)** (typecheck/test,
+  agent-runnable) and **Review checklist** (manual scenarios, user's job at PR review) lanes.
+  Scope unchanged, format only.
+- Added Codex subagent mirrors of `.claude/agents/*`: `.codex/agents/{explorer,reporter,
+  tweaker,implementer,checker}.toml` (commit `d6f2321`). Model tiers mapped explicitly —
+  opus/sonnet/haiku → gpt-5.5/gpt-5.4/gpt-5.4-mini — per user's instruction, not inferred.
+  Codex has no per-tool allowlist, so the old `tools:` restrictions became `sandbox_mode`
+  (`read-only` vs `workspace-write`) plus prose; `checker` needs `workspace-write` for
+  `pnpm build` despite never editing source.
 - Prior shipped context (still true): `error-handling` all 3 phases merged (PRs #10–12);
   `category-redesign` + `category-ux` specs fully checked off / shipped — `CategoriesPage`
-  exists as its own page. Workflow v2 rulebook is live in `CLAUDE.md`.
+  exists as its own page. Workflow v2 rulebook is live in `CLAUDE.md`/`AGENTS.md`.
 - `be-integration` (PLAN.md, no EXECUTION.md) remains queued but is **not** the active
   spec — `mobile-ux` is. One spec in flight at a time.
 

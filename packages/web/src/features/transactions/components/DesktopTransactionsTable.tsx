@@ -11,8 +11,20 @@ import { useStore } from '@/core/store'
 import type { Transaction, TxType } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
-type SortKey = 'date' | 'merchant' | 'category' | 'account' | 'amount'
+type SortKey = 'date' | 'category' | 'account' | 'amount'
 const PAGE_SIZE = 9
+
+function getTransactionCategoryLabel({
+  transaction,
+  categoryName,
+  transferLabel,
+}: {
+  transaction: Transaction
+  categoryName?: string
+  transferLabel: string
+}) {
+  return transaction.type === 'transfer' ? transferLabel : categoryName ?? ''
+}
 
 export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction) => void }) {
   const { transactions, getCategory, getAccount, deleteTransaction } = useStore()
@@ -35,16 +47,36 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
   const filtered = useMemo(() => {
     const rows = transactions.filter((tx) => {
       if (type !== 'all' && tx.type !== type) return false
-      if (query && !tx.merchant.toLowerCase().includes(query.toLowerCase())) return false
+      if (query) {
+        const searchValue = query.toLowerCase()
+        const haystack = [
+          tx.merchant,
+          tx.note,
+          getCategory(tx.categoryId)?.name,
+          getAccount(tx.accountId)?.name,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+        if (!haystack.includes(searchValue)) return false
+      }
       return true
     })
     const dir = asc ? 1 : -1
     return [...rows].sort((a, b) => {
       switch (sortKey) {
-        case 'merchant':
-          return a.merchant.localeCompare(b.merchant) * dir
         case 'category':
-          return (getCategory(a.categoryId)?.name ?? '').localeCompare(getCategory(b.categoryId)?.name ?? '') * dir
+          return getTransactionCategoryLabel({
+            transaction: a,
+            categoryName: getCategory(a.categoryId)?.name,
+            transferLabel: t('tx.transfer'),
+          }).localeCompare(
+            getTransactionCategoryLabel({
+              transaction: b,
+              categoryName: getCategory(b.categoryId)?.name,
+              transferLabel: t('tx.transfer'),
+            }),
+          ) * dir
         case 'account':
           return (getAccount(a.accountId)?.name ?? '').localeCompare(getAccount(b.accountId)?.name ?? '') * dir
         case 'amount':
@@ -53,7 +85,7 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
           return a.date.localeCompare(b.date) * dir
       }
     })
-  }, [transactions, query, type, sortKey, asc, getCategory, getAccount])
+  }, [transactions, query, type, sortKey, asc, getCategory, getAccount, t])
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const current = Math.min(page, pageCount)
@@ -158,7 +190,6 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
                 />
               </th>
               <SortHeader label={t('tx.colDate')} col="date" sortKey={sortKey} asc={asc} onClick={toggleSort} />
-              <SortHeader label={t('tx.colMerchant')} col="merchant" sortKey={sortKey} asc={asc} onClick={toggleSort} />
               <SortHeader label={t('tx.colCategory')} col="category" sortKey={sortKey} asc={asc} onClick={toggleSort} />
               <SortHeader label={t('tx.colAccount')} col="account" sortKey={sortKey} asc={asc} onClick={toggleSort} />
               <SortHeader label={t('tx.colAmount')} col="amount" sortKey={sortKey} asc={asc} onClick={toggleSort} align="right" />
@@ -168,6 +199,11 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
           <tbody className="divide-y divide-border">
             {rows.map((row) => {
               const cat = getCategory(row.categoryId)
+              const categoryLabel = getTransactionCategoryLabel({
+                transaction: row,
+                categoryName: cat?.name,
+                transferLabel: t('tx.transfer'),
+              })
               return (
                 <tr
                   key={row.id}
@@ -178,18 +214,12 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
                       type="checkbox"
                       checked={selected.has(row.id)}
                       onChange={() => toggleOne(row.id)}
-                      aria-label={t('tx.selectItem', { name: row.merchant })}
+                      aria-label={t('tx.selectItem', { name: categoryLabel })}
                       className="size-4 accent-primary"
                     />
                   </td>
                   <td className="px-4 py-3 tabular whitespace-nowrap text-muted-foreground">
                     {formatShortDate(row.date)}
-                  </td>
-                  <td className="px-4 py-3 font-medium">
-                    <span className="flex items-center gap-1.5">
-                      {row.merchant}
-                      {row.receipt && <Paperclip className="size-3 text-muted-foreground" />}
-                    </span>
                   </td>
                   <td className="px-4 py-3">
                     {row.type === 'transfer' ? (
@@ -203,7 +233,10 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
                           className="size-3.5"
                           style={{ color: colorVar(cat?.color ?? 'chart-1') }}
                         />
-                        {cat?.name}
+                        <span className="flex items-center gap-1.5">
+                          {cat?.name}
+                          {row.receipt && <Paperclip className="size-3 text-muted-foreground" />}
+                        </span>
                       </span>
                     )}
                   </td>

@@ -15,7 +15,7 @@ import { cn } from '@/shared/lib/utils'
 
 export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => void }) {
   const { user } = useAuth()
-  const { transactions } = useStore()
+  const { transactions, getCategory, getAccount } = useStore()
   const { t, lang } = useLang()
   const queryClient = useQueryClient()
   const [query, setQuery] = useState('')
@@ -36,7 +36,19 @@ export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => vo
   const groups = useMemo(() => {
     const filtered = transactions.filter((tx) => {
       if (filter !== 'all' && tx.type !== filter) return false
-      if (query && !tx.merchant.toLowerCase().includes(query.toLowerCase())) return false
+      if (query) {
+        const searchValue = query.toLowerCase()
+        const haystack = [
+          tx.merchant,
+          tx.note,
+          getCategory(tx.categoryId)?.name,
+          getAccount(tx.accountId)?.name,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+        if (!haystack.includes(searchValue)) return false
+      }
       return true
     })
     const map = new Map<string, Transaction[]>()
@@ -46,7 +58,7 @@ export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => vo
       map.get(key)!.push(tx)
     }
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]))
-  }, [transactions, query, filter])
+  }, [transactions, query, filter, getCategory, getAccount])
 
   return (
     <div

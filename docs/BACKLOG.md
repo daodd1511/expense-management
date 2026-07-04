@@ -25,3 +25,5 @@ their session summary). Delete a line when the item ships or graduates into a
 - [ ] Desktop keyboard shortcuts (N = new transaction, / = search) + command palette (2026-07-04)
 - [ ] Offline write queue for the PWA (2026-07-04)
 - [ ] Small UX batch: account reorder, currency format preference, PIN/biometric lock, per-locale number format (2026-07-04)
+- [ ] Loading states for all actions, prioritized by frequency/impact first (2026-07-05)
+- [ ] Category icons don't match their names — audit and correct icon-to-name mapping (2026-07-05)

@@ -21,6 +21,15 @@ vi.mock('@/core/store', () => ({
   }),
 }))
 
+vi.mock('@/core/i18n', () => ({
+  useLang: () => ({
+    t: (key: string) =>
+      ({
+        'tx.transfer': 'Transfer',
+      })[key] ?? key,
+  }),
+}))
+
 describe('TransactionRow', () => {
   it('shows the parent breadcrumb only for nested categories', () => {
     render(
@@ -41,7 +50,8 @@ describe('TransactionRow', () => {
       />,
     )
 
-    expect(screen.getByText('Food › Dating · Cash')).toBeDefined()
+    expect(screen.getByText('Food › Dating')).toBeDefined()
+    expect(screen.getByText('Cash')).toBeDefined()
   })
 
   it('keeps top-level categories flat', () => {
@@ -63,7 +73,8 @@ describe('TransactionRow', () => {
       />,
     )
 
-    expect(screen.getByText('Salary · Bank')).toBeDefined()
+    expect(screen.getByText('Salary')).toBeDefined()
+    expect(screen.getByText('Bank')).toBeDefined()
   })
 
   it('leaves transfer subtitles unchanged', () => {
@@ -85,6 +96,7 @@ describe('TransactionRow', () => {
       />,
     )
 
+    expect(screen.getByText('Transfer')).toBeDefined()
     expect(screen.getByText('Cash → Bank')).toBeDefined()
   })
 })

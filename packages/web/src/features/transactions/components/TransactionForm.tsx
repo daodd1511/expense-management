@@ -5,7 +5,7 @@ import { FavoriteCategoryPicker } from '@/features/categories/components/Favorit
 import { Button } from '@/shared/components/ui/button'
 import { DatePicker } from '@/shared/components/ui/date-picker'
 import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
-import { Input, Label, Textarea } from '@/shared/components/ui/input'
+import { Label, Textarea } from '@/shared/components/ui/input'
 import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
 import {
   Select,
@@ -50,7 +50,6 @@ export function TransactionForm({
   const [toAccountId, setToAccountId] = useState<string>(
     initial?.toAccountId ?? accounts[1]?.id ?? accounts[0]?.id ?? '',
   )
-  const [merchant, setMerchant] = useState(initial?.merchant ?? '')
   const [note, setNote] = useState(initial?.note ?? '')
   const [date, setDate] = useState((initial?.date ?? todayIsoDate()).slice(0, 10))
   const amountInputRef = useRef<HTMLInputElement>(null)
@@ -70,6 +69,8 @@ export function TransactionForm({
     (type === 'transfer' || categoryId)
 
   const { submit: submitForm, errorMessage } = useFormSubmit(onSubmit)
+  const fallbackMerchant =
+    type === 'transfer' ? t('form.defaultTransfer') : getCategory(categoryId)?.name || t('form.defaultTx')
 
   useEffect(() => {
     amountInputRef.current?.focus()
@@ -83,7 +84,7 @@ export function TransactionForm({
       categoryId: type === 'transfer' ? null : categoryId,
       accountId,
       toAccountId: type === 'transfer' ? toAccountId : null,
-      merchant: merchant.trim() || (type === 'transfer' ? t('form.defaultTransfer') : getCategory(categoryId)?.name || t('form.defaultTx')),
+      merchant: initial?.merchant?.trim() || fallbackMerchant,
       note: note.trim() || undefined,
       date,
       receipt: null,
@@ -195,21 +196,10 @@ export function TransactionForm({
           </div>
         )}
 
-        {/* Merchant + date */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="merchant">{t('form.merchant')}</Label>
-            <Input
-              id="merchant"
-              value={merchant}
-              onChange={(e) => setMerchant(e.target.value)}
-              placeholder={t('form.merchantPlaceholder')}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label>{t('form.date')}</Label>
-            <DatePicker value={date} onChange={setDate} max={todayIsoDate()} />
-          </div>
+        {/* Date */}
+        <div className="flex flex-col gap-2">
+          <Label>{t('form.date')}</Label>
+          <DatePicker value={date} onChange={setDate} max={todayIsoDate()} />
         </div>
 
         {/* Note */}
