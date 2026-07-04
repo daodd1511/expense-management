@@ -28,3 +28,5 @@ their session summary). Delete a line when the item ships or graduates into a
 - [ ] Loading states for all actions, prioritized by frequency/impact first (2026-07-05)
 - [ ] Category icons don't match their names — audit and correct icon-to-name mapping (2026-07-05)
 - [ ] Update category select UI in transaction form to match the picker style used in Settings (2026-07-05)
+- [ ] Better filter for transaction table (2026-07-05)
+- [ ] Better analytics on spendings (2026-07-05)
