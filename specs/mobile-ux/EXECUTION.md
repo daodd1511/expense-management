@@ -4,10 +4,12 @@ Spec: [PLAN.md](PLAN.md). Workflow rules: see `CLAUDE.md` → "Spec-Driven Execu
 
 Read order for any agent picking this up: `HANDOFF.md` (root) → this file → `PLAN.md`.
 
-**Branch model:** sequential, no stacking. Each phase branches off `develop`, PRs to
-`develop`, is reviewed + merged, then the next phase branches off the updated `develop`.
-Do not start a phase's push/PR without explicit confirmation even when its commits are
-authorized. Frontend code via `react-frontend-developer`; `terse-commit` before commits.
+**Branch model:** stacked (default). Phase 1 branches off `develop`; each later phase
+branches off the previous phase's branch rather than waiting for it to merge. Push + PR
+happen per phase without waiting for the prior PR's review; rebase onto `develop` after
+an earlier phase's PR merges. Do not start a phase's push/PR without explicit confirmation
+even when its commits are authorized. Frontend code via `react-frontend-developer`;
+`terse-commit` before commits.
 
 ## STATUS
 
@@ -23,7 +25,7 @@ authorized. Frontend code via `react-frontend-developer`; `terse-commit` before 
 
 ## Phase 1 — Transaction form fixes (#1, #2, #3, #5)
 
-Branch: `mobile-ux/phase-1-form-fixes` (off `develop`)
+Branch: `mobile-ux/phase-1-form-fixes` (off `develop`, integration branch)
 
 Pure frontend. Fixes the four form-level issues that all live in the add-transaction flow.
 
@@ -62,7 +64,7 @@ Pure frontend. Fixes the four form-level issues that all live in the add-transac
 
 ## Phase 2 — Transaction list parent category (#4)
 
-Branch: `mobile-ux/phase-2-list-parent` (off `develop`)
+Branch: `mobile-ux/phase-2-list-parent` (off `mobile-ux/phase-1-form-fixes`, stacked)
 
 - [ ] In `TransactionRow.tsx`, when `cat.parentId` is set, resolve the parent via
       `getCategory(cat.parentId)` and render the subtitle as `Parent › Child · Account`;
@@ -87,7 +89,7 @@ Branch: `mobile-ux/phase-2-list-parent` (off `develop`)
 
 ## Phase 3 — Categories redesign, Direction A (#6)
 
-Branch: `mobile-ux/phase-3-categories` (off `develop`)
+Branch: `mobile-ux/phase-3-categories` (off `mobile-ux/phase-2-list-parent`, stacked)
 
 Restyle `CategoriesPage.tsx` (serves both mobile + desktop). No data/API changes.
 
@@ -125,7 +127,7 @@ Restyle `CategoriesPage.tsx` (serves both mobile + desktop). No data/API changes
 
 ## Phase 4 — Optimistic transaction updates (#7)
 
-Branch: `mobile-ux/phase-4-optimistic` (off `develop`)
+Branch: `mobile-ux/phase-4-optimistic` (off `mobile-ux/phase-3-categories`, stacked)
 
 In `features/transactions/queries.ts`, convert the three mutation hooks to optimistic.
 
@@ -157,7 +159,7 @@ In `features/transactions/queries.ts`, convert the three mutation hooks to optim
 
 ## Phase 5 — Pull-to-refresh (#8)
 
-Branch: `mobile-ux/phase-5-pull-to-refresh` (off `develop`)
+Branch: `mobile-ux/phase-5-pull-to-refresh` (off `mobile-ux/phase-4-optimistic`, stacked)
 
 - [ ] Add a custom touch-based hook under `packages/web/src/shared/hooks/` (e.g.
       `usePullToRefresh`) — no new dependency. Tracks touch drag at scrollTop 0, exposes a

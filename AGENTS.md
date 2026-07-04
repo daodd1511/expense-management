@@ -174,11 +174,17 @@ Large/architectural changes flow: `/grill-me` → `specs/<feature>/PLAN.md` →
   tool/credentials, not effort), with substitute evidence inline and a mirrored STATUS debt
   entry. A phase is in-progress iff it has unchecked **non-deferred** items.
 
-### Branch model — sequential, no stacking
-- Each phase branches off the **integration branch** (currently `develop`; resolve at plan
-  time, never hardcode) → push → PR to it → user reviews & merges → pull → next phase.
-- Stacking is opt-in only: if the user explicitly says to continue while a PR awaits
-  review, the next phase stacks on the unmerged branch and rebases after merge.
+### Branch model — stacked by default
+- **Default: stacked.** Each phase branches off the **previous phase's branch** (phase 1
+  off the integration branch, currently `develop`; resolve at plan time, never hardcode).
+  Push → PR to the previous phase's branch (or to the integration branch if the previous
+  phase already merged) → continue to the next phase without waiting for review/merge.
+  Rebase onto the integration branch after an earlier phase's PR merges.
+- **Sequential (off develop, wait for merge) is opt-in only** — use it only when the user
+  explicitly says so for this spec (e.g. "do phases sequentially" / "wait for merge before
+  the next phase"). When opted in: each phase branches off the integration branch → push →
+  PR → user reviews & merges → pull → next phase branches off the updated integration
+  branch.
 - After a phase's PR merges, ask before deleting the merged phase branch (local + remote).
 
 ### Checkpoints
