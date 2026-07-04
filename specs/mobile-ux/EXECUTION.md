@@ -8,8 +8,8 @@ chain merges. Frontend code via `react-frontend-developer`; `terse-commit` befor
 
 ## STATUS
 
-- Current phase: none started
-- Phase 1 — Transaction form fixes: `pending`
+- Current phase: Phase 1 complete on `mobile-ux/phase-1-form-fixes`
+- Phase 1 — Transaction form fixes: `done`
 - Phase 2 — Transaction list parent: `pending`
 - Phase 3 — Categories redesign: `pending`
 - Phase 4 — Optimistic transaction updates: `pending`
@@ -25,23 +25,23 @@ integration branch)
 
 Pure frontend. Fixes the four form-level issues that all live in the add-transaction flow.
 
-- [ ] **#1 Autofocus** — add a ref to the amount `<input>` in `TransactionForm.tsx` and
+- [x] **#1 Autofocus** — add a ref to the amount `<input>` in `TransactionForm.tsx` and
       focus it on mount (`useEffect` + `ref.current?.focus()`), both variants.
-- [ ] **#5 Inline amount format** — reformat the amount input value with thousands
+- [x] **#5 Inline amount format** — reformat the amount input value with thousands
       separators on each change: strip non-digits → keep numeric string in state → display
       grouped (reuse the grouping used by `formatVND` in `shared/lib/format.ts`, digits only,
       no `₫`). Remove the separate `formatVND` `<span>` below the input (`TransactionForm.tsx`
       ~L158–160). Caret parks at end. Keep the 12-digit cap.
-- [ ] **#2 Date off-by-one** — in `shared/components/ui/date-picker.tsx`, replace
+- [x] **#2 Date off-by-one** — in `shared/components/ui/date-picker.tsx`, replace
       `date.toISOString().slice(0,10)` in `handleSelect` with local Y/M/D formatting (same
       shape as `todayIsoDate()` in `TransactionForm.tsx`). Audit `new Date(value)` for
       `selected`/`maxDate` — if the displayed date drifts, parse as local too.
-- [ ] **#3 Zoom-on-focus** — add `, maximum-scale=1` to the `viewport` meta in
+- [x] **#3 Zoom-on-focus** — add `, maximum-scale=1` to the `viewport` meta in
       `packages/web/index.html`.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test` (incl. `TransactionForm.test.tsx`)
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm --filter @wallet/web test` (incl. `TransactionForm.test.tsx`)
 
 **Review checklist (user, at PR review):**
 - [ ] On a mobile viewport (or real device), open Add Transaction — amount is focused and

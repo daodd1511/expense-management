@@ -1,6 +1,6 @@
 
 import { ArrowRight, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FavoriteCategoryPicker } from '@/features/categories/components/FavoriteCategoryPicker'
 import { Button } from '@/shared/components/ui/button'
 import { DatePicker } from '@/shared/components/ui/date-picker'
@@ -52,9 +52,8 @@ export function TransactionForm({
   )
   const [merchant, setMerchant] = useState(initial?.merchant ?? '')
   const [note, setNote] = useState(initial?.note ?? '')
-  const [date, setDate] = useState(
-    (initial?.date ?? new Date().toISOString()).slice(0, 10),
-  )
+  const [date, setDate] = useState((initial?.date ?? todayIsoDate()).slice(0, 10))
+  const amountInputRef = useRef<HTMLInputElement>(null)
 
   const TYPE_TABS: { value: TxType; label: string }[] = [
     { value: 'expense', label: t('form.expense') },
@@ -71,6 +70,10 @@ export function TransactionForm({
     (type === 'transfer' || categoryId)
 
   const { submit: submitForm, errorMessage } = useFormSubmit(onSubmit)
+
+  useEffect(() => {
+    amountInputRef.current?.focus()
+  }, [])
 
   const submit = () => {
     if (!canSubmit) return
@@ -141,10 +144,11 @@ export function TransactionForm({
       <div className="flex flex-col items-center gap-1 px-4 py-5 sm:px-5">
         <span className="text-xs text-muted-foreground">{t('form.amount')}</span>
         <input
+          ref={amountInputRef}
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
-          value={amount}
+          value={amount ? formatVND(Number(amount), false) : ''}
           onChange={(e) => {
             const v = e.target.value.replace(/\D/g, '')
             if (v.length <= 12) setAmount(v)
@@ -155,9 +159,6 @@ export function TransactionForm({
             amountTone,
           )}
         />
-        {numericAmount > 0 && (
-          <span className="text-sm text-muted-foreground">{formatVND(numericAmount)}</span>
-        )}
       </div>
 
       <div className="flex flex-col gap-4 px-4 sm:px-5">

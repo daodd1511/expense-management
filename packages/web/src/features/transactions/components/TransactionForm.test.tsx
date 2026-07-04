@@ -70,6 +70,26 @@ vi.mock('@/shared/components/ui/date-picker', () => ({
 }))
 
 describe('TransactionForm', () => {
+  it('autofocuses the amount input and formats digits inline while typing', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <TransactionForm
+        variant="mobile"
+        onSubmit={vi.fn().mockResolvedValue(undefined)}
+        onCancel={() => undefined}
+      />,
+    )
+
+    const amountInput = screen.getByPlaceholderText('0') as HTMLInputElement
+    expect(document.activeElement).toBe(amountInput)
+
+    await user.type(amountInput, '1000000')
+
+    expect(amountInput.value).toBe('1.000.000')
+    expect(screen.queryByText('1.000.000 ₫')).toBeNull()
+  })
+
   it('submits a date-only ISO string', async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn().mockResolvedValue(undefined)
