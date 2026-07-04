@@ -27,3 +27,4 @@ their session summary). Delete a line when the item ships or graduates into a
 - [ ] Small UX batch: account reorder, currency format preference, PIN/biometric lock, per-locale number format (2026-07-04)
 - [ ] Loading states for all actions, prioritized by frequency/impact first (2026-07-05)
 - [ ] Category icons don't match their names — audit and correct icon-to-name mapping (2026-07-05)
+- [ ] Update category select UI in transaction form to match the picker style used in Settings (2026-07-05)
