@@ -18,6 +18,7 @@ export function CategoriesPage({
   variant: 'mobile' | 'desktop'
   onBack: () => void
 }) {
+  const isMobile = variant === 'mobile'
   const { categories, addCategory, updateCategory, deleteCategory, favoriteCategoryIds, addFavorite, removeFavorite } =
     useStore()
   const { t } = useLang()
@@ -71,21 +72,24 @@ export function CategoriesPage({
   )
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" />
-          {t('settings.title')}
-        </button>
-
+    <div className={cn('flex flex-col', isMobile ? 'gap-4 p-4 pt-3' : 'gap-6')}>
+      <div className={cn('flex flex-col', isMobile ? 'gap-2' : 'gap-3')}>
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{t('settings.categories')}</h1>
-            <p className="text-sm text-muted-foreground">{t('settings.categoriesActive', { n: categories.length })}</p>
+          <div className="flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ArrowLeft className="size-4" />
+              {t('settings.title')}
+            </button>
+            {!isMobile && (
+              <>
+                <h1 className="text-2xl font-semibold tracking-tight">{t('settings.categories')}</h1>
+                <p className="text-sm text-muted-foreground">{t('settings.categoriesActive', { n: categories.length })}</p>
+              </>
+            )}
           </div>
           <Button type="button" variant="outline" size="sm" onClick={handleNewCategory}>
             <Plus className="size-3.5" />
