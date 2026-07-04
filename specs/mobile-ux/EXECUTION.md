@@ -8,10 +8,10 @@ chain merges. Frontend code via `react-frontend-developer`; `terse-commit` befor
 
 ## STATUS
 
-- Current phase: Phase 2 complete on `mobile-ux/phase-2-list-parent`
+- Current phase: Phase 3 complete on `mobile-ux/phase-3-categories`
 - Phase 1 — Transaction form fixes: `done`
 - Phase 2 — Transaction list parent: `done`
-- Phase 3 — Categories redesign: `pending`
+- Phase 3 — Categories redesign: `done`
 - Phase 4 — Optimistic transaction updates: `pending`
 - Phase 5 — Pull-to-refresh: `pending`
 - Verification debt: none
@@ -86,21 +86,21 @@ Branch: `mobile-ux/phase-3-categories` (off `mobile-ux/phase-2-list-parent`, sta
 
 Restyle `CategoriesPage.tsx` (serves both mobile + desktop). No data/API changes.
 
-- [ ] Add a type segmented control (Chi tiêu / Thu nhập) at the top of the page; filter the
+- [x] Add a type segmented control (Chi tiêu / Thu nhập) at the top of the page; filter the
       grouped list to the active type. Reuse `dashboard.expense`/`dashboard.income` i18n keys
       if suitable; otherwise add new keys to **both** `VI` and `EN` in `core/i18n.tsx`.
-- [ ] Replace `CategoryGroupBox`'s bordered box with a quiet section header (parent icon +
+- [x] Replace `CategoryGroupBox`'s bordered box with a quiet section header (parent icon +
       name, no `border`), children rendered as **full-width rows** (icon · name · trailing
       star toggle), whole row is the edit target.
-- [ ] Move the favorite `Star` from the overlapping corner badge to a trailing,
+- [x] Move the favorite `Star` from the overlapping corner badge to a trailing,
       always-visible toggle within each row (`FavoriteToggle`, repositioned — drop the
       `absolute -right-1 -top-1` placement).
-- [ ] Keep system-category rows non-editable (existing `isSystem` disabled behavior) and the
+- [x] Keep system-category rows non-editable (existing `isSystem` disabled behavior) and the
       parent-level favorite toggle.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test` (incl. `CategoriesPage.test.tsx` — update assertions
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm --filter @wallet/web test` (incl. `CategoriesPage.test.tsx` — update assertions
       if the structure they query changed)
 
 **Review checklist (user, at PR review):**
