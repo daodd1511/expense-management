@@ -8,9 +8,9 @@ chain merges. Frontend code via `react-frontend-developer`; `terse-commit` befor
 
 ## STATUS
 
-- Current phase: Phase 1 complete on `mobile-ux/phase-1-form-fixes`
+- Current phase: Phase 2 complete on `mobile-ux/phase-2-list-parent`
 - Phase 1 — Transaction form fixes: `done`
-- Phase 2 — Transaction list parent: `pending`
+- Phase 2 — Transaction list parent: `done`
 - Phase 3 — Categories redesign: `pending`
 - Phase 4 — Optimistic transaction updates: `pending`
 - Phase 5 — Pull-to-refresh: `pending`
@@ -60,14 +60,14 @@ push/PR. Review checklist goes into the PR description.
 
 Branch: `mobile-ux/phase-2-list-parent` (off `mobile-ux/phase-1-form-fixes`, stacked)
 
-- [ ] In `TransactionRow.tsx`, when `cat.parentId` is set, resolve the parent via
+- [x] In `TransactionRow.tsx`, when `cat.parentId` is set, resolve the parent via
       `getCategory(cat.parentId)` and render the subtitle as `Parent › Child · Account`;
       top-level (no `parentId`) stays `Child · Account`. Transfer subtitle unchanged.
       Keep the existing `truncate` so long breadcrumbs clip gracefully.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test`
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm --filter @wallet/web test`
 
 **Review checklist (user, at PR review):**
 - [ ] A transaction on a nested category (e.g. Food › Dating) shows both levels.

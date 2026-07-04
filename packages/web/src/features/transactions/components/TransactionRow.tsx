@@ -8,6 +8,21 @@ import { useStore } from '@/core/store'
 import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
+function formatCategorySubtitle({
+  categoryName,
+  parentCategoryName,
+  accountName,
+}: {
+  categoryName?: string
+  parentCategoryName?: string
+  accountName?: string
+}) {
+  const categoryLabel = parentCategoryName
+    ? `${parentCategoryName} › ${categoryName}`
+    : categoryName
+  return `${categoryLabel} · ${accountName}`
+}
+
 function Leading({ tx }: { tx: Transaction }) {
   const { getCategory } = useStore()
   if (tx.type === 'transfer') {
@@ -46,11 +61,16 @@ export function TransactionRow({
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const startX = useRef<number | null>(null)
   const cat = getCategory(tx.categoryId)
+  const parentCat = cat?.parentId ? getCategory(cat.parentId) : undefined
   const acc = getAccount(tx.accountId)
   const subtitle =
     tx.type === 'transfer'
       ? `${acc?.name} → ${getAccount(tx.toAccountId)?.name}`
-      : `${cat?.name} · ${acc?.name}`
+      : formatCategorySubtitle({
+          categoryName: cat?.name,
+          parentCategoryName: parentCat?.name,
+          accountName: acc?.name,
+        })
 
   const onTouchStart = (e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX
