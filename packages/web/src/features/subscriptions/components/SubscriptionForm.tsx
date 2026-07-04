@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FavoriteCategoryPicker } from '@/features/categories/components/FavoriteCategoryPicker'
 import { Button } from '@/shared/components/ui/button'
 import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
 import { Input, Label } from '@/shared/components/ui/input'
@@ -25,7 +26,7 @@ interface Props {
 
 export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
   const { t, lang } = useLang()
-  const { categories, accounts } = useStore()
+  const { categories, accounts, getCategory, favoriteCategoryIds } = useStore()
 
   const [name, setName] = useState(initial?.name ?? '')
   const [amountRaw, setAmountRaw] = useState(initial ? String(initial.amount) : '')
@@ -40,6 +41,7 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
 
   const MONTHS = lang === 'vi' ? MONTHS_VI : MONTHS_EN
   const amount = parseAmount(amountRaw)
+  const visibleCategories = categories.filter((category) => category.type === type)
   const canSubmit = name.trim().length > 0 && amount > 0 && accountId
 
   const { submit: submitForm, errorMessage } = useFormSubmit(onSubmit)
@@ -72,7 +74,10 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
             <button
               key={tp}
               type="button"
-              onClick={() => setType(tp)}
+              onClick={() => {
+                setType(tp)
+                if (getCategory(categoryId)?.type !== tp) setCategoryId(null)
+              }}
               className={cn(
                 'rounded-xl border py-2.5 text-sm font-medium transition-colors',
                 type === tp
@@ -173,35 +178,13 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
       {/* Category */}
       <div className="flex flex-col gap-2">
         <Label>{t('form.category')}</Label>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setCategoryId(null)}
-            className={cn(
-              'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
-              categoryId === null
-                ? 'border-primary bg-accent text-primary'
-                : 'border-border text-muted-foreground hover:bg-muted',
-            )}
-          >
-            —
-          </button>
-          {categories.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => setCategoryId(c.id)}
-              className={cn(
-                'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
-                categoryId === c.id
-                  ? 'border-primary bg-accent text-primary'
-                  : 'border-border text-muted-foreground hover:bg-muted',
-              )}
-            >
-              {c.name}
-            </button>
-          ))}
-        </div>
+        <FavoriteCategoryPicker
+          categories={visibleCategories}
+          favoriteCategoryIds={favoriteCategoryIds}
+          selectedId={categoryId}
+          onSelect={(id) => setCategoryId(id || null)}
+          allowClear
+        />
       </div>
 
       {/* Account */}

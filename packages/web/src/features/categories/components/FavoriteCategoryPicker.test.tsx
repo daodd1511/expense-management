@@ -94,6 +94,43 @@ describe('FavoriteCategoryPicker', () => {
     expect(onSelect).toHaveBeenCalledWith('food')
   })
 
+  it('supports clearing the selection when allowClear is enabled', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    render(
+      <FavoriteCategoryPicker
+        categories={categories}
+        favoriteCategoryIds={new Set(['food'])}
+        selectedId="food"
+        onSelect={onSelect}
+        allowClear
+      />,
+    )
+
+    await user.click(screen.getAllByRole('button', { name: '—' })[0])
+
+    expect(onSelect).toHaveBeenCalledWith('')
+  })
+
+  it('hides the show-all action and disables tiles when disabled', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    render(
+      <FavoriteCategoryPicker
+        categories={categories}
+        favoriteCategoryIds={new Set(['food'])}
+        selectedId={null}
+        onSelect={onSelect}
+        disabled
+      />,
+    )
+
+    expect(screen.queryByRole('button', { name: 'Show all' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Food' }))
+
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
   it('opens the full picker modal on "Show all" and closes it on selection', async () => {
     const user = userEvent.setup()
     const onSelect = vi.fn()

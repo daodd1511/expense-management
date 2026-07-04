@@ -25,11 +25,17 @@ export function FavoriteCategoryPicker({
   favoriteCategoryIds,
   selectedId,
   onSelect,
+  allowClear = false,
+  clearLabel = '—',
+  disabled = false,
 }: {
   categories: Category[]
   favoriteCategoryIds: Set<string>
   selectedId: string | null
   onSelect: (id: string) => void
+  allowClear?: boolean
+  clearLabel?: string
+  disabled?: boolean
 }) {
   const { t } = useLang()
   const [showAllOpen, setShowAllOpen] = useState(false)
@@ -49,29 +55,87 @@ export function FavoriteCategoryPicker({
     <div className="flex flex-col gap-3">
       {favorites.length > 0 ? (
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+          {allowClear && (
+            <button
+              type="button"
+              onClick={() => onSelect('')}
+              aria-label={clearLabel}
+              aria-pressed={selectedId === null}
+              disabled={disabled}
+              className={cn(
+                'flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg border border-dashed p-2 text-center transition-colors',
+                selectedId === null ? 'border-primary bg-accent text-primary' : 'border-border text-muted-foreground hover:bg-muted',
+                disabled && 'cursor-not-allowed opacity-60',
+              )}
+            >
+              <span className="inline-flex size-9 items-center justify-center rounded-lg bg-muted text-sm font-medium">
+                {clearLabel}
+              </span>
+              <span className="w-full truncate text-xs">{clearLabel}</span>
+            </button>
+          )}
           {favorites.map((category) => (
             <FavoriteCategoryButton
               key={category.id}
               category={category}
               active={selectedId === category.id}
               onSelect={onSelect}
+              disabled={disabled}
             />
           ))}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">{t('category.noFavorites')}</p>
+        <div className="flex flex-col gap-2">
+          {allowClear && (
+            <button
+              type="button"
+              onClick={() => onSelect('')}
+              aria-label={clearLabel}
+              aria-pressed={selectedId === null}
+              disabled={disabled}
+              className={cn(
+                'inline-flex w-fit items-center rounded-lg border border-dashed px-3 py-2 text-sm transition-colors',
+                selectedId === null ? 'border-primary bg-accent text-primary' : 'border-border text-muted-foreground hover:bg-muted',
+                disabled && 'cursor-not-allowed opacity-60',
+              )}
+            >
+              {clearLabel}
+            </button>
+          )}
+          <p className="text-sm text-muted-foreground">{t('category.noFavorites')}</p>
+        </div>
       )}
 
-      <button
-        type="button"
-        onClick={handleShowAll}
-        className="inline-flex w-fit items-center text-sm font-medium text-primary transition-colors hover:text-primary/80"
-      >
-        {t('category.showAll')}
-      </button>
+      {!disabled && (
+        <button
+          type="button"
+          onClick={handleShowAll}
+          className="inline-flex w-fit items-center text-sm font-medium text-primary transition-colors hover:text-primary/80"
+        >
+          {t('category.showAll')}
+        </button>
+      )}
 
       <Modal open={showAllOpen} onClose={handleCloseShowAll} className="p-4 sm:p-5">
-        <CategoryPicker categories={categories} selectedId={selectedId} onSelect={handleSelectFromModal} />
+        <div className="flex flex-col gap-3">
+          {allowClear && (
+            <button
+              type="button"
+              onClick={() => {
+                onSelect('')
+                setShowAllOpen(false)
+              }}
+              aria-label={clearLabel}
+              className={cn(
+                'inline-flex w-fit items-center rounded-lg border border-dashed px-3 py-2 text-sm transition-colors',
+                selectedId === null ? 'border-primary bg-accent text-primary' : 'border-border text-muted-foreground hover:bg-muted',
+              )}
+            >
+              {clearLabel}
+            </button>
+          )}
+          <CategoryPicker categories={categories} selectedId={selectedId} onSelect={handleSelectFromModal} />
+        </div>
       </Modal>
     </div>
   )
@@ -81,10 +145,12 @@ function FavoriteCategoryButton({
   category,
   active,
   onSelect,
+  disabled = false,
 }: {
   category: Category
   active: boolean
   onSelect: (id: string) => void
+  disabled?: boolean
 }) {
   const handleSelect = useCallback(() => onSelect(category.id), [category.id, onSelect])
 
@@ -93,9 +159,11 @@ function FavoriteCategoryButton({
       type="button"
       onClick={handleSelect}
       aria-pressed={active}
+      disabled={disabled}
       className={cn(
         'flex min-w-0 flex-col items-center gap-1 rounded-lg p-2 text-center transition-colors',
         active ? 'bg-accent ring-1 ring-primary/25' : 'hover:bg-muted',
+        disabled && 'cursor-not-allowed opacity-60',
       )}
     >
       <span
