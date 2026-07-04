@@ -24,4 +24,4 @@ their session summary). Delete a line when the item ships or graduates into a
 - [ ] Household sharing — deferred until all core functions are present; household/membership schema first, UI later (2026-07-04)
 - [ ] Desktop keyboard shortcuts (N = new transaction, / = search) + command palette (2026-07-04)
 - [ ] Offline write queue for the PWA (2026-07-04)
-- [ ] Small UX batch: account reorder, currency format preference, PIN/biometric lock, pull-to-refresh, per-locale number format (2026-07-04)
+- [ ] Small UX batch: account reorder, currency format preference, PIN/biometric lock, per-locale number format (2026-07-04)

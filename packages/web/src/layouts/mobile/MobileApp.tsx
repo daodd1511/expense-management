@@ -1,10 +1,13 @@
 
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeftRight, CalendarClock, Home, Plus, Settings, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
 import { TransactionForm } from '@/features/transactions/components/TransactionForm'
 import { SubscriptionDueBanner } from '@/features/subscriptions/components/SubscriptionDueBanner'
 import { BottomSheet } from '@/shared/components/ui/overlay'
+import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicator'
+import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
 import { useLang } from '@/core/i18n'
 import { useStore } from '@/core/store'
 import { dueBanner } from '@/features/subscriptions/helpers'
@@ -16,12 +19,15 @@ import { MobilePlanning } from '@/layouts/mobile/MobilePlanning'
 import { MobileSettings } from '@/features/settings/components/MobileSettings'
 import { MobileTransactions } from '@/features/transactions/components/MobileTransactions'
 import { CategoriesPage } from '@/features/categories/components/CategoriesPage'
+import { useAuth } from '@/features/auth/auth'
 
 type Screen = 'home' | 'transactions' | 'planning' | 'accounts' | 'settings' | 'categories'
 
 export function MobileApp() {
   const { addTransaction, updateTransaction, subscriptions, transactions } = useStore()
+  const { user } = useAuth()
   const { t } = useLang()
+  const queryClient = useQueryClient()
   const [screen, setScreen] = useState<Screen>('home')
   const dueCount = dueBanner(subscriptions, transactions).length
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -56,6 +62,20 @@ export function MobileApp() {
     setEditing(null)
   }
 
+  const homePullToRefresh = usePullToRefresh({
+    enabled: screen === 'home',
+    onRefresh: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['transactions', user?.id] }),
+        queryClient.invalidateQueries({ queryKey: ['accounts', user?.id] }),
+        queryClient.invalidateQueries({ queryKey: ['budgets', user?.id] }),
+        queryClient.invalidateQueries({ queryKey: ['subscriptions', user?.id] }),
+        queryClient.invalidateQueries({ queryKey: ['categories', user?.id] }),
+        queryClient.invalidateQueries({ queryKey: ['favorites', user?.id] }),
+      ])
+    },
+  })
+
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background">
       {/* Header */}
@@ -86,10 +106,25 @@ export function MobileApp() {
       {/* Screen */}
       <main className="flex-1 pb-24">
         {screen === 'home' && (
-          <>
-            <SubscriptionDueBanner />
-            <MobileHome onNavigate={(s) => setScreen(s as Screen)} onEdit={openEdit} />
-          </>
+          <div
+            {...homePullToRefresh.bind}
+            className="h-full overflow-y-auto overscroll-contain"
+          >
+            <PullToRefreshIndicator
+              pullDistance={homePullToRefresh.pullDistance}
+              isArmed={homePullToRefresh.isArmed}
+              isRefreshing={homePullToRefresh.isRefreshing}
+            />
+            <div
+              style={{
+                transform: `translateY(${homePullToRefresh.pullDistance}px)`,
+                transition: 'transform var(--duration-base) var(--ease-out)',
+              }}
+            >
+              <SubscriptionDueBanner />
+              <MobileHome onNavigate={(s) => setScreen(s as Screen)} onEdit={openEdit} />
+            </div>
+          </div>
         )}
         {screen === 'transactions' && <MobileTransactions onEdit={openEdit} />}
         {screen === 'planning' && <MobilePlanning />}

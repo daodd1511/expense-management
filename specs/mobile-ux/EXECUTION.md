@@ -8,12 +8,12 @@ chain merges. Frontend code via `react-frontend-developer`; `terse-commit` befor
 
 ## STATUS
 
-- Current phase: Phase 4 complete on `mobile-ux/phase-4-optimistic`
+- Current phase: All phases complete on `mobile-ux/phase-5-pull-to-refresh`
 - Phase 1 — Transaction form fixes: `done`
 - Phase 2 — Transaction list parent: `done`
 - Phase 3 — Categories redesign: `done`
 - Phase 4 — Optimistic transaction updates: `done`
-- Phase 5 — Pull-to-refresh: `pending`
+- Phase 5 — Pull-to-refresh: `done`
 - Verification debt: none
 
 ---
@@ -149,20 +149,20 @@ push/PR. Review checklist goes into the PR description.
 
 Branch: `mobile-ux/phase-5-pull-to-refresh` (off `mobile-ux/phase-4-optimistic`, stacked)
 
-- [ ] Add a custom touch-based hook under `packages/web/src/shared/hooks/` (e.g.
+- [x] Add a custom touch-based hook under `packages/web/src/shared/hooks/` (e.g.
       `usePullToRefresh`) — no new dependency. Tracks touch drag at scrollTop 0, exposes a
       pull offset + a triggered callback; parametrized by an `onRefresh` async fn.
-- [ ] Wire it into the mobile **Home** screen and **Transactions**
+- [x] Wire it into the mobile **Home** screen and **Transactions**
       (`MobileTransactions.tsx` / the relevant `MobileApp.tsx` screen) so it invalidates that
       screen's queries via `queryClient.invalidateQueries`.
-- [ ] Provide a minimal pull indicator (spinner/arrow) consistent with existing motion tokens
+- [x] Provide a minimal pull indicator (spinner/arrow) consistent with existing motion tokens
       (`--duration-*`, `--ease-*`). Desktop unaffected.
-- [ ] Remove pull-to-refresh from the "Small UX batch" line in `docs/BACKLOG.md` (leave the
+- [x] Remove pull-to-refresh from the "Small UX batch" line in `docs/BACKLOG.md` (leave the
       rest of that line's items).
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test`
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm --filter @wallet/web test`
 
 **Review checklist (user, at PR review):**
 - [ ] Mobile viewport/device: at the top of Home, drag down → indicator appears → release →
