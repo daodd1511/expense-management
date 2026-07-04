@@ -8,6 +8,9 @@ Produces `specs/<feature-slug>/EXECUTION.md` from `specs/<feature-slug>/PLAN.md`
 only plans phases and writes the checklist file — it does not write code. Once EXECUTION.md
 exists, hand off to the `spec-phase` skill to actually run a phase.
 
+The rulebook (state model, branch model, gate lanes, checkpoints) is `CLAUDE.md` →
+"Spec-Driven Execution Workflow" — this skill implements it, not restates it.
+
 ## Step 0 — Load state
 
 1. Read `specs/<feature-slug>/PLAN.md` in full. If it doesn't exist, stop and ask for the
@@ -16,8 +19,13 @@ exists, hand off to the `spec-phase` skill to actually run a phase.
    checked-off items, stop — regenerating would destroy execution history. Ask the user
    whether they want to append new phases or start over (only start over if they explicitly
    say so).
-3. Read root `HANDOFF.md` and `git branch --show-current` to see what's already in flight,
-   so branch bases are correct.
+3. **One-spec-in-flight check**: scan the STATUS blocks of every other
+   `specs/*/EXECUTION.md`. If another spec has a phase in `in-progress` (or uncommitted
+   work on its branch), stop — don't plan a new spec on top of one mid-flight; the user
+   must finish or park it first.
+4. Resolve the **integration branch** (check `CLAUDE.md`, then `git branch` for the
+   convention in use — currently `develop`). Name it explicitly in EXECUTION.md; never
+   write a hardcoded assumption.
 
 ## Step 1 — Surface ambiguity before phasing anything
 
@@ -43,40 +51,73 @@ feature (adjust to what PLAN.md actually describes — don't force a fixed phase
 2. Frontend data layer — wiring the new fields/endpoints through without touching UI.
 3. Frontend UI — the part users actually see.
 
-Split further only where PLAN.md's own sections imply a real dependency boundary (e.g. a
-data migration that must be verified before UI work depends on the new shape). Do not split
-by "this felt like a lot" — a phase should be independently verifiable and independently
-revertable.
+Split further only where PLAN.md's own sections imply a real dependency boundary. Do not
+split by "this felt like a lot" — a phase should be independently verifiable and
+independently revertable, because **phases stack and may not have merged yet** when the
+next one starts (stacked model — see rulebook).
 
-For each phase, decide:
-- Branch name: `<feature-slug>/phase-<n>-<short-desc>`.
-- Base: `main` for phase 1; the previous phase's branch for phase N (stacked, per
-  `CLAUDE.md`'s workflow rules).
+For each phase: branch name `<feature-slug>/phase-<n>-<short-desc>`. Base is the
+**previous phase's branch** (stacked, default) — phase 1 bases off the integration branch.
+Only base every phase off the integration branch (waiting for each merge first) if the
+user explicitly opts into sequential mode for this spec; record that choice in
+EXECUTION.md's header if so.
 
-## Step 3 — Write each phase's checklist
+## Step 3 — Write each phase's checklist and gates
 
 Every checklist item must name the actual file(s)/function(s)/table(s) from PLAN.md — pull
 these directly from PLAN.md's own "Schema Changes" / "API Changes" / "Frontend Changes"
-sections rather than re-deriving them from scratch. Vague items ("update the backend") are
-not acceptable; an agent picking up the phase cold should not have to re-read all of
-PLAN.md to know where to start.
+sections rather than re-deriving them. Vague items ("update the backend") are not
+acceptable; an agent picking up the phase cold should not have to re-read all of PLAN.md to
+know where to start.
 
-Include, per phase:
-- The checklist itself, ordered so earlier items unblock later ones within the phase.
-- A **Verification gate (hard)** section: typecheck command(s) scoped to the
-  packages/projects the phase touches, test suite, and a manual-verification step specific
-  to what changed (list exact scenarios to check, not "test it works").
-- An **On completion** line: update checklist, update root `HANDOFF.md`, stop and ask before
-  push/PR — this must be present verbatim on every phase, it's a hard rule from
-  `CLAUDE.md`, not optional boilerplate to skip for brevity.
+Gates come in **two lanes**:
+
+- **Agent gate (hard)**: typecheck command(s) scoped to the packages the phase touches,
+  test suite, build. Must pass before the PR is opened. Only write items here the agent can
+  actually run in this environment. If an agent-owed check is foreseeably
+  environment-blocked (needs credentials, a live service), say so in the item now — at
+  execution time it becomes `[~]` with substitute evidence, per the rulebook.
+- **Review checklist**: the manual scenarios (browser walkthroughs, visual checks) the
+  *user* verifies while reviewing the PR. spec-phase copies this lane into the PR
+  description. These never block phase completion and never become agent debt.
 
 ## Step 4 — Assemble EXECUTION.md
 
-Header structure to match (see any existing `specs/*/EXECUTION.md` for the exact shape):
-- Title, link to `PLAN.md`, one-line pointer to `CLAUDE.md`'s workflow section.
-- Read order note: `HANDOFF.md` (root) → this file → `PLAN.md`.
-- Base-branch / stacking note.
-- One `## Phase N — <name>` section per phase from Step 2/3.
+Use this skeleton exactly (do not copy the shape from older `specs/*/EXECUTION.md` files —
+they predate v2 and carry stale conventions):
+
+```markdown
+# <Feature> — Execution Plan
+
+Spec: [PLAN.md](PLAN.md). Rulebook: `CLAUDE.md` → "Spec-Driven Execution Workflow".
+Integration branch: `<resolved-branch>`. Branch model: <stacked (default) | sequential
+(opted in)>.
+
+## STATUS
+
+- Current phase: <n> — <state: pending | in-progress | done | done-with-debt>
+- Phase 1 — <name>: <state>
+- Phase 2 — <name>: <state>
+- Verification debt: none
+
+## Phase <n> — <name>
+
+Branch: `<feature-slug>/phase-<n>-<short-desc>` (off `<previous-phase-branch>`, stacked —
+or off `<integration-branch>` if phase 1, or if sequential mode is opted in)
+
+<one line: why this is one phase — the dependency boundary it sits on>
+
+- [ ] <item naming exact files/functions>
+
+**Agent gate (hard):**
+- [ ] <typecheck / test / build commands>
+
+**Review checklist (user, at PR review):**
+- [ ] <manual scenario>
+
+**On completion:** run agent gate, update STATUS + checkboxes, stop and ask before
+push/PR. Review checklist goes into the PR description.
+```
 
 Write the file. Do not create branches or touch code yet.
 
@@ -84,8 +125,8 @@ Write the file. Do not create branches or touch code yet.
 
 Report to the user: number of phases, what each covers, any open items you flagged in Step 1
 and how they were resolved. Ask whether to proceed into Phase 1 now via the `spec-phase`
-skill — do not auto-start execution, starting a phase's branch and commits still needs the
-explicit go-ahead `spec-phase`'s own Step 2 requires.
+skill — do not auto-start execution, starting a phase still needs the explicit go-ahead
+`spec-phase`'s own procedure requires.
 
 ## Do not
 
@@ -97,3 +138,5 @@ explicit go-ahead `spec-phase`'s own Step 2 requires.
   anything hard to reverse — that's Step 1's job, don't skip it under time pressure.
 - Do not regenerate an EXECUTION.md that already has checked-off progress without explicit
   confirmation.
+- Do not put agent-unrunnable manual checks in the agent gate — they belong in the review
+  checklist lane.

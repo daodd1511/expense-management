@@ -39,12 +39,14 @@ The rulebook (state model, branch model, gate lanes, checkpoints, parking) is `C
 
 ## Step 2 — Starting a new phase
 
-1. Checkout the integration branch (named in EXECUTION.md's header), `git pull` so the
-   phase bases on the latest merged state.
-2. Create branch `<feature-slug>/phase-<n>-<short-desc>` off it. No stacking — if the
-   previous phase's PR is still unmerged, the default is to wait for the user's merge.
-   Only stack on the unmerged branch if the user explicitly says to keep going; then
-   rebase onto the integration branch after their merge.
+1. Determine the base per EXECUTION.md's branch model. **Stacked (default):** the
+   previous phase's branch — even if its PR hasn't merged yet; phase 1 bases off the
+   integration branch. **Sequential (only if opted in for this spec):** checkout the
+   integration branch, `git pull`, and wait for the previous phase's PR to merge before
+   basing off it.
+2. Create branch `<feature-slug>/phase-<n>-<short-desc>` from that base. If stacked and an
+   earlier phase in the chain has since merged to the integration branch, rebase this
+   phase's branch onto the integration branch before starting new work.
 3. Work the checklist top to bottom. Commit at logical sub-steps (never one giant commit).
    Check off each `EXECUTION.md` item immediately when done — not batched at the end.
 4. Do not push or open a PR without a separate explicit go-ahead, even though the commits
@@ -61,15 +63,17 @@ The rulebook (state model, branch model, gate lanes, checkpoints, parking) is `C
    described in a commit message but never `git add`ed has happened before.
 3. Update the STATUS block and checkboxes to reflect reality.
 4. Report to the user: phase complete, N commits, gate results — then one ask: **"push +
-   open PR to the integration branch?"** The PR description must include the phase's
-   **Review checklist** lane, so manual verification happens in the user's review before
-   they merge.
+   open PR?"** (target: the previous phase's branch if stacked and still unmerged, else the
+   integration branch). The PR description must include the phase's **Review checklist**
+   lane, so manual verification happens in the user's review before they merge.
 
 ## Step 4 — After the user merges
 
 1. Checkout the integration branch, `git pull`.
 2. Ask before deleting the merged phase branch (local + remote).
-3. Update STATUS (phase → `done`, or `done-with-debt` if debt remains). Then, if phases
+3. If a later phase is already stacked on the branch that just merged, rebase that phase's
+   branch onto the integration branch now — don't wait for it to become the active phase.
+4. Update STATUS (phase → `done`, or `done-with-debt` if debt remains). Then, if phases
    remain, ask whether to start the next one (Step 2).
 
 ## Step 5 — Parking (mid-phase stop)
@@ -86,7 +90,8 @@ WIP commit at the next real commit.
 - Do not silently start a new phase without a fresh explicit go-ahead.
 - Do not push, open a PR, or merge without a separate explicit confirmation, regardless of
   how much of the phase's commit work was pre-authorized.
-- Do not stack on an unmerged phase branch unless the user explicitly opted in.
+- Do not wait for the previous phase's PR to merge before starting the next one unless
+  sequential mode was explicitly opted into for this spec — stacking is the default.
 - Do not mark `[~]` for anything that is merely tedious — deferral is for environment
   blocks only, with evidence.
 - Do not squash a phase's commits into one, and do not batch-check the checklist at the end.

@@ -53,11 +53,14 @@ feature (adjust to what PLAN.md actually describes — don't force a fixed phase
 
 Split further only where PLAN.md's own sections imply a real dependency boundary. Do not
 split by "this felt like a lot" — a phase should be independently verifiable and
-independently revertable, because **each phase merges into the integration branch via its
-own PR before the next phase starts** (sequential model — see rulebook).
+independently revertable, because **phases stack and may not have merged yet** when the
+next one starts (stacked model — see rulebook).
 
-For each phase: branch name `<feature-slug>/phase-<n>-<short-desc>`, based off the
-integration branch (every phase — no stacking by default).
+For each phase: branch name `<feature-slug>/phase-<n>-<short-desc>`. Base is the
+**previous phase's branch** (stacked, default) — phase 1 bases off the integration branch.
+Only base every phase off the integration branch (waiting for each merge first) if the
+user explicitly opts into sequential mode for this spec; record that choice in
+EXECUTION.md's header if so.
 
 ## Step 3 — Write each phase's checklist and gates
 
@@ -87,7 +90,8 @@ they predate v2 and carry stale conventions):
 # <Feature> — Execution Plan
 
 Spec: [PLAN.md](PLAN.md). Rulebook: `CLAUDE.md` → "Spec-Driven Execution Workflow".
-Integration branch: `<resolved-branch>`.
+Integration branch: `<resolved-branch>`. Branch model: <stacked (default) | sequential
+(opted in)>.
 
 ## STATUS
 
@@ -98,7 +102,8 @@ Integration branch: `<resolved-branch>`.
 
 ## Phase <n> — <name>
 
-Branch: `<feature-slug>/phase-<n>-<short-desc>` (off `<integration-branch>`)
+Branch: `<feature-slug>/phase-<n>-<short-desc>` (off `<previous-phase-branch>`, stacked —
+or off `<integration-branch>` if phase 1, or if sequential mode is opted in)
 
 <one line: why this is one phase — the dependency boundary it sits on>
 

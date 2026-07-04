@@ -5,70 +5,93 @@ argument-hint: "<feature-slug> [phase-n] — omit phase-n to auto-detect where t
 ---
 
 Drives execution of `specs/<feature-slug>/PLAN.md` + `specs/<feature-slug>/EXECUTION.md`.
-Full workflow rules (branching, authorization, gates) live in `CLAUDE.md` under
-"Spec-Driven Execution Workflow" — read that first, this skill is the procedure that
-implements those rules, not a restatement of them.
+The rulebook (state model, branch model, gate lanes, checkpoints, parking) is `CLAUDE.md` →
+"Spec-Driven Execution Workflow" — this skill is the procedure that implements it.
 
-## Step 0 — Always locate state first, before touching anything
+## Step 0 — Locate state from git first
 
-1. Read root `HANDOFF.md` if it exists — it may already point at an active spec/phase/branch.
-2. Read `specs/<feature-slug>/EXECUTION.md` (ask the user for the slug if not given and
-   `HANDOFF.md` doesn't resolve it — do not guess between multiple specs under `specs/`).
-3. Read `specs/<feature-slug>/PLAN.md` for the decisions the phase must honor.
-4. Run `git status` and `git branch --show-current`. Compare against what the checklist
-   says the current phase's branch should be (`<feature-slug>/phase-<n>-<desc>`).
-5. Determine actual state from evidence, not from what `HANDOFF.md` claims — if the current
-   branch, uncommitted diff, or checklist checkmarks disagree with `HANDOFF.md`, trust the
-   repo, flag the mismatch to the user, and ask before proceeding.
+1. Run `git status` and `git branch --show-current`. The branch name encodes spec+phase;
+   the working tree and commit log encode progress. **This is the authoritative state.**
+2. Read `specs/<feature-slug>/EXECUTION.md` — its STATUS block and checklist (ask the user
+   for the slug if not given and the current branch doesn't encode it — do not guess
+   between multiple specs under `specs/`).
+3. If STATUS disagrees with git on a mechanical fact (which branch exists, what's
+   committed, what's merged), **git wins silently** — correct STATUS to match, no
+   user-reconciliation ceremony. STATUS is only trusted for what git can't express:
+   verification debt, park reasons, phase intent.
+4. Read `specs/<feature-slug>/PLAN.md` for the decisions the phase must honor.
+5. `HANDOFF.md`, if present, is advisory context only (why something was parked, what the
+   user said) — never resume from it, never treat it as state.
+6. **One-spec-in-flight check**: scan other `specs/*/EXECUTION.md` STATUS blocks. If a
+   different spec has an `in-progress` phase, stop — the user must finish or park it
+   before this spec proceeds.
 
-## Step 1 — Decide: resuming a phase, or starting the next one
+## Step 1 — Decide: resume, or start the next phase
 
-- If the current branch matches an in-progress phase (checklist has unchecked items for
-  that phase) → **resume**: continue from the first unchecked item, do not re-do checked
-  items, do not re-ask for authorization (the original phase-start already covers it).
-- If the current phase's checklist is fully checked and its verification gate already
-  passed → **start next phase**: this requires a fresh explicit go-ahead from the user, do
-  not assume it.
-- If the current phase's checklist is fully checked but the verification gate was never
-  actually run (or `HANDOFF.md`/checklist disagree about it) → stop, run the gate now,
-  before doing anything else.
+- A phase is **in-progress** iff it has unchecked **non-deferred** items — `[~]` deferred
+  items do not count as unfinished. If the current branch matches an in-progress phase →
+  **resume**: continue from the first unchecked item, do not re-do checked items, do not
+  re-ask for authorization (the original phase-start already covers it).
+- If the current phase is `done` or `done-with-debt` and merged → **start next phase**:
+  requires a fresh explicit go-ahead from the user, do not assume it.
+- If the checklist is fully checked but the agent gate was never actually run → stop, run
+  the gate now, before anything else.
 
 ## Step 2 — Starting a new phase
 
-1. Confirm with the user before cutting the branch if there's any ambiguity about which
-   phase is next or what its base should be.
-2. Determine the base: `main` for phase 1, otherwise the previous phase's branch. If the
-   previous phase has since merged to `main`, rebase this phase's branch onto `main` before
-   starting new work (per the immediate-rebase rule in CLAUDE.md).
-3. Create branch `<feature-slug>/phase-<n>-<short-desc>` from that base.
-4. Work the checklist top to bottom. Commit at logical sub-steps (never one giant commit).
+1. Determine the base per EXECUTION.md's branch model. **Stacked (default):** the
+   previous phase's branch — even if its PR hasn't merged yet; phase 1 bases off the
+   integration branch. **Sequential (only if opted in for this spec):** checkout the
+   integration branch, `git pull`, and wait for the previous phase's PR to merge before
+   basing off it.
+2. Create branch `<feature-slug>/phase-<n>-<short-desc>` from that base. If stacked and an
+   earlier phase in the chain has since merged to the integration branch, rebase this
+   phase's branch onto the integration branch before starting new work.
+3. Work the checklist top to bottom. Commit at logical sub-steps (never one giant commit).
    Check off each `EXECUTION.md` item immediately when done — not batched at the end.
-5. Do not push or open a PR without a separate explicit go-ahead, even though the commits
+4. Do not push or open a PR without a separate explicit go-ahead, even though the commits
    themselves were pre-authorized by starting the phase.
 
 ## Step 3 — Completing a phase
 
-1. Run the phase's verification gate exactly as written in `EXECUTION.md` (typecheck,
-   tests, manual check). All must actually pass — do not mark the phase done on partial or
-   assumed results.
-2. Update `EXECUTION.md` checkboxes to reflect reality.
-3. Update root `HANDOFF.md`: which phase just finished, its branch, verification results,
-   what phase is next, current checked-out branch.
-4. Report to the user: phase complete, N commits, gate results, and ask explicitly whether
-   to push + open the PR (target per CLAUDE.md's stacked-PR rule: phase-1 → `main`,
-   phase-N → phase-(N-1)'s branch).
+1. Run the **agent gate** exactly as written in `EXECUTION.md` (typecheck, tests, build).
+   All must actually pass. An item may become `[~]` deferred only if environment-blocked
+   (missing tool/credentials, not effort) — record substitute evidence inline and mirror
+   it in STATUS's verification-debt list; the phase state is then `done-with-debt`.
+2. **Commit-integrity check**: `git status` must be clean, and every new file this phase
+   introduced must appear in `git show --stat` of a commit on the phase branch — a file
+   described in a commit message but never `git add`ed has happened before.
+3. Update the STATUS block and checkboxes to reflect reality.
+4. Report to the user: phase complete, N commits, gate results — then one ask: **"push +
+   open PR?"** (target: the previous phase's branch if stacked and still unmerged, else the
+   integration branch). The PR description must include the phase's **Review checklist**
+   lane, so manual verification happens in the user's review before they merge.
 
-## Step 4 — Mid-session or mid-phase cutoff
+## Step 4 — After the user merges
 
-If work stops before a phase completes (session end, or user redirects elsewhere), update
-`HANDOFF.md` with exactly which checklist items are done vs. in-flight, and which branch is
-checked out — this is what lets the next invocation of this skill resume correctly at
-Step 0 instead of re-deriving state from scratch.
+1. Checkout the integration branch, `git pull`.
+2. Ask before deleting the merged phase branch (local + remote).
+3. If a later phase is already stacked on the branch that just merged, rebase that phase's
+   branch onto the integration branch now — don't wait for it to become the active phase.
+4. Update STATUS (phase → `done`, or `done-with-debt` if debt remains). Then, if phases
+   remain, ask whether to start the next one (Step 2).
+
+## Step 5 — Parking (mid-phase stop)
+
+If work must stop before a phase completes (user redirects, session ends mid-flight):
+commit uncommitted work as `WIP: parked <date>` on the phase branch, and note in STATUS
+that the phase is parked and why. Never `git stash` — stashes are detached from branches
+and invisible to a cold agent. Resume = checkout the branch, continue, squash-or-keep the
+WIP commit at the next real commit.
 
 ## Do not
 
-- Do not skip Step 0's repo-evidence check and trust `HANDOFF.md` blindly — it can go stale.
+- Do not resume from `HANDOFF.md` — state comes from git + STATUS only.
 - Do not silently start a new phase without a fresh explicit go-ahead.
 - Do not push, open a PR, or merge without a separate explicit confirmation, regardless of
   how much of the phase's commit work was pre-authorized.
+- Do not wait for the previous phase's PR to merge before starting the next one unless
+  sequential mode was explicitly opted into for this spec — stacking is the default.
+- Do not mark `[~]` for anything that is merely tedious — deferral is for environment
+  blocks only, with evidence.
 - Do not squash a phase's commits into one, and do not batch-check the checklist at the end.
