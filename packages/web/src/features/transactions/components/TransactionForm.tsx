@@ -1,11 +1,11 @@
 
 import { ArrowRight, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FavoriteCategoryPicker } from '@/features/categories/components/FavoriteCategoryPicker'
 import { Button } from '@/shared/components/ui/button'
 import { DatePicker } from '@/shared/components/ui/date-picker'
 import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
-import { Input, Label, Textarea } from '@/shared/components/ui/input'
+import { Label, Textarea } from '@/shared/components/ui/input'
 import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
 import {
   Select,
@@ -50,11 +50,9 @@ export function TransactionForm({
   const [toAccountId, setToAccountId] = useState<string>(
     initial?.toAccountId ?? accounts[1]?.id ?? accounts[0]?.id ?? '',
   )
-  const [merchant, setMerchant] = useState(initial?.merchant ?? '')
   const [note, setNote] = useState(initial?.note ?? '')
-  const [date, setDate] = useState(
-    (initial?.date ?? new Date().toISOString()).slice(0, 10),
-  )
+  const [date, setDate] = useState((initial?.date ?? todayIsoDate()).slice(0, 10))
+  const amountInputRef = useRef<HTMLInputElement>(null)
 
   const TYPE_TABS: { value: TxType; label: string }[] = [
     { value: 'expense', label: t('form.expense') },
@@ -70,7 +68,13 @@ export function TransactionForm({
     (type === 'transfer' ? accountId !== toAccountId : true) &&
     (type === 'transfer' || categoryId)
 
-  const { submit: submitForm, errorMessage } = useFormSubmit(onSubmit)
+  const { submit: submitForm, isSubmitting, errorMessage } = useFormSubmit(onSubmit)
+  const fallbackMerchant =
+    type === 'transfer' ? t('form.defaultTransfer') : getCategory(categoryId)?.name || t('form.defaultTx')
+
+  useEffect(() => {
+    amountInputRef.current?.focus()
+  }, [])
 
   const submit = () => {
     if (!canSubmit) return
@@ -80,7 +84,7 @@ export function TransactionForm({
       categoryId: type === 'transfer' ? null : categoryId,
       accountId,
       toAccountId: type === 'transfer' ? toAccountId : null,
-      merchant: merchant.trim() || (type === 'transfer' ? t('form.defaultTransfer') : getCategory(categoryId)?.name || t('form.defaultTx')),
+      merchant: initial?.merchant?.trim() || fallbackMerchant,
       note: note.trim() || undefined,
       date,
       receipt: null,
@@ -141,10 +145,11 @@ export function TransactionForm({
       <div className="flex flex-col items-center gap-1 px-4 py-5 sm:px-5">
         <span className="text-xs text-muted-foreground">{t('form.amount')}</span>
         <input
+          ref={amountInputRef}
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
-          value={amount}
+          value={amount ? formatVND(Number(amount), false) : ''}
           onChange={(e) => {
             const v = e.target.value.replace(/\D/g, '')
             if (v.length <= 12) setAmount(v)
@@ -155,9 +160,6 @@ export function TransactionForm({
             amountTone,
           )}
         />
-        {numericAmount > 0 && (
-          <span className="text-sm text-muted-foreground">{formatVND(numericAmount)}</span>
-        )}
       </div>
 
       <div className="flex flex-col gap-4 px-4 sm:px-5">
@@ -194,21 +196,10 @@ export function TransactionForm({
           </div>
         )}
 
-        {/* Merchant + date */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="merchant">{t('form.merchant')}</Label>
-            <Input
-              id="merchant"
-              value={merchant}
-              onChange={(e) => setMerchant(e.target.value)}
-              placeholder={t('form.merchantPlaceholder')}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label>{t('form.date')}</Label>
-            <DatePicker value={date} onChange={setDate} max={todayIsoDate()} />
-          </div>
+        {/* Date */}
+        <div className="flex flex-col gap-2">
+          <Label>{t('form.date')}</Label>
+          <DatePicker value={date} onChange={setDate} max={todayIsoDate()} />
         </div>
 
         {/* Note */}
@@ -233,13 +224,14 @@ export function TransactionForm({
 
       {/* Submit */}
       <div className="sticky bottom-0 flex gap-2 bg-card p-4 sm:px-5">
-        <Button variant="outline" size="lg" className="h-11 flex-1" onClick={onCancel}>
+        <Button variant="outline" size="lg" className="h-11 flex-1" disabled={isSubmitting} onClick={onCancel}>
           {t('form.cancel')}
         </Button>
         <Button
           size="lg"
           className="h-11 flex-[2]"
           disabled={!canSubmit}
+          loading={isSubmitting}
           onClick={submit}
         >
           {initial ? t('form.save') : t('form.submit')}

@@ -30,8 +30,6 @@ vi.mock('@/core/i18n', () => ({
         'form.expense': 'Expense',
         'form.income': 'Income',
         'form.transfer': 'Transfer',
-        'form.merchant': 'Merchant',
-        'form.merchantPlaceholder': 'Merchant placeholder',
         'form.note': 'Note',
         'form.notePlaceholder': 'Note placeholder',
         'form.account': 'Account',
@@ -70,6 +68,26 @@ vi.mock('@/shared/components/ui/date-picker', () => ({
 }))
 
 describe('TransactionForm', () => {
+  it('autofocuses the amount input and formats digits inline while typing', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <TransactionForm
+        variant="mobile"
+        onSubmit={vi.fn().mockResolvedValue(undefined)}
+        onCancel={() => undefined}
+      />,
+    )
+
+    const amountInput = screen.getByPlaceholderText('0') as HTMLInputElement
+    expect(document.activeElement).toBe(amountInput)
+
+    await user.type(amountInput, '1000000')
+
+    expect(amountInput.value).toBe('1.000.000')
+    expect(screen.queryByText('1.000.000 ₫')).toBeNull()
+  })
+
   it('submits a date-only ISO string', async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn().mockResolvedValue(undefined)
@@ -84,7 +102,6 @@ describe('TransactionForm', () => {
 
     await user.type(screen.getByPlaceholderText('0'), '1213')
     await user.click(screen.getByRole('button', { name: 'Food' }))
-    await user.type(screen.getByLabelText('Merchant'), 'AAA')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
@@ -94,7 +111,7 @@ describe('TransactionForm', () => {
         amount: 1213,
         categoryId: 'food',
         accountId: 'cash',
-        merchant: 'AAA',
+        merchant: 'Food',
         date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       }),
     )
@@ -160,11 +177,9 @@ describe('TransactionForm', () => {
 
     await user.type(screen.getByPlaceholderText('0'), '1213')
     await user.click(screen.getByRole('button', { name: 'Food' }))
-    await user.type(screen.getByLabelText('Merchant'), 'AAA')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     expect(await screen.findByRole('alert')).toBeDefined()
-    expect(screen.getByLabelText('Merchant')).toHaveProperty('value', 'AAA')
     expect(screen.getByRole('button', { name: 'Save' })).toBeDefined()
   })
 })

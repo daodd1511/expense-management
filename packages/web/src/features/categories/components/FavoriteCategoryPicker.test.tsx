@@ -23,7 +23,7 @@ const transport: Category = { id: 'transport', name: 'Transport', icon: 'Bus', c
 const categories = [food, restaurant, transport]
 
 describe('FavoriteCategoryPicker', () => {
-  it('renders favorited categories as a flat tile grid', () => {
+  it('renders favorited categories as a row list', () => {
     render(
       <FavoriteCategoryPicker
         categories={categories}
@@ -35,6 +35,20 @@ describe('FavoriteCategoryPicker', () => {
 
     expect(screen.getByRole('button', { name: 'Food' })).toBeDefined()
     expect(screen.queryByRole('button', { name: 'Transport' })).toBeNull()
+  })
+
+  it('shows the parent name above a selected child category', () => {
+    render(
+      <FavoriteCategoryPicker
+        categories={categories}
+        favoriteCategoryIds={new Set(['restaurant'])}
+        selectedId="restaurant"
+        onSelect={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Food')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Food Restaurant' })).toBeDefined()
   })
 
   it('shows an empty-state message when nothing is favorited', () => {
@@ -92,6 +106,43 @@ describe('FavoriteCategoryPicker', () => {
     await user.click(screen.getByRole('button', { name: 'Food' }))
 
     expect(onSelect).toHaveBeenCalledWith('food')
+  })
+
+  it('supports clearing the selection when allowClear is enabled', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    render(
+      <FavoriteCategoryPicker
+        categories={categories}
+        favoriteCategoryIds={new Set(['food'])}
+        selectedId="food"
+        onSelect={onSelect}
+        allowClear
+      />,
+    )
+
+    await user.click(screen.getAllByRole('button', { name: '—' })[0])
+
+    expect(onSelect).toHaveBeenCalledWith('')
+  })
+
+  it('hides the show-all action and disables tiles when disabled', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    render(
+      <FavoriteCategoryPicker
+        categories={categories}
+        favoriteCategoryIds={new Set(['food'])}
+        selectedId={null}
+        onSelect={onSelect}
+        disabled
+      />,
+    )
+
+    expect(screen.queryByRole('button', { name: 'Show all' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Food' }))
+
+    expect(onSelect).not.toHaveBeenCalled()
   })
 
   it('opens the full picker modal on "Show all" and closes it on selection', async () => {

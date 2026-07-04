@@ -32,6 +32,16 @@ const customCategory: Category = {
   parentId: null,
 }
 
+const nestedExpenseCategory: Category = {
+  id: 'expense-lunch',
+  name: 'Lunch',
+  icon: 'Utensils',
+  color: 'chart-1',
+  isSystem: false,
+  type: 'expense',
+  parentId: 'system-food',
+}
+
 const incomeCategory: Category = {
   id: 'income-job',
   name: 'Job income',
@@ -44,7 +54,7 @@ const incomeCategory: Category = {
 
 vi.mock('@/core/store', () => ({
   useStore: () => ({
-    categories: [systemCategory, customCategory, incomeCategory],
+    categories: [systemCategory, customCategory, nestedExpenseCategory, incomeCategory],
     favoriteCategoryIds: new Set<string>(),
     ...storeMocks,
   }),
@@ -65,6 +75,8 @@ vi.mock('@/core/i18n', () => ({
         'settings.catType': 'Category type',
         'settings.catTypeExpense': 'Expense',
         'settings.catTypeIncome': 'Income',
+        'dashboard.expense': 'Expense',
+        'dashboard.income': 'Income',
         'settings.parentCat': 'Parent category',
         'settings.parentCatTopLevel': 'Top-level category',
         'settings.catName': 'Category name',
@@ -87,6 +99,19 @@ describe('CategoriesPage', () => {
     vi.clearAllMocks()
   })
 
+  it('filters the list by type with the segmented control', async () => {
+    const user = userEvent.setup()
+    render(<CategoriesPage variant="desktop" onBack={vi.fn()} />)
+
+    expect(screen.getByRole('button', { name: 'System food' })).toBeDefined()
+    expect(screen.queryByRole('button', { name: 'Job income' })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Income' }))
+
+    expect(screen.getByRole('button', { name: 'Job income' })).toBeDefined()
+    expect(screen.queryByRole('button', { name: 'System food' })).toBeNull()
+  })
+
   it('disables editing for system categories while custom categories remain editable', async () => {
     const user = userEvent.setup()
     render(<CategoriesPage variant="desktop" onBack={vi.fn()} />)
@@ -107,7 +132,7 @@ describe('CategoriesPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Add' }))
     const incomeParentOptions = screen
-      .getAllByRole('button', { name: 'Job income' })
+      .queryAllByRole('button', { name: 'Job income' })
       .filter((button) => !(button as HTMLButtonElement).disabled)
     expect(incomeParentOptions).toHaveLength(0)
 

@@ -1,10 +1,22 @@
 import { CreditCard } from 'lucide-react'
+import { useState } from 'react'
 import { useAuth } from '@/features/auth/auth'
 import { useLang } from '@/core/i18n'
+import { Button } from '@/shared/components/ui/button'
 
 export function SignIn() {
   const { signIn } = useAuth()
   const { t } = useLang()
+  const [isSigningIn, setIsSigningIn] = useState(false)
+
+  const handleSignIn = async () => {
+    setIsSigningIn(true)
+    try {
+      await signIn()
+    } finally {
+      setIsSigningIn(false)
+    }
+  }
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-background px-4 text-foreground">
@@ -18,10 +30,14 @@ export function SignIn() {
         </div>
       </div>
 
-      <button
+      <Button
         type="button"
-        onClick={signIn}
-        className="flex items-center gap-3 rounded-xl border border-border bg-card px-6 py-3.5 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
+        variant="outline"
+        size="lg"
+        loading={isSigningIn}
+        loadingLabel={t('auth.signingIn')}
+        onClick={handleSignIn}
+        className="h-auto rounded-xl bg-card px-6 py-3.5 shadow-sm hover:bg-muted"
       >
         <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
           <path
@@ -42,7 +58,7 @@ export function SignIn() {
           />
         </svg>
         {t('auth.signInWithGoogle')}
-      </button>
+      </Button>
     </div>
   )
 }

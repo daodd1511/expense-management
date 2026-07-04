@@ -4,93 +4,212 @@ This file provides guidance to agents when working with code in this repository.
 
 ## Commands
 
+Run from the repo root (pnpm workspace):
+
 ```bash
-pnpm dev                     # root → web dev server (Vite, http://localhost:5173)
-pnpm build                   # root → web build (packages/web/dist/)
-pnpm preview                 # root → preview web build
-pnpm typecheck               # root → recursive workspace type-check
-cd packages/web && pnpm exec tsc --noEmit  # web-only type-check
+pnpm dev                     # parallel: api (Node) + web (Vite, http://localhost:5173)
+pnpm dev:web                 # web only
+pnpm dev:api                 # api only (builds then runs dist/index.js)
+pnpm build                   # web build → packages/web/dist/
+pnpm preview                 # serve web build locally
+pnpm typecheck               # recursive: tsc --noEmit across all packages
+pnpm test                    # recursive: vitest run across all packages (non-watch, safe for agents)
 ```
 
-No test suite exists yet. No linter configured beyond TypeScript strict mode.
+Scoped equivalents: `pnpm --filter @wallet/web <script>`, `--filter @wallet/api`, `--filter @wallet/shared`.
+
+Tests exist (vitest, colocated `*.test.ts(x)`) but coverage is partial. No linter configured beyond TypeScript strict mode. Never run `vite`/`vitest` in watch mode or `pnpm preview` as a long-lived process in an agent — they hang the session.
 
 ## Stack
 
-- **pnpm monorepo** — `packages/web`, `packages/api`, `packages/shared`
-- **Vite + React 19 + TypeScript** — static SPA in `packages/web`, no SSR
-- **Hono + Bun** — API skeleton in `packages/api`
+- **pnpm monorepo** — `packages/web`, `packages/api`, `packages/shared`, plus `supabase/` (migrations)
+- **packages/web** — Vite + React 19 + TypeScript SPA, no SSR, no client-side routing (nav is tab/screen state, no react-router)
+- **packages/api** — Hono on Node (`@hono/node-server`), Supabase as the database
+- **packages/shared** — Zod DTOs, row↔model mappers, plain TS models shared by web and api
 - **Tailwind v4** via `@tailwindcss/vite` plugin (no `postcss.config`)
-- **shadcn/base-ui** (`@base-ui/react`) — base primitives; custom UI wrappers in `components/ui/`
+- **shadcn/base-ui** (`@base-ui/react`) — base primitives; custom UI wrappers in `packages/web/src/shared/components/ui/`
+- **TanStack Query** — server state/caching for all feature data
 - **Recharts** for charts
 - **vite-plugin-pwa** — installable PWA, online-only (no offline write queue)
 - **Package manager: pnpm**
 
 ## Architecture
 
-### Two distinct layouts — not responsive scaling
+### Backend-backed now — not in-memory only
 
-`packages/web/src/components/responsive-app.tsx` gates at 1024px: below → `MobileApp`, above → `DesktopApp`. Both are purpose-built, not stretched from one component.
+The app was originally a client-only SPA seeded from static data; it now talks to a
+Hono API backed by Supabase Postgres, with Supabase Auth gating access. Treat any
+older doc/memory describing "no backend" or "resets on refresh" as historical.
 
-- **Mobile** (`packages/web/src/components/mobile/`): bottom tab nav (5 slots + center FAB), bottom sheets for forms, thumb-first layout
-- **Desktop** (`packages/web/src/components/desktop/`): persistent left sidebar, drawer for forms, dense data tables
+### `packages/web/src` layout
 
-Nav is tab/screen state, not URL routing. No react-router.
+- `core/` — cross-cutting concerns: `api.ts` (`apiJson`/`apiFetch` fetch client with
+  Zod response validation, `ApiError`), `store.tsx` (`StoreProvider` + `useStore()` —
+  a facade that aggregates every feature's TanStack Query hooks into one context for
+  backward-compatible consumption; it does not own state itself), `data.ts` (legacy
+  seed data), `i18n.tsx`, `types.ts`, `supabase.ts`, `mutationErrorHandler.ts`,
+  `ErrorBoundary.tsx`
+- `features/<name>/` — one folder per domain feature (`accounts`, `auth`, `budgets`,
+  `categories`, `dashboard`, `settings`, `subscriptions`, `transactions`), each with
+  `queries.ts` (TanStack Query hooks), `db.ts` (`apiJson` calls), `components/`
+- `layouts/` — `ResponsiveApp.tsx` gates at 1024px: below → `layouts/mobile/MobileApp`,
+  above → `layouts/desktop/DesktopApp`. Both are purpose-built, not stretched from one
+  component.
+  - **Mobile** (`layouts/mobile/`): bottom tab nav (5 slots + center FAB), bottom
+    sheets for forms, thumb-first layout
+  - **Desktop** (`layouts/desktop/`): persistent left sidebar, drawer for forms,
+    dense data tables
+- `shared/` — `components/` (incl. `ui/` shadcn wrappers, `ThemeProvider.tsx`,
+  `Charts.tsx`, `CategoryIcon.tsx`, `FormErrorBanner.tsx`, `OfflineBanner.tsx`),
+  `hooks/` (`useFormSubmit`), `lib/` (`format.ts`, `derive.ts`, `utils.ts`),
+  `styles/globals.css`
 
-### State — in-memory React Context
+Path alias `@/` → `packages/web/src`.
 
-`packages/web/src/lib/store.tsx` exports `StoreProvider` + `useStore()`. All state is seeded from `packages/web/src/lib/data.ts` and resets on refresh (Phase 1 = localStorage not yet wired; Phase 2 = Supabase).
+### Data flow (the standard anatomy for a feature slice)
 
-Key derived selectors exported from `packages/web/src/lib/store.tsx`: `monthSummary`, `expenseByCategory`, `spentForCategory`.
-
-`packages/web/src/lib/derive.ts` — chart-specific derived data (`buildDonutData`).
-
-Shared package placeholders live in `packages/shared/src/`. Phase 2 moves domain types and schemas there for API reuse.
+Component → `features/<f>/queries.ts` (TanStack Query hooks: `useX`, `useAddX`,
+`useUpdateX`, `useDeleteX`; queryKey `['<entity>', user?.id]`, invalidated on
+mutation success) → `features/<f>/db.ts` (`apiJson('/path', zodResponseSchema, init)`)
+→ `packages/api/src/routes/<entity>.ts` (Hono route; auth middleware sets `userId`;
+body parsed with shared create/patch schemas; DB errors mapped via `mapDbError`) →
+Supabase Postgres, with `packages/shared/src/mappers/*` converting rows↔models
+(`toX` row→model, `fromX` model→row, `xPatchToRow`).
 
 ### Data model
 
 ```
 Transaction  { id, type, amount, categoryId, accountId, toAccountId?, merchant, note?, date, receipt?, subscriptionId? }
 Account      { id, name, kind, balance }
-Category     { id, name, icon, color }
+Category     { id, name, icon, color, type, parentId, isSystem }
 Budget       { categoryId, limit }
 Subscription { id, name, amount, type, categoryId, accountId, cadence, dayOfMonth, monthOfYear, nextDueDate, note?, active }
 ```
 
-Amount is VND integer. `balance` on Account is static (opening balance); computed balance = `opening + Σincome − Σexpense ± transfers` — not yet implemented (Phase 1 item). `subscriptionId` on Transaction links logged payments back to their Subscription for double-log detection.
+Amount is VND integer. Categories: 2-level nesting cap, a child's `type` must match
+its parent's, `isSystem` categories have no owner (shared across users). Favorites
+are a separate join tracked via `features/categories/favorites-queries.ts` and the
+API's `favorites` route. `subscriptionId` on Transaction links logged payments back
+to their Subscription for double-log detection. `Account.balance` is a static
+opening balance; computed balance = `opening + Σincome − Σexpense ± transfers` via
+`computeBalance` in `core/store.tsx`.
 
 ### i18n
 
-`packages/web/src/lib/i18n.tsx` — custom flat-key system, vi default / en secondary. Add keys to both `VI` and `EN` objects; `TranslationKey` is inferred from `VI` so TypeScript enforces parity. Access via `useLang()` → `t('key', { vars })`.
+`packages/web/src/core/i18n.tsx` — custom flat-key system, vi default / en secondary.
+Add keys to both `VI` and `EN` objects; `TranslationKey` is inferred from `VI` so
+TypeScript enforces parity. Access via `useLang()` → `t('key', { vars })`.
 
 ### Theme
 
-`packages/web/src/components/theme-provider.tsx` — custom provider (no next-themes). Stores `'light' | 'dark' | 'system'` in localStorage, toggles `.dark` class on `<html>`. `useTheme()` exposes `{ theme, resolvedTheme, setTheme }`.
+`packages/web/src/shared/components/ThemeProvider.tsx` — custom provider (no
+next-themes). Stores `'light' | 'dark' | 'system'` in localStorage, toggles `.dark`
+class on `<html>`. `useTheme()` exposes `{ theme, resolvedTheme, setTheme }`.
+
+### Auth
+
+`packages/web/src/features/auth/auth.tsx` (`AuthProvider`, `useAuth`) +
+`features/auth/components/{AuthGate,SignIn}.tsx` on the web side, backed by
+Supabase Auth. `packages/api/src/middleware/auth.ts` verifies the JWT (via `jose`)
+and sets `userId` on the Hono context (`AuthEnv`); every `/api/*` route requires it.
 
 ### Subscriptions feature
 
-`packages/web/src/lib/subscriptions.ts` — pure helpers: `isDue`, `isDueSoon`, `dueBanner`, `monthlyEquivalent`, `totalMonthlyCost`, `buildNextDueDate`.
+`packages/web/src/features/subscriptions/helpers.ts` — pure helpers: `isDue`,
+`isDueSoon`, `isAlreadyLoggedThisCycle`, `daysUntilDue`, `dueBanner`,
+`monthlyEquivalent`, `totalMonthlyCost`, `buildNextDueDate`.
 
-Due banner appears on home screen when `nextDueDate <= today` and no same-cycle transaction with matching `subscriptionId` exists. One-tap log calls `store.logSubscription(id)` which creates a Transaction and advances `nextDueDate` atomically.
+Due banner appears on home screen when `nextDueDate <= today` and no same-cycle
+transaction with matching `subscriptionId` exists. One-tap log calls
+`store.logSubscription(id)` which creates a Transaction and advances `nextDueDate`
+atomically.
 
-Mobile: "Kế hoạch" (Planning) tab replaces the Budgets tab; inner tab bar switches between Ngân sách and Đăng ký. Desktop: "Đăng ký" sidebar item after Budgets.
+Mobile: "Kế hoạch" (Planning) tab replaces the Budgets tab; inner tab bar switches
+between Ngân sách and Đăng ký. Desktop: "Đăng ký" sidebar item after Budgets.
 
 ### Formatting
 
-`packages/web/src/lib/format.ts` — `formatVND(n)` → `"100.000 ₫"`, `formatSigned`, `amountColorClass`, date helpers. Always use these; never call `Intl` directly.
+`packages/web/src/shared/lib/format.ts` — `formatVND(n)` → `"100.000 ₫"`,
+`formatSigned`, `amountColorClass`, date helpers. Always use these; never call
+`Intl` directly.
 
 ### CSS tokens
 
-Design system lives in `packages/web/src/app/globals.css`. Semantic color tokens: `--income`, `--expense`, `--transfer` (and `-foreground`, `-muted` variants). Motion tokens: `--duration-fast/base/slow`, `--ease-out`, `--ease-in-out`. Z-index scale: `--z-dropdown` through `--z-tooltip`. OKLCH color space throughout.
+Design system lives in `packages/web/src/shared/styles/globals.css`. Semantic color
+tokens: `--income`, `--expense`, `--transfer` (and `-foreground`, `-muted` variants).
+Motion tokens: `--duration-fast/base/slow`, `--ease-out`, `--ease-in-out`. Z-index
+scale: `--z-dropdown` through `--z-tooltip`. OKLCH color space throughout.
 
 ### Commit Messages
 - The `terse-commit` skill generates messages matching this convention (plain
-  imperative subject, no Conventional Commits prefix).
+  imperative subject, no Conventional Commits prefix). Always invoke it before
+  running `git commit` in this repo, regardless of how the request is phrased.
+
+## Backlog
+
+`docs/BACKLOG.md` is the single inbox for fixes, features, and ideas (no separate
+features doc). Capture via the `capture` skill: one line per item, `- [ ] <desc> (<date>)`,
+appended to the matching section. Agents may capture proactively when they notice
+out-of-scope issues, but must list those additions in the session's final summary.
+Never auto-commit a capture. Delete a line only when the item ships or graduates into a
+`specs/<feature>/` plan.
+
+## Spec-Driven Execution Workflow
+
+Large/architectural changes flow: `/grill-me` → `specs/<feature>/PLAN.md` →
+`specs/<feature>/EXECUTION.md` (via the `spec-plan` skill) → phased implementation (via the
+`spec-phase` skill). These rules bind even when neither skill is invoked. Design rationale:
+`specs/spec-workflow-v2/PLAN.md`.
+
+### State model
+- **Git is the authoritative state store**: branch name encodes spec+phase
+  (`<feature-slug>/phase-<n>-<desc>`), commits encode progress. Each `EXECUTION.md` opens
+  with a **STATUS block** (current phase, per-phase state, verification debt) — the only
+  prose trusted as state. **On any conflict, git wins silently** for mechanical facts
+  (branch, commits, merged-or-not); STATUS is trusted only for what git can't express
+  (debt, park reasons). `HANDOFF.md` is a session baton from `/handoff` — advisory context,
+  never authority; do not resume from it.
+- Phase states: `pending` / `in-progress` / `done` / `done-with-debt`. Gate items are
+  `[ ]`/`[x]`; an item may be `[~]` (deferred) only when environment-blocked (missing
+  tool/credentials, not effort), with substitute evidence inline and a mirrored STATUS debt
+  entry. A phase is in-progress iff it has unchecked **non-deferred** items.
+
+### Branch model — stacked by default
+- **Default: stacked.** Each phase branches off the **previous phase's branch** (phase 1
+  off the integration branch, currently `develop`; resolve at plan time, never hardcode).
+  Push → PR to the previous phase's branch (or to the integration branch if the previous
+  phase already merged) → continue to the next phase without waiting for review/merge.
+  Rebase onto the integration branch after an earlier phase's PR merges.
+- **Sequential (off develop, wait for merge) is opt-in only** — use it only when the user
+  explicitly says so for this spec (e.g. "do phases sequentially" / "wait for merge before
+  the next phase"). When opted in: each phase branches off the integration branch → push →
+  PR → user reviews & merges → pull → next phase branches off the updated integration
+  branch.
+- After a phase's PR merges, ask before deleting the merged phase branch (local + remote).
+
+### Checkpoints
+- Starting a phase authorizes its commits — nothing else.
+- Gate pass → one ask: "push + open PR?". Remote actions are never bundled with anything
+  else (see Hard Stops below).
+- A phase is complete only when its **agent gate** (typecheck, tests, build) actually
+  passed — checking boxes doesn't substitute for running it. Manual verification scenarios
+  are the **review checklist**, listed in the PR description for the user to walk through
+  before merging — they are the user's, not agent debt.
+- **One spec in flight at a time.** Do not start or resume a different spec's phase while
+  another has an unfinished phase. Finish the current phase, or explicitly **park** it with
+  the user's go-ahead: a `WIP: parked <date>` commit on the phase branch plus a STATUS note
+  (never `git stash` — stashes are invisible to a cold agent and easy to orphan).
+
+Procedure lives in the skills — planning in `.claude/skills/spec-plan/SKILL.md`, execution
+and resume in `.claude/skills/spec-phase/SKILL.md` — invoke the relevant one rather than
+re-deriving it.
 
 ## Coding Standards
+- Always use `react-frontend-developer` skill for frontend code generation.
 
 ### Reuse First
 - Prefer existing components, hooks, utilities, and models before creating new ones.
-- Before creating a new component, check both [packages/web/src/components](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/components) and the relevant feature module for a compatible pattern.
+- Before creating a new component, check both [packages/web/src/shared/components](packages/web/src/shared/components) and the relevant feature module for a compatible pattern.
 - Create new shared components only when reuse is likely across multiple screens/features.
 - If a new component is required, keep it small, composable, and aligned with existing naming and folder conventions.
 
@@ -139,12 +258,12 @@ Stop and ask in the current message before:
 - If sensitive data is exposed, stop, remove it from changes, and report it.
 - Redact sensitive values in examples and command output summaries.
 
-
 ### Monorepo Notes
 
 - Web source lives in `packages/web/src/`
 - API source lives in `packages/api/src/`
-- Shared types and future schemas live in `packages/shared/src/`
+- Shared DTOs/mappers/models live in `packages/shared/src/`
+- Database migrations live in `supabase/migrations/`
 
 ### For Codex
 - Do not run dev servers in the agent environment unless explicitly instructed to do so by the user. Check commands such as build or type-check are allowed when needed for verification.

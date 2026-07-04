@@ -18,12 +18,15 @@ export function CategoriesPage({
   variant: 'mobile' | 'desktop'
   onBack: () => void
 }) {
+  const isMobile = variant === 'mobile'
   const { categories, addCategory, updateCategory, deleteCategory, favoriteCategoryIds, addFavorite, removeFavorite } =
     useStore()
   const { t } = useLang()
+  const [activeType, setActiveType] = useState<Category['type']>('expense')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const editingCategory = categories.find((c) => c.id === editingId)
+  const visibleGroups = groupCategories(categories.filter((category) => category.type === activeType))
 
   const handleSelectCategory = (category: Category) => {
     if (category.isSystem) return
@@ -69,21 +72,24 @@ export function CategoriesPage({
   )
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" />
-          {t('settings.title')}
-        </button>
-
+    <div className={cn('flex flex-col', isMobile ? 'gap-4 p-4 pt-3' : 'gap-6')}>
+      <div className={cn('flex flex-col', isMobile ? 'gap-2' : 'gap-3')}>
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{t('settings.categories')}</h1>
-            <p className="text-sm text-muted-foreground">{t('settings.categoriesActive', { n: categories.length })}</p>
+          <div className="flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ArrowLeft className="size-4" />
+              {t('settings.title')}
+            </button>
+            {!isMobile && (
+              <>
+                <h1 className="text-2xl font-semibold tracking-tight">{t('settings.categories')}</h1>
+                <p className="text-sm text-muted-foreground">{t('settings.categoriesActive', { n: categories.length })}</p>
+              </>
+            )}
           </div>
           <Button type="button" variant="outline" size="sm" onClick={handleNewCategory}>
             <Plus className="size-3.5" />
@@ -93,7 +99,28 @@ export function CategoriesPage({
       </div>
 
       <div className="flex flex-col gap-3">
-        {groupCategories(categories).map(({ parent, childCategories }) => (
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+          {([
+            { value: 'expense', label: t('dashboard.expense') },
+            { value: 'income', label: t('dashboard.income') },
+          ] as const).map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setActiveType(option.value)}
+              className={cn(
+                'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                activeType === option.value
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        {visibleGroups.map(({ parent, childCategories }) => (
           <CategoryGroupBox
             key={parent.id}
             parent={parent}
@@ -134,16 +161,15 @@ function CategoryGroupBox({
   onSelect: (category: Category) => void
   onToggleFavorite: (categoryId: string) => void
 }) {
-  const { t } = useLang()
   return (
-    <div className="rounded-xl border border-border p-3">
-      <div className="flex items-center gap-1">
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           disabled={parent.isSystem}
           onClick={() => onSelect(parent)}
           className={cn(
-            'flex flex-1 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-70',
+            'flex flex-1 items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-70',
             editingId === parent.id ? 'bg-accent' : !parent.isSystem && 'hover:bg-muted',
           )}
         >
@@ -163,7 +189,7 @@ function CategoryGroupBox({
       </div>
 
       {childCategories.length > 0 && (
-        <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6">
+        <div className="flex flex-col gap-1">
           {childCategories.map((child) => (
             <div key={child.id} className="relative">
               <button
@@ -171,23 +197,23 @@ function CategoryGroupBox({
                 disabled={child.isSystem}
                 onClick={() => onSelect(child)}
                 className={cn(
-                  'flex w-full flex-col items-center gap-1 rounded-lg p-2 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-70',
+                  'flex w-full items-center gap-3 rounded-xl px-3 py-3 pr-12 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-70',
                   editingId === child.id ? 'bg-accent' : !child.isSystem && 'hover:bg-muted',
                 )}
               >
                 <span
-                  className="inline-flex size-9 items-center justify-center rounded-lg text-white"
+                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-white"
                   style={{ backgroundColor: colorVar(child.color) }}
                 >
                   <CategoryIcon name={child.icon} className="size-4" />
                 </span>
-                <span className="w-full truncate text-xs text-muted-foreground">{child.name}</span>
+                <span className="truncate text-sm text-foreground">{child.name}</span>
               </button>
               <FavoriteToggle
                 isFavorite={favoriteCategoryIds.has(child.id)}
                 label={child.name}
                 onToggle={() => onToggleFavorite(child.id)}
-                className="absolute -right-1 -top-1"
+                className="absolute top-1/2 right-3 -translate-y-1/2"
               />
             </div>
           ))}
@@ -216,7 +242,7 @@ function FavoriteToggle({
       aria-pressed={isFavorite}
       aria-label={isFavorite ? t('category.unfavorite', { name: label }) : t('category.favorite', { name: label })}
       className={cn(
-        'inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground',
+        'inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
         className,
       )}
     >

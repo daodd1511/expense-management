@@ -4,9 +4,22 @@ import { useRef, useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { amountColorClass, formatSigned, formatTime } from '@/shared/lib/format'
+import { useLang } from '@/core/i18n'
 import { useStore } from '@/core/store'
 import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
+
+function formatCategoryLabel({
+  categoryName,
+  parentCategoryName,
+}: {
+  categoryName?: string
+  parentCategoryName?: string
+}) {
+  return parentCategoryName
+    ? `${parentCategoryName} › ${categoryName}`
+    : categoryName
+}
 
 function Leading({ tx }: { tx: Transaction }) {
   const { getCategory } = useStore()
@@ -42,15 +55,24 @@ export function TransactionRow({
   swipe?: boolean
 }) {
   const { getCategory, getAccount, deleteTransaction } = useStore()
+  const { t } = useLang()
   const [dx, setDx] = useState(0)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const startX = useRef<number | null>(null)
   const cat = getCategory(tx.categoryId)
+  const parentCat = cat?.parentId ? getCategory(cat.parentId) : undefined
   const acc = getAccount(tx.accountId)
+  const title =
+    tx.type === 'transfer'
+      ? t('tx.transfer')
+      : formatCategoryLabel({
+          categoryName: cat?.name,
+          parentCategoryName: parentCat?.name,
+        })
   const subtitle =
     tx.type === 'transfer'
       ? `${acc?.name} → ${getAccount(tx.toAccountId)?.name}`
-      : `${cat?.name} · ${acc?.name}`
+      : acc?.name
 
   const onTouchStart = (e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX
@@ -81,10 +103,10 @@ export function TransactionRow({
       >
         <span className="flex min-w-0 flex-col">
           <span className="flex items-center gap-1.5 truncate text-sm font-medium">
-            {tx.merchant}
+            {title}
             {tx.receipt && <Paperclip className="size-3 text-muted-foreground" />}
           </span>
-          <span className="truncate text-xs text-muted-foreground">{subtitle}</span>
+          {subtitle && <span className="truncate text-xs text-muted-foreground">{subtitle}</span>}
         </span>
         <span className="flex shrink-0 flex-col items-end">
           <span className={cn('tabular text-sm font-semibold', amountColorClass(tx.type))}>
@@ -122,9 +144,9 @@ export function TransactionRow({
       <ConfirmDialog
         open={confirmDeleteOpen}
         onCancel={() => setConfirmDeleteOpen(false)}
-        onConfirm={() => {
+        onConfirm={async () => {
+          await deleteTransaction(tx.id)
           setConfirmDeleteOpen(false)
-          deleteTransaction(tx.id)
         }}
       />
     </div>

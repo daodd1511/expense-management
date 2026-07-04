@@ -285,8 +285,8 @@ export function DesktopSubscriptions() {
       <ConfirmDialog
         open={pendingDeleteId !== null}
         onCancel={() => setPendingDeleteId(null)}
-        onConfirm={() => {
-          if (pendingDeleteId) deleteSubscription(pendingDeleteId)
+        onConfirm={async () => {
+          if (pendingDeleteId) await deleteSubscription(pendingDeleteId)
           setPendingDeleteId(null)
         }}
       />

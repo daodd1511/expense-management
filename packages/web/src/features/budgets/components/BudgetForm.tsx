@@ -1,18 +1,9 @@
 
 import { useState } from 'react'
-import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
+import { FavoriteCategoryPicker } from '@/features/categories/components/FavoriteCategoryPicker'
 import { Button } from '@/shared/components/ui/button'
 import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
 import { Input, Label } from '@/shared/components/ui/input'
-import {
-  Select,
-  SelectItem,
-  SelectPopup,
-  SelectPositioner,
-  SelectPortal,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select'
 import { formatVND } from '@/shared/lib/format'
 import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
 import { useLang } from '@/core/i18n'
@@ -44,67 +35,32 @@ export function conflictsWithExistingBudget(
 }
 
 export function BudgetForm({ initial, onSubmit, onCancel }: BudgetFormProps) {
-  const { categories, budgets } = useStore()
+  const { categories, budgets, favoriteCategoryIds } = useStore()
   const { t } = useLang()
 
   const availableCategories = categories.filter(
     (c) => !conflictsWithExistingBudget(c, categories, budgets, initial?.categoryId),
   )
 
-  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? availableCategories[0]?.id ?? '')
+  const [categoryId, setCategoryId] = useState<string | null>(initial?.categoryId ?? availableCategories[0]?.id ?? null)
   const [amount, setAmount] = useState(initial ? String(initial.limit) : '')
 
   const numericAmount = Number(amount) || 0
-  const canSubmit = categoryId && numericAmount > 0
-  const categoryLabels = Object.fromEntries(categories.map((c) => [c.id, c.name]))
-  const selectedCat = categories.find((c) => c.id === categoryId)
+  const canSubmit = !!categoryId && numericAmount > 0
 
-  const { submit, errorMessage } = useFormSubmit(onSubmit)
+  const { submit, isSubmitting, errorMessage } = useFormSubmit(onSubmit)
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <Label>{t('budget.category')}</Label>
-        <Select value={categoryId} onValueChange={(v) => v && setCategoryId(v)} disabled={!!initial}>
-          <SelectTrigger>
-            <SelectValue>
-              {(v: string | null) =>
-                v && selectedCat ? (
-                  <span className="flex items-center gap-2">
-                    <span
-                      className="inline-flex size-5 items-center justify-center rounded"
-                      style={{ backgroundColor: colorVar(selectedCat.color) }}
-                    >
-                      <CategoryIcon name={selectedCat.icon} className="size-3 text-white" />
-                    </span>
-                    {categoryLabels[v]}
-                  </span>
-                ) : (
-                  t('budget.selectCategory')
-                )
-              }
-            </SelectValue>
-          </SelectTrigger>
-          <SelectPortal>
-            <SelectPositioner>
-              <SelectPopup>
-                {availableCategories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    <span className="flex items-center gap-2">
-                      <span
-                        className="inline-flex size-5 items-center justify-center rounded"
-                        style={{ backgroundColor: colorVar(c.color) }}
-                      >
-                        <CategoryIcon name={c.icon} className="size-3 text-white" />
-                      </span>
-                      {c.name}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectPopup>
-            </SelectPositioner>
-          </SelectPortal>
-        </Select>
+        <FavoriteCategoryPicker
+          categories={availableCategories}
+          favoriteCategoryIds={favoriteCategoryIds}
+          selectedId={categoryId}
+          onSelect={(id) => setCategoryId(id || null)}
+          disabled={!!initial}
+        />
       </div>
 
       <div className="flex flex-col gap-2">
@@ -128,10 +84,10 @@ export function BudgetForm({ initial, onSubmit, onCancel }: BudgetFormProps) {
       {errorMessage && <FormErrorBanner message={errorMessage} />}
 
       <div className="flex gap-2">
-        <Button variant="outline" className="flex-1" onClick={onCancel}>
+        <Button variant="outline" className="flex-1" disabled={isSubmitting} onClick={onCancel}>
           {t('form.cancel')}
         </Button>
-        <Button className="flex-1" disabled={!canSubmit} onClick={() => submit({ categoryId, limit: numericAmount })}>
+        <Button className="flex-1" disabled={!canSubmit} loading={isSubmitting} onClick={() => categoryId && submit({ categoryId, limit: numericAmount })}>
           {initial ? t('form.save') : t('budget.add')}
         </Button>
       </div>
