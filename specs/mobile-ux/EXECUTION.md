@@ -8,11 +8,11 @@ chain merges. Frontend code via `react-frontend-developer`; `terse-commit` befor
 
 ## STATUS
 
-- Current phase: Phase 3 complete on `mobile-ux/phase-3-categories`
+- Current phase: Phase 4 complete on `mobile-ux/phase-4-optimistic`
 - Phase 1 — Transaction form fixes: `done`
 - Phase 2 — Transaction list parent: `done`
 - Phase 3 — Categories redesign: `done`
-- Phase 4 — Optimistic transaction updates: `pending`
+- Phase 4 — Optimistic transaction updates: `done`
 - Phase 5 — Pull-to-refresh: `pending`
 - Verification debt: none
 
@@ -122,16 +122,16 @@ Branch: `mobile-ux/phase-4-optimistic` (off `mobile-ux/phase-3-categories`, stac
 
 In `features/transactions/queries.ts`, convert the three mutation hooks to optimistic.
 
-- [ ] `useAddTransaction`: `onMutate` → `cancelQueries(['transactions', user?.id])`,
+- [x] `useAddTransaction`: `onMutate` → `cancelQueries(['transactions', user?.id])`,
       snapshot previous, insert a temp-id optimistic row into the cache; `onError` → restore
       snapshot; `onSettled` → `invalidateQueries`.
-- [ ] `useUpdateTransaction`: same pattern, patch the matching row in the cached array.
-- [ ] `useDeleteTransaction`: same pattern, remove the row from the cached array.
-- [ ] Remove the optimistic-updates line from `docs/BACKLOG.md` (Ideas section).
+- [x] `useUpdateTransaction`: same pattern, patch the matching row in the cached array.
+- [x] `useDeleteTransaction`: same pattern, remove the row from the cached array.
+- [x] Remove the optimistic-updates line from `docs/BACKLOG.md` (Ideas section).
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test`
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm --filter @wallet/web test`
 
 **Review checklist (user, at PR review):**
 - [ ] Add a transaction — it appears in the list instantly before the request resolves.
