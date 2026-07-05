@@ -1,11 +1,16 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/core/supabase'
+import { toAppAuthError } from '@/features/auth/auth-errors'
 
-interface AuthContextValue {
+export interface AuthContextValue {
   session: Session | null
   user: User | null
-  signIn: () => Promise<void>
+  signInWithGoogle: () => Promise<void>
+  signInWithPassword: (params: { email: string; password: string }) => Promise<void>
+  signUpWithPassword: (params: { email: string; password: string }) => Promise<void>
+  requestPasswordReset: (params: { email: string }) => Promise<void>
+  updatePassword: (params: { password: string }) => Promise<void>
   signOut: () => Promise<void>
   loading: boolean
 }
@@ -24,16 +29,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s)
+      setLoading(false)
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  const signIn = async () => {
-    await supabase.auth.signInWithOAuth({
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: window.location.href },
     })
+
+    if (error) throw toAppAuthError(error)
+  }
+
+  const signInWithPassword = async ({ email, password }: { email: string; password: string }) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw toAppAuthError(error)
+  }
+
+  const signUpWithPassword = async ({ email, password }: { email: string; password: string }) => {
+    const { error } = await supabase.auth.signUp({ email, password })
+    if (error) throw toAppAuthError(error)
+  }
+
+  const requestPasswordReset = async ({ email }: { email: string }) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    })
+
+    if (error) throw toAppAuthError(error)
+  }
+
+  const updatePassword = async ({ password }: { password: string }) => {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw toAppAuthError(error)
   }
 
   const signOut = async () => {
@@ -41,7 +72,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, signIn, signOut, loading }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        user: session?.user ?? null,
+        signInWithGoogle,
+        signInWithPassword,
+        signUpWithPassword,
+        requestPasswordReset,
+        updatePassword,
+        signOut,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

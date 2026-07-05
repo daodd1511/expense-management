@@ -11,9 +11,8 @@ import { AuthProvider } from './features/auth/auth'
 import { LangProvider } from './core/i18n'
 import { ErrorBoundary } from './core/ErrorBoundary'
 import { handleMutationError } from './core/mutationErrorHandler'
+import { AppRouter } from './routing/router'
 import { ThemeProvider } from './shared/components/ThemeProvider'
-import { AuthGate } from './features/auth/components/AuthGate'
-import { ResponsiveApp } from './layouts/ResponsiveApp'
 import { OfflineBanner } from './shared/components/OfflineBanner'
 
 const queryClient = new QueryClient({
@@ -35,9 +34,7 @@ createRoot(document.getElementById('root')!).render(
             <Toaster richColors position="top-center" />
             <OfflineBanner />
             <ErrorBoundary>
-              <AuthGate>
-                <ResponsiveApp />
-              </AuthGate>
+              <AppRouter />
             </ErrorBoundary>
           </LangProvider>
         </ThemeProvider>
