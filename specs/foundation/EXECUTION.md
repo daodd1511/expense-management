@@ -8,11 +8,12 @@ Frontend code via `react-frontend-developer`; `terse-commit` before commits.
 
 ## STATUS
 
-- Current phase: none started
-- Phase 1 — Backend atomicity + tooling: `pending`
+- Current phase: 1 — `done-with-debt`
+- Phase 1 — Backend atomicity + tooling: `done-with-debt`
 - Phase 2 — Date policy: `pending`
 - Phase 3 — Store refactor + bulk delete + docs: `pending`
-- Verification debt: none
+- Verification debt: Phase 1 migration not applied to the linked Supabase project (no
+  live credentials in this environment); SQL authored and reviewed, apply at PR review.
 
 ---
 
@@ -23,30 +24,38 @@ integration branch)
 
 Backend + tooling only, no FE dependency — independently verifiable and revertable.
 
-- [ ] **F2 migration** — new `supabase/migrations/<ts>_log_subscription_rpc.sql`: define
-      `log_subscription(p_owner_id, p_subscription_id, p_tx <fields>, p_next_due_date)` that,
-      in a single function body (implicit transaction), inserts the transaction row and
-      updates `subscriptions.next_due_date` for that owner+id, then returns the inserted
-      transaction row and the updated subscription row. `SECURITY DEFINER` not required —
-      keep it `INVOKER` and rely on the existing RLS/`owner_id` guards; scope every write by
-      `owner_id = p_owner_id`.
-- [ ] **F2 route** — rewrite `subscriptionsRouter.post('/:id/log')` in
-      `packages/api/src/routes/subscriptions.ts`: keep the fetch + `advanceNextDueDate(...)`
-      TS computation, then replace the two-write insert (`:83`) + update (`:105`) with one
-      `supabase.rpc('log_subscription', { ... })` call. Map failures via `mapDbError`; parse
-      the returned rows with `transactionRowSchema` / `subscriptionRowSchema` and return the
-      same response shape as today.
-- [ ] **F7 dev watch** — change `packages/api` `dev` script in `packages/api/package.json`
-      from build-once + `node dist/index.js` to a source watcher (`tsx watch src/index.ts`,
-      add `tsx` as a dev dep if absent). Confirm `pnpm dev:api` boots and reloads on edit.
+- [x] **F2 migration** — `supabase/migrations/20260705061832_log_subscription_rpc.sql`:
+      `log_subscription(p_owner_id, p_subscription_id, p_type, p_amount, p_category_id,
+      p_account_id, p_merchant, p_note, p_tx_date, p_next_due_date)` — single `plpgsql`
+      function body (implicit transaction) that row-locks the subscription, inserts the
+      transaction, updates `next_due_date`, and returns both rows (flat `tx_*`/`sub_*`
+      columns). Kept `INVOKER` (default), scoped by `owner_id = p_owner_id` throughout.
+- [x] **F2 route** — rewrote `subscriptionsRouter.post('/:id/log')` in
+      `packages/api/src/routes/subscriptions.ts`: kept the fetch + `advanceNextDueDate(...)`
+      TS computation, replaced the two-write insert+update with one
+      `supabase.rpc('log_subscription', { ... }).single<LogSubscriptionRpcRow>()` call.
+      Failures map via `mapDbError`; the returned row is reassembled into
+      `transactionRowSchema`/`subscriptionRowSchema` shapes and parsed (defense-in-depth on
+      the RPC's return shape). Response contract unchanged — still `{ data: subscription }`,
+      matching the FE's `subscriptionResponseSchema` (untouched, out of scope this phase).
+      Also hand-added the `log_subscription` entry to `packages/shared/src/database.types.ts`
+      `Functions` map (was `[_ in never]: never`) so the `.rpc()` call typechecks — mirrors
+      what a real `supabase gen types` regeneration will produce once the migration applies.
+- [x] **F7 dev watch** — `packages/api` `dev` script now `tsx watch src/index.ts`; added
+      `tsx` devDependency. Verified: booted with `PORT=3999`, `GET /health` responded, edited
+      `index.ts` while running → tsx detected the change and restarted, new response
+      reflected the edit. Edit reverted after the check (git clean).
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/api typecheck`
-- [ ] `pnpm --filter @wallet/api build`
-- [ ] `pnpm --filter @wallet/api test` (if the package has tests; otherwise note none exist)
-- [ ] Migration SQL authored and syntax-sane. **Applying** it (`supabase db push`) needs live
-      Supabase credentials — foreseeably env-blocked for the agent; mark `[~]` with the SQL
-      diff as substitute evidence and mirror to STATUS debt if it can't be applied here.
+- [x] `pnpm --filter @wallet/api typecheck` — pass
+- [x] `pnpm --filter @wallet/api build` — pass
+- [x] `pnpm --filter @wallet/api test` — 6 files / 24 tests pass (no existing
+      `subscriptions.test.ts`; route has no prior test coverage to preserve)
+- [~] Migration SQL authored, syntax-reviewed, and typed against by the `database.types.ts`
+      addition above. **Applying** it (`supabase db push`) needs live Supabase credentials —
+      env-blocked in this environment. Substitute evidence: the migration file itself
+      (`supabase/migrations/20260705061832_log_subscription_rpc.sql`) plus the route/type
+      changes that assume its shape. Mirrored in STATUS verification debt above.
 
 **Review checklist (user, at PR review):**
 - [ ] Apply the migration (`supabase db push`) against the linked project.
