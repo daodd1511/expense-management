@@ -1,4 +1,5 @@
 
+import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import {
   CalendarClock,
   CreditCard,
@@ -21,15 +22,8 @@ import { useAppDataLoading } from '@/shared/hooks/useAppDataLoading'
 import { dueBanner } from '@/features/subscriptions/helpers'
 import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
-import { DesktopAccounts } from '@/features/accounts/components/DesktopAccounts'
-import { DesktopBudgets } from '@/features/budgets/components/DesktopBudgets'
-import { DesktopDashboard } from '@/features/dashboard/components/DesktopDashboard'
-import { DesktopSettings } from '@/features/settings/components/Settings'
-import { DesktopSubscriptions } from '@/features/subscriptions/components/DesktopSubscriptions'
-import { DesktopTransactionsTable } from '@/features/transactions/components/DesktopTransactionsTable'
-import { CategoriesPage } from '@/features/categories/components/CategoriesPage'
-
-type Tab = 'dashboard' | 'transactions' | 'budgets' | 'subscriptions' | 'accounts' | 'settings' | 'categories'
+import { sectionFromPath } from '@/routing/app-route-state'
+import { TransactionOverlayProvider } from '@/layouts/TransactionOverlayContext'
 
 export function DesktopApp() {
   const { data: subscriptions = [] } = useSubscriptions()
@@ -38,18 +32,20 @@ export function DesktopApp() {
   const updateTx = useUpdateTransaction()
   const loading = useAppDataLoading()
   const { t } = useLang()
-  const [tab, setTab] = useState<Tab>('dashboard')
+  const navigate = useNavigate()
+  const location = useLocation()
+  const section = sectionFromPath(location.pathname)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | undefined>(undefined)
   const dueCount = dueBanner(subscriptions, transactions).length
 
-  const NAV: { id: Tab; label: string; icon: typeof LayoutDashboard; badge?: number }[] = [
-    { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
-    { id: 'transactions', label: t('nav.transactions'), icon: Receipt },
-    { id: 'budgets', label: t('nav.budgets'), icon: Target },
-    { id: 'subscriptions', label: t('nav.subscriptions'), icon: CalendarClock, badge: dueCount },
-    { id: 'accounts', label: t('nav.accounts'), icon: Wallet },
-    { id: 'settings', label: t('nav.settings'), icon: Settings },
+  const NAV: { href: '/' | '/transactions' | '/budgets' | '/subscriptions' | '/accounts' | '/settings'; section: typeof section; label: string; icon: typeof LayoutDashboard; badge?: number }[] = [
+    { href: '/', section: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { href: '/transactions', section: 'transactions', label: t('nav.transactions'), icon: Receipt },
+    { href: '/budgets', section: 'budgets', label: t('nav.budgets'), icon: Target },
+    { href: '/subscriptions', section: 'subscriptions', label: t('nav.subscriptions'), icon: CalendarClock, badge: dueCount },
+    { href: '/accounts', section: 'accounts', label: t('nav.accounts'), icon: Wallet },
+    { href: '/settings', section: 'settings', label: t('nav.settings'), icon: Settings },
   ]
 
   const openAdd = () => {
@@ -64,7 +60,8 @@ export function DesktopApp() {
   if (loading) return <LoadingScreen />
 
   return (
-    <div className="flex min-h-dvh bg-background text-foreground">
+    <TransactionOverlayProvider value={{ openAdd, openEdit }}>
+      <div className="flex min-h-dvh bg-background text-foreground">
       {/* Sidebar */}
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border bg-sidebar p-4 lg:flex">
         <div className="flex items-center gap-2.5 px-2 py-3">
@@ -80,12 +77,12 @@ export function DesktopApp() {
         <nav className="mt-4 flex flex-col gap-1">
           {NAV.map((item) => {
             const Icon = item.icon
-            const active = tab === item.id
+            const active = item.section === 'settings' ? section === 'settings' || section === 'settings-categories' : section === item.section
             return (
               <button
-                key={item.id}
+                key={item.href}
                 type="button"
-                onClick={() => setTab(item.id)}
+                onClick={() => navigate({ to: item.href })}
                 className={cn(
                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
                   active
@@ -125,13 +122,7 @@ export function DesktopApp() {
       {/* Main */}
       <main className="flex-1 overflow-x-hidden px-5 py-6 lg:px-10 lg:py-8">
         <div className="mx-auto max-w-6xl">
-          {tab === 'dashboard' && <DesktopDashboard onNavigate={(s) => setTab(s as Tab)} onEdit={openEdit} />}
-          {tab === 'transactions' && <DesktopTransactionsTable onEdit={openEdit} />}
-          {tab === 'budgets' && <DesktopBudgets />}
-          {tab === 'subscriptions' && <DesktopSubscriptions />}
-          {tab === 'accounts' && <DesktopAccounts />}
-          {tab === 'settings' && <DesktopSettings onNavigateToCategories={() => setTab('categories')} />}
-          {tab === 'categories' && <CategoriesPage variant="desktop" onBack={() => setTab('settings')} />}
+          <Outlet />
         </div>
       </main>
 
@@ -149,6 +140,7 @@ export function DesktopApp() {
           />
         )}
       </Drawer>
-    </div>
+      </div>
+    </TransactionOverlayProvider>
   )
 }

@@ -7,6 +7,15 @@ import {
   createRouter,
   redirect,
 } from '@tanstack/react-router'
+import {
+  AccountsPage,
+  BudgetsPage,
+  DashboardPage,
+  SettingsCategoriesPage,
+  SettingsPage,
+  SubscriptionsPage,
+  TransactionsPage,
+} from '@/routing/app-pages'
 import { LoadingScreen } from '@/shared/components/LoadingScreen'
 import { ResponsiveApp } from '@/layouts/ResponsiveApp'
 import { useAuth, type AuthContextValue } from '@/features/auth/auth'
@@ -44,6 +53,10 @@ function ProtectedAppRouteComponent() {
   }
 
   return <ResponsiveApp />
+}
+
+function EmptyRouteComponent() {
+  return null
 }
 
 const rootRoute = createRootRouteWithContext<RouterContext>()({
@@ -125,6 +138,60 @@ const appRoute = createRoute({
   component: ProtectedAppRouteComponent,
 })
 
+const dashboardRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/',
+  component: DashboardPage,
+})
+
+const transactionsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: 'transactions',
+  component: TransactionsPage,
+})
+
+const budgetsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: 'budgets',
+  component: BudgetsPage,
+})
+
+const subscriptionsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: 'subscriptions',
+  component: SubscriptionsPage,
+})
+
+const accountsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: 'accounts',
+  component: AccountsPage,
+})
+
+const settingsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: 'settings',
+  component: SettingsPage,
+})
+
+const settingsCategoriesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: 'settings/categories',
+  component: SettingsCategoriesPage,
+})
+
+const planningRedirectRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: 'planning',
+  beforeLoad: () => {
+    throw redirect({
+      to: '/budgets',
+      replace: true,
+    })
+  },
+  component: EmptyRouteComponent,
+})
+
 const routeTree = rootRoute.addChildren([
   authRoute.addChildren([
     signInRoute,
@@ -132,7 +199,16 @@ const routeTree = rootRoute.addChildren([
     forgotPasswordRoute,
     resetPasswordRoute,
   ]),
-  appRoute,
+  appRoute.addChildren([
+    dashboardRoute,
+    transactionsRoute,
+    budgetsRoute,
+    subscriptionsRoute,
+    accountsRoute,
+    settingsRoute,
+    settingsCategoriesRoute,
+    planningRedirectRoute,
+  ]),
 ])
 
 export const router = createRouter({
