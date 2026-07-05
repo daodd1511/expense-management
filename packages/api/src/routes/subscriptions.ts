@@ -2,16 +2,47 @@ import { Hono } from 'hono'
 import {
   advanceNextDueDate,
   fromSubscription,
-  fromTransaction,
   subscriptionCreateSchema,
   subscriptionPatchSchema,
   subscriptionPatchToRow,
   subscriptionRowSchema,
   toSubscription,
+  transactionRowSchema,
 } from '@wallet/shared'
 import { getSupabase } from '../db/supabase'
 import { jsonError, mapDbError, parseJsonBody, parseRows } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
+
+/** Flat row shape returned by the `log_subscription` RPC (prefixed tx_/sub_ columns). */
+type LogSubscriptionRpcRow = {
+  tx_id: string
+  tx_owner_id: string
+  tx_type: string
+  tx_amount: number
+  tx_category_id: string | null
+  tx_account_id: string
+  tx_to_account_id: string | null
+  tx_merchant: string
+  tx_note: string | null
+  tx_tx_date: string
+  tx_receipt_url: string | null
+  tx_subscription_id: string | null
+  tx_created_at: string
+  sub_id: string
+  sub_owner_id: string
+  sub_name: string
+  sub_amount: number
+  sub_type: string
+  sub_category_id: string | null
+  sub_account_id: string
+  sub_cadence: string
+  sub_day_of_month: number
+  sub_month_of_year: number
+  sub_next_due_date: string
+  sub_note: string | null
+  sub_active: boolean
+  sub_created_at: string
+}
 
 export const subscriptionsRouter = new Hono<AuthEnv>()
 
@@ -78,51 +109,70 @@ subscriptionsRouter.post('/:id/log', async (c) => {
   }
 
   const domainSubscription = toSubscription(subscription.data)
-  const txInsert = await supabase
-    .from('transactions')
-    .insert(
-      fromTransaction({
-        transaction: {
-          type: domainSubscription.type,
-          amount: domainSubscription.amount,
-          categoryId: domainSubscription.categoryId,
-          accountId: domainSubscription.accountId,
-          toAccountId: null,
-          merchant: domainSubscription.name,
-          note: domainSubscription.note,
-          date: new Date().toISOString().slice(0, 10),
-          receipt: null,
-          subscriptionId: domainSubscription.id,
-        },
-        ownerId: userId,
-      }),
-    )
-  if (txInsert.error) {
-    return mapDbError(c, txInsert.error)
-  }
-
   const nextDueDate = advanceNextDueDate(domainSubscription)
-  const update = await supabase
-    .from('subscriptions')
-    .update({ next_due_date: nextDueDate })
-    .eq('id', domainSubscription.id)
-    .eq('owner_id', userId)
-    .select('*')
-    .maybeSingle()
+  const todayIso = new Date().toISOString().slice(0, 10)
 
-  if (update.error) {
-    return mapDbError(c, update.error)
+  const rpc = await supabase
+    .rpc('log_subscription', {
+      p_owner_id: userId,
+      p_subscription_id: domainSubscription.id,
+      p_type: domainSubscription.type,
+      p_amount: domainSubscription.amount,
+      p_category_id: domainSubscription.categoryId,
+      p_account_id: domainSubscription.accountId,
+      p_merchant: domainSubscription.name,
+      p_note: domainSubscription.note ?? null,
+      p_tx_date: todayIso,
+      p_next_due_date: nextDueDate,
+    })
+    .single<LogSubscriptionRpcRow>()
+
+  if (rpc.error) {
+    return mapDbError(c, rpc.error)
   }
-  if (!update.data) {
+  if (!rpc.data) {
     return jsonError(c, 404, 'Subscription not found')
   }
 
-  const updated = subscriptionRowSchema.safeParse(update.data)
-  if (!updated.success) {
-    return jsonError(c, 500, 'Updated subscription failed validation', updated.error.flatten())
+  const txRow = transactionRowSchema.safeParse({
+    id: rpc.data.tx_id,
+    owner_id: rpc.data.tx_owner_id,
+    type: rpc.data.tx_type,
+    amount: rpc.data.tx_amount,
+    category_id: rpc.data.tx_category_id,
+    account_id: rpc.data.tx_account_id,
+    to_account_id: rpc.data.tx_to_account_id,
+    merchant: rpc.data.tx_merchant,
+    note: rpc.data.tx_note,
+    tx_date: rpc.data.tx_tx_date,
+    receipt_url: rpc.data.tx_receipt_url,
+    subscription_id: rpc.data.tx_subscription_id,
+    created_at: rpc.data.tx_created_at,
+  })
+  const subRow = subscriptionRowSchema.safeParse({
+    id: rpc.data.sub_id,
+    owner_id: rpc.data.sub_owner_id,
+    name: rpc.data.sub_name,
+    amount: rpc.data.sub_amount,
+    type: rpc.data.sub_type,
+    category_id: rpc.data.sub_category_id,
+    account_id: rpc.data.sub_account_id,
+    cadence: rpc.data.sub_cadence,
+    day_of_month: rpc.data.sub_day_of_month,
+    month_of_year: rpc.data.sub_month_of_year,
+    next_due_date: rpc.data.sub_next_due_date,
+    note: rpc.data.sub_note,
+    active: rpc.data.sub_active,
+    created_at: rpc.data.sub_created_at,
+  })
+  if (!txRow.success) {
+    return jsonError(c, 500, 'Logged transaction failed validation', txRow.error.flatten())
+  }
+  if (!subRow.success) {
+    return jsonError(c, 500, 'Updated subscription failed validation', subRow.error.flatten())
   }
 
-  return c.json({ data: toSubscription(updated.data) })
+  return c.json({ data: toSubscription(subRow.data) })
 })
 
 subscriptionsRouter.patch('/:id', async (c) => {
