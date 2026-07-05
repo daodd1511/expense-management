@@ -9,11 +9,10 @@ Frontend code via `react-frontend-developer`; `terse-commit` before commits.
 ## STATUS
 
 - Current phase: All phases complete
-- Phase 1 — Backend atomicity + tooling: `done-with-debt`
+- Phase 1 — Backend atomicity + tooling: `done`
 - Phase 2 — Date policy: `done`
 - Phase 3 — Store refactor + bulk delete + docs: `done`
-- Verification debt: Phase 1 migration not applied to the linked Supabase project (no
-  live credentials in this environment); SQL authored and reviewed, apply at PR review.
+- Verification debt: none — migration applied by the user via `npx supabase db push`.
 
 ---
 
@@ -51,14 +50,11 @@ Backend + tooling only, no FE dependency — independently verifiable and revert
 - [x] `pnpm --filter @wallet/api build` — pass
 - [x] `pnpm --filter @wallet/api test` — 6 files / 24 tests pass (no existing
       `subscriptions.test.ts`; route has no prior test coverage to preserve)
-- [~] Migration SQL authored, syntax-reviewed, and typed against by the `database.types.ts`
-      addition above. **Applying** it (`supabase db push`) needs live Supabase credentials —
-      env-blocked in this environment. Substitute evidence: the migration file itself
-      (`supabase/migrations/20260705061832_log_subscription_rpc.sql`) plus the route/type
-      changes that assume its shape. Mirrored in STATUS verification debt above.
+- [x] Migration applied by the user via `npx supabase db push` (project-local `supabase`
+      CLI dep, not on global `$PATH`).
 
 **Review checklist (user, at PR review):**
-- [ ] Apply the migration (`supabase db push`) against the linked project.
+- [x] Migration applied (`npx supabase db push`) against the linked project.
 - [ ] Log a subscription payment (one-tap) → exactly one transaction is created and
       `next_due_date` advances by one cadence.
 - [ ] Force the RPC to fail (e.g. a bad param) → **neither** the transaction nor the
