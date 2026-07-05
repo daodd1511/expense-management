@@ -5,10 +5,10 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 2 — done
+- Current phase: All phases complete
 - Phase 1 — Subscription confirm-payment: done
 - Phase 2 — Loading states: done
-- Phase 3 — Shortcuts + command palette: pending
+- Phase 3 — Shortcuts + command palette: done
 - Verification debt: none. Phases 1 and 2 landed in one commit (`9b0784e`) on
   `polish/phase-1-subscription-confirm-payment` rather than on separate stacked branches —
   a prior session's Phase 2 edits were started directly on the Phase 1 branch and were
@@ -90,21 +90,38 @@ push/PR. Review checklist goes into the PR description.
 
 ## Phase 3 — Shortcuts + command palette
 
-Branch: `polish/phase-3-command-palette` (off `polish/phase-2-loading-states`, stacked)
+Branch: `polish/phase-3-command-palette` (off `polish/phase-1-subscription-confirm-payment`,
+stacked — Phase 2 landed on that same branch, see STATUS)
 
 This phase sits last because it composes existing desktop navigation and creation flows
 without blocking the earlier UX fixes.
 
-- [ ] Add desktop keyboard-shortcut handling in `packages/web/src/shared/hooks/useKeyboardShortcuts.ts` that ignores focused inputs and textareas.
-- [ ] Build a filterable command palette on the existing dialog primitives in `packages/web/src/shared/components/` with entries for screen navigation and new-entity actions.
-- [ ] Mount the desktop-only palette and shortcut wiring in `packages/web/src/layouts/desktop/DesktopApp.tsx`.
-- [ ] Connect palette actions to the existing navigation and create flows used by Dashboard, Transactions, Accounts, Budgets, Subscriptions, Categories, and Settings, plus the new transaction/account/budget/subscription entry points.
-- [ ] Add i18n labels and targeted tests for shortcut guarding, palette open/filter behavior, and action dispatch.
+- [x] `shared/hooks/useKeyboardShortcuts.ts` — global key bindings; plain-key shortcuts
+      ignored while an input/textarea/contenteditable is focused, `meta` (Cmd/Ctrl)
+      shortcuts always fire.
+- [x] `shared/components/CommandPalette.tsx` — filterable palette built on the existing
+      `Modal` primitive (no new dependency): Cmd/Ctrl+K toggles it, typing filters by
+      label, arrow keys move the highlight, Enter runs the highlighted action.
+- [x] Mounted in `layouts/desktop/DesktopApp.tsx`, desktop-only (that layout never renders
+      on mobile). Bare `N` → new transaction, bare `/` → focus the transactions search
+      (via a `?focus=search` route param when navigating there, or a direct
+      `document.querySelector('[data-global-search="transactions"]')` when already on the
+      page — both were pre-existing unwired scaffolding on `DesktopTransactionsTable`).
+- [x] Palette actions: navigate to Dashboard/Transactions/Budgets/Subscriptions/Accounts/
+      Settings/Categories; create actions for transaction (`/transactions/new`), and
+      account/budget/subscription via a new `routing/create-intent.ts` `?create=` token
+      that `AccountsPage`/`BudgetsPage`/`SubscriptionsPage` read and forward as
+      `createIntentToken` to `DesktopAccounts`/`DesktopBudgets`/`DesktopSubscriptions` —
+      the same prop pattern those components already had, unwired, from Phase 2's session.
+- [x] i18n: `palette.*` keys (vi/en). Tests: `useKeyboardShortcuts.test.tsx` (6 — plain-key
+      firing/guarding, meta-shortcut bypass, case-insensitive matching);
+      `CommandPalette.test.tsx` (7 — open/close toggle, label filtering, empty state, click
+      dispatch, Enter dispatch, arrow-key highlight movement).
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test`
-- [ ] `pnpm --filter @wallet/web build`
+- [x] `pnpm --filter @wallet/web typecheck` — pass
+- [x] `pnpm --filter @wallet/web test` — 28 files / 135 tests pass
+- [x] `pnpm --filter @wallet/web build` — pass
 
 **Review checklist (user, at PR review):**
 - [ ] `Cmd/Ctrl+K` opens the palette on desktop and filters actions as text is entered.
