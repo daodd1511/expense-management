@@ -7,12 +7,15 @@ import { BudgetBars } from '@/features/budgets/components/BudgetBars'
 import { useMonthlyTotals } from '@/features/dashboard/queries'
 import { TransactionRow } from '@/features/transactions/components/TransactionRow'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import { DashboardSkeleton } from '@/shared/components/Skeleton'
 import { buildDonutData, monthSummary } from '@/shared/lib/derive'
 import { formatVND, monthLabel } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { useTransactions } from '@/features/transactions/queries'
 import { todayLocalMonthIso } from '@/shared/lib/date'
 import { useCategoryLookup } from '@/features/categories/queries'
+import { useAccounts } from '@/features/accounts/queries'
+import { useBudgets } from '@/features/budgets/queries'
 import type { Transaction } from '@/core/types'
 
 function toTrendLabel(month: string, lang: 'vi' | 'en') {
@@ -28,8 +31,10 @@ export function MobileHome({
   onNavigate: (section: string, search?: Record<string, string | undefined>) => void
   onEdit: (tx: Transaction) => void
 }) {
-  const { data: transactions = [] } = useTransactions()
-  const { data: monthlyTotals = [] } = useMonthlyTotals()
+  const { data: transactions = [], isPending: transactionsPending } = useTransactions()
+  const { data: monthlyTotals = [], isPending: monthlyTotalsPending } = useMonthlyTotals()
+  const { isPending: accountsPending } = useAccounts()
+  const { isPending: budgetsPending } = useBudgets()
   const getCategory = useCategoryLookup()
   const { t, lang } = useLang()
   const summary = monthSummary(transactions)
@@ -48,6 +53,10 @@ export function MobileHome({
       month: currentMonth,
       categoryId,
     })
+  }
+
+  if (transactionsPending || monthlyTotalsPending || accountsPending || budgetsPending) {
+    return <DashboardSkeleton mobile />
   }
 
   return (

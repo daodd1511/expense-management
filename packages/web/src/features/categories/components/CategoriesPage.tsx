@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
 import { BottomSheet, Drawer } from '@/shared/components/ui/overlay'
+import { CategoriesSkeleton } from '@/shared/components/Skeleton'
 import { groupCategories } from '@/features/categories/group'
 import { CategoryForm, type CategoryFormState } from '@/features/categories/components/CategoryForm'
 import { useLang } from '@/core/i18n'
@@ -29,7 +30,7 @@ export function CategoriesPage({
   onBack: () => void
 }) {
   const isMobile = variant === 'mobile'
-  const { data: categories = [] } = useCategories()
+  const { data: categories = [], isPending } = useCategories()
   const addCat = useAddCategory()
   const updateCat = useUpdateCategory()
   const deleteCat = useDeleteCategory()
@@ -88,6 +89,10 @@ export function CategoriesPage({
       onCancel={closeForm}
     />
   )
+
+  if (isPending) {
+    return <CategoriesSkeleton mobile={isMobile} />
+  }
 
   return (
     <div className={cn('flex flex-col', isMobile ? 'gap-4 p-4 pt-3' : 'gap-6')}>

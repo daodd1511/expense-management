@@ -11,6 +11,8 @@ import { CATEGORY_ICON_OPTIONS } from '@/shared/icons'
 import { useLang } from '@/core/i18n'
 import type { Category } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
+import { isClientError } from '@/core/api'
+import { translate } from '@/core/i18n'
 
 const COLOR_OPTIONS = [
   'chart-1',
@@ -84,7 +86,8 @@ export function CategoryForm({
   const canSave = form.name.trim().length > 0
 
   const { submit: submitSave, isSubmitting: isSaving, errorMessage: saveError } = useFormSubmit(onSave)
-  const { submit: submitDelete, errorMessage: deleteError } = useFormSubmit<void>(onDelete)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const errorMessage = saveError ?? deleteError
 
   const handleSave = () => {
@@ -92,9 +95,17 @@ export function CategoryForm({
     submitSave({ ...form, name: form.name.trim() })
   }
 
-  const handleConfirmDelete = () => {
-    setConfirmDeleteOpen(false)
-    submitDelete(undefined)
+  const handleConfirmDelete = async () => {
+    setDeleteError(null)
+    setIsDeleting(true)
+    try {
+      await onDelete()
+      setConfirmDeleteOpen(false)
+    } catch (error: unknown) {
+      setDeleteError(translate(isClientError(error) ? 'error.badRequest' : 'error.server'))
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const handleSetType = (type: CategoryFormState['type']) => {
@@ -264,6 +275,7 @@ export function CategoryForm({
         open={confirmDeleteOpen}
         onCancel={() => setConfirmDeleteOpen(false)}
         onConfirm={handleConfirmDelete}
+        confirmLoadingLabel={t('confirm.deleting')}
       />
     </div>
   )

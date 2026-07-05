@@ -1,5 +1,5 @@
 import { ArrowLeftRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Paperclip, Pencil, Search, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAccounts, useAccountLookup } from '@/features/accounts/queries'
 import { useCategories, useCategoryLookup } from '@/features/categories/queries'
 import { TransactionsMonthSwitcher } from '@/features/transactions/components/TransactionsMonthSwitcher'
@@ -11,6 +11,7 @@ import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Input } from '@/shared/components/ui/input'
+import { TransactionsSkeleton } from '@/shared/components/Skeleton'
 import { Select, SelectItem, SelectPopup, SelectPortal, SelectPositioner, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { amountColorClass, formatShortDate, formatSigned } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/utils'
@@ -42,6 +43,8 @@ export function DesktopTransactionsTable({
   onTypeChange,
   onCategoryChange,
   onAccountChange,
+  shouldFocusSearch = false,
+  onSearchFocusHandled,
 }: {
   onEdit: (tx: Transaction) => void
   month: string
@@ -54,10 +57,12 @@ export function DesktopTransactionsTable({
   onTypeChange: (type: TransactionFilterType) => void
   onCategoryChange: (categoryId: string) => void
   onAccountChange: (accountId: string) => void
+  shouldFocusSearch?: boolean
+  onSearchFocusHandled?: () => void
 }) {
-  const { data: transactions = [] } = useTransactions(month)
-  const { data: categories = [] } = useCategories()
-  const { data: accounts = [] } = useAccounts()
+  const { data: transactions = [], isPending: transactionsPending } = useTransactions(month)
+  const { data: categories = [], isPending: categoriesPending } = useCategories()
+  const { data: accounts = [], isPending: accountsPending } = useAccounts()
   const getCategory = useCategoryLookup()
   const getAccount = useAccountLookup()
   const deleteTxs = useDeleteTransactions()
@@ -67,6 +72,7 @@ export function DesktopTransactionsTable({
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [page, setPage] = useState(1)
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([])
+  const searchRef = useRef<HTMLInputElement | null>(null)
 
   const typeFilters: { value: TransactionFilterType; label: string }[] = [
     { value: 'all', label: t('tx.filterAll') },
@@ -160,6 +166,17 @@ export function DesktopTransactionsTable({
     setPendingDeleteIds([])
   }
 
+  useEffect(() => {
+    if (!shouldFocusSearch) return
+    searchRef.current?.focus()
+    searchRef.current?.select()
+    onSearchFocusHandled?.()
+  }, [shouldFocusSearch, onSearchFocusHandled])
+
+  if (transactionsPending || categoriesPending || accountsPending) {
+    return <TransactionsSkeleton />
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -167,6 +184,8 @@ export function DesktopTransactionsTable({
         <div className="relative w-72">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            ref={searchRef}
+            data-global-search="transactions"
             value={query}
             onChange={(event) => {
               onQueryChange(event.target.value)

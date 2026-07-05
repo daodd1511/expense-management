@@ -1,8 +1,9 @@
 
 import { Banknote, CreditCard, Landmark, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
+import { AccountsSkeleton } from '@/shared/components/Skeleton'
 import { Card } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Modal } from '@/shared/components/ui/overlay'
@@ -14,8 +15,15 @@ import { cn } from '@/shared/lib/utils'
 
 type AccountInput = Omit<Account, 'id' | 'balance'>
 
-export function DesktopAccounts() {
-  const { data: accounts = [] } = useAccounts()
+export function DesktopAccounts({
+  createIntentToken,
+  onCreateIntentHandled,
+}: {
+  createIntentToken?: string
+  onCreateIntentHandled?: () => void
+}) {
+  const accountsQuery = useAccounts()
+  const { data: accounts = [], isPending } = accountsQuery
   const addAcc = useAddAccount()
   const updateAcc = useUpdateAccount()
   const deleteAcc = useDeleteAccount()
@@ -24,6 +32,7 @@ export function DesktopAccounts() {
   const [editing, setEditing] = useState<Account | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [handledCreateIntent, setHandledCreateIntent] = useState<string | null>(null)
 
   const KIND: Record<AccountKind, { icon: LucideIcon; label: string }> = {
     cash: { icon: Banknote, label: t('accounts.kindCash') },
@@ -52,6 +61,15 @@ export function DesktopAccounts() {
     else await addAcc.mutateAsync(data)
     close()
   }
+
+  useEffect(() => {
+    if (!createIntentToken || handledCreateIntent === createIntentToken || modalOpen) return
+    openAdd()
+    setHandledCreateIntent(createIntentToken)
+    onCreateIntentHandled?.()
+  }, [createIntentToken, handledCreateIntent, modalOpen, onCreateIntentHandled])
+
+  if (isPending) return <AccountsSkeleton />
 
   return (
     <div className="flex flex-col gap-6">

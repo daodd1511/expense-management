@@ -97,7 +97,7 @@ export function DashboardPage() {
           transition: 'transform var(--duration-base) var(--ease-out)',
         }}
       >
-        <SubscriptionDueBanner />
+        <SubscriptionDueBanner confirmVariant="sheet" />
         <MobileHome
           onNavigate={(section, search) => {
             if (section === 'budgets') navigation.goBudgets()

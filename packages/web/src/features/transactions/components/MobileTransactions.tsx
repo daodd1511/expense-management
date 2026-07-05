@@ -13,6 +13,7 @@ import type { Transaction } from '@/core/types'
 import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicator'
 import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
 import { Input } from '@/shared/components/ui/input'
+import { TransactionsSkeleton } from '@/shared/components/Skeleton'
 import { Select, SelectItem, SelectPopup, SelectPortal, SelectPositioner, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { formatDayLabel, formatVND } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/utils'
@@ -43,9 +44,9 @@ export function MobileTransactions({
   onAccountChange: (accountId: string) => void
 }) {
   const { user } = useAuth()
-  const { data: transactions = [] } = useTransactions(month)
-  const { data: categories = [] } = useCategories()
-  const { data: accounts = [] } = useAccounts()
+  const { data: transactions = [], isPending: transactionsPending } = useTransactions(month)
+  const { data: categories = [], isPending: categoriesPending } = useCategories()
+  const { data: accounts = [], isPending: accountsPending } = useAccounts()
   const getCategory = useCategoryLookup()
   const getAccount = useAccountLookup()
   const { t, lang } = useLang()
@@ -94,6 +95,10 @@ export function MobileTransactions({
 
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]))
   }, [transactions, type, categoryId, accountId, query, getCategory, getAccount])
+
+  if (transactionsPending || categoriesPending || accountsPending) {
+    return <TransactionsSkeleton mobile />
+  }
 
   return (
     <div {...pullToRefresh.bind} className="h-full overflow-y-auto overscroll-contain">

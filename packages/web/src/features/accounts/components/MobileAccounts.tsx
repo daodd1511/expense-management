@@ -3,6 +3,7 @@ import { Banknote, CreditCard, Landmark, Pencil, Plus, Trash2, Wallet } from 'lu
 import type { LucideIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
+import { AccountsSkeleton } from '@/shared/components/Skeleton'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { BottomSheet } from '@/shared/components/ui/overlay'
@@ -99,7 +100,7 @@ function AccountRow({
 }
 
 export function MobileAccounts() {
-  const { data: accounts = [] } = useAccounts()
+  const { data: accounts = [], isPending } = useAccounts()
   const addAcc = useAddAccount()
   const updateAcc = useUpdateAccount()
   const deleteAcc = useDeleteAccount()
@@ -136,6 +137,8 @@ export function MobileAccounts() {
     else await addAcc.mutateAsync(data)
     close()
   }
+
+  if (isPending) return <AccountsSkeleton mobile />
 
   return (
     <div className="flex flex-col gap-4 p-4">

@@ -4,6 +4,7 @@ import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { BudgetForm } from '@/features/budgets/components/BudgetForm'
 import { budgetState } from '@/features/budgets/components/BudgetBars'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
+import { BudgetsSkeleton } from '@/shared/components/Skeleton'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
@@ -18,8 +19,8 @@ import { useTransactions } from '@/features/transactions/queries'
 import type { Budget } from '@/core/types'
 
 export function MobileBudgets() {
-  const { data: budgets = [] } = useBudgets()
-  const { data: transactions = [] } = useTransactions()
+  const { data: budgets = [], isPending: budgetsPending } = useBudgets()
+  const { data: transactions = [], isPending: transactionsPending } = useTransactions()
   const getCategory = useCategoryLookup()
   const addBud = useAddBudget()
   const updateBud = useUpdateBudget()
@@ -37,6 +38,8 @@ export function MobileBudgets() {
     else await updateBud.mutateAsync(b)
     setSheet(null)
   }
+
+  if (budgetsPending || transactionsPending) return <BudgetsSkeleton mobile />
 
   return (
     <div className="flex flex-col gap-4 p-4">

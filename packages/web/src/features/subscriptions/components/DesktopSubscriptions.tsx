@@ -1,5 +1,7 @@
 import { CalendarClock, Pause, Pencil, Play, Plus, RefreshCw, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { SubscriptionLogConfirm } from '@/features/subscriptions/components/SubscriptionLogConfirm'
+import { SubscriptionsSkeleton } from '@/shared/components/Skeleton'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { SubscriptionDueBanner } from '@/features/subscriptions/components/SubscriptionDueBanner'
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm'
@@ -20,6 +22,7 @@ import { useCategoryLookup } from '@/features/categories/queries'
 import { useAccountLookup } from '@/features/accounts/queries'
 import { daysUntilDue, isDue, isDueSoon, monthlyEquivalent, totalMonthlyCost } from '@/features/subscriptions/helpers'
 import type { Subscription } from '@/core/types'
+import { todayLocalIso } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
 
 function dueBadge(sub: Subscription) {
@@ -152,8 +155,15 @@ function SubCard({
   )
 }
 
-export function DesktopSubscriptions() {
-  const { data: subscriptions = [] } = useSubscriptions()
+export function DesktopSubscriptions({
+  createIntentToken,
+  onCreateIntentHandled,
+}: {
+  createIntentToken?: string
+  onCreateIntentHandled?: () => void
+}) {
+  const subscriptionsQuery = useSubscriptions()
+  const { data: subscriptions = [], isPending } = subscriptionsQuery
   const addSub = useAddSubscription()
   const updateSub = useUpdateSubscription()
   const deleteSub = useDeleteSubscription()
@@ -162,6 +172,8 @@ export function DesktopSubscriptions() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<Subscription | undefined>(undefined)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [pendingLogSubscription, setPendingLogSubscription] = useState<Subscription | null>(null)
+  const [handledCreateIntent, setHandledCreateIntent] = useState<string | null>(null)
 
   const active = subscriptions.filter((s) => s.active)
   const paused = subscriptions.filter((s) => !s.active)
@@ -182,6 +194,20 @@ export function DesktopSubscriptions() {
     close()
   }
 
+  const handleConfirmLog = async (subscription: Subscription) => {
+    await logSub.mutateAsync(subscription)
+    setPendingLogSubscription(null)
+  }
+
+  useEffect(() => {
+    if (!createIntentToken || handledCreateIntent === createIntentToken || drawerOpen) return
+    openAdd()
+    setHandledCreateIntent(createIntentToken)
+    onCreateIntentHandled?.()
+  }, [createIntentToken, drawerOpen, handledCreateIntent, onCreateIntentHandled])
+
+  if (isPending) return <SubscriptionsSkeleton />
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -198,7 +224,7 @@ export function DesktopSubscriptions() {
 
       {/* Due banner */}
       <div className="rounded-xl">
-        <SubscriptionDueBanner />
+        <SubscriptionDueBanner confirmVariant="modal" />
       </div>
 
       {/* KPI row */}
@@ -236,7 +262,7 @@ export function DesktopSubscriptions() {
               onEdit={() => openEdit(s)}
               onDelete={() => setPendingDeleteId(s.id)}
               onToggleActive={() => updateSub.mutateAsync({ id: s.id, patch: { active: !s.active } })}
-              onLog={() => logSub.mutateAsync(s)}
+              onLog={() => setPendingLogSubscription(s)}
             />
           ))}
         </div>
@@ -253,7 +279,7 @@ export function DesktopSubscriptions() {
               onEdit={() => openEdit(s)}
               onDelete={() => setPendingDeleteId(s.id)}
               onToggleActive={() => updateSub.mutateAsync({ id: s.id, patch: { active: !s.active } })}
-              onLog={() => logSub.mutateAsync(s)}
+              onLog={() => setPendingLogSubscription(s)}
             />
           ))}
         </div>
@@ -270,7 +296,7 @@ export function DesktopSubscriptions() {
               onEdit={() => openEdit(s)}
               onDelete={() => setPendingDeleteId(s.id)}
               onToggleActive={() => updateSub.mutateAsync({ id: s.id, patch: { active: !s.active } })}
-              onLog={() => logSub.mutateAsync(s)}
+              onLog={() => setPendingLogSubscription(s)}
             />
           ))}
         </div>
@@ -303,6 +329,15 @@ export function DesktopSubscriptions() {
           if (pendingDeleteId) await deleteSub.mutateAsync(pendingDeleteId)
           setPendingDeleteId(null)
         }}
+      />
+      <SubscriptionLogConfirm
+        open={pendingLogSubscription !== null}
+        subscription={pendingLogSubscription}
+        transactionDate={todayLocalIso()}
+        variant="modal"
+        isSubmitting={logSub.isPending}
+        onCancel={() => setPendingLogSubscription(null)}
+        onConfirm={handleConfirmLog}
       />
     </div>
   )
