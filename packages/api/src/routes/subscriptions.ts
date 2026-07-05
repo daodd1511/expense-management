@@ -1,7 +1,10 @@
 import { Hono } from 'hono'
+import { z } from 'zod'
 import {
   advanceNextDueDate,
+  buildNextDueDate,
   fromSubscription,
+  isoDateSchema,
   subscriptionCreateSchema,
   subscriptionPatchSchema,
   subscriptionPatchToRow,
@@ -12,6 +15,8 @@ import {
 import { getSupabase } from '../db/supabase'
 import { jsonError, mapDbError, parseJsonBody, parseRows } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
+
+const logSubscriptionBodySchema = z.object({ today: isoDateSchema })
 
 /** Flat row shape returned by the `log_subscription` RPC (prefixed tx_/sub_ columns). */
 type LogSubscriptionRpcRow = {
@@ -66,11 +71,19 @@ subscriptionsRouter.post('/', async (c) => {
   const parsed = await parseJsonBody(c, subscriptionCreateSchema)
   if (!parsed.success) return parsed.response
 
+  const { today, ...subscriptionInput } = parsed.data
+  const nextDueDate = buildNextDueDate(
+    subscriptionInput.dayOfMonth,
+    subscriptionInput.monthOfYear,
+    subscriptionInput.cadence,
+    today,
+  )
+
   const userId = c.get('userId')
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from('subscriptions')
-    .insert(fromSubscription({ subscription: parsed.data, ownerId: userId }))
+    .insert(fromSubscription({ subscription: { ...subscriptionInput, nextDueDate }, ownerId: userId }))
     .select('*')
     .single()
 
@@ -87,6 +100,9 @@ subscriptionsRouter.post('/', async (c) => {
 })
 
 subscriptionsRouter.post('/:id/log', async (c) => {
+  const parsed = await parseJsonBody(c, logSubscriptionBodySchema)
+  if (!parsed.success) return parsed.response
+
   const userId = c.get('userId')
   const supabase = getSupabase()
   const { data, error } = await supabase
@@ -110,7 +126,6 @@ subscriptionsRouter.post('/:id/log', async (c) => {
 
   const domainSubscription = toSubscription(subscription.data)
   const nextDueDate = advanceNextDueDate(domainSubscription)
-  const todayIso = new Date().toISOString().slice(0, 10)
 
   const rpc = await supabase
     .rpc('log_subscription', {
@@ -122,7 +137,7 @@ subscriptionsRouter.post('/:id/log', async (c) => {
       p_account_id: domainSubscription.accountId,
       p_merchant: domainSubscription.name,
       p_note: domainSubscription.note ?? null,
-      p_tx_date: todayIso,
+      p_tx_date: parsed.data.today,
       p_next_due_date: nextDueDate,
     })
     .single<LogSubscriptionRpcRow>()
@@ -181,9 +196,42 @@ subscriptionsRouter.patch('/:id', async (c) => {
 
   const userId = c.get('userId')
   const supabase = getSupabase()
+
+  const { today, ...patch } = parsed.data
+  const scheduleChanged =
+    patch.dayOfMonth !== undefined || patch.monthOfYear !== undefined || patch.cadence !== undefined
+
+  const row: ReturnType<typeof subscriptionPatchToRow> & { next_due_date?: string } =
+    subscriptionPatchToRow(patch)
+  if (scheduleChanged) {
+    // A partial schedule change (e.g. only dayOfMonth) still needs the other schedule
+    // fields to compute the next occurrence, so fetch the current values to merge with.
+    const current = await supabase
+      .from('subscriptions')
+      .select('day_of_month, month_of_year, cadence')
+      .eq('id', c.req.param('id'))
+      .eq('owner_id', userId)
+      .maybeSingle()
+
+    if (current.error) {
+      return mapDbError(c, current.error)
+    }
+    if (!current.data) {
+      return jsonError(c, 404, 'Subscription not found')
+    }
+
+    row.next_due_date = buildNextDueDate(
+      patch.dayOfMonth ?? current.data.day_of_month,
+      patch.monthOfYear ?? current.data.month_of_year,
+      patch.cadence ?? (current.data.cadence as 'monthly' | 'yearly'),
+      // schema's .refine guarantees `today` is present whenever a schedule field is
+      today as string,
+    )
+  }
+
   const { data, error } = await supabase
     .from('subscriptions')
-    .update(subscriptionPatchToRow(parsed.data))
+    .update(row)
     .eq('id', c.req.param('id'))
     .eq('owner_id', userId)
     .select('*')

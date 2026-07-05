@@ -1,5 +1,6 @@
+import { buildNextDueDate as buildNextDueDateShared } from '@wallet/shared'
 import { diffDays, parseLocalDate, todayLocalIso } from '@/shared/lib/date'
-import type { Subscription, Transaction } from '@/core/types'
+import type { Subscription, SubscriptionCadence, Transaction } from '@/core/types'
 
 export function monthlyEquivalent(s: Subscription): number {
   return s.cadence === 'yearly' ? Math.round(s.amount / 12) : s.amount
@@ -47,15 +48,11 @@ export function dueBanner(
   )
 }
 
-export function buildNextDueDate(dayOfMonth: number, monthOfYear: number, cadence: 'monthly' | 'yearly'): string {
-  const today = parseLocalDate(todayLocalIso())
-  if (cadence === 'monthly') {
-    const candidate = new Date(today.getFullYear(), today.getMonth(), dayOfMonth)
-    if (candidate <= today) candidate.setMonth(candidate.getMonth() + 1)
-    return todayLocalIso(candidate)
-  } else {
-    const candidate = new Date(today.getFullYear(), monthOfYear - 1, dayOfMonth)
-    if (candidate <= today) candidate.setFullYear(candidate.getFullYear() + 1)
-    return todayLocalIso(candidate)
-  }
+/**
+ * Thin wrapper over the shared implementation (also used server-side to compute
+ * `nextDueDate` authoritatively) — supplies "today" from the client's local clock, since
+ * the caller-facing signature here has no `today` parameter of its own.
+ */
+export function buildNextDueDate(dayOfMonth: number, monthOfYear: number, cadence: SubscriptionCadence): string {
+  return buildNextDueDateShared(dayOfMonth, monthOfYear, cadence, todayLocalIso())
 }

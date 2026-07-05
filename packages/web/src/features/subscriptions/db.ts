@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { Subscription } from '@/core/types'
 import { apiJson } from '@/core/api'
+import { todayLocalIso } from '@/shared/lib/date'
 import { subscriptionSchema } from '@wallet/shared'
 
 const subscriptionsResponseSchema = z.object({
@@ -23,7 +24,9 @@ export async function fetchSubscriptions(): Promise<Subscription[]> {
 export async function insertSubscription(subscription: Omit<Subscription, 'id'>): Promise<void> {
   await apiJson('/subscriptions', subscriptionResponseSchema, {
     method: 'POST',
-    body: JSON.stringify(subscription),
+    // nextDueDate is always server-computed (buildNextDueDate) from `today`, the caller's
+    // local calendar date — the server has no per-user timezone to derive "today" itself.
+    body: JSON.stringify({ ...subscription, today: todayLocalIso() }),
   })
 }
 
@@ -33,7 +36,9 @@ export async function patchSubscription(
 ): Promise<void> {
   await apiJson(`/subscriptions/${id}`, subscriptionResponseSchema, {
     method: 'PATCH',
-    body: JSON.stringify(patch),
+    // Only used server-side when the patch also changes dayOfMonth/monthOfYear/cadence;
+    // harmless to always include otherwise.
+    body: JSON.stringify({ ...patch, today: todayLocalIso() }),
   })
 }
 
@@ -46,5 +51,6 @@ export async function deleteSubscription(id: string): Promise<void> {
 export async function logSubscription(subscription: Subscription): Promise<void> {
   await apiJson(`/subscriptions/${subscription.id}/log`, subscriptionResponseSchema, {
     method: 'POST',
+    body: JSON.stringify({ today: todayLocalIso() }),
   })
 }

@@ -28,7 +28,9 @@ export const subscriptionCreateSchema = z.object({
   cadence: subscriptionCadenceSchema,
   dayOfMonth: z.number().int().min(1).max(31),
   monthOfYear: z.number().int().min(1).max(12),
-  nextDueDate: isoDateSchema,
+  // Caller's local calendar date — the server has no per-user timezone, so nextDueDate is
+  // always computed server-side (buildNextDueDate) from this, never trusted from the client.
+  today: isoDateSchema,
   note: z.string().trim().optional(),
   active: z.boolean(),
 })
@@ -42,10 +44,17 @@ export const subscriptionPatchSchema = atLeastOneKey({
   cadence: subscriptionCadenceSchema,
   dayOfMonth: z.number().int().min(1).max(31),
   monthOfYear: z.number().int().min(1).max(12),
-  nextDueDate: isoDateSchema,
+  today: isoDateSchema,
   note: z.string().trim().nullable(),
   active: z.boolean(),
-})
+}).refine(
+  (value) => {
+    const scheduleChanged =
+      value.dayOfMonth !== undefined || value.monthOfYear !== undefined || value.cadence !== undefined
+    return !scheduleChanged || value.today !== undefined
+  },
+  { message: 'today is required when dayOfMonth, monthOfYear, or cadence changes' },
+)
 
 export type SubscriptionRow = z.infer<typeof subscriptionRowSchema>
 export type SubscriptionCreate = z.infer<typeof subscriptionCreateSchema>

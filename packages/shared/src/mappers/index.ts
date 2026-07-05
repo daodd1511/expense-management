@@ -4,6 +4,7 @@ export { categoryPatchToRow, fromCategory, toCategory } from './category.mapper'
 export { fromFavorite, toFavorite } from './favorite.mapper'
 export {
   advanceNextDueDate,
+  buildNextDueDate,
   fromSubscription,
   subscriptionPatchToRow,
   toSubscription,

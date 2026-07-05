@@ -66,6 +66,7 @@ export {
 export {
   accountPatchToRow,
   advanceNextDueDate,
+  buildNextDueDate,
   budgetPatchToRow,
   categoryPatchToRow,
   fromAccount,
