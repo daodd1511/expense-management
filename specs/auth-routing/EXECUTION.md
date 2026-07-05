@@ -5,9 +5,9 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 1 — done
+- Current phase: 2 — done
 - Phase 1 — Router foundation + auth routes: done
-- Phase 2 — Protected app route migration: pending
+- Phase 2 — Protected app route migration: done
 - Phase 3 — Transaction overlay routes + cleanup: pending
 - Verification debt: none
 
@@ -65,30 +65,30 @@ Branch: `auth-routing/phase-2-app-route-migration` (off `auth-routing/phase-1-ro
 This phase converts top-level app navigation from local component state to canonical routes,
 while preserving responsive presentation.
 
-- [ ] Refactor `packages/web/src/layouts/ResponsiveApp.tsx` to host responsive shells that
+- [x] Refactor `packages/web/src/layouts/ResponsiveApp.tsx` to host responsive shells that
       render the same shared route tree on mobile and desktop rather than separate nav
       state machines.
-- [ ] Replace `screen` state in `packages/web/src/layouts/mobile/MobileApp.tsx` with router
+- [x] Replace `screen` state in `packages/web/src/layouts/mobile/MobileApp.tsx` with router
       location-driven navigation for `/`, `/transactions`, `/budgets`, `/subscriptions`,
       `/accounts`, `/settings`, and `/settings/categories`.
-- [ ] Replace `tab` state in `packages/web/src/layouts/desktop/DesktopApp.tsx` with router
+- [x] Replace `tab` state in `packages/web/src/layouts/desktop/DesktopApp.tsx` with router
       location-driven navigation for the same canonical destinations.
-- [ ] Remove `packages/web/src/layouts/mobile/MobilePlanning.tsx`'s canonical inner-tab
+- [x] Remove `packages/web/src/layouts/mobile/MobilePlanning.tsx`'s canonical inner-tab
       role by normalizing budgets and subscriptions to distinct routes; keep only route-aware
       mobile presentation if a local container still adds UI value.
-- [ ] Update dashboard and settings navigation call sites that currently use callbacks
+- [x] Update dashboard and settings navigation call sites that currently use callbacks
       (`onNavigate`, `onNavigateToCategories`) so they navigate by route instead of mutating
       parent-local state.
-- [ ] Nest categories under `/settings/categories` by updating
+- [x] Nest categories under `/settings/categories` by updating
       `packages/web/src/features/settings/components/{Settings.tsx,MobileSettings.tsx}` and
       the route tree accordingly.
-- [ ] Add any route-level loading/not-found handling required so route transitions do not
+- [x] Add any route-level loading/not-found handling required so route transitions do not
       regress the current loading experience.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test`
-- [ ] `pnpm --filter @wallet/web build`
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm --filter @wallet/web test`
+- [x] `pnpm --filter @wallet/web build`
 
 **Review checklist (user, at PR review):**
 - [ ] Browser back/forward works across dashboard, transactions, budgets, subscriptions,
