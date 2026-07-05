@@ -8,9 +8,9 @@ Frontend code via `react-frontend-developer`; `terse-commit` before commits.
 
 ## STATUS
 
-- Current phase: 1 — `done-with-debt`
+- Current phase: 2 — `done`
 - Phase 1 — Backend atomicity + tooling: `done-with-debt`
-- Phase 2 — Date policy: `pending`
+- Phase 2 — Date policy: `done`
 - Phase 3 — Store refactor + bulk delete + docs: `pending`
 - Verification debt: Phase 1 migration not applied to the linked Supabase project (no
   live credentials in this environment); SQL authored and reviewed, apply at PR review.
@@ -76,27 +76,25 @@ Branch: `foundation/phase-2-date-policy` (off `foundation/phase-1-backend-atomic
 
 Centralizes date-only handling before the refactor relocates the fns that depend on it.
 
-- [ ] **F3 utils** — new `packages/web/src/shared/lib/date.ts` exporting (with doc comments):
-      `parseLocalDate(iso)` → `new Date(y, m-1, d)` from a `'YYYY-MM-DD'` string;
-      `todayLocalIso()` → local `'YYYY-MM-DD'`; `isSameLocalMonth(iso, ref?)`;
-      `diffDays(aIso, bIso)`. No UTC parsing of date-only values.
-- [ ] **F3 replace — store** — `core/store.tsx` `inCurrentMonth` (`:294–297`) → `isSameLocalMonth`.
-- [ ] **F3 replace — format** — `shared/lib/format.ts` date parses (`:26, :42, :47, :53`) →
-      `parseLocalDate`; keep the display output identical for normal cases.
-- [ ] **F3 replace — subscriptions** — `features/subscriptions/helpers.ts`
-      (`:14, :16, :31, :33–35, :40–41, :55, :58–64`): `daysUntilDue`, `isDue`, `isDueSoon`,
-      the due-window comparison in `isAlreadyLoggedThisCycle`, and `buildNextDueDate` →
-      `todayLocalIso` / `parseLocalDate` / `diffDays`; no `new Date(iso)` UTC parsing, no
-      `toISOString().slice(0,10)` round-trips.
-- [ ] **F6 (date-dependent)** — `shared/lib/date.test.ts` (all four utils, incl. month-boundary
-      and cross-offset cases); `features/subscriptions/helpers.test.ts` (`isDue`, `isDueSoon`,
-      `daysUntilDue`, `isAlreadyLoggedThisCycle`, `buildNextDueDate` under the new policy);
-      a `monthSummary` test at its current `core/store.tsx` export (relocated in Phase 3 —
-      the test's import moves with it).
+- [x] **F3 utils** — `packages/web/src/shared/lib/date.ts`: `parseLocalDate(iso)`,
+      `todayLocalIso(date?)`, `isSameLocalMonth(iso, ref?)`, `diffDays(aIso, bIso)`. No UTC
+      parsing of date-only values.
+- [x] **F3 replace — store** — `core/store.tsx` `inCurrentMonth` → `isSameLocalMonth`.
+- [x] **F3 replace — format** — `shared/lib/format.ts`'s `formatDayLabel`, `formatShortDate`,
+      `formatTime` now parse via `parseLocalDate`; display output unchanged for normal cases.
+- [x] **F3 replace — subscriptions** — `features/subscriptions/helpers.ts`: `daysUntilDue`,
+      `isAlreadyLoggedThisCycle`, `buildNextDueDate` now use `todayLocalIso` / `parseLocalDate`
+      / `diffDays`; no `new Date(iso)` UTC parsing, no `toISOString().slice(0,10)` round-trips.
+      (`isDue`/`isDueSoon` unchanged — they only compose `daysUntilDue`.)
+- [x] **F6 (date-dependent)** — `shared/lib/date.test.ts` (13 tests: all four utils, incl.
+      month/year-boundary cases); `features/subscriptions/helpers.test.ts` (17 tests:
+      `daysUntilDue`, `isDue`, `isDueSoon`, `isAlreadyLoggedThisCycle`, `buildNextDueDate`,
+      via `vi.setSystemTime` for a deterministic "today"); `core/store.test.ts` (3 tests:
+      `monthSummary` month-boundary + transfer-exclusion — moves with the fn in Phase 3).
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test` (incl. the three new/updated test files)
+- [x] `pnpm --filter @wallet/web typecheck` — pass
+- [x] `pnpm --filter @wallet/web test` — 17 files / 88 tests pass
 
 **Review checklist (user, at PR review):**
 - [ ] Near a month boundary, a transaction dated the 1st shows under the current month.
