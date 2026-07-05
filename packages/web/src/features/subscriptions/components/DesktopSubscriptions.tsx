@@ -7,7 +7,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Drawer } from '@/shared/components/ui/overlay'
-import { formatVND } from '@/shared/lib/format'
+import { formatShortDate, formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import {
   useAddSubscription,
@@ -97,6 +97,7 @@ function SubCard({
           {acc && <span>{acc.name}</span>}
           <span>{sub.cadence === 'monthly' ? t('sub.monthly') : t('sub.yearly')}</span>
           <span>Ngày {sub.dayOfMonth}{sub.cadence === 'yearly' ? ` tháng ${sub.monthOfYear}` : ''}</span>
+          <span>{t('sub.nextDue')}: {formatShortDate(sub.nextDueDate)}</span>
         </div>
       </div>
 

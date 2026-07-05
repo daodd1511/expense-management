@@ -4,7 +4,7 @@ import { SubscriptionForm } from '@/features/subscriptions/components/Subscripti
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { BottomSheet } from '@/shared/components/ui/overlay'
-import { formatVND } from '@/shared/lib/format'
+import { formatShortDate, formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import {
   useAddSubscription,
@@ -105,6 +105,8 @@ function SubRow({
             </span>
             <span className="text-xs text-muted-foreground">
               {sub.cadence === 'monthly' ? t('sub.monthly') : t('sub.yearly')}
+              {' · '}
+              {formatShortDate(sub.nextDueDate)}
               {badge && (
                 <span className={cn('ml-2', badge.cls)}> · {badge.label}</span>
               )}
