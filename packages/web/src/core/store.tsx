@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useMemo } from 'react'
+import { isSameLocalMonth } from '@/shared/lib/date'
 import {
   useAccounts,
   useAddAccount,
@@ -292,9 +293,7 @@ export function useStore() {
 // ---- Derived selectors (pure helpers) ----
 
 function inCurrentMonth(iso: string): boolean {
-  const d = new Date(iso)
-  const now = new Date()
-  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+  return isSameLocalMonth(iso)
 }
 
 export function monthSummary(transactions: Transaction[]) {

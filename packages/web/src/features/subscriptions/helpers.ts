@@ -1,3 +1,4 @@
+import { diffDays, parseLocalDate, todayLocalIso } from '@/shared/lib/date'
 import type { Subscription, Transaction } from '@/core/types'
 
 export function monthlyEquivalent(s: Subscription): number {
@@ -11,11 +12,7 @@ export function totalMonthlyCost(subscriptions: Subscription[]): number {
 }
 
 export function daysUntilDue(sub: Subscription): number {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const due = new Date(sub.nextDueDate)
-  due.setHours(0, 0, 0, 0)
-  return Math.round((due.getTime() - today.getTime()) / 86_400_000)
+  return diffDays(sub.nextDueDate, todayLocalIso())
 }
 
 export function isDue(sub: Subscription): boolean {
@@ -28,18 +25,17 @@ export function isDueSoon(sub: Subscription): boolean {
 }
 
 export function isAlreadyLoggedThisCycle(sub: Subscription, transactions: Transaction[]): boolean {
-  const due = new Date(sub.nextDueDate)
+  const due = parseLocalDate(sub.nextDueDate)
   // Check prev cycle window: from (nextDue - cadenceDays) to nextDue
   const windowStart = new Date(due)
   if (sub.cadence === 'monthly') windowStart.setMonth(windowStart.getMonth() - 1)
   else windowStart.setFullYear(windowStart.getFullYear() - 1)
 
-  return transactions.some(
-    (tx) =>
-      tx.subscriptionId === sub.id &&
-      new Date(tx.date) >= windowStart &&
-      new Date(tx.date) <= due,
-  )
+  return transactions.some((tx) => {
+    if (tx.subscriptionId !== sub.id) return false
+    const txDate = parseLocalDate(tx.date)
+    return txDate >= windowStart && txDate <= due
+  })
 }
 
 export function dueBanner(
@@ -52,15 +48,14 @@ export function dueBanner(
 }
 
 export function buildNextDueDate(dayOfMonth: number, monthOfYear: number, cadence: 'monthly' | 'yearly'): string {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = parseLocalDate(todayLocalIso())
   if (cadence === 'monthly') {
     const candidate = new Date(today.getFullYear(), today.getMonth(), dayOfMonth)
     if (candidate <= today) candidate.setMonth(candidate.getMonth() + 1)
-    return candidate.toISOString().slice(0, 10)
+    return todayLocalIso(candidate)
   } else {
     const candidate = new Date(today.getFullYear(), monthOfYear - 1, dayOfMonth)
     if (candidate <= today) candidate.setFullYear(candidate.getFullYear() + 1)
-    return candidate.toISOString().slice(0, 10)
+    return todayLocalIso(candidate)
   }
 }
