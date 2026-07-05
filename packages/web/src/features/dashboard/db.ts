@@ -1,7 +1,10 @@
-import { monthlyTotalsResponseSchema, type MonthlyTotal } from '@wallet/shared'
+import { balanceTrendResponseSchema, type BalanceTrendPoint } from '@wallet/shared'
 import { apiJson } from '@/core/api'
 
-export async function fetchMonthlyTotals(): Promise<MonthlyTotal[]> {
-  const response = await apiJson('/analytics/monthly-totals', monthlyTotalsResponseSchema)
+export async function fetchBalanceTrend(referenceMonth: string): Promise<BalanceTrendPoint[]> {
+  const response = await apiJson(
+    `/analytics/balance-trend?referenceMonth=${encodeURIComponent(referenceMonth)}`,
+    balanceTrendResponseSchema,
+  )
   return response.data
 }

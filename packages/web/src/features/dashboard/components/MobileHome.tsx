@@ -1,10 +1,10 @@
 
 import { ArrowDownLeft, ArrowUpRight, ChevronRight, TrendingUp } from 'lucide-react'
 import { DATE_LOCALE } from '@/core/i18n'
-import { CategoryDonut, TrendChart } from '@/shared/components/Charts'
+import { BalanceTrendChart, CategoryDonut } from '@/shared/components/Charts'
 import { AccountList } from '@/features/accounts/components/AccountList'
 import { BudgetBars } from '@/features/budgets/components/BudgetBars'
-import { useMonthlyTotals } from '@/features/dashboard/queries'
+import { useBalanceTrend } from '@/features/dashboard/queries'
 import { TransactionRow } from '@/features/transactions/components/TransactionRow'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { DashboardSkeleton } from '@/shared/components/Skeleton'
@@ -32,7 +32,7 @@ export function MobileHome({
   onEdit: (tx: Transaction) => void
 }) {
   const { data: transactions = [], isPending: transactionsPending } = useTransactions()
-  const { data: monthlyTotals = [], isPending: monthlyTotalsPending } = useMonthlyTotals()
+  const { data: balanceTrend = [], isPending: balanceTrendPending } = useBalanceTrend()
   const { isPending: accountsPending } = useAccounts()
   const { isPending: budgetsPending } = useBudgets()
   const getCategory = useCategoryLookup()
@@ -41,10 +41,9 @@ export function MobileHome({
   const { data, total } = buildDonutData(transactions, getCategory)
   const recent = transactions.slice(0, 4)
   const currentMonth = todayLocalMonthIso()
-  const trendData = monthlyTotals.map((entry) => ({
+  const trendData = balanceTrend.map((entry) => ({
     month: toTrendLabel(entry.month, lang),
-    income: entry.income,
-    expense: entry.expense,
+    balance: entry.balance,
   }))
 
   const handleCategorySelect = (categoryId?: string) => {
@@ -55,7 +54,7 @@ export function MobileHome({
     })
   }
 
-  if (transactionsPending || monthlyTotalsPending || accountsPending || budgetsPending) {
+  if (transactionsPending || balanceTrendPending || accountsPending || budgetsPending) {
     return <DashboardSkeleton mobile />
   }
 
@@ -139,12 +138,7 @@ export function MobileHome({
         <CardContent className="p-5">
           <SectionTitle title={t('dashboard.trend6mShort')} />
           <div className="mt-2">
-            <TrendChart
-              data={trendData}
-              height={170}
-              incomeLabel={t('dashboard.income')}
-              expenseLabel={t('dashboard.expense')}
-            />
+            <BalanceTrendChart data={trendData} height={170} balanceLabel={t('dashboard.monthBalance')} />
           </div>
         </CardContent>
       </Card>

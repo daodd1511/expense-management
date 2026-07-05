@@ -1,6 +1,6 @@
 export type { Database, Json } from './database.types'
 export { secureParse } from './secure-parse'
-export { aggregateMonthlyTotals, computeBalance } from './finance'
+export { computeBalance, computeBalanceTrend } from './finance'
 export {
   accountKindSchema,
   accountSchema,
@@ -27,8 +27,8 @@ export {
   accountCreateSchema,
   accountPatchSchema,
   accountRowSchema,
-  monthlyTotalSchema,
-  monthlyTotalsResponseSchema,
+  balanceTrendPointSchema,
+  balanceTrendResponseSchema,
   atLeastOneKey,
   budgetCreateSchema,
   budgetPatchSchema,
@@ -50,8 +50,8 @@ export {
   type AccountCreate,
   type AccountPatch,
   type AccountRow,
-  type MonthlyTotal,
-  type MonthlyTotalsResponse,
+  type BalanceTrendPoint,
+  type BalanceTrendResponse,
   type BudgetCreate,
   type BudgetPatch,
   type BudgetRow,

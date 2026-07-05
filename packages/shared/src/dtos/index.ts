@@ -1,8 +1,8 @@
 export {
-  monthlyTotalSchema,
-  monthlyTotalsResponseSchema,
-  type MonthlyTotal,
-  type MonthlyTotalsResponse,
+  balanceTrendPointSchema,
+  balanceTrendResponseSchema,
+  type BalanceTrendPoint,
+  type BalanceTrendResponse,
 } from './analytics.dto'
 export {
   accountCreateSchema,

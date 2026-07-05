@@ -1,15 +1,14 @@
 import { z } from 'zod'
 import { monthFilterSchema } from './common.dto'
 
-export const monthlyTotalSchema = z.object({
+export const balanceTrendPointSchema = z.object({
   month: monthFilterSchema,
-  income: z.number(),
-  expense: z.number(),
+  balance: z.number(),
 })
 
-export const monthlyTotalsResponseSchema = z.object({
-  data: z.array(monthlyTotalSchema),
+export const balanceTrendResponseSchema = z.object({
+  data: z.array(balanceTrendPointSchema),
 })
 
-export type MonthlyTotal = z.infer<typeof monthlyTotalSchema>
-export type MonthlyTotalsResponse = z.infer<typeof monthlyTotalsResponseSchema>
+export type BalanceTrendPoint = z.infer<typeof balanceTrendPointSchema>
+export type BalanceTrendResponse = z.infer<typeof balanceTrendResponseSchema>

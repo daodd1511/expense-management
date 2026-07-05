@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/auth'
-import { fetchMonthlyTotals } from '@/features/dashboard/db'
+import { fetchBalanceTrend } from '@/features/dashboard/db'
+import { todayLocalMonthIso } from '@/shared/lib/date'
 
-export function useMonthlyTotals() {
+export function useBalanceTrend(referenceMonth: string = todayLocalMonthIso()) {
   const { user } = useAuth()
   return useQuery({
-    queryKey: ['analytics', 'monthly-totals', user?.id],
-    queryFn: fetchMonthlyTotals,
+    queryKey: ['analytics', 'balance-trend', user?.id, referenceMonth],
+    queryFn: () => fetchBalanceTrend(referenceMonth),
     enabled: !!user,
   })
 }

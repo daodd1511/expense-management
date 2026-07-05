@@ -87,29 +87,30 @@ export function CategoryDonut({
   )
 }
 
-export function TrendChart({
+export function BalanceTrendChart({
   data,
   height = 200,
-  incomeLabel = 'Thu',
-  expenseLabel = 'Chi',
+  balanceLabel = 'Số dư',
 }: {
-  data: { month: string; income: number; expense: number }[]
+  data: { month: string; balance: number }[]
   height?: number
-  incomeLabel?: string
-  expenseLabel?: string
+  balanceLabel?: string
 }) {
+  const balances = data.map((d) => d.balance)
+  const min = balances.length ? Math.min(...balances) : 0
+  const max = balances.length ? Math.max(...balances) : 0
+  // A flat or near-flat series (e.g. all zeros) would otherwise render as a barely-visible
+  // sliver against an auto-scaled axis; pad the domain so it's always readable.
+  const padding = Math.max((max - min) * 0.15, 1)
+
   return (
     <div style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <defs>
-            <linearGradient id="gInc" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--color-income)" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="var(--color-income)" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="gExp" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--color-expense)" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="var(--color-expense)" stopOpacity={0} />
+            <linearGradient id="gBalance" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.3} />
+              <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} />
             </linearGradient>
           </defs>
           <XAxis
@@ -118,44 +119,30 @@ export function TrendChart({
             axisLine={false}
             tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
           />
-          <YAxis hide domain={[0, 'dataMax + 5']} />
+          <YAxis hide domain={[min - padding, max + padding]} />
           <Tooltip
             content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null
               return (
                 <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
                   <div className="mb-1 font-medium text-popover-foreground">{label}</div>
-                  {payload.map((p) => (
-                    <div key={String(p.dataKey)} className="flex items-center gap-2 tabular">
-                      <span
-                        className="size-2 rounded-full"
-                        style={{ backgroundColor: p.color as string }}
-                      />
-                      <span className="text-muted-foreground">
-                        {p.dataKey === 'income' ? incomeLabel : expenseLabel}:
-                      </span>
-                      <span className="font-medium text-popover-foreground">
-                        {formatVND(Number(p.value))}
-                      </span>
-                    </div>
-                  ))}
+                  <div className="flex items-center gap-2 tabular">
+                    <span className="size-2 rounded-full" style={{ backgroundColor: 'var(--color-primary)' }} />
+                    <span className="text-muted-foreground">{balanceLabel}:</span>
+                    <span className="font-medium text-popover-foreground">
+                      {formatVND(Number(payload[0].value))}
+                    </span>
+                  </div>
                 </div>
               )
             }}
           />
           <Area
             type="monotone"
-            dataKey="income"
-            stroke="var(--color-income)"
+            dataKey="balance"
+            stroke="var(--color-primary)"
             strokeWidth={2}
-            fill="url(#gInc)"
-          />
-          <Area
-            type="monotone"
-            dataKey="expense"
-            stroke="var(--color-expense)"
-            strokeWidth={2}
-            fill="url(#gExp)"
+            fill="url(#gBalance)"
           />
         </AreaChart>
       </ResponsiveContainer>

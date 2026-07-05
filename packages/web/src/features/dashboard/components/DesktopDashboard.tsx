@@ -2,10 +2,10 @@
 import { ArrowDownLeft, ArrowUpRight, ChevronRight, PiggyBank, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { DATE_LOCALE } from '@/core/i18n'
-import { CategoryDonut, TrendChart } from '@/shared/components/Charts'
+import { BalanceTrendChart, CategoryDonut } from '@/shared/components/Charts'
 import { AccountList } from '@/features/accounts/components/AccountList'
 import { BudgetBars } from '@/features/budgets/components/BudgetBars'
-import { useMonthlyTotals } from '@/features/dashboard/queries'
+import { useBalanceTrend } from '@/features/dashboard/queries'
 import { TransactionRow } from '@/features/transactions/components/TransactionRow'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { DashboardSkeleton } from '@/shared/components/Skeleton'
@@ -34,7 +34,7 @@ export function DesktopDashboard({
   onEdit: (tx: Transaction) => void
 }) {
   const { data: transactions = [], isPending: transactionsPending } = useTransactions()
-  const { data: monthlyTotals = [], isPending: monthlyTotalsPending } = useMonthlyTotals()
+  const { data: balanceTrend = [], isPending: balanceTrendPending } = useBalanceTrend()
   const { isPending: accountsPending } = useAccounts()
   const { isPending: budgetsPending } = useBudgets()
   const getCategory = useCategoryLookup()
@@ -44,10 +44,9 @@ export function DesktopDashboard({
   const savingRate = summary.income > 0 ? Math.round((summary.balance / summary.income) * 100) : 0
   const recent = transactions.slice(0, 6)
   const currentMonth = todayLocalMonthIso()
-  const trendData = monthlyTotals.map((entry) => ({
+  const trendData = balanceTrend.map((entry) => ({
     month: toTrendLabel(entry.month, lang),
-    income: entry.income,
-    expense: entry.expense,
+    balance: entry.balance,
   }))
 
   const handleCategorySelect = (categoryId?: string) => {
@@ -58,7 +57,7 @@ export function DesktopDashboard({
     })
   }
 
-  if (transactionsPending || monthlyTotalsPending || accountsPending || budgetsPending) {
+  if (transactionsPending || balanceTrendPending || accountsPending || budgetsPending) {
     return <DashboardSkeleton />
   }
 
@@ -105,20 +104,7 @@ export function DesktopDashboard({
             <CardTitle>{t('dashboard.trend6m')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <TrendChart
-              data={trendData}
-              height={260}
-              incomeLabel={t('dashboard.income')}
-              expenseLabel={t('dashboard.expense')}
-            />
-            <div className="mt-3 flex gap-6 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-full bg-income" /> {t('dashboard.income')}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-full bg-expense" /> {t('dashboard.expense')}
-              </span>
-            </div>
+            <BalanceTrendChart data={trendData} height={260} balanceLabel={t('dashboard.monthBalance')} />
           </CardContent>
         </Card>
       </div>
