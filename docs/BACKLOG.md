@@ -16,6 +16,7 @@ their session summary). Delete a line when the item ships or graduates into a
 - [ ] `packages/api` dev script builds once and runs `dist/` — no watch on source (2026-07-04)
 - [ ] CLAUDE.md architecture/commands sections describe the pre-monorepo app — re-baseline (2026-07-04)
 - [ ] Fix UI selected category with favorites (2026-07-05)
+- [ ] Dashboard trend chart fed by static `monthlyTrend` seed in `core/data`, not real transactions — wire to live data (fold into Feat7 analytics) (2026-07-05)
 
 ## Features
 
@@ -26,7 +27,7 @@ their session summary). Delete a line when the item ships or graduates into a
 - [ ] Desktop keyboard shortcuts (N = new transaction, / = search) + command palette (2026-07-04)
 - [ ] Offline write queue for the PWA (2026-07-04)
 - [ ] Small UX batch: account reorder, currency format preference, PIN/biometric lock, per-locale number format (2026-07-04)
-- [ ] Loading states for all actions, prioritized by frequency/impact first (2026-07-05)
+- [ ] Loading states for non-form actions: subscription one-tap log, delete confirms (incl. CategoryForm delete), and list/query-level skeletons (forms already covered via useFormSubmit) (2026-07-05)
 - [ ] Category icons don't match their names — audit and correct icon-to-name mapping (2026-07-05)
 - [ ] Update category select UI in transaction form to match the picker style used in Settings (2026-07-05)
 - [ ] Better filter for transaction table (2026-07-05)
