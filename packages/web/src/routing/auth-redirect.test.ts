@@ -25,4 +25,13 @@ describe('auth redirect helpers', () => {
 
     expect(currentRedirectPath()).toBe('/auth/sign-in?redirect=%2Faccounts#section')
   })
+
+  it('preserves protected transaction overlay URLs end-to-end', () => {
+    const overlayHref = '/transactions/new?returnTo=%2Faccounts'
+
+    expect(normalizeRedirectPath(overlayHref)).toBe(overlayHref)
+
+    window.history.replaceState({}, '', overlayHref)
+    expect(currentRedirectPath()).toBe(overlayHref)
+  })
 })

@@ -24,6 +24,7 @@ import { ResetPasswordPage } from '@/features/auth/components/ResetPassword'
 import { SignIn } from '@/features/auth/components/SignIn'
 import { SignUpPage } from '@/features/auth/components/SignUp'
 import { currentRedirectPath, normalizeRedirectPath, validateAuthSearch } from './auth-redirect'
+import { validateTransactionOverlaySearch } from './transaction-overlay'
 
 type RouterContext = {
   auth: AuthContextValue
@@ -125,6 +126,7 @@ const resetPasswordRoute = createRoute({
 
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
+  id: 'app',
   path: '/',
   beforeLoad: ({ context, location }) => {
     if (!context.auth.loading && !context.auth.user) {
@@ -148,6 +150,20 @@ const transactionsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: 'transactions',
   component: TransactionsPage,
+})
+
+const transactionCreateRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: 'transactions/new',
+  validateSearch: validateTransactionOverlaySearch,
+  component: EmptyRouteComponent,
+})
+
+const transactionEditRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: 'transactions/$transactionId/edit',
+  validateSearch: validateTransactionOverlaySearch,
+  component: EmptyRouteComponent,
 })
 
 const budgetsRoute = createRoute({
@@ -202,6 +218,8 @@ const routeTree = rootRoute.addChildren([
   appRoute.addChildren([
     dashboardRoute,
     transactionsRoute,
+    transactionCreateRoute,
+    transactionEditRoute,
     budgetsRoute,
     subscriptionsRoute,
     accountsRoute,

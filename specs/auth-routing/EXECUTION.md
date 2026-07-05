@@ -5,10 +5,10 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 2 — done
+- Current phase: 3 — done
 - Phase 1 — Router foundation + auth routes: done
 - Phase 2 — Protected app route migration: done
-- Phase 3 — Transaction overlay routes + cleanup: pending
+- Phase 3 — Transaction overlay routes + cleanup: done
 - Verification debt: none
 
 ## Phase 1 — Router foundation + auth routes
@@ -110,28 +110,28 @@ Branch: `auth-routing/phase-3-transaction-overlay-routes` (off `auth-routing/pha
 This phase finishes the route migration by making the highest-value modal flow
 route-addressable and removing obsolete navigation/auth scaffolding.
 
-- [ ] Add `/transactions/new` and `/transactions/$transactionId/edit` to the route tree and
+- [x] Add `/transactions/new` and `/transactions/$transactionId/edit` to the route tree and
       render them as viewport-specific overlays (mobile `BottomSheet`, desktop `Drawer`)
       rather than local `sheetOpen`/`drawerOpen` state.
-- [ ] Refactor transaction-entry call sites in
+- [x] Refactor transaction-entry call sites in
       `packages/web/src/layouts/mobile/MobileApp.tsx`,
       `packages/web/src/layouts/desktop/DesktopApp.tsx`,
       `packages/web/src/features/transactions/components/MobileTransactions.tsx`, and
       `packages/web/src/features/transactions/components/DesktopTransactionsTable.tsx` to
       navigate to overlay routes instead of mutating parent-local open/edit state.
-- [ ] Update `packages/web/src/features/transactions/components/TransactionForm.tsx` and any
+- [x] Update `packages/web/src/features/transactions/components/TransactionForm.tsx` and any
       new route host components so submit/cancel closes via navigation and preserves return
       behavior correctly.
-- [ ] Delete obsolete auth/navigation entry points that are fully superseded by the router
+- [x] Delete obsolete auth/navigation entry points that are fully superseded by the router
       migration (legacy `SignIn` implementation, dead auth gate wiring, dead top-level nav
       state helpers).
-- [ ] Add or update routing/auth tests covering deep links to transaction create/edit routes,
+- [x] Add or update routing/auth tests covering deep links to transaction create/edit routes,
       cancel/back behavior, and auth redirect preservation through a protected overlay URL.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test`
-- [ ] `pnpm --filter @wallet/web build`
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm --filter @wallet/web test`
+- [x] `pnpm --filter @wallet/web build`
 
 **Review checklist (user, at PR review):**
 - [ ] Opening "add transaction" changes the URL to `/transactions/new`; closing/canceling

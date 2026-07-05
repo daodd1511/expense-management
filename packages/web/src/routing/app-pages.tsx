@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import { SubscriptionDueBanner } from '@/features/subscriptions/components/SubscriptionDueBanner'
 import { useAuth } from '@/features/auth/auth'
 import { MobileAccounts } from '@/features/accounts/components/MobileAccounts'
@@ -14,10 +14,11 @@ import { DesktopSubscriptions } from '@/features/subscriptions/components/Deskto
 import { DesktopTransactionsTable } from '@/features/transactions/components/DesktopTransactionsTable'
 import { MobileTransactions } from '@/features/transactions/components/MobileTransactions'
 import { MobilePlanning } from '@/layouts/mobile/MobilePlanning'
-import { useTransactionOverlay } from '@/layouts/TransactionOverlayContext'
 import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicator'
 import { useIsDesktop } from '@/shared/hooks/useIsDesktop'
 import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
+import type { Transaction } from '@/core/types'
+import { sectionFromPath } from './app-route-state'
 
 function useAppNavigation() {
   const navigate = useNavigate()
@@ -33,9 +34,23 @@ function useAppNavigation() {
   }
 }
 
+function useTransactionNavigation() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  return {
+    openEdit: (transaction: Transaction) =>
+      navigate({
+        to: '/transactions/$transactionId/edit',
+        params: { transactionId: transaction.id },
+        search: { returnTo: location.href },
+      }),
+  }
+}
+
 export function DashboardPage() {
   const isDesktop = useIsDesktop()
-  const { openEdit } = useTransactionOverlay()
+  const { openEdit } = useTransactionNavigation()
   const navigation = useAppNavigation()
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -96,7 +111,7 @@ export function DashboardPage() {
 
 export function TransactionsPage() {
   const isDesktop = useIsDesktop()
-  const { openEdit } = useTransactionOverlay()
+  const { openEdit } = useTransactionNavigation()
 
   return isDesktop ? <DesktopTransactionsTable onEdit={openEdit} /> : <MobileTransactions onEdit={openEdit} />
 }
@@ -153,4 +168,25 @@ export function SettingsCategoriesPage() {
       onBack={navigation.goSettings}
     />
   )
+}
+
+export function AppRouteContent({ pathname }: { pathname: string }) {
+  const section = sectionFromPath(pathname)
+
+  switch (section) {
+    case 'transactions':
+      return <TransactionsPage />
+    case 'budgets':
+      return <BudgetsPage />
+    case 'subscriptions':
+      return <SubscriptionsPage />
+    case 'accounts':
+      return <AccountsPage />
+    case 'settings':
+      return <SettingsPage />
+    case 'settings-categories':
+      return <SettingsCategoriesPage />
+    default:
+      return <DashboardPage />
+  }
 }

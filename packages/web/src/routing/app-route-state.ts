@@ -8,12 +8,12 @@ export type AppSection =
   | 'settings-categories'
 
 export function sectionFromPath(pathname: string): AppSection {
-  if (pathname === '/transactions') return 'transactions'
-  if (pathname === '/budgets') return 'budgets'
-  if (pathname === '/subscriptions') return 'subscriptions'
-  if (pathname === '/accounts') return 'accounts'
-  if (pathname === '/settings/categories') return 'settings-categories'
-  if (pathname === '/settings') return 'settings'
+  if (pathname === '/transactions' || pathname.startsWith('/transactions/')) return 'transactions'
+  if (pathname === '/budgets' || pathname.startsWith('/budgets/')) return 'budgets'
+  if (pathname === '/subscriptions' || pathname.startsWith('/subscriptions/')) return 'subscriptions'
+  if (pathname === '/accounts' || pathname.startsWith('/accounts/')) return 'accounts'
+  if (pathname === '/settings/categories' || pathname.startsWith('/settings/categories/')) return 'settings-categories'
+  if (pathname === '/settings' || pathname.startsWith('/settings/')) return 'settings'
   return 'dashboard'
 }
 

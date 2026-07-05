@@ -1,37 +1,30 @@
-
 import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
-import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeftRight, CalendarClock, Home, Plus, Settings, Wallet } from 'lucide-react'
-import { useState } from 'react'
-import { TransactionForm } from '@/features/transactions/components/TransactionForm'
-import { BottomSheet } from '@/shared/components/ui/overlay'
+import { TransactionRouteOverlay } from '@/features/transactions/components/TransactionRouteOverlay'
 import { LoadingScreen } from '@/shared/components/LoadingScreen'
 import { useLang } from '@/core/i18n'
-import { useAddTransaction, useTransactions, useUpdateTransaction } from '@/features/transactions/queries'
+import { AppRouteContent } from '@/routing/app-pages'
+import { useTransactions } from '@/features/transactions/queries'
 import { useSubscriptions } from '@/features/subscriptions/queries'
 import { useAppDataLoading } from '@/shared/hooks/useAppDataLoading'
 import { dueBanner } from '@/features/subscriptions/helpers'
-import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
-import { useAuth } from '@/features/auth/auth'
-import { TransactionOverlayProvider } from '@/layouts/TransactionOverlayContext'
 import { isPlanningSection, isSettingsSection, sectionFromPath } from '@/routing/app-route-state'
+import { getTransactionOverlayState } from '@/routing/transaction-overlay'
 
 export function MobileApp() {
   const { data: subscriptions = [] } = useSubscriptions()
   const { data: transactions = [] } = useTransactions()
-  const addTx = useAddTransaction()
-  const updateTx = useUpdateTransaction()
   const loading = useAppDataLoading()
-  const { user } = useAuth()
   const { t } = useLang()
   const navigate = useNavigate()
   const location = useLocation()
-  const queryClient = useQueryClient()
-  const section = sectionFromPath(location.pathname)
+  const overlay = getTransactionOverlayState(
+    location.pathname,
+    location.search as Record<string, unknown>,
+  )
+  const section = sectionFromPath(overlay?.returnToPathname ?? location.pathname)
   const dueCount = dueBanner(subscriptions, transactions).length
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [editing, setEditing] = useState<Transaction | null>(null)
 
   const title =
     section === 'transactions'
@@ -53,24 +46,10 @@ export function MobileApp() {
     { href: '/accounts', label: t('nav.accounts'), icon: Wallet, active: section === 'accounts' },
   ]
 
-  const openAdd = () => {
-    setEditing(null)
-    setSheetOpen(true)
-  }
-  const openEdit = (tx: Transaction) => {
-    setEditing(tx)
-    setSheetOpen(true)
-  }
-  const close = () => {
-    setSheetOpen(false)
-    setEditing(null)
-  }
-
   if (loading) return <LoadingScreen />
 
   return (
-    <TransactionOverlayProvider value={{ openAdd, openEdit }}>
-      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background">
+    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background">
       {/* Header */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/80 px-4 py-3 backdrop-blur-md">
         <div className="flex items-center gap-2">
@@ -98,7 +77,7 @@ export function MobileApp() {
 
       {/* Screen */}
       <main className="flex-1 pb-24">
-        <Outlet />
+        {overlay ? <AppRouteContent pathname={overlay.returnToPathname} /> : <Outlet />}
       </main>
 
       {/* Bottom nav with center FAB */}
@@ -111,7 +90,7 @@ export function MobileApp() {
             <div className="flex justify-center">
               <button
                 type="button"
-                onClick={openAdd}
+                onClick={() => navigate({ to: '/transactions/new', search: { returnTo: location.href } })}
                 aria-label={t('app.addTransaction')}
                 className="-mt-7 inline-flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-background transition-transform active:scale-95"
               >
@@ -125,22 +104,8 @@ export function MobileApp() {
         </div>
       </nav>
 
-      <BottomSheet open={sheetOpen} onClose={close} title={editing ? t('form.editTitle') : t('form.addTitle')}>
-        {sheetOpen && (
-          <TransactionForm
-            variant="mobile"
-            initial={editing ?? undefined}
-            onCancel={close}
-            onSubmit={async (tx) => {
-              if (editing) await updateTx.mutateAsync({ id: editing.id, patch: tx })
-              else await addTx.mutateAsync(tx)
-              close()
-            }}
-          />
-        )}
-      </BottomSheet>
-      </div>
-    </TransactionOverlayProvider>
+      <TransactionRouteOverlay variant="mobile" overlay={overlay} />
+    </div>
   )
 }
 

@@ -1,4 +1,3 @@
-
 import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import {
   CalendarClock,
@@ -10,33 +9,31 @@ import {
   Target,
   Wallet,
 } from 'lucide-react'
-import { useState } from 'react'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
-import { TransactionForm } from '@/features/transactions/components/TransactionForm'
-import { Drawer } from '@/shared/components/ui/overlay'
+import { TransactionRouteOverlay } from '@/features/transactions/components/TransactionRouteOverlay'
 import { LoadingScreen } from '@/shared/components/LoadingScreen'
 import { useLang } from '@/core/i18n'
-import { useAddTransaction, useTransactions, useUpdateTransaction } from '@/features/transactions/queries'
+import { AppRouteContent } from '@/routing/app-pages'
+import { useTransactions } from '@/features/transactions/queries'
 import { useSubscriptions } from '@/features/subscriptions/queries'
 import { useAppDataLoading } from '@/shared/hooks/useAppDataLoading'
 import { dueBanner } from '@/features/subscriptions/helpers'
-import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 import { sectionFromPath } from '@/routing/app-route-state'
-import { TransactionOverlayProvider } from '@/layouts/TransactionOverlayContext'
+import { getTransactionOverlayState } from '@/routing/transaction-overlay'
 
 export function DesktopApp() {
   const { data: subscriptions = [] } = useSubscriptions()
   const { data: transactions = [] } = useTransactions()
-  const addTx = useAddTransaction()
-  const updateTx = useUpdateTransaction()
   const loading = useAppDataLoading()
   const { t } = useLang()
   const navigate = useNavigate()
   const location = useLocation()
-  const section = sectionFromPath(location.pathname)
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [editing, setEditing] = useState<Transaction | undefined>(undefined)
+  const overlay = getTransactionOverlayState(
+    location.pathname,
+    location.search as Record<string, unknown>,
+  )
+  const section = sectionFromPath(overlay?.returnToPathname ?? location.pathname)
   const dueCount = dueBanner(subscriptions, transactions).length
 
   const NAV: { href: '/' | '/transactions' | '/budgets' | '/subscriptions' | '/accounts' | '/settings'; section: typeof section; label: string; icon: typeof LayoutDashboard; badge?: number }[] = [
@@ -48,20 +45,10 @@ export function DesktopApp() {
     { href: '/settings', section: 'settings', label: t('nav.settings'), icon: Settings },
   ]
 
-  const openAdd = () => {
-    setEditing(undefined)
-    setDrawerOpen(true)
-  }
-  const openEdit = (tx: Transaction) => {
-    setEditing(tx)
-    setDrawerOpen(true)
-  }
-
   if (loading) return <LoadingScreen />
 
   return (
-    <TransactionOverlayProvider value={{ openAdd, openEdit }}>
-      <div className="flex min-h-dvh bg-background text-foreground">
+    <div className="flex min-h-dvh bg-background text-foreground">
       {/* Sidebar */}
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border bg-sidebar p-4 lg:flex">
         <div className="flex items-center gap-2.5 px-2 py-3">
@@ -106,7 +93,7 @@ export function DesktopApp() {
 
         <button
           type="button"
-          onClick={openAdd}
+          onClick={() => navigate({ to: '/transactions/new', search: { returnTo: location.href } })}
           className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
           <Plus className="size-4" />
@@ -122,25 +109,11 @@ export function DesktopApp() {
       {/* Main */}
       <main className="flex-1 overflow-x-hidden px-5 py-6 lg:px-10 lg:py-8">
         <div className="mx-auto max-w-6xl">
-          <Outlet />
+          {overlay ? <AppRouteContent pathname={overlay.returnToPathname} /> : <Outlet />}
         </div>
       </main>
 
-      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        {drawerOpen && (
-          <TransactionForm
-            variant="desktop"
-            initial={editing}
-            onSubmit={async (tx) => {
-              if (editing) await updateTx.mutateAsync({ id: editing.id, patch: tx })
-              else await addTx.mutateAsync(tx)
-              setDrawerOpen(false)
-            }}
-            onCancel={() => setDrawerOpen(false)}
-          />
-        )}
-      </Drawer>
-      </div>
-    </TransactionOverlayProvider>
+      <TransactionRouteOverlay variant="desktop" overlay={overlay} />
+    </div>
   )
 }
