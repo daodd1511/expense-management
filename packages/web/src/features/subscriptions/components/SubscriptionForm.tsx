@@ -53,7 +53,7 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
 
   const handleSubmit = () => {
     if (!canSubmit) return
-    const nextDueDate = initial?.nextDueDate ?? buildNextDueDate(dayOfMonth, monthOfYear, cadence)
+    const nextDueDate = buildNextDueDate(dayOfMonth, monthOfYear, cadence)
     submitForm({
       name: name.trim(),
       amount,
