@@ -21,8 +21,9 @@ const okResponseSchema = z.object({
   ok: z.literal(true),
 })
 
-export async function fetchTransactions(): Promise<Transaction[]> {
-  const response = await apiJson('/transactions', transactionsResponseSchema)
+export async function fetchTransactions(month: string): Promise<Transaction[]> {
+  const search = new URLSearchParams({ month })
+  const response = await apiJson(`/transactions?${search.toString()}`, transactionsResponseSchema)
   return response.data
 }
 

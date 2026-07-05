@@ -1,5 +1,7 @@
 import { CalendarClock, Pause, Pencil, Play, Plus, RefreshCw, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { SubscriptionLogConfirm } from '@/features/subscriptions/components/SubscriptionLogConfirm'
+import { SubscriptionsSkeleton } from '@/shared/components/Skeleton'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { SubscriptionDueBanner } from '@/features/subscriptions/components/SubscriptionDueBanner'
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm'
@@ -7,11 +9,20 @@ import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Drawer } from '@/shared/components/ui/overlay'
-import { formatVND } from '@/shared/lib/format'
+import { formatShortDate, formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import {
+  useAddSubscription,
+  useDeleteSubscription,
+  useLogSubscription,
+  useSubscriptions,
+  useUpdateSubscription,
+} from '@/features/subscriptions/queries'
+import { useCategoryLookup } from '@/features/categories/queries'
+import { useAccountLookup } from '@/features/accounts/queries'
 import { daysUntilDue, isDue, isDueSoon, monthlyEquivalent, totalMonthlyCost } from '@/features/subscriptions/helpers'
 import type { Subscription } from '@/core/types'
+import { todayLocalIso } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
 
 function dueBadge(sub: Subscription) {
@@ -36,7 +47,8 @@ function SubCard({
   onLog: () => void
 }) {
   const { t } = useLang()
-  const { getCategory, getAccount } = useStore()
+  const getCategory = useCategoryLookup()
+  const getAccount = useAccountLookup()
   const cat = getCategory(sub.categoryId)
   const acc = getAccount(sub.accountId)
   const badge = dueBadge(sub)
@@ -88,6 +100,7 @@ function SubCard({
           {acc && <span>{acc.name}</span>}
           <span>{sub.cadence === 'monthly' ? t('sub.monthly') : t('sub.yearly')}</span>
           <span>Ngày {sub.dayOfMonth}{sub.cadence === 'yearly' ? ` tháng ${sub.monthOfYear}` : ''}</span>
+          <span>{t('sub.nextDue')}: {formatShortDate(sub.nextDueDate)}</span>
         </div>
       </div>
 
@@ -142,12 +155,25 @@ function SubCard({
   )
 }
 
-export function DesktopSubscriptions() {
-  const { subscriptions, addSubscription, updateSubscription, deleteSubscription, logSubscription } = useStore()
+export function DesktopSubscriptions({
+  createIntentToken,
+  onCreateIntentHandled,
+}: {
+  createIntentToken?: string
+  onCreateIntentHandled?: () => void
+}) {
+  const subscriptionsQuery = useSubscriptions()
+  const { data: subscriptions = [], isPending } = subscriptionsQuery
+  const addSub = useAddSubscription()
+  const updateSub = useUpdateSubscription()
+  const deleteSub = useDeleteSubscription()
+  const logSub = useLogSubscription()
   const { t } = useLang()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<Subscription | undefined>(undefined)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [pendingLogSubscription, setPendingLogSubscription] = useState<Subscription | null>(null)
+  const [handledCreateIntent, setHandledCreateIntent] = useState<string | null>(null)
 
   const active = subscriptions.filter((s) => s.active)
   const paused = subscriptions.filter((s) => !s.active)
@@ -163,10 +189,24 @@ export function DesktopSubscriptions() {
   const close = () => { setDrawerOpen(false); setEditing(undefined) }
 
   const handleSubmit = async (data: Omit<Subscription, 'id'>) => {
-    if (editing) await updateSubscription(editing.id, data)
-    else await addSubscription(data)
+    if (editing) await updateSub.mutateAsync({ id: editing.id, patch: data })
+    else await addSub.mutateAsync(data)
     close()
   }
+
+  const handleConfirmLog = async (subscription: Subscription) => {
+    await logSub.mutateAsync(subscription)
+    setPendingLogSubscription(null)
+  }
+
+  useEffect(() => {
+    if (!createIntentToken || handledCreateIntent === createIntentToken || drawerOpen) return
+    openAdd()
+    setHandledCreateIntent(createIntentToken)
+    onCreateIntentHandled?.()
+  }, [createIntentToken, drawerOpen, handledCreateIntent, onCreateIntentHandled])
+
+  if (isPending) return <SubscriptionsSkeleton />
 
   return (
     <div className="flex flex-col gap-6">
@@ -184,7 +224,7 @@ export function DesktopSubscriptions() {
 
       {/* Due banner */}
       <div className="rounded-xl">
-        <SubscriptionDueBanner />
+        <SubscriptionDueBanner confirmVariant="modal" />
       </div>
 
       {/* KPI row */}
@@ -221,8 +261,8 @@ export function DesktopSubscriptions() {
               sub={s}
               onEdit={() => openEdit(s)}
               onDelete={() => setPendingDeleteId(s.id)}
-              onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
-              onLog={() => logSubscription(s.id)}
+              onToggleActive={() => updateSub.mutateAsync({ id: s.id, patch: { active: !s.active } })}
+              onLog={() => setPendingLogSubscription(s)}
             />
           ))}
         </div>
@@ -238,8 +278,8 @@ export function DesktopSubscriptions() {
               sub={s}
               onEdit={() => openEdit(s)}
               onDelete={() => setPendingDeleteId(s.id)}
-              onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
-              onLog={() => logSubscription(s.id)}
+              onToggleActive={() => updateSub.mutateAsync({ id: s.id, patch: { active: !s.active } })}
+              onLog={() => setPendingLogSubscription(s)}
             />
           ))}
         </div>
@@ -255,8 +295,8 @@ export function DesktopSubscriptions() {
               sub={s}
               onEdit={() => openEdit(s)}
               onDelete={() => setPendingDeleteId(s.id)}
-              onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
-              onLog={() => logSubscription(s.id)}
+              onToggleActive={() => updateSub.mutateAsync({ id: s.id, patch: { active: !s.active } })}
+              onLog={() => setPendingLogSubscription(s)}
             />
           ))}
         </div>
@@ -286,9 +326,18 @@ export function DesktopSubscriptions() {
         open={pendingDeleteId !== null}
         onCancel={() => setPendingDeleteId(null)}
         onConfirm={async () => {
-          if (pendingDeleteId) await deleteSubscription(pendingDeleteId)
+          if (pendingDeleteId) await deleteSub.mutateAsync(pendingDeleteId)
           setPendingDeleteId(null)
         }}
+      />
+      <SubscriptionLogConfirm
+        open={pendingLogSubscription !== null}
+        subscription={pendingLogSubscription}
+        transactionDate={todayLocalIso()}
+        variant="modal"
+        isSubmitting={logSub.isPending}
+        onCancel={() => setPendingLogSubscription(null)}
+        onConfirm={handleConfirmLog}
       />
     </div>
   )

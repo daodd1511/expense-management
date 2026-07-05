@@ -1,23 +1,41 @@
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { BudgetForm } from '@/features/budgets/components/BudgetForm'
 import { budgetState } from '@/features/budgets/components/BudgetBars'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
+import { BudgetsSkeleton } from '@/shared/components/Skeleton'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Progress } from '@/shared/components/ui/progress'
 import { formatVND, monthLabel } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { spentForCategory, useStore } from '@/core/store'
+import { spentForCategory } from '@/shared/lib/derive'
+import { useAddBudget, useBudgets, useDeleteBudget, useUpdateBudget } from '@/features/budgets/queries'
+import { useCategoryLookup } from '@/features/categories/queries'
+import { useTransactions } from '@/features/transactions/queries'
 import type { Budget } from '@/core/types'
 
-export function DesktopBudgets() {
-  const { budgets, transactions, getCategory, addBudget, updateBudget, deleteBudget } = useStore()
+export function DesktopBudgets({
+  createIntentToken,
+  onCreateIntentHandled,
+}: {
+  createIntentToken?: string
+  onCreateIntentHandled?: () => void
+}) {
+  const budgetsQuery = useBudgets()
+  const transactionsQuery = useTransactions()
+  const { data: budgets = [], isPending: budgetsPending } = budgetsQuery
+  const { data: transactions = [], isPending: transactionsPending } = transactionsQuery
+  const getCategory = useCategoryLookup()
+  const addBud = useAddBudget()
+  const updateBud = useUpdateBudget()
+  const deleteBud = useDeleteBudget()
   const { t, lang } = useLang()
   const [editing, setEditing] = useState<Budget | 'add' | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [handledCreateIntent, setHandledCreateIntent] = useState<string | null>(null)
 
   const totalLimit = budgets.reduce((s, b) => s + b.limit, 0)
   const totalSpent = budgets.reduce((s, b) => s + spentForCategory(transactions, b.categoryId), 0)
@@ -25,10 +43,19 @@ export function DesktopBudgets() {
   const over = budgets.filter((b) => spentForCategory(transactions, b.categoryId) >= b.limit).length
 
   const handleSubmit = async (b: Budget) => {
-    if (editing === 'add') await addBudget(b)
-    else await updateBudget(b.categoryId, b.limit)
+    if (editing === 'add') await addBud.mutateAsync(b)
+    else await updateBud.mutateAsync(b)
     setEditing(null)
   }
+
+  useEffect(() => {
+    if (!createIntentToken || handledCreateIntent === createIntentToken || editing !== null) return
+    setEditing('add')
+    setHandledCreateIntent(createIntentToken)
+    onCreateIntentHandled?.()
+  }, [createIntentToken, editing, handledCreateIntent, onCreateIntentHandled])
+
+  if (budgetsPending || transactionsPending) return <BudgetsSkeleton />
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -141,7 +168,7 @@ export function DesktopBudgets() {
         open={pendingDeleteId !== null}
         onCancel={() => setPendingDeleteId(null)}
         onConfirm={async () => {
-          if (pendingDeleteId) await deleteBudget(pendingDeleteId)
+          if (pendingDeleteId) await deleteBud.mutateAsync(pendingDeleteId)
           setPendingDeleteId(null)
         }}
       />

@@ -18,7 +18,9 @@ import {
 } from '@/shared/components/ui/select'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import { useCategories, useCategoryLookup } from '@/features/categories/queries'
+import { useFavoriteCategoryIds } from '@/features/categories/favorites-queries'
+import { useAccounts } from '@/features/accounts/queries'
 import type { Transaction, TxType } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
@@ -41,7 +43,10 @@ export function TransactionForm({
   onSubmit: (tx: Omit<Transaction, 'id'>) => Promise<void>
   onCancel: () => void
 }) {
-  const { categories, accounts, getCategory, favoriteCategoryIds } = useStore()
+  const { data: categories = [] } = useCategories()
+  const { data: accounts = [] } = useAccounts()
+  const getCategory = useCategoryLookup()
+  const favoriteCategoryIds = useFavoriteCategoryIds()
   const { t } = useLang()
   const [type, setType] = useState<TxType>(initial?.type ?? 'expense')
   const [amount, setAmount] = useState<string>(initial ? String(initial.amount) : '')

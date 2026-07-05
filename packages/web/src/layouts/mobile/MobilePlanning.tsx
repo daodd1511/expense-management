@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import { useSubscriptions } from '@/features/subscriptions/queries'
+import { useTransactions } from '@/features/transactions/queries'
 import { dueBanner } from '@/features/subscriptions/helpers'
 import { cn } from '@/shared/lib/utils'
 import { MobileBudgets } from '@/features/budgets/components/MobileBudgets'
@@ -8,10 +8,16 @@ import { MobileSubscriptions } from '@/features/subscriptions/components/MobileS
 
 type PlanTab = 'budgets' | 'subscriptions'
 
-export function MobilePlanning() {
-  const [tab, setTab] = useState<PlanTab>('budgets')
+export function MobilePlanning({
+  tab,
+  onTabChange,
+}: {
+  tab: PlanTab
+  onTabChange: (tab: PlanTab) => void
+}) {
   const { t } = useLang()
-  const { subscriptions, transactions } = useStore()
+  const { data: subscriptions = [] } = useSubscriptions()
+  const { data: transactions = [] } = useTransactions()
   const dueCount = dueBanner(subscriptions, transactions).length
 
   return (
@@ -22,7 +28,7 @@ export function MobilePlanning() {
           <button
             key={id}
             type="button"
-            onClick={() => setTab(id)}
+            onClick={() => onTabChange(id)}
             className={cn(
               'relative flex flex-1 items-center justify-center gap-1.5 py-3 text-sm font-medium transition-colors',
               tab === id ? 'text-primary' : 'text-muted-foreground hover:text-foreground',

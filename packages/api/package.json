@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm build && node dist/index.js",
+    "dev": "tsx watch src/index.ts",
     "build": "esbuild src/index.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "esbuild": "^0.28.1",
+    "tsx": "^4.19.2",
     "typescript": "5.7.3"
   }
 }

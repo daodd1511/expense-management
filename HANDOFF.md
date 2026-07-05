@@ -1,68 +1,92 @@
 # Handoff
 
-Session baton only — advisory context, never authoritative state. Spec state lives in
-git + each `specs/*/EXECUTION.md` STATUS block (see `CLAUDE.md` → "Spec-Driven Execution
-Workflow"). Rewritten to this shape as part of spec-workflow-v2's migration.
+Session baton only. Trust git and spec `STATUS` blocks over this file for authoritative state.
 
-## Current
+## Current State
 
-- `mobile-ux`: **planned and committed, no phase started.** `specs/mobile-ux/PLAN.md` +
-  `specs/mobile-ux/EXECUTION.md` (5 phases, all `pending`) are on `develop` (commits
-  `a575c64`, `c7681dd`). Next action is Phase 1 via `spec-phase`; needs the user's
-  go-ahead before branching/committing. Phase/decision detail lives in those two files —
-  do not restate here.
-  - Scope came from 6 hands-on mobile issues + 2 folded-in backlog items (optimistic
-    updates, pull-to-refresh). Backlog cleanup (remove those 2 lines from
-    `docs/BACKLOG.md`) is wired into Phases 4 and 5, not yet done.
-  - Grill overrides worth remembering: zoom fix is viewport `maximum-scale=1` (user chose
-    it over 16px inputs, accessibility cost accepted); categories redesign is "Direction A"
-    (sectioned rows) applied to **both** mobile + desktop.
-  - Branch model is **stacked by default** (see next bullet) — Phase 2 bases off Phase 1's
-    branch, not off `develop`, and doesn't wait for Phase 1's PR to merge.
-- **Branch model flipped**: `CLAUDE.md`/`AGENTS.md` now say phases stack by default
-  (previous phase's branch, no waiting for merge); sequential/wait-for-merge is opt-in per
-  spec only when the user explicitly asks (commit `a7c0887`). This reverses the prior
-  "sequential, no stacking" rule.
-- **Spec-skill triplication found and resolved**: `spec-plan`/`spec-phase` existed in three
-  places — `.claude/skills/` (project, "v2" — richest), `.agents/skills/` (project, older),
-  and `~/.claude/skills/` (global — this is the copy that actually ran for `/spec-plan`
-  earlier, and it was also the older, non-v2 version). All three are now byte-identical and
-  reflect stacked-by-default (commit `de07aa9`; global copy updated outside git, not in any
-  commit). If skill behavior ever seems off, check `~/.claude/skills/` hasn't drifted from
-  `.claude/skills/` again — nothing keeps them in sync automatically.
-- `specs/mobile-ux/EXECUTION.md` was rewritten (`c7681dd`) from the old single-gate shape to
-  the current v2 skeleton: each phase now has separate **Agent gate (hard)** (typecheck/test,
-  agent-runnable) and **Review checklist** (manual scenarios, user's job at PR review) lanes.
-  Scope unchanged, format only.
-- Added Codex subagent mirrors of `.claude/agents/*`: `.codex/agents/{explorer,reporter,
-  tweaker,implementer,checker}.toml` (commit `d6f2321`). Model tiers mapped explicitly —
-  opus/sonnet/haiku → gpt-5.5/gpt-5.4/gpt-5.4-mini — per user's instruction, not inferred.
-  Codex has no per-tool allowlist, so the old `tools:` restrictions became `sandbox_mode`
-  (`read-only` vs `workspace-write`) plus prose; `checker` needs `workspace-write` for
-  `pnpm build` despite never editing source.
-- Prior shipped context (still true): `error-handling` all 3 phases merged (PRs #10–12);
-  `category-redesign` + `category-ux` specs fully checked off / shipped — `CategoriesPage`
-  exists as its own page. Workflow v2 rulebook is live in `CLAUDE.md`/`AGENTS.md`.
-- `be-integration` (PLAN.md, no EXECUTION.md) remains queued but is **not** the active
-  spec — `mobile-ux` is. One spec in flight at a time.
+- Branch: `polish/phase-1-subscription-confirm-payment`
+- Worktree: dirty with uncommitted Phase 1 + partial Phase 2 polish changes
+- Relevant spec:
+  [specs/polish/PLAN.md](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/specs/polish/PLAN.md)
+  [specs/polish/EXECUTION.md](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/specs/polish/EXECUTION.md)
+- `specs/polish/EXECUTION.md` has been updated to reflect reality:
+  - Phase 1 done
+  - Phase 2 in progress
+  - Phase 2 work was started on the Phase 1 branch before a checkpoint / branch split
+  - no gate rerun after the interrupted Phase 2 edits
 
-## Repo-wide notes (not owned by any spec)
+## What Is Actually Done
 
-- `packages/api/package.json` `dev` script watches bundled output (`dist/`), not source —
-  local API edits don't trigger reload. Known, unfixed.
-- `packages/web/src/core/store.tsx` `deleteTransactions` loops per-id deletes instead of
-  using the unused `useDeleteTransactions` bulk hook. Behavior-preserving, out of scope
-  when noticed.
-- Manual browser verification for pwa + error-handling was never run by an agent (no
-  browser tool). Under v2 this class of check is the user's, at PR review.
-- `gh` CLI account mismatch (`daoduong-saritasa` vs `daodd1511`) previously blocked PR
-  creation — PRs #10–12 exist now, so possibly resolved; verify with `gh auth status`
-  before relying on it.
+- Phase 1 subscription confirm-payment flow is implemented in the worktree:
+  - [packages/web/src/features/subscriptions/components/SubscriptionLogConfirm.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/subscriptions/components/SubscriptionLogConfirm.tsx)
+  - [packages/web/src/features/subscriptions/components/SubscriptionDueBanner.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/subscriptions/components/SubscriptionDueBanner.tsx)
+  - [packages/web/src/features/subscriptions/components/MobileSubscriptions.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/subscriptions/components/MobileSubscriptions.tsx)
+  - [packages/web/src/features/subscriptions/components/DesktopSubscriptions.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/subscriptions/components/DesktopSubscriptions.tsx)
+  - [packages/web/src/routing/app-pages.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/routing/app-pages.tsx)
+  - [packages/web/src/core/i18n.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/core/i18n.tsx)
+- Phase 1 tests were added:
+  - [packages/web/src/features/subscriptions/components/SubscriptionLogConfirm.test.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/subscriptions/components/SubscriptionLogConfirm.test.tsx)
+  - [packages/web/src/features/subscriptions/components/SubscriptionDueBanner.test.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/subscriptions/components/SubscriptionDueBanner.test.tsx)
+- Before Phase 2 edits started, these all passed:
+  - `pnpm --filter @wallet/web typecheck`
+  - `pnpm --filter @wallet/web test`
+  - `pnpm --filter @wallet/web build`
 
-## Suggested skills
+## Partial Phase 2 Work In Progress
 
-- `spec-phase` — to start/resume `mobile-ux` phase execution (reads `EXECUTION.md` STATUS).
-- `react-frontend-developer` — all `mobile-ux` work is frontend; required by `CLAUDE.md`.
-- `terse-commit` — before any commit in this repo (repo convention).
-- `capture` — if out-of-scope issues surface mid-work, backlog them rather than expanding
-  the spec.
+- New shared skeleton primitives were added in:
+  [packages/web/src/shared/components/Skeleton.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/shared/components/Skeleton.tsx)
+- Initial-load skeleton wiring was started in:
+  - [packages/web/src/features/dashboard/components/DesktopDashboard.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/dashboard/components/DesktopDashboard.tsx)
+  - [packages/web/src/features/dashboard/components/MobileHome.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/dashboard/components/MobileHome.tsx)
+  - [packages/web/src/features/accounts/components/DesktopAccounts.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/accounts/components/DesktopAccounts.tsx)
+  - [packages/web/src/features/accounts/components/MobileAccounts.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/accounts/components/MobileAccounts.tsx)
+  - [packages/web/src/features/budgets/components/DesktopBudgets.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/budgets/components/DesktopBudgets.tsx)
+  - [packages/web/src/features/budgets/components/MobileBudgets.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/budgets/components/MobileBudgets.tsx)
+  - [packages/web/src/features/subscriptions/components/DesktopSubscriptions.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/subscriptions/components/DesktopSubscriptions.tsx)
+  - [packages/web/src/features/subscriptions/components/MobileSubscriptions.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/subscriptions/components/MobileSubscriptions.tsx)
+  - [packages/web/src/features/transactions/components/DesktopTransactionsTable.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/transactions/components/DesktopTransactionsTable.tsx)
+  - [packages/web/src/features/transactions/components/MobileTransactions.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/transactions/components/MobileTransactions.tsx)
+  - [packages/web/src/features/categories/components/CategoriesPage.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/categories/components/CategoriesPage.tsx)
+- Delete-confirm loading was only partially started in:
+  [packages/web/src/features/categories/components/CategoryForm.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/categories/components/CategoryForm.tsx)
+- Desktop search-focus and create-intent plumbing was partially started in:
+  - [packages/web/src/features/transactions/components/DesktopTransactionsTable.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/transactions/components/DesktopTransactionsTable.tsx)
+  - [packages/web/src/features/accounts/components/DesktopAccounts.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/accounts/components/DesktopAccounts.tsx)
+  - [packages/web/src/features/budgets/components/DesktopBudgets.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/budgets/components/DesktopBudgets.tsx)
+  - [packages/web/src/features/subscriptions/components/DesktopSubscriptions.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/subscriptions/components/DesktopSubscriptions.tsx)
+
+## Known Breakage / Risks
+
+- [packages/web/src/features/accounts/components/DesktopAccounts.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/accounts/components/DesktopAccounts.tsx) is currently syntactically broken.
+  The interrupted patch left an empty function body followed by live code outside the component:
+  `export function DesktopAccounts(...) { }` then `const accountsQuery = useAccounts()`.
+- No tests or typecheck/build have been rerun after the partial Phase 2 edits. Assume the worktree is red until proven otherwise.
+- Phase 2 was incorrectly started on the Phase 1 branch. Before continuing the spec cleanly, the next agent must decide whether to:
+  - repair and commit Phase 1 + Phase 2 together on the current branch, then recover spec history manually, or
+  - repair the worktree, checkpoint Phase 1 only, and move / replay Phase 2 work onto `polish/phase-2-loading-states`
+
+## Recommended Next Steps
+
+1. Repair [DesktopAccounts.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/accounts/components/DesktopAccounts.tsx) first so the tree parses again.
+2. Decide how to recover the phase-branch workflow for `polish` before adding more code.
+3. Finish Phase 2 deliberately:
+   - complete skeleton coverage
+   - complete delete-confirm loading across category / subscription / account / transaction surfaces
+   - add or update tests
+4. Run:
+   - `pnpm --filter @wallet/web typecheck`
+   - `pnpm --filter @wallet/web test`
+   - `pnpm --filter @wallet/web build`
+5. Update [specs/polish/EXECUTION.md](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/specs/polish/EXECUTION.md) again once the worktree is repaired and Phase 2 status becomes clearer.
+
+## Backlog Note
+
+- I did not modify [docs/BACKLOG.md](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/docs/BACKLOG.md).
+- The existing desktop shortcuts / command palette backlog item still maps to pending Phase 3.
+
+## Suggested Skills
+
+- `react-frontend-developer`
+- `spec-phase`
+- `handoff`

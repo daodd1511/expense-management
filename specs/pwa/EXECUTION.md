@@ -1,6 +1,15 @@
 # PWA — Execution Plan
 
-Spec: [PLAN.md](PLAN.md). Workflow rules: see `CLAUDE.md` → "Spec-Driven Execution Workflow".
+Spec: [PLAN.md](PLAN.md). Rulebook: `CLAUDE.md` → "Spec-Driven Execution Workflow".
+
+## STATUS
+
+- Current phase: All phases complete
+- Phase 1 — Installable icons + manifest + favicon: `done`
+- Phase 2 — Service worker offline: `done-with-debt`
+- Verification debt: manual browser checks (2 items) deferred; review checklist incomplete
+
+---
 
 Read order for any agent picking this up: `HANDOFF.md` (root) → this file → `PLAN.md`.
 

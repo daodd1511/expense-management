@@ -1,4 +1,5 @@
 import { DATE_LOCALE } from '@/core/i18n'
+import { parseLocalDate } from '@/shared/lib/date'
 import type { Lang, TxType } from '@/core/types'
 
 // VND: dot thousands, trailing ₫  -> 100.000 ₫
@@ -23,7 +24,7 @@ export function amountColorClass(type: TxType): string {
 }
 
 export function formatDayLabel(iso: string, lang: Lang = 'vi', todayLabel = 'Hôm nay', yesterdayLabel = 'Hôm qua'): string {
-  const d = new Date(iso)
+  const d = parseLocalDate(iso)
   const today = new Date()
   const yest = new Date()
   yest.setDate(today.getDate() - 1)
@@ -39,12 +40,12 @@ export function formatDayLabel(iso: string, lang: Lang = 'vi', todayLabel = 'Hô
 }
 
 export function formatShortDate(iso: string): string {
-  const d = new Date(iso)
+  const d = parseLocalDate(iso)
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
 }
 
 export function formatTime(iso: string): string {
-  const d = new Date(iso)
+  const d = parseLocalDate(iso)
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 

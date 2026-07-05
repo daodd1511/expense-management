@@ -1,6 +1,16 @@
 # Category Redesign — Execution Plan
 
-Spec: [PLAN.md](PLAN.md). Workflow rules: see `CLAUDE.md` → "Spec-Driven Execution Workflow".
+Spec: [PLAN.md](PLAN.md). Rulebook: `CLAUDE.md` → "Spec-Driven Execution Workflow".
+
+## STATUS
+
+- Current phase: All phases complete
+- Phase 1 — Schema, shared types, API: `done`
+- Phase 2 — Transaction-form picker: `done`
+- Phase 3 — Categories management page: `done-with-debt`
+- Verification debt: manual browser checks (2 items) deferred; review checklist incomplete
+
+---
 
 Read order for any agent picking this up: `HANDOFF.md` (root) → this file → `PLAN.md`.
 

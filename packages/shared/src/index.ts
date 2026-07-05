@@ -1,5 +1,6 @@
 export type { Database, Json } from './database.types'
 export { secureParse } from './secure-parse'
+export { computeBalance, computeBalanceTrend } from './finance'
 export {
   accountKindSchema,
   accountSchema,
@@ -26,6 +27,8 @@ export {
   accountCreateSchema,
   accountPatchSchema,
   accountRowSchema,
+  balanceTrendPointSchema,
+  balanceTrendResponseSchema,
   atLeastOneKey,
   budgetCreateSchema,
   budgetPatchSchema,
@@ -47,6 +50,8 @@ export {
   type AccountCreate,
   type AccountPatch,
   type AccountRow,
+  type BalanceTrendPoint,
+  type BalanceTrendResponse,
   type BudgetCreate,
   type BudgetPatch,
   type BudgetRow,
@@ -66,6 +71,7 @@ export {
 export {
   accountPatchToRow,
   advanceNextDueDate,
+  buildNextDueDate,
   budgetPatchToRow,
   categoryPatchToRow,
   fromAccount,

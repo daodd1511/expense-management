@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/auth'
 import {
@@ -13,6 +14,12 @@ export function useFavorites() {
     queryFn: fetchFavorites,
     enabled: !!user,
   })
+}
+
+/** Favorite category ids as a Set, memoized over the current favorites list. */
+export function useFavoriteCategoryIds(): Set<string> {
+  const { data } = useFavorites()
+  return useMemo(() => new Set<string>(data ?? []), [data])
 }
 
 export function useAddFavorite() {

@@ -1,4 +1,4 @@
-
+import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import {
   CalendarClock,
   CreditCard,
@@ -9,51 +9,97 @@ import {
   Target,
   Wallet,
 } from 'lucide-react'
-import { useState } from 'react'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
-import { TransactionForm } from '@/features/transactions/components/TransactionForm'
-import { Drawer } from '@/shared/components/ui/overlay'
+import { TransactionRouteOverlay } from '@/features/transactions/components/TransactionRouteOverlay'
 import { LoadingScreen } from '@/shared/components/LoadingScreen'
+import { CommandPalette, type CommandPaletteAction } from '@/shared/components/CommandPalette'
+import { useKeyboardShortcuts } from '@/shared/hooks/useKeyboardShortcuts'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import { AppRouteContent } from '@/routing/app-pages'
+import { useTransactions } from '@/features/transactions/queries'
+import { useSubscriptions } from '@/features/subscriptions/queries'
+import { useAppDataLoading } from '@/shared/hooks/useAppDataLoading'
 import { dueBanner } from '@/features/subscriptions/helpers'
-import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
-import { DesktopAccounts } from '@/features/accounts/components/DesktopAccounts'
-import { DesktopBudgets } from '@/features/budgets/components/DesktopBudgets'
-import { DesktopDashboard } from '@/features/dashboard/components/DesktopDashboard'
-import { DesktopSettings } from '@/features/settings/components/Settings'
-import { DesktopSubscriptions } from '@/features/subscriptions/components/DesktopSubscriptions'
-import { DesktopTransactionsTable } from '@/features/transactions/components/DesktopTransactionsTable'
-import { CategoriesPage } from '@/features/categories/components/CategoriesPage'
-
-type Tab = 'dashboard' | 'transactions' | 'budgets' | 'subscriptions' | 'accounts' | 'settings' | 'categories'
+import { sectionFromPath } from '@/routing/app-route-state'
+import { getTransactionOverlayState } from '@/routing/transaction-overlay'
 
 export function DesktopApp() {
-  const { addTransaction, updateTransaction, subscriptions, transactions, loading } = useStore()
+  const { data: subscriptions = [] } = useSubscriptions()
+  const { data: transactions = [] } = useTransactions()
+  const loading = useAppDataLoading()
   const { t } = useLang()
-  const [tab, setTab] = useState<Tab>('dashboard')
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [editing, setEditing] = useState<Transaction | undefined>(undefined)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const overlay = getTransactionOverlayState(
+    location.pathname,
+    location.search as Record<string, unknown>,
+  )
+  const section = sectionFromPath(overlay?.returnToPathname ?? location.pathname)
   const dueCount = dueBanner(subscriptions, transactions).length
 
-  const NAV: { id: Tab; label: string; icon: typeof LayoutDashboard; badge?: number }[] = [
-    { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
-    { id: 'transactions', label: t('nav.transactions'), icon: Receipt },
-    { id: 'budgets', label: t('nav.budgets'), icon: Target },
-    { id: 'subscriptions', label: t('nav.subscriptions'), icon: CalendarClock, badge: dueCount },
-    { id: 'accounts', label: t('nav.accounts'), icon: Wallet },
-    { id: 'settings', label: t('nav.settings'), icon: Settings },
+  const NAV: { href: '/' | '/transactions' | '/budgets' | '/subscriptions' | '/accounts' | '/settings'; section: typeof section; label: string; icon: typeof LayoutDashboard; badge?: number }[] = [
+    { href: '/', section: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { href: '/transactions', section: 'transactions', label: t('nav.transactions'), icon: Receipt },
+    { href: '/budgets', section: 'budgets', label: t('nav.budgets'), icon: Target },
+    { href: '/subscriptions', section: 'subscriptions', label: t('nav.subscriptions'), icon: CalendarClock, badge: dueCount },
+    { href: '/accounts', section: 'accounts', label: t('nav.accounts'), icon: Wallet },
+    { href: '/settings', section: 'settings', label: t('nav.settings'), icon: Settings },
   ]
 
-  const openAdd = () => {
-    setEditing(undefined)
-    setDrawerOpen(true)
+  const openNewTransaction = () => navigate({ to: '/transactions/new', search: { returnTo: location.href } })
+
+  const focusTransactionsSearch = () => {
+    if (section === 'transactions') {
+      document.querySelector<HTMLInputElement>('[data-global-search="transactions"]')?.focus()
+    } else {
+      navigate({ to: '/transactions', search: { focus: 'search' } })
+    }
   }
-  const openEdit = (tx: Transaction) => {
-    setEditing(tx)
-    setDrawerOpen(true)
-  }
+
+  const paletteActions: CommandPaletteAction[] = [
+    ...NAV.map((item) => ({
+      id: `nav-${item.section}`,
+      label: item.label,
+      section: t('palette.sectionNavigate'),
+      onRun: () => navigate({ to: item.href }),
+    })),
+    {
+      id: 'nav-settings-categories',
+      label: t('settings.categories'),
+      section: t('palette.sectionNavigate'),
+      onRun: () => navigate({ to: '/settings/categories' }),
+    },
+    {
+      id: 'create-transaction',
+      label: t('app.addTransaction'),
+      section: t('palette.sectionCreate'),
+      onRun: openNewTransaction,
+    },
+    {
+      id: 'create-account',
+      label: t('palette.newAccount'),
+      section: t('palette.sectionCreate'),
+      onRun: () => navigate({ to: '/accounts', search: { create: String(Date.now()) } }),
+    },
+    {
+      id: 'create-budget',
+      label: t('palette.newBudget'),
+      section: t('palette.sectionCreate'),
+      onRun: () => navigate({ to: '/budgets', search: { create: String(Date.now()) } }),
+    },
+    {
+      id: 'create-subscription',
+      label: t('palette.newSubscription'),
+      section: t('palette.sectionCreate'),
+      onRun: () => navigate({ to: '/subscriptions', search: { create: String(Date.now()) } }),
+    },
+  ]
+
+  useKeyboardShortcuts([
+    { key: 'n', handler: openNewTransaction },
+    { key: '/', handler: focusTransactionsSearch },
+  ])
 
   if (loading) return <LoadingScreen />
 
@@ -74,12 +120,12 @@ export function DesktopApp() {
         <nav className="mt-4 flex flex-col gap-1">
           {NAV.map((item) => {
             const Icon = item.icon
-            const active = tab === item.id
+            const active = item.section === 'settings' ? section === 'settings' || section === 'settings-categories' : section === item.section
             return (
               <button
-                key={item.id}
+                key={item.href}
                 type="button"
-                onClick={() => setTab(item.id)}
+                onClick={() => navigate({ to: item.href })}
                 className={cn(
                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
                   active
@@ -103,7 +149,7 @@ export function DesktopApp() {
 
         <button
           type="button"
-          onClick={openAdd}
+          onClick={openNewTransaction}
           className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
           <Plus className="size-4" />
@@ -119,30 +165,12 @@ export function DesktopApp() {
       {/* Main */}
       <main className="flex-1 overflow-x-hidden px-5 py-6 lg:px-10 lg:py-8">
         <div className="mx-auto max-w-6xl">
-          {tab === 'dashboard' && <DesktopDashboard onNavigate={(s) => setTab(s as Tab)} onEdit={openEdit} />}
-          {tab === 'transactions' && <DesktopTransactionsTable onEdit={openEdit} />}
-          {tab === 'budgets' && <DesktopBudgets />}
-          {tab === 'subscriptions' && <DesktopSubscriptions />}
-          {tab === 'accounts' && <DesktopAccounts />}
-          {tab === 'settings' && <DesktopSettings onNavigateToCategories={() => setTab('categories')} />}
-          {tab === 'categories' && <CategoriesPage variant="desktop" onBack={() => setTab('settings')} />}
+          {overlay ? <AppRouteContent pathname={overlay.returnToPathname} /> : <Outlet />}
         </div>
       </main>
 
-      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        {drawerOpen && (
-          <TransactionForm
-            variant="desktop"
-            initial={editing}
-            onSubmit={async (tx) => {
-              if (editing) await updateTransaction(editing.id, tx)
-              else await addTransaction(tx)
-              setDrawerOpen(false)
-            }}
-            onCancel={() => setDrawerOpen(false)}
-          />
-        )}
-      </Drawer>
+      <TransactionRouteOverlay variant="desktop" overlay={overlay} />
+      <CommandPalette actions={paletteActions} />
     </div>
   )
 }

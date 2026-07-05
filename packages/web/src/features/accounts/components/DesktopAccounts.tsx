@@ -1,24 +1,38 @@
 
 import { Banknote, CreditCard, Landmark, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
+import { AccountsSkeleton } from '@/shared/components/Skeleton'
 import { Card } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Modal } from '@/shared/components/ui/overlay'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { computeBalance, useStore } from '@/core/store'
+import { useAccounts, useAddAccount, useDeleteAccount, useUpdateAccount } from '@/features/accounts/queries'
 import type { Account, AccountKind } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
-export function DesktopAccounts() {
-  const { accounts, transactions, addAccount, updateAccount, deleteAccount } = useStore()
+type AccountInput = Omit<Account, 'id' | 'balance'>
+
+export function DesktopAccounts({
+  createIntentToken,
+  onCreateIntentHandled,
+}: {
+  createIntentToken?: string
+  onCreateIntentHandled?: () => void
+}) {
+  const accountsQuery = useAccounts()
+  const { data: accounts = [], isPending } = accountsQuery
+  const addAcc = useAddAccount()
+  const updateAcc = useUpdateAccount()
+  const deleteAcc = useDeleteAccount()
   const { t } = useLang()
-  const total = accounts.reduce((s, a) => s + computeBalance(a.id, transactions, a.openingBalance), 0)
+  const total = accounts.reduce((sum, account) => sum + (account.balance ?? account.openingBalance), 0)
   const [editing, setEditing] = useState<Account | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [handledCreateIntent, setHandledCreateIntent] = useState<string | null>(null)
 
   const KIND: Record<AccountKind, { icon: LucideIcon; label: string }> = {
     cash: { icon: Banknote, label: t('accounts.kindCash') },
@@ -42,11 +56,20 @@ export function DesktopAccounts() {
     setEditing(null)
   }
 
-  const handleSubmit = async (data: Omit<Account, 'id'>) => {
-    if (editing) await updateAccount(editing.id, data)
-    else await addAccount(data)
+  const handleSubmit = async (data: AccountInput) => {
+    if (editing) await updateAcc.mutateAsync({ id: editing.id, patch: data })
+    else await addAcc.mutateAsync(data)
     close()
   }
+
+  useEffect(() => {
+    if (!createIntentToken || handledCreateIntent === createIntentToken || modalOpen) return
+    openAdd()
+    setHandledCreateIntent(createIntentToken)
+    onCreateIntentHandled?.()
+  }, [createIntentToken, handledCreateIntent, modalOpen, onCreateIntentHandled])
+
+  if (isPending) return <AccountsSkeleton />
 
   return (
     <div className="flex flex-col gap-6">
@@ -74,7 +97,7 @@ export function DesktopAccounts() {
         {accounts.map((a) => {
           const meta = KIND[a.kind]
           const Icon = meta.icon
-          const bal = computeBalance(a.id, transactions, a.openingBalance)
+          const bal = a.balance ?? a.openingBalance
           const negative = bal < 0
           return (
             <Card key={a.id} className="group flex flex-col gap-4 p-5">
@@ -126,7 +149,7 @@ export function DesktopAccounts() {
         open={pendingDeleteId !== null}
         onCancel={() => setPendingDeleteId(null)}
         onConfirm={async () => {
-          if (pendingDeleteId) await deleteAccount(pendingDeleteId)
+          if (pendingDeleteId) await deleteAcc.mutateAsync(pendingDeleteId)
           setPendingDeleteId(null)
         }}
       />

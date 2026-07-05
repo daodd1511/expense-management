@@ -10,6 +10,8 @@ import { useLang } from '@/core/i18n'
 import type { Account, AccountKind } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
+type AccountInput = Omit<Account, 'id' | 'balance'>
+
 const KINDS: { value: AccountKind; icon: LucideIcon }[] = [
   { value: 'cash', icon: Banknote },
   { value: 'bank', icon: Landmark },
@@ -23,7 +25,7 @@ export function AccountForm({
   onCancel,
 }: {
   initial?: Account
-  onSubmit: (data: Omit<Account, 'id'>) => Promise<void>
+  onSubmit: (data: AccountInput) => Promise<void>
   onCancel: () => void
 }) {
   const { t } = useLang()

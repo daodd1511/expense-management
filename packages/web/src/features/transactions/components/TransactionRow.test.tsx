@@ -13,12 +13,18 @@ const MOCK_ACCOUNTS = [
   { id: 'bank', name: 'Bank' },
 ]
 
-vi.mock('@/core/store', () => ({
-  useStore: () => ({
-    getCategory: (id: string | null | undefined) => MOCK_CATEGORIES.find((category) => category.id === id),
-    getAccount: (id: string | null | undefined) => MOCK_ACCOUNTS.find((account) => account.id === id),
-    deleteTransaction: vi.fn(),
-  }),
+vi.mock('@/features/categories/queries', () => ({
+  useCategoryLookup: () => (id: string | null | undefined) =>
+    MOCK_CATEGORIES.find((category) => category.id === id),
+}))
+
+vi.mock('@/features/accounts/queries', () => ({
+  useAccountLookup: () => (id: string | null | undefined) =>
+    MOCK_ACCOUNTS.find((account) => account.id === id),
+}))
+
+vi.mock('@/features/transactions/queries', () => ({
+  useDeleteTransaction: () => ({ mutateAsync: vi.fn() }),
 }))
 
 vi.mock('@/core/i18n', () => ({

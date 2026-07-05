@@ -1,32 +1,65 @@
-
 import { useQueryClient } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useAccounts, useAccountLookup } from '@/features/accounts/queries'
 import { useAuth } from '@/features/auth/auth'
+import { useCategories, useCategoryLookup } from '@/features/categories/queries'
+import { CategoryFilterSelect } from '@/features/categories/components/CategoryFilterSelect'
+import { TransactionsMonthSwitcher } from '@/features/transactions/components/TransactionsMonthSwitcher'
 import { TransactionRow } from '@/features/transactions/components/TransactionRow'
+import { useTransactions } from '@/features/transactions/queries'
+import type { TransactionFilterType } from '@/features/transactions/view-state'
+import { useLang } from '@/core/i18n'
+import type { Transaction } from '@/core/types'
 import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicator'
 import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
 import { Input } from '@/shared/components/ui/input'
+import { TransactionsSkeleton } from '@/shared/components/Skeleton'
+import { Select, SelectItem, SelectPopup, SelectPortal, SelectPositioner, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { formatDayLabel, formatVND } from '@/shared/lib/format'
-import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
-import type { Transaction, TxType } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
-export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => void }) {
+export function MobileTransactions({
+  onEdit,
+  month,
+  query,
+  type,
+  categoryId,
+  accountId,
+  onMonthChange,
+  onQueryChange,
+  onTypeChange,
+  onCategoryChange,
+  onAccountChange,
+}: {
+  onEdit: (tx: Transaction) => void
+  month: string
+  query: string
+  type: TransactionFilterType
+  categoryId: string
+  accountId: string
+  onMonthChange: (month: string) => void
+  onQueryChange: (query: string) => void
+  onTypeChange: (type: TransactionFilterType) => void
+  onCategoryChange: (categoryId: string) => void
+  onAccountChange: (accountId: string) => void
+}) {
   const { user } = useAuth()
-  const { transactions, getCategory, getAccount } = useStore()
+  const { data: transactions = [], isPending: transactionsPending } = useTransactions(month)
+  const { data: categories = [], isPending: categoriesPending } = useCategories()
+  const { data: accounts = [], isPending: accountsPending } = useAccounts()
+  const getCategory = useCategoryLookup()
+  const getAccount = useAccountLookup()
   const { t, lang } = useLang()
   const queryClient = useQueryClient()
-  const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<TxType | 'all'>('all')
+  const [showMoreFilters, setShowMoreFilters] = useState(false)
   const pullToRefresh = usePullToRefresh({
     onRefresh: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['transactions', user?.id] })
+      await queryClient.invalidateQueries({ queryKey: ['transactions', user?.id, month] })
     },
   })
 
-  const FILTERS: { value: TxType | 'all'; label: string }[] = [
+  const typeFilters: { value: TransactionFilterType; label: string }[] = [
     { value: 'all', label: t('tx.filterAll') },
     { value: 'expense', label: t('tx.filterExpense') },
     { value: 'income', label: t('tx.filterIncome') },
@@ -35,7 +68,9 @@ export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => vo
 
   const groups = useMemo(() => {
     const filtered = transactions.filter((tx) => {
-      if (filter !== 'all' && tx.type !== filter) return false
+      if (type !== 'all' && tx.type !== type) return false
+      if (categoryId && tx.categoryId !== categoryId) return false
+      if (accountId && tx.accountId !== accountId) return false
       if (query) {
         const searchValue = query.toLowerCase()
         const haystack = [
@@ -51,20 +86,23 @@ export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => vo
       }
       return true
     })
+
     const map = new Map<string, Transaction[]>()
     for (const tx of filtered) {
       const key = tx.date.slice(0, 10)
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(tx)
     }
+
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]))
-  }, [transactions, query, filter, getCategory, getAccount])
+  }, [transactions, type, categoryId, accountId, query, getCategory, getAccount])
+
+  if (transactionsPending || categoriesPending || accountsPending) {
+    return <TransactionsSkeleton mobile />
+  }
 
   return (
-    <div
-      {...pullToRefresh.bind}
-      className="h-full overflow-y-auto overscroll-contain"
-    >
+    <div {...pullToRefresh.bind} className="h-full overflow-y-auto overscroll-contain">
       <PullToRefreshIndicator
         pullDistance={pullToRefresh.pullDistance}
         isArmed={pullToRefresh.isArmed}
@@ -77,37 +115,70 @@ export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => vo
           transition: 'transform var(--duration-base) var(--ease-out)',
         }}
       >
+        <TransactionsMonthSwitcher month={month} onChange={onMonthChange} className="justify-between" />
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(event) => onQueryChange(event.target.value)}
             placeholder={t('tx.searchMobile')}
             className="pl-9"
           />
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {FILTERS.map((f) => (
+          {typeFilters.map((filterOption) => (
             <button
-              key={f.value}
+              key={filterOption.value}
               type="button"
-              onClick={() => setFilter(f.value)}
+              onClick={() => onTypeChange(filterOption.value)}
               className={cn(
                 'shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
-                filter === f.value
+                type === filterOption.value
                   ? 'border-transparent bg-primary text-primary-foreground'
                   : 'border-border bg-background text-foreground',
               )}
             >
-              {f.label}
+              {filterOption.label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setShowMoreFilters((current) => !current)}
+            className={cn(
+              'shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+              categoryId || accountId
+                ? 'border-transparent bg-accent text-foreground'
+                : 'border-border bg-background text-foreground',
+            )}
+          >
+            {t('tx.moreFilters')}
+          </button>
         </div>
+
+        {showMoreFilters && (
+          <div className="grid grid-cols-1 gap-2">
+            <CategoryFilterSelect
+              categories={categories}
+              value={categoryId}
+              ariaLabel={t('tx.filterCategory')}
+              emptyLabel={t('tx.filterCategoryAll')}
+              onChange={onCategoryChange}
+            />
+            <FilterSelect
+              value={accountId}
+              ariaLabel={t('tx.filterAccount')}
+              emptyLabel={t('tx.filterAccountAll')}
+              options={accounts.map((account) => ({ value: account.id, label: account.name }))}
+              onChange={onAccountChange}
+            />
+          </div>
+        )}
 
         {groups.map(([day, items]) => {
           const dayNet = items.reduce(
-            (s, tx) => s + (tx.type === 'income' ? tx.amount : tx.type === 'expense' ? -tx.amount : 0),
+            (sum, tx) => sum + (tx.type === 'income' ? tx.amount : tx.type === 'expense' ? -tx.amount : 0),
             0,
           )
           return (
@@ -137,5 +208,39 @@ export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => vo
         )}
       </div>
     </div>
+  )
+}
+
+function FilterSelect({
+  value,
+  ariaLabel,
+  emptyLabel,
+  options,
+  onChange,
+}: {
+  value: string
+  ariaLabel: string
+  emptyLabel: string
+  options: { value: string; label: string }[]
+  onChange: (value: string) => void
+}) {
+  return (
+    <Select value={value} onValueChange={(nextValue) => onChange(nextValue ?? '')}>
+      <SelectTrigger aria-label={ariaLabel}>
+        <SelectValue>{options.find((option) => option.value === value)?.label ?? emptyLabel}</SelectValue>
+      </SelectTrigger>
+      <SelectPortal>
+        <SelectPositioner>
+          <SelectPopup>
+            <SelectItem value="">{emptyLabel}</SelectItem>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectPopup>
+        </SelectPositioner>
+      </SelectPortal>
+    </Select>
   )
 }

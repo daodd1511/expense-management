@@ -6,7 +6,9 @@ import { Input, Label } from '@/shared/components/ui/input'
 import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
 import { useLang } from '@/core/i18n'
 import { buildNextDueDate } from '@/features/subscriptions/helpers'
-import { useStore } from '@/core/store'
+import { useCategories, useCategoryLookup } from '@/features/categories/queries'
+import { useFavoriteCategoryIds } from '@/features/categories/favorites-queries'
+import { useAccounts } from '@/features/accounts/queries'
 import type { Subscription, SubscriptionCadence } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 import { formatVND } from '@/shared/lib/format'
@@ -26,7 +28,10 @@ interface Props {
 
 export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
   const { t, lang } = useLang()
-  const { categories, accounts, getCategory, favoriteCategoryIds } = useStore()
+  const { data: categories = [] } = useCategories()
+  const { data: accounts = [] } = useAccounts()
+  const getCategory = useCategoryLookup()
+  const favoriteCategoryIds = useFavoriteCategoryIds()
 
   const [name, setName] = useState(initial?.name ?? '')
   const [amountRaw, setAmountRaw] = useState(initial ? String(initial.amount) : '')
@@ -48,7 +53,7 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
 
   const handleSubmit = () => {
     if (!canSubmit) return
-    const nextDueDate = initial?.nextDueDate ?? buildNextDueDate(dayOfMonth, monthOfYear, cadence)
+    const nextDueDate = buildNextDueDate(dayOfMonth, monthOfYear, cadence)
     submitForm({
       name: name.trim(),
       amount,

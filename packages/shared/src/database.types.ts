@@ -294,7 +294,49 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      log_subscription: {
+        Args: {
+          p_owner_id: string
+          p_subscription_id: string
+          p_type: string
+          p_amount: number
+          p_category_id: string | null
+          p_account_id: string
+          p_merchant: string
+          p_note: string | null
+          p_tx_date: string
+          p_next_due_date: string
+        }
+        Returns: {
+          tx_id: string
+          tx_owner_id: string
+          tx_type: string
+          tx_amount: number
+          tx_category_id: string | null
+          tx_account_id: string
+          tx_to_account_id: string | null
+          tx_merchant: string
+          tx_note: string | null
+          tx_tx_date: string
+          tx_receipt_url: string | null
+          tx_subscription_id: string | null
+          tx_created_at: string
+          sub_id: string
+          sub_owner_id: string
+          sub_name: string
+          sub_amount: number
+          sub_type: string
+          sub_category_id: string | null
+          sub_account_id: string
+          sub_cadence: string
+          sub_day_of_month: number
+          sub_month_of_year: number
+          sub_next_due_date: string
+          sub_note: string | null
+          sub_active: boolean
+          sub_created_at: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

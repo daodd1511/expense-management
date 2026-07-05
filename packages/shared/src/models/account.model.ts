@@ -6,6 +6,7 @@ export const accountSchema = z.object({
   name: z.string(),
   kind: accountKindSchema,
   openingBalance: z.number(),
+  balance: z.number().optional(),
 })
 
 export type Account = Readonly<z.infer<typeof accountSchema>>

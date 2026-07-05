@@ -175,13 +175,3 @@ export const transactions: Transaction[] = [
   tx({ type: 'expense', amount: 480_000, categoryId: 'home', accountId: 'cash', merchant: 'Chợ Hôm', note: 'Đồ ăn tuần', date: daysAgo(13, 8, 0) }),
   tx({ type: 'income', amount: 1_200_000, categoryId: 'other-income', accountId: 'cash', merchant: 'Bán đồ cũ', date: daysAgo(14, 14, 0) }),
 ]
-
-// 6-month trend sample (income / expense per month) in millions of VND
-export const monthlyTrend = [
-  { month: 'T1', income: 27.5, expense: 18.2 },
-  { month: 'T2', income: 26.0, expense: 21.4 },
-  { month: 'T3', income: 28.5, expense: 19.7 },
-  { month: 'T4', income: 27.5, expense: 23.1 },
-  { month: 'T5', income: 30.0, expense: 20.8 },
-  { month: 'T6', income: 27.5, expense: 22.3 },
-]

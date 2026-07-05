@@ -1,14 +1,20 @@
-
 import { ArrowLeftRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Paperclip, Pencil, Search, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useAccounts, useAccountLookup } from '@/features/accounts/queries'
+import { useCategories, useCategoryLookup } from '@/features/categories/queries'
+import { CategoryFilterSelect } from '@/features/categories/components/CategoryFilterSelect'
+import { TransactionsMonthSwitcher } from '@/features/transactions/components/TransactionsMonthSwitcher'
+import { useDeleteTransactions, useTransactions } from '@/features/transactions/queries'
+import type { TransactionFilterType } from '@/features/transactions/view-state'
+import { useLang } from '@/core/i18n'
+import type { Transaction } from '@/core/types'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Input } from '@/shared/components/ui/input'
+import { TransactionsSkeleton } from '@/shared/components/Skeleton'
+import { Select, SelectItem, SelectPopup, SelectPortal, SelectPositioner, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { amountColorClass, formatShortDate, formatSigned } from '@/shared/lib/format'
-import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
-import type { Transaction, TxType } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
 type SortKey = 'date' | 'category' | 'account' | 'amount'
@@ -26,18 +32,50 @@ function getTransactionCategoryLabel({
   return transaction.type === 'transfer' ? transferLabel : categoryName ?? ''
 }
 
-export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction) => void }) {
-  const { transactions, getCategory, getAccount, deleteTransaction } = useStore()
+export function DesktopTransactionsTable({
+  onEdit,
+  month,
+  query,
+  type,
+  categoryId,
+  accountId,
+  onMonthChange,
+  onQueryChange,
+  onTypeChange,
+  onCategoryChange,
+  onAccountChange,
+  shouldFocusSearch = false,
+  onSearchFocusHandled,
+}: {
+  onEdit: (tx: Transaction) => void
+  month: string
+  query: string
+  type: TransactionFilterType
+  categoryId: string
+  accountId: string
+  onMonthChange: (month: string) => void
+  onQueryChange: (query: string) => void
+  onTypeChange: (type: TransactionFilterType) => void
+  onCategoryChange: (categoryId: string) => void
+  onAccountChange: (accountId: string) => void
+  shouldFocusSearch?: boolean
+  onSearchFocusHandled?: () => void
+}) {
+  const { data: transactions = [], isPending: transactionsPending } = useTransactions(month)
+  const { data: categories = [], isPending: categoriesPending } = useCategories()
+  const { data: accounts = [], isPending: accountsPending } = useAccounts()
+  const getCategory = useCategoryLookup()
+  const getAccount = useAccountLookup()
+  const deleteTxs = useDeleteTransactions()
   const { t } = useLang()
-  const [query, setQuery] = useState('')
-  const [type, setType] = useState<TxType | 'all'>('all')
   const [sortKey, setSortKey] = useState<SortKey>('date')
   const [asc, setAsc] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [page, setPage] = useState(1)
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([])
+  const searchRef = useRef<HTMLInputElement | null>(null)
 
-  const TYPE_FILTERS: { value: TxType | 'all'; label: string }[] = [
+  const typeFilters: { value: TransactionFilterType; label: string }[] = [
     { value: 'all', label: t('tx.filterAll') },
     { value: 'expense', label: t('tx.filterExpense') },
     { value: 'income', label: t('tx.filterIncome') },
@@ -47,6 +85,8 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
   const filtered = useMemo(() => {
     const rows = transactions.filter((tx) => {
       if (type !== 'all' && tx.type !== type) return false
+      if (categoryId && tx.categoryId !== categoryId) return false
+      if (accountId && tx.accountId !== accountId) return false
       if (query) {
         const searchValue = query.toLowerCase()
         const haystack = [
@@ -62,7 +102,8 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
       }
       return true
     })
-    const dir = asc ? 1 : -1
+
+    const direction = asc ? 1 : -1
     return [...rows].sort((a, b) => {
       switch (sortKey) {
         case 'category':
@@ -76,91 +117,132 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
               categoryName: getCategory(b.categoryId)?.name,
               transferLabel: t('tx.transfer'),
             }),
-          ) * dir
+          ) * direction
         case 'account':
-          return (getAccount(a.accountId)?.name ?? '').localeCompare(getAccount(b.accountId)?.name ?? '') * dir
+          return (getAccount(a.accountId)?.name ?? '').localeCompare(getAccount(b.accountId)?.name ?? '') * direction
         case 'amount':
-          return (a.amount - b.amount) * dir
+          return (a.amount - b.amount) * direction
         default:
-          return a.date.localeCompare(b.date) * dir
+          return a.date.localeCompare(b.date) * direction
       }
     })
-  }, [transactions, query, type, sortKey, asc, getCategory, getAccount, t])
+  }, [transactions, type, categoryId, accountId, query, sortKey, asc, getCategory, getAccount, t])
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const current = Math.min(page, pageCount)
   const rows = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
 
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) setAsc((a) => !a)
-    else {
-      setSortKey(key)
-      setAsc(false)
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setAsc((currentAsc) => !currentAsc)
+      return
     }
+
+    setSortKey(key)
+    setAsc(false)
   }
-  const allOnPageSelected = rows.length > 0 && rows.every((r) => selected.has(r.id))
-  const toggleAll = () => {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      if (allOnPageSelected) rows.forEach((r) => next.delete(r.id))
-      else rows.forEach((r) => next.add(r.id))
+
+  const allOnPageSelected = rows.length > 0 && rows.every((row) => selected.has(row.id))
+
+  const handleToggleAll = () => {
+    setSelected((previous) => {
+      const next = new Set(previous)
+      if (allOnPageSelected) rows.forEach((row) => next.delete(row.id))
+      else rows.forEach((row) => next.add(row.id))
       return next
     })
   }
-  const toggleOne = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev)
+
+  const handleToggleOne = (id: string) => {
+    setSelected((previous) => {
+      const next = new Set(previous)
       next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
   }
-  const bulkDelete = () => {
-    setPendingDeleteIds(Array.from(selected))
-  }
-  const confirmDelete = async () => {
-    await Promise.all(pendingDeleteIds.map((id) => deleteTransaction(id)))
+
+  const handleConfirmDelete = async () => {
+    await deleteTxs.mutateAsync(pendingDeleteIds)
     setSelected(new Set())
     setPendingDeleteIds([])
   }
 
+  useEffect(() => {
+    if (!shouldFocusSearch) return
+    searchRef.current?.focus()
+    searchRef.current?.select()
+    onSearchFocusHandled?.()
+  }, [shouldFocusSearch, onSearchFocusHandled])
+
+  if (transactionsPending || categoriesPending || accountsPending) {
+    return <TransactionsSkeleton />
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
+        <TransactionsMonthSwitcher month={month} onChange={onMonthChange} />
         <div className="relative w-72">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            ref={searchRef}
+            data-global-search="transactions"
             value={query}
-            onChange={(e) => {
-              setQuery(e.target.value)
+            onChange={(event) => {
+              onQueryChange(event.target.value)
               setPage(1)
             }}
             placeholder={t('tx.search')}
             className="pl-9"
           />
         </div>
+        <div className="w-44">
+          <CategoryFilterSelect
+            categories={categories}
+            value={categoryId}
+            ariaLabel={t('tx.filterCategory')}
+            emptyLabel={t('tx.filterCategoryAll')}
+            onChange={(value) => {
+              onCategoryChange(value)
+              setPage(1)
+            }}
+          />
+        </div>
+        <div className="w-44">
+          <FilterSelect
+            value={accountId}
+            ariaLabel={t('tx.filterAccount')}
+            emptyLabel={t('tx.filterAccountAll')}
+            options={accounts.map((account) => ({ value: account.id, label: account.name }))}
+            onChange={(value) => {
+              onAccountChange(value)
+              setPage(1)
+            }}
+          />
+        </div>
         <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
-          {TYPE_FILTERS.map((f) => (
+          {typeFilters.map((filterOption) => (
             <button
-              key={f.value}
+              key={filterOption.value}
               type="button"
               onClick={() => {
-                setType(f.value)
+                onTypeChange(filterOption.value)
                 setPage(1)
               }}
               className={cn(
                 'rounded-md px-3 py-1 text-sm font-medium transition-colors',
-                type === f.value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+                type === filterOption.value
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground',
               )}
             >
-              {f.label}
+              {filterOption.label}
             </button>
           ))}
         </div>
         <span className="ml-auto text-sm text-muted-foreground">{t('tx.count', { n: filtered.length })}</span>
       </div>
 
-      {/* Bulk action bar */}
       {selected.size > 0 && (
         <div className="flex items-center justify-between rounded-lg border border-border bg-accent px-4 py-2 text-sm">
           <span className="font-medium text-accent-foreground">{t('tx.selected', { n: selected.size })}</span>
@@ -168,14 +250,13 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
             <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
               {t('tx.deselect')}
             </Button>
-            <Button variant="destructive" size="sm" onClick={bulkDelete}>
+            <Button variant="destructive" size="sm" onClick={() => setPendingDeleteIds(Array.from(selected))}>
               <Trash2 className="size-3.5" /> {t('tx.delete')}
             </Button>
           </div>
         </div>
       )}
 
-      {/* Table */}
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <table className="w-full text-sm">
           <thead>
@@ -184,26 +265,27 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
                 <input
                   type="checkbox"
                   checked={allOnPageSelected}
-                  onChange={toggleAll}
+                  onChange={handleToggleAll}
                   aria-label={t('tx.selectAll')}
                   className="size-4 accent-primary"
                 />
               </th>
-              <SortHeader label={t('tx.colDate')} col="date" sortKey={sortKey} asc={asc} onClick={toggleSort} />
-              <SortHeader label={t('tx.colCategory')} col="category" sortKey={sortKey} asc={asc} onClick={toggleSort} />
-              <SortHeader label={t('tx.colAccount')} col="account" sortKey={sortKey} asc={asc} onClick={toggleSort} />
-              <SortHeader label={t('tx.colAmount')} col="amount" sortKey={sortKey} asc={asc} onClick={toggleSort} align="right" />
+              <SortHeader label={t('tx.colDate')} col="date" sortKey={sortKey} asc={asc} onClick={handleSort} />
+              <SortHeader label={t('tx.colCategory')} col="category" sortKey={sortKey} asc={asc} onClick={handleSort} />
+              <SortHeader label={t('tx.colAccount')} col="account" sortKey={sortKey} asc={asc} onClick={handleSort} />
+              <SortHeader label={t('tx.colAmount')} col="amount" sortKey={sortKey} asc={asc} onClick={handleSort} align="right" />
               <th className="w-20 px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {rows.map((row) => {
-              const cat = getCategory(row.categoryId)
+              const category = getCategory(row.categoryId)
               const categoryLabel = getTransactionCategoryLabel({
                 transaction: row,
-                categoryName: cat?.name,
+                categoryName: category?.name,
                 transferLabel: t('tx.transfer'),
               })
+
               return (
                 <tr
                   key={row.id}
@@ -213,7 +295,7 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
                     <input
                       type="checkbox"
                       checked={selected.has(row.id)}
-                      onChange={() => toggleOne(row.id)}
+                      onChange={() => handleToggleOne(row.id)}
                       aria-label={t('tx.selectItem', { name: categoryLabel })}
                       className="size-4 accent-primary"
                     />
@@ -229,12 +311,12 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
                     ) : (
                       <span className="inline-flex items-center gap-1.5">
                         <CategoryIcon
-                          name={cat?.icon}
+                          name={category?.icon}
                           className="size-3.5"
-                          style={{ color: colorVar(cat?.color ?? 'chart-1') }}
+                          style={{ color: colorVar(category?.color ?? 'chart-1') }}
                         />
                         <span className="flex items-center gap-1.5">
-                          {cat?.name}
+                          {category?.name}
                           {row.receipt && <Paperclip className="size-3 text-muted-foreground" />}
                         </span>
                       </span>
@@ -274,7 +356,6 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
         )}
       </div>
 
-      {/* Pagination */}
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>{t('tx.page', { n: current, total: pageCount })}</span>
         <div className="flex gap-2">
@@ -286,12 +367,47 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
           </Button>
         </div>
       </div>
+
       <ConfirmDialog
         open={pendingDeleteIds.length > 0}
         onCancel={() => setPendingDeleteIds([])}
-        onConfirm={confirmDelete}
+        onConfirm={handleConfirmDelete}
       />
     </div>
+  )
+}
+
+function FilterSelect({
+  value,
+  ariaLabel,
+  emptyLabel,
+  options,
+  onChange,
+}: {
+  value: string
+  ariaLabel: string
+  emptyLabel: string
+  options: { value: string; label: string }[]
+  onChange: (value: string) => void
+}) {
+  return (
+    <Select value={value} onValueChange={(nextValue) => onChange(nextValue ?? '')}>
+      <SelectTrigger aria-label={ariaLabel}>
+        <SelectValue>{options.find((option) => option.value === value)?.label ?? emptyLabel}</SelectValue>
+      </SelectTrigger>
+      <SelectPortal>
+        <SelectPositioner>
+          <SelectPopup>
+            <SelectItem value="">{emptyLabel}</SelectItem>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectPopup>
+        </SelectPositioner>
+      </SelectPortal>
+    </Select>
   )
 }
 
@@ -307,26 +423,26 @@ function SortHeader({
   col: SortKey
   sortKey: SortKey
   asc: boolean
-  onClick: (c: SortKey) => void
+  onClick: (col: SortKey) => void
   align?: 'left' | 'right'
 }) {
   const active = sortKey === col
+
   return (
     <th className={cn('px-4 py-3 font-medium', align === 'right' && 'text-right')}>
       <button
         type="button"
         onClick={() => onClick(col)}
         className={cn(
-          'inline-flex items-center gap-1 hover:text-foreground',
-          active && 'text-foreground',
-          align === 'right' && 'flex-row-reverse',
+          'inline-flex items-center gap-1 transition-colors hover:text-foreground',
+          align === 'right' && 'ml-auto',
         )}
       >
         {label}
         {active ? (
           asc ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />
         ) : (
-          <ChevronDown className="size-3.5 opacity-30" />
+          <ChevronDown className="size-3.5 opacity-40" />
         )}
       </button>
     </th>

@@ -1,29 +1,5 @@
-import {
-  Briefcase,
-  Bus,
-  Gamepad2,
-  Gift,
-  HeartPulse,
-  House,
-  ReceiptText,
-  ShoppingBag,
-  Tag,
-  Utensils,
-  type LucideIcon,
-} from 'lucide-react'
-
-const ICONS: Record<string, LucideIcon> = {
-  Utensils,
-  Bus,
-  House,
-  ReceiptText,
-  Gamepad2,
-  HeartPulse,
-  ShoppingBag,
-  Briefcase,
-  Gift,
-  Tag,
-}
+import { Tag } from 'lucide-react'
+import { CATEGORY_ICON_REGISTRY } from '@/shared/icons'
 
 // Map category color token -> app theme css var.
 export function colorVar(token: string): string {
@@ -39,6 +15,6 @@ export function CategoryIcon({
   className?: string
   style?: React.CSSProperties
 }) {
-  const Icon = (name && ICONS[name]) || Tag
+  const Icon = (name && CATEGORY_ICON_REGISTRY[name]) || Tag
   return <Icon className={className} style={style} aria-hidden="true" />
 }

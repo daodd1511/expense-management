@@ -4,7 +4,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Card } from '@/shared/components/ui/card'
 import { useAuth } from '@/features/auth/auth'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import { useCategories } from '@/features/categories/queries'
 import type { Lang } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
@@ -13,7 +13,7 @@ export function DesktopSettings({
 }: {
   onNavigateToCategories: () => void
 }) {
-  const { categories } = useStore()
+  const { data: categories = [] } = useCategories()
   const { theme, setTheme } = useTheme()
   const { t, lang, setLang } = useLang()
   const { user, signOut } = useAuth()
