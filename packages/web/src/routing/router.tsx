@@ -24,6 +24,7 @@ import { ResetPasswordPage } from '@/features/auth/components/ResetPassword'
 import { SignIn } from '@/features/auth/components/SignIn'
 import { SignUpPage } from '@/features/auth/components/SignUp'
 import { currentRedirectPath, normalizeRedirectPath, validateAuthSearch } from './auth-redirect'
+import { validateCreateIntentSearch } from './create-intent'
 import { validateTransactionOverlaySearch } from './transaction-overlay'
 
 type RouterContext = {
@@ -168,18 +169,21 @@ const transactionEditRoute = createRoute({
 const budgetsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: 'budgets',
+  validateSearch: validateCreateIntentSearch,
   component: BudgetsPage,
 })
 
 const subscriptionsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: 'subscriptions',
+  validateSearch: validateCreateIntentSearch,
   component: SubscriptionsPage,
 })
 
 const accountsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: 'accounts',
+  validateSearch: validateCreateIntentSearch,
   component: AccountsPage,
 })
 

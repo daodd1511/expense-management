@@ -12,6 +12,8 @@ import {
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
 import { TransactionRouteOverlay } from '@/features/transactions/components/TransactionRouteOverlay'
 import { LoadingScreen } from '@/shared/components/LoadingScreen'
+import { CommandPalette, type CommandPaletteAction } from '@/shared/components/CommandPalette'
+import { useKeyboardShortcuts } from '@/shared/hooks/useKeyboardShortcuts'
 import { useLang } from '@/core/i18n'
 import { AppRouteContent } from '@/routing/app-pages'
 import { useTransactions } from '@/features/transactions/queries'
@@ -44,6 +46,60 @@ export function DesktopApp() {
     { href: '/accounts', section: 'accounts', label: t('nav.accounts'), icon: Wallet },
     { href: '/settings', section: 'settings', label: t('nav.settings'), icon: Settings },
   ]
+
+  const openNewTransaction = () => navigate({ to: '/transactions/new', search: { returnTo: location.href } })
+
+  const focusTransactionsSearch = () => {
+    if (section === 'transactions') {
+      document.querySelector<HTMLInputElement>('[data-global-search="transactions"]')?.focus()
+    } else {
+      navigate({ to: '/transactions', search: { focus: 'search' } })
+    }
+  }
+
+  const paletteActions: CommandPaletteAction[] = [
+    ...NAV.map((item) => ({
+      id: `nav-${item.section}`,
+      label: item.label,
+      section: t('palette.sectionNavigate'),
+      onRun: () => navigate({ to: item.href }),
+    })),
+    {
+      id: 'nav-settings-categories',
+      label: t('settings.categories'),
+      section: t('palette.sectionNavigate'),
+      onRun: () => navigate({ to: '/settings/categories' }),
+    },
+    {
+      id: 'create-transaction',
+      label: t('app.addTransaction'),
+      section: t('palette.sectionCreate'),
+      onRun: openNewTransaction,
+    },
+    {
+      id: 'create-account',
+      label: t('palette.newAccount'),
+      section: t('palette.sectionCreate'),
+      onRun: () => navigate({ to: '/accounts', search: { create: String(Date.now()) } }),
+    },
+    {
+      id: 'create-budget',
+      label: t('palette.newBudget'),
+      section: t('palette.sectionCreate'),
+      onRun: () => navigate({ to: '/budgets', search: { create: String(Date.now()) } }),
+    },
+    {
+      id: 'create-subscription',
+      label: t('palette.newSubscription'),
+      section: t('palette.sectionCreate'),
+      onRun: () => navigate({ to: '/subscriptions', search: { create: String(Date.now()) } }),
+    },
+  ]
+
+  useKeyboardShortcuts([
+    { key: 'n', handler: openNewTransaction },
+    { key: '/', handler: focusTransactionsSearch },
+  ])
 
   if (loading) return <LoadingScreen />
 
@@ -93,7 +149,7 @@ export function DesktopApp() {
 
         <button
           type="button"
-          onClick={() => navigate({ to: '/transactions/new', search: { returnTo: location.href } })}
+          onClick={openNewTransaction}
           className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
           <Plus className="size-4" />
@@ -114,6 +170,7 @@ export function DesktopApp() {
       </main>
 
       <TransactionRouteOverlay variant="desktop" overlay={overlay} />
+      <CommandPalette actions={paletteActions} />
     </div>
   )
 }

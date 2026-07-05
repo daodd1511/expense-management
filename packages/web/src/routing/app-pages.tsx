@@ -21,6 +21,7 @@ import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
 import type { Transaction } from '@/core/types'
 import { buildTransactionsSearch, parseTransactionsViewState, type TransactionsViewState } from '@/features/transactions/view-state'
 import { sectionFromPath } from './app-route-state'
+import { validateCreateIntentSearch } from './create-intent'
 
 function useAppNavigation() {
   const navigate = useNavigate()
@@ -116,7 +117,9 @@ export function TransactionsPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { openEdit } = useTransactionNavigation()
-  const state = parseTransactionsViewState(location.search as Record<string, unknown>)
+  const rawSearch = location.search as Record<string, unknown>
+  const state = parseTransactionsViewState(rawSearch)
+  const shouldFocusSearch = rawSearch.focus === 'search'
 
   const updateTransactionsState = (
     patch: Partial<TransactionsViewState> | ((current: TransactionsViewState) => TransactionsViewState),
@@ -147,6 +150,10 @@ export function TransactionsPage() {
       onTypeChange={(type) => updateTransactionsState({ type })}
       onCategoryChange={(categoryId) => updateTransactionsState({ categoryId })}
       onAccountChange={(accountId) => updateTransactionsState({ accountId })}
+      shouldFocusSearch={shouldFocusSearch}
+      onSearchFocusHandled={() =>
+        navigate({ to: '/transactions', search: buildTransactionsSearch(state), replace: true })
+      }
     />
   ) : (
     <MobileTransactions
@@ -165,12 +172,26 @@ export function TransactionsPage() {
   )
 }
 
+/** `createIntentToken`/`onCreateIntentHandled` for a desktop page reached via a `?create=`
+ * URL token (the command palette's "New account/budget/subscription" actions). */
+function useCreateIntent(path: '/accounts' | '/budgets' | '/subscriptions') {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { create } = validateCreateIntentSearch(location.search as Record<string, unknown>)
+
+  return {
+    createIntentToken: create,
+    onCreateIntentHandled: () => navigate({ to: path, search: {}, replace: true }),
+  }
+}
+
 export function BudgetsPage() {
   const isDesktop = useIsDesktop()
   const navigation = useAppNavigation()
+  const createIntent = useCreateIntent('/budgets')
 
   return isDesktop ? (
-    <DesktopBudgets />
+    <DesktopBudgets {...createIntent} />
   ) : (
     <MobilePlanning tab="budgets" onTabChange={(tab) => (tab === 'budgets' ? navigation.goBudgets() : navigation.goSubscriptions())} />
   )
@@ -179,9 +200,10 @@ export function BudgetsPage() {
 export function SubscriptionsPage() {
   const isDesktop = useIsDesktop()
   const navigation = useAppNavigation()
+  const createIntent = useCreateIntent('/subscriptions')
 
   return isDesktop ? (
-    <DesktopSubscriptions />
+    <DesktopSubscriptions {...createIntent} />
   ) : (
     <MobilePlanning
       tab="subscriptions"
@@ -192,8 +214,9 @@ export function SubscriptionsPage() {
 
 export function AccountsPage() {
   const isDesktop = useIsDesktop()
+  const createIntent = useCreateIntent('/accounts')
 
-  return isDesktop ? <DesktopAccounts /> : <MobileAccounts />
+  return isDesktop ? <DesktopAccounts {...createIntent} /> : <MobileAccounts />
 }
 
 export function SettingsPage() {
