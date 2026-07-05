@@ -21,6 +21,15 @@ describe('toAppAuthError', () => {
     expect(error.translationKey).toBe('auth.errorInvalidResetLink')
   })
 
+  it('maps email send rate limits to retry-later copy', () => {
+    const error = toAppAuthError({
+      code: 'over_email_send_rate_limit',
+      message: 'email rate limit exceeded',
+    })
+
+    expect(error.translationKey).toBe('auth.errorEmailRateLimit')
+  })
+
   it('falls back to the generic auth error key for unknown failures', () => {
     const error = toAppAuthError({ message: 'Something strange happened' })
 

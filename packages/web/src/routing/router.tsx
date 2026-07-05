@@ -127,7 +127,6 @@ const resetPasswordRoute = createRoute({
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'app',
-  path: '/',
   beforeLoad: ({ context, location }) => {
     if (!context.auth.loading && !context.auth.user) {
       throw redirect({

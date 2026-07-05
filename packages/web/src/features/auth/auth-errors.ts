@@ -32,6 +32,7 @@ function classifyByMessage(message: string): TranslationKey {
   if (lower.includes('token has expired')) return 'auth.errorInvalidResetLink'
   if (lower.includes('otp expired')) return 'auth.errorInvalidResetLink'
   if (lower.includes('session not found')) return 'auth.errorInvalidResetLink'
+  if (lower.includes('email rate limit exceeded')) return 'auth.errorEmailRateLimit'
 
   return 'auth.errorGeneric'
 }
@@ -46,6 +47,8 @@ function classifyByCode(code: string): TranslationKey | null {
       return 'auth.errorWeakPassword'
     case 'otp_expired':
       return 'auth.errorInvalidResetLink'
+    case 'over_email_send_rate_limit':
+      return 'auth.errorEmailRateLimit'
     default:
       return null
   }
