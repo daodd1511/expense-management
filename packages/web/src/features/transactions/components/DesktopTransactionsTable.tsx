@@ -2,6 +2,7 @@ import { ArrowLeftRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Pape
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAccounts, useAccountLookup } from '@/features/accounts/queries'
 import { useCategories, useCategoryLookup } from '@/features/categories/queries'
+import { CategoryFilterSelect } from '@/features/categories/components/CategoryFilterSelect'
 import { TransactionsMonthSwitcher } from '@/features/transactions/components/TransactionsMonthSwitcher'
 import { useDeleteTransactions, useTransactions } from '@/features/transactions/queries'
 import type { TransactionFilterType } from '@/features/transactions/view-state'
@@ -196,11 +197,11 @@ export function DesktopTransactionsTable({
           />
         </div>
         <div className="w-44">
-          <FilterSelect
+          <CategoryFilterSelect
+            categories={categories}
             value={categoryId}
             ariaLabel={t('tx.filterCategory')}
             emptyLabel={t('tx.filterCategoryAll')}
-            options={categories.map((category) => ({ value: category.id, label: category.name }))}
             onChange={(value) => {
               onCategoryChange(value)
               setPage(1)

@@ -83,6 +83,22 @@ function SelectItem({
   )
 }
 
+function SelectGroup(props: React.ComponentProps<typeof SelectPrimitive.Group>) {
+  return <SelectPrimitive.Group {...props} />
+}
+
+function SelectGroupLabel({
+  className,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.GroupLabel>) {
+  return (
+    <SelectPrimitive.GroupLabel
+      className={cn('flex items-center gap-2 px-3 pb-1 pt-2 text-xs font-medium text-muted-foreground', className)}
+      {...props}
+    />
+  )
+}
+
 export {
   SelectRoot as Select,
   SelectPortal,
@@ -91,4 +107,6 @@ export {
   SelectPositioner,
   SelectPopup,
   SelectItem,
+  SelectGroup,
+  SelectGroupLabel,
 }

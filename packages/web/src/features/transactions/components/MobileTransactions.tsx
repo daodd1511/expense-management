@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useAccounts, useAccountLookup } from '@/features/accounts/queries'
 import { useAuth } from '@/features/auth/auth'
 import { useCategories, useCategoryLookup } from '@/features/categories/queries'
+import { CategoryFilterSelect } from '@/features/categories/components/CategoryFilterSelect'
 import { TransactionsMonthSwitcher } from '@/features/transactions/components/TransactionsMonthSwitcher'
 import { TransactionRow } from '@/features/transactions/components/TransactionRow'
 import { useTransactions } from '@/features/transactions/queries'
@@ -158,11 +159,11 @@ export function MobileTransactions({
 
         {showMoreFilters && (
           <div className="grid grid-cols-1 gap-2">
-            <FilterSelect
+            <CategoryFilterSelect
+              categories={categories}
               value={categoryId}
               ariaLabel={t('tx.filterCategory')}
               emptyLabel={t('tx.filterCategoryAll')}
-              options={categories.map((category) => ({ value: category.id, label: category.name }))}
               onChange={onCategoryChange}
             />
             <FilterSelect

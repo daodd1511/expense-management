@@ -2,6 +2,7 @@
 import { useCallback, useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { CategoryPicker } from '@/features/categories/components/CategoryPicker'
+import { CategoryTile } from '@/features/categories/components/CategoryTile'
 import { Modal } from '@/shared/components/ui/overlay'
 import { useLang } from '@/core/i18n'
 import type { Category } from '@/core/types'
@@ -79,7 +80,7 @@ export function FavoriteCategoryPicker({
           )}
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {favorites.map((category) => (
-              <FavoriteCategoryTile
+              <CategoryTile
                 key={category.id}
                 category={category}
                 active={selectedId === category.id}
@@ -159,42 +160,6 @@ export function FavoriteCategoryPicker({
         </div>
       </Modal>
     </div>
-  )
-}
-
-function FavoriteCategoryTile({
-  category,
-  active,
-  onSelect,
-  disabled = false,
-}: {
-  category: Category
-  active: boolean
-  onSelect: (id: string) => void
-  disabled?: boolean
-}) {
-  const handleSelect = useCallback(() => onSelect(category.id), [category.id, onSelect])
-
-  return (
-    <button
-      type="button"
-      onClick={handleSelect}
-      aria-pressed={active}
-      disabled={disabled}
-      className={cn(
-        'flex min-w-0 flex-col items-center gap-2 rounded-xl border px-2 py-3 text-center transition-colors',
-        active ? 'border-primary bg-accent ring-1 ring-primary/25' : 'border-border hover:bg-muted',
-        disabled && 'cursor-not-allowed opacity-60',
-      )}
-    >
-      <span
-        className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl text-white"
-        style={{ backgroundColor: colorVar(category.color) }}
-      >
-        <CategoryIcon name={category.icon} className="size-4" />
-      </span>
-      <span className="line-clamp-2 text-xs font-medium text-foreground">{category.name}</span>
-    </button>
   )
 }
 
