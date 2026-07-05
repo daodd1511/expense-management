@@ -8,10 +8,10 @@ Frontend code via `react-frontend-developer`; `terse-commit` before commits.
 
 ## STATUS
 
-- Current phase: 2 — `done`
+- Current phase: All phases complete
 - Phase 1 — Backend atomicity + tooling: `done-with-debt`
 - Phase 2 — Date policy: `done`
-- Phase 3 — Store refactor + bulk delete + docs: `pending`
+- Phase 3 — Store refactor + bulk delete + docs: `done`
 - Verification debt: Phase 1 migration not applied to the linked Supabase project (no
   live credentials in this environment); SQL authored and reviewed, apply at PR review.
 
@@ -113,40 +113,37 @@ Branch: `foundation/phase-3-store-refactor` (off `foundation/phase-2-date-policy
 The heavy mechanical phase — deletes the facade every feature reads through. Landing it last
 means Phases 1–2 don't have to chase a moving import surface.
 
-- [ ] **Relocate selectors** — move `computeBalance` (`store.tsx:331`) to `shared` (e.g.
-      `shared/lib/derive.ts`); move `monthSummary` (`:300`) and `spentForCategory` to a
-      `shared`/feature lib. Update the Phase 2 `monthSummary` test import to the new location.
-- [ ] **Migrate consumers** — replace every `useStore()`/`l()` destructure with direct
-      feature-query hooks (`useTransactions`, `useAccounts`, `useCategories`, `useBudgets`,
-      `useSubscriptions`, favorites hooks, and the feature mutation hooks) across:
-      `layouts/mobile/MobileApp.tsx`, `layouts/mobile/MobilePlanning.tsx`,
-      `layouts/desktop/DesktopApp.tsx`, `features/categories/components/CategoriesPage.tsx`,
-      `features/dashboard/components/{DesktopDashboard,MobileHome}.tsx`,
-      `features/subscriptions/components/{SubscriptionDueBanner,MobileSubscriptions,DesktopSubscriptions,SubscriptionForm}.tsx`,
-      `features/transactions/components/{DesktopTransactionsTable,MobileTransactions,TransactionRow,TransactionForm}.tsx`,
-      `features/settings/components/Settings.tsx`,
-      `features/budgets/components/{BudgetForm,MobileBudgets,BudgetBars,DesktopBudgets}.tsx`,
-      `features/accounts/components/{AccountList,DesktopAccounts,MobileAccounts}.tsx`.
-- [ ] **Delete facade** — remove `StoreProvider`, `useStore`, and `l` from `core/store.tsx`
-      and drop `<StoreProvider>` from the app root (find its mount, likely `main.tsx`/`App`).
-      Delete `store.tsx` if nothing but re-exports remains.
-- [ ] **Fix l() mocks** — `features/transactions/components/TransactionForm.test.tsx`,
-      `features/categories/components/CategoriesPage.test.tsx`,
-      `features/transactions/components/TransactionRow.test.tsx`: mock the feature hooks
-      instead of `l()`.
-- [ ] **F1 bulk delete** — `features/transactions/components/DesktopTransactionsTable.tsx`
-      multi-select delete calls `useDeleteTransactions(ids)` (single bulk request); the
-      facade's `deleteTransactions` N-loop (`store.tsx:139`) is gone with the facade.
-- [ ] **F6 (computeBalance)** — unit test for `computeBalance` at its relocated `shared`
-      location (income/expense/transfer in + transfer out, opening balance).
-- [ ] **F8 docs** — update `CLAUDE.md` architecture/commands: remove the `store.tsx`
-      facade description, add `shared/lib/date.ts` and the `log_subscription` RPC, and note
-      balances are still client-computed (server-balance is Spec 2).
+- [x] **Relocate selectors** — moved `computeBalance`, `monthSummary`, `expenseByCategory`,
+      `spentForCategory` from `store.tsx` into `shared/lib/derive.ts` (alongside the
+      pre-existing `buildDonutData`). Phase 2's `monthSummary` test moved with it
+      (`shared/lib/derive.test.ts`, merged with the new `computeBalance` tests below).
+- [x] **Migrate consumers** — all `useStore()` call sites replaced with direct feature-query
+      hooks across the 22 files named in the plan (layouts, dashboard, categories, budgets,
+      subscriptions, transactions, settings, accounts). Added
+      `useCategoryLookup`/`useAccountLookup` (categories/accounts `queries.ts`) and
+      `useFavoriteCategoryIds` (`favorites-queries.ts`) as the id→entity lookups the facade
+      used to provide; added `shared/hooks/useAppDataLoading.ts` for the top-level loading
+      gate `MobileApp`/`DesktopApp` used to read off the facade.
+- [x] **Delete facade** — `core/store.tsx` and its co-located `store.test.ts` deleted;
+      `<StoreProvider>` removed from `main.tsx`.
+- [x] **Fix store mocks** — `TransactionForm.test.tsx`, `CategoriesPage.test.tsx`,
+      `TransactionRow.test.tsx` now mock the feature hooks (`useCategories`,
+      `useCategoryLookup`, `useAccountLookup`, `useFavoriteCategoryIds`, the mutation hooks)
+      instead of `@/core/store`.
+- [x] **F1 bulk delete** — `DesktopTransactionsTable.tsx`'s `confirmDelete` now calls
+      `useDeleteTransactions().mutateAsync(ids)` (single bulk `DELETE`) instead of
+      `Promise.all` over per-id `deleteTransaction` calls.
+- [x] **F6 (computeBalance)** — `shared/lib/derive.test.ts`: `computeBalance` tests (opening
+      balance, income/expense on the matching account, cross-account isolation, transfer
+      in/out).
+- [x] **F8 docs** — `CLAUDE.md`/`AGENTS.md` re-baselined: facade description removed, new
+      "Dates" section for `shared/lib/date.ts`, subscription logging described via the
+      `log_subscription` RPC, balance noted as still client-computed.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test`
-- [ ] `pnpm build`
+- [x] `pnpm --filter @wallet/web typecheck` — pass
+- [x] `pnpm --filter @wallet/web test` — 17 files / 92 tests pass
+- [x] `pnpm build` — pass (web build + PWA precache)
 
 **Review checklist (user, at PR review):**
 - [ ] App boots with no "must be used within StoreProvider" error; every screen renders
