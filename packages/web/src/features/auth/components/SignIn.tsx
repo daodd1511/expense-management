@@ -1,43 +1,125 @@
-import { CreditCard } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { AppAuthError } from '@/features/auth/auth-errors'
 import { useAuth } from '@/features/auth/auth'
 import { useLang } from '@/core/i18n'
+import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
 import { Button } from '@/shared/components/ui/button'
+import { Input, Label } from '@/shared/components/ui/input'
+import { AuthCardLayout } from './AuthCardLayout'
 
-export function SignIn() {
-  const { signIn } = useAuth()
+export function SignIn({ redirectTo }: { redirectTo: string }) {
+  const { signInWithGoogle, signInWithPassword, user, loading } = useAuth()
   const { t } = useLang()
-  const [isSigningIn, setIsSigningIn] = useState(false)
+  const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isPasswordSigningIn, setIsPasswordSigningIn] = useState(false)
+  const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false)
 
-  const handleSignIn = async () => {
-    setIsSigningIn(true)
+  useEffect(() => {
+    if (!loading && user) {
+      void navigate({ href: redirectTo, replace: true })
+    }
+  }, [loading, navigate, redirectTo, user])
+
+  const handlePasswordSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setErrorMessage(null)
+    setIsPasswordSigningIn(true)
+
     try {
-      await signIn()
+      await signInWithPassword({ email, password })
+    } catch (error) {
+      const authError = error instanceof AppAuthError ? error : new AppAuthError('auth.errorGeneric')
+      setErrorMessage(t(authError.translationKey))
     } finally {
-      setIsSigningIn(false)
+      setIsPasswordSigningIn(false)
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    setErrorMessage(null)
+    setIsGoogleSigningIn(true)
+
+    try {
+      await signInWithGoogle()
+    } catch (error) {
+      const authError = error instanceof AppAuthError ? error : new AppAuthError('auth.errorGeneric')
+      setErrorMessage(t(authError.translationKey))
+      setIsGoogleSigningIn(false)
     }
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-background px-4 text-foreground">
-      <div className="flex flex-col items-center gap-4">
-        <span className="inline-flex size-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-          <CreditCard className="size-8" />
-        </span>
-        <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight">{t('app.name')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('app.tagline')}</p>
+    <AuthCardLayout
+      title={t('auth.signInTitle')}
+      subtitle={t('auth.signInSubtitle')}
+      footerLinks={[
+        { to: '/auth/sign-up', label: t('auth.noAccount') },
+      ]}
+    >
+      <form className="space-y-4" onSubmit={handlePasswordSignIn}>
+        <div className="space-y-1.5">
+          <Label htmlFor="sign-in-email">{t('auth.email')}</Label>
+          <Input
+            id="sign-in-email"
+            type="email"
+            value={email}
+            autoComplete="email"
+            placeholder={t('auth.emailPlaceholder')}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
         </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="sign-in-password">{t('auth.password')}</Label>
+            <Link to="/auth/forgot-password" className="text-xs font-medium text-primary hover:underline">
+              {t('auth.forgotPassword')}
+            </Link>
+          </div>
+          <Input
+            id="sign-in-password"
+            type="password"
+            value={password}
+            autoComplete="current-password"
+            placeholder={t('auth.passwordPlaceholder')}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            minLength={6}
+          />
+        </div>
+
+        {errorMessage && <FormErrorBanner message={errorMessage} />}
+
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full"
+          loading={isPasswordSigningIn}
+          loadingLabel={t('auth.signingIn')}
+        >
+          {t('auth.signIn')}
+        </Button>
+      </form>
+
+      <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+        <span className="h-px flex-1 bg-border" />
+        {t('auth.orContinueWith')}
+        <span className="h-px flex-1 bg-border" />
       </div>
 
       <Button
         type="button"
         variant="outline"
         size="lg"
-        loading={isSigningIn}
+        loading={isGoogleSigningIn}
         loadingLabel={t('auth.signingIn')}
-        onClick={handleSignIn}
-        className="h-auto rounded-xl bg-card px-6 py-3.5 shadow-sm hover:bg-muted"
+        onClick={handleGoogleSignIn}
+        className="h-auto w-full rounded-xl bg-card px-6 py-3.5 shadow-sm hover:bg-muted"
       >
         <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
           <path
@@ -59,6 +141,6 @@ export function SignIn() {
         </svg>
         {t('auth.signInWithGoogle')}
       </Button>
-    </div>
+    </AuthCardLayout>
   )
 }

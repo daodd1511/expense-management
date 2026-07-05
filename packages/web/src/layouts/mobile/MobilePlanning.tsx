@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useLang } from '@/core/i18n'
 import { useSubscriptions } from '@/features/subscriptions/queries'
 import { useTransactions } from '@/features/transactions/queries'
@@ -9,8 +8,13 @@ import { MobileSubscriptions } from '@/features/subscriptions/components/MobileS
 
 type PlanTab = 'budgets' | 'subscriptions'
 
-export function MobilePlanning() {
-  const [tab, setTab] = useState<PlanTab>('budgets')
+export function MobilePlanning({
+  tab,
+  onTabChange,
+}: {
+  tab: PlanTab
+  onTabChange: (tab: PlanTab) => void
+}) {
   const { t } = useLang()
   const { data: subscriptions = [] } = useSubscriptions()
   const { data: transactions = [] } = useTransactions()
@@ -24,7 +28,7 @@ export function MobilePlanning() {
           <button
             key={id}
             type="button"
-            onClick={() => setTab(id)}
+            onClick={() => onTabChange(id)}
             className={cn(
               'relative flex flex-1 items-center justify-center gap-1.5 py-3 text-sm font-medium transition-colors',
               tab === id ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
