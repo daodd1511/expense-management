@@ -5,14 +5,18 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 2 — in-progress
+- Current phase: 2 — done
 - Phase 1 — Subscription confirm-payment: done
-- Phase 2 — Loading states: in-progress
+- Phase 2 — Loading states: done
 - Phase 3 — Shortcuts + command palette: pending
-- Verification debt:
-  - Partial Phase 2 edits were started on `polish/phase-1-subscription-confirm-payment` before the phase checkpoint/branch split; no Phase 2 branch exists yet.
-  - Agent gate has not been rerun after the interrupted Phase 2 edits.
-  - [packages/web/src/features/accounts/components/DesktopAccounts.tsx](/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app/packages/web/src/features/accounts/components/DesktopAccounts.tsx) is currently syntactically broken from an interrupted patch and must be repaired before any gate run.
+- Verification debt: none. Phases 1 and 2 landed in one commit (`9b0784e`) on
+  `polish/phase-1-subscription-confirm-payment` rather than on separate stacked branches —
+  a prior session's Phase 2 edits were started directly on the Phase 1 branch and were
+  interrupted mid-patch (`DesktopAccounts.tsx` left syntactically broken, no Phase 2 branch
+  ever created). Repaired the syntax break, added the one missing test the checklist asked
+  for (`Skeleton.test.tsx`), and committed both phases together since their diffs were
+  already interleaved in the same files. Phase 3 will branch off this branch/commit as
+  `polish/phase-3-command-palette`, per the stacked model.
 
 ## Phase 1 — Subscription confirm-payment
 
@@ -42,21 +46,39 @@ push/PR. Review checklist goes into the PR description.
 
 ## Phase 2 — Loading states
 
-Branch: `polish/phase-2-loading-states` (off `polish/phase-1-subscription-confirm-payment`, stacked)
+Branch: `polish/phase-1-subscription-confirm-payment` (landed here, not on a separate
+`polish/phase-2-loading-states` branch — see STATUS for why)
 
 This phase depends on the subscription confirm flow because its loading treatment becomes
 the pattern for the remaining list and delete-confirm surfaces.
 
-- [ ] Add reusable skeleton UI in `packages/web/src/shared/components/` for primary data-screen initial loads using the existing design tokens.
-- [ ] Wire initial-load skeleton states from feature queries into `packages/web/src/features/transactions/components/DesktopTransactionsTable.tsx`, `MobileTransactions.tsx`, `packages/web/src/features/dashboard/components/DesktopDashboard.tsx`, `MobileHome.tsx`, `packages/web/src/features/accounts/components/DesktopAccounts.tsx`, `MobileAccounts.tsx`, `packages/web/src/features/subscriptions/components/DesktopSubscriptions.tsx`, `MobileSubscriptions.tsx`, `packages/web/src/features/categories/components/CategoriesPage.tsx`, and the budgets screen components.
-- [ ] Ensure the relevant feature query hooks expose and consume `isPending` in their `queries.ts` files without regressing existing empty-state behavior.
-- [ ] Add disabled + spinner confirm-button behavior to delete confirmations in `packages/web/src/features/categories/components/CategoryForm.tsx`, `packages/web/src/features/subscriptions/components/DesktopSubscriptions.tsx`, `MobileSubscriptions.tsx`, `packages/web/src/features/accounts/components/DesktopAccounts.tsx`, `MobileAccounts.tsx`, `packages/web/src/features/transactions/components/DesktopTransactionsTable.tsx`, and `TransactionRow.tsx`.
-- [ ] Add or update targeted tests for skeleton rendering and delete-confirm loading behavior.
+- [x] Add reusable skeleton UI in `packages/web/src/shared/components/Skeleton.tsx` for
+      primary data-screen initial loads using the existing design tokens (one per screen:
+      dashboard, accounts, budgets, transactions, subscriptions, categories; each mobile +
+      desktop variant).
+- [x] Wire initial-load skeleton states from feature queries' `isPending` into
+      `DesktopTransactionsTable.tsx`, `MobileTransactions.tsx`, `DesktopDashboard.tsx`,
+      `MobileHome.tsx`, `DesktopAccounts.tsx`, `MobileAccounts.tsx`,
+      `DesktopSubscriptions.tsx`, `MobileSubscriptions.tsx`, `CategoriesPage.tsx`,
+      `DesktopBudgets.tsx`, `MobileBudgets.tsx`.
+- [x] `isPending` comes directly off each `useQuery`-backed hook (`useAccounts`,
+      `useTransactions`, etc.) — no `queries.ts` changes needed, it's inherent to
+      TanStack Query's return shape.
+- [x] Delete-confirm loading: `CategoryForm.tsx`'s delete action now tracks its own
+      pending/error state (previously discarded `isSubmitting` from `useFormSubmit`, so its
+      delete confirm had no loading feedback). Every other delete confirmation
+      (`DesktopSubscriptions`/`MobileSubscriptions`, `DesktopAccounts`/`MobileAccounts`,
+      `DesktopTransactionsTable`, `TransactionRow`) already renders through the shared
+      `ConfirmDialog`, which manages its own `isConfirming` state internally — no
+      per-screen wiring was needed there, `TransactionRow.tsx` included.
+- [x] Tests: `Skeleton.test.tsx` (all 6 skeleton screens, mobile + desktop variants);
+      delete-confirm loading covered by the existing `confirm-dialog.test.tsx`
+      ("shows a loading label and disables controls while confirm is pending").
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test`
-- [ ] `pnpm --filter @wallet/web build`
+- [x] `pnpm --filter @wallet/web typecheck` — pass
+- [x] `pnpm --filter @wallet/web test` — 26 files / 122 tests pass
+- [x] `pnpm --filter @wallet/web build` — pass
 
 **Review checklist (user, at PR review):**
 - [ ] Each primary desktop and mobile data screen shows a skeleton on first load instead of flashing empty content.
