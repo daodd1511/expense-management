@@ -44,14 +44,15 @@ older doc/memory describing "no backend" or "resets on refresh" as historical.
 ### `packages/web/src` layout
 
 - `core/` — cross-cutting concerns: `api.ts` (`apiJson`/`apiFetch` fetch client with
-  Zod response validation, `ApiError`), `store.tsx` (`StoreProvider` + `useStore()` —
-  a facade that aggregates every feature's TanStack Query hooks into one context for
-  backward-compatible consumption; it does not own state itself), `data.ts` (legacy
-  seed data), `i18n.tsx`, `types.ts`, `supabase.ts`, `mutationErrorHandler.ts`,
-  `ErrorBoundary.tsx`
+  Zod response validation, `ApiError`), `data.ts` (legacy seed data), `i18n.tsx`,
+  `types.ts`, `supabase.ts`, `mutationErrorHandler.ts`, `ErrorBoundary.tsx`. There is
+  no store/facade — components call each feature's `queries.ts` hooks directly.
 - `features/<name>/` — one folder per domain feature (`accounts`, `auth`, `budgets`,
   `categories`, `dashboard`, `settings`, `subscriptions`, `transactions`), each with
-  `queries.ts` (TanStack Query hooks), `db.ts` (`apiJson` calls), `components/`
+  `queries.ts` (TanStack Query hooks: `useX`/`useAddX`/`useUpdateX`/`useDeleteX`, plus
+  the odd lookup hook like `useCategoryLookup`/`useAccountLookup`/
+  `useFavoriteCategoryIds` for id→entity resolution), `db.ts` (`apiJson` calls),
+  `components/`
 - `layouts/` — `ResponsiveApp.tsx` gates at 1024px: below → `layouts/mobile/MobileApp`,
   above → `layouts/desktop/DesktopApp`. Both are purpose-built, not stretched from one
   component.
@@ -61,8 +62,8 @@ older doc/memory describing "no backend" or "resets on refresh" as historical.
     dense data tables
 - `shared/` — `components/` (incl. `ui/` shadcn wrappers, `ThemeProvider.tsx`,
   `Charts.tsx`, `CategoryIcon.tsx`, `FormErrorBanner.tsx`, `OfflineBanner.tsx`),
-  `hooks/` (`useFormSubmit`), `lib/` (`format.ts`, `derive.ts`, `utils.ts`),
-  `styles/globals.css`
+  `hooks/` (`useFormSubmit`, `useAppDataLoading`), `lib/` (`format.ts`, `date.ts`,
+  `derive.ts`, `utils.ts`), `styles/globals.css`
 
 Path alias `@/` → `packages/web/src`.
 
@@ -92,7 +93,8 @@ are a separate join tracked via `features/categories/favorites-queries.ts` and t
 API's `favorites` route. `subscriptionId` on Transaction links logged payments back
 to their Subscription for double-log detection. `Account.balance` is a static
 opening balance; computed balance = `opening + Σincome − Σexpense ± transfers` via
-`computeBalance` in `core/store.tsx`.
+`computeBalance` in `shared/lib/derive.ts` (client-computed; consumers fetch all
+transactions and reduce locally — no server-side balance endpoint yet).
 
 ### i18n
 
@@ -121,17 +123,29 @@ and sets `userId` on the Hono context (`AuthEnv`); every `/api/*` route requires
 
 Due banner appears on home screen when `nextDueDate <= today` and no same-cycle
 transaction with matching `subscriptionId` exists. One-tap log calls
-`store.logSubscription(id)` which creates a Transaction and advances `nextDueDate`
-atomically.
+`useLogSubscription().mutateAsync(subscription)` (`features/subscriptions/queries.ts`),
+which hits `POST /subscriptions/:id/log` → the `log_subscription` Postgres RPC
+(`supabase/migrations/`) — inserts the Transaction and advances `next_due_date` in a
+single DB transaction. The cadence math itself (`advanceNextDueDate`) stays in TS,
+computed before the RPC call and passed in as a parameter.
 
 Mobile: "Kế hoạch" (Planning) tab replaces the Budgets tab; inner tab bar switches
 between Ngân sách and Đăng ký. Desktop: "Đăng ký" sidebar item after Budgets.
 
+### Dates
+
+`tx_date` / `nextDueDate` are date-only `'YYYY-MM-DD'` strings with no time or
+timezone component. `packages/web/src/shared/lib/date.ts` — `parseLocalDate`,
+`todayLocalIso`, `isSameLocalMonth`, `diffDays` — parse and compare them as plain
+local calendar dates. Never `new Date(iso)` on one of these values: that parses as
+UTC midnight, which silently drifts a day when compared against local "now" near the
+UTC boundary.
+
 ### Formatting
 
 `packages/web/src/shared/lib/format.ts` — `formatVND(n)` → `"100.000 ₫"`,
-`formatSigned`, `amountColorClass`, date helpers. Always use these; never call
-`Intl` directly.
+`formatSigned`, `amountColorClass`, date helpers (built on `shared/lib/date.ts`).
+Always use these; never call `Intl` directly.
 
 ### CSS tokens
 
