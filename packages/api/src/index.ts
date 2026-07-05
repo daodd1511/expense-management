@@ -11,6 +11,7 @@ import { categoriesRouter } from './routes/categories'
 import { budgetsRouter } from './routes/budgets'
 import { favoritesRouter } from './routes/favorites'
 import { subscriptionsRouter } from './routes/subscriptions'
+import { analyticsRouter } from './routes/analytics'
 
 const app = new Hono<AuthEnv>()
 
@@ -33,6 +34,7 @@ api.route('/categories', categoriesRouter)
 api.route('/budgets', budgetsRouter)
 api.route('/favorites', favoritesRouter)
 api.route('/subscriptions', subscriptionsRouter)
+api.route('/analytics', analyticsRouter)
 
 const port = Number(process.env.PORT ?? 3000)
 

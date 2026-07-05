@@ -1,34 +1,57 @@
 
 import { ArrowDownLeft, ArrowUpRight, ChevronRight, PiggyBank, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { DATE_LOCALE } from '@/core/i18n'
 import { CategoryDonut, TrendChart } from '@/shared/components/Charts'
 import { AccountList } from '@/features/accounts/components/AccountList'
 import { BudgetBars } from '@/features/budgets/components/BudgetBars'
+import { useMonthlyTotals } from '@/features/dashboard/queries'
 import { TransactionRow } from '@/features/transactions/components/TransactionRow'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { monthlyTrend } from '@/core/data'
 import { buildDonutData, monthSummary } from '@/shared/lib/derive'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { useTransactions } from '@/features/transactions/queries'
+import { todayLocalMonthIso } from '@/shared/lib/date'
 import { useCategoryLookup } from '@/features/categories/queries'
 import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
+
+function toTrendLabel(month: string, lang: 'vi' | 'en') {
+  const monthIndex = Number(month.slice(5, 7)) - 1
+  if (lang === 'vi') return `T${monthIndex + 1}`
+  return DATE_LOCALE.en.months[monthIndex].slice(0, 3)
+}
 
 export function DesktopDashboard({
   onNavigate,
   onEdit,
 }: {
-  onNavigate: (s: string) => void
+  onNavigate: (section: string, search?: Record<string, string | undefined>) => void
   onEdit: (tx: Transaction) => void
 }) {
   const { data: transactions = [] } = useTransactions()
+  const { data: monthlyTotals = [] } = useMonthlyTotals()
   const getCategory = useCategoryLookup()
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const summary = monthSummary(transactions)
   const { data, total } = buildDonutData(transactions, getCategory)
   const savingRate = summary.income > 0 ? Math.round((summary.balance / summary.income) * 100) : 0
   const recent = transactions.slice(0, 6)
+  const currentMonth = todayLocalMonthIso()
+  const trendData = monthlyTotals.map((entry) => ({
+    month: toTrendLabel(entry.month, lang),
+    income: entry.income,
+    expense: entry.expense,
+  }))
+
+  const handleCategorySelect = (categoryId?: string) => {
+    if (!categoryId) return
+    onNavigate('transactions', {
+      month: currentMonth,
+      categoryId,
+    })
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -47,15 +70,21 @@ export function DesktopDashboard({
             <CardTitle>{t('dashboard.byCategory')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <CategoryDonut data={data} total={total} size={200} />
+            <CategoryDonut data={data} total={total} size={200} onSelect={(datum) => handleCategorySelect(datum.id)} />
             <ul className="mt-4 flex flex-col gap-2">
               {data.map((d) => (
-                <li key={d.name} className="flex items-center justify-between gap-2 text-sm">
-                  <span className="flex items-center gap-2">
-                    <span className="size-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-                    {d.name}
-                  </span>
-                  <span className="tabular text-muted-foreground">{formatVND(d.value)}</span>
+                <li key={d.name}>
+                  <button
+                    type="button"
+                    onClick={() => handleCategorySelect(d.id)}
+                    className="flex w-full items-center justify-between gap-2 text-left text-sm transition-colors hover:text-foreground"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="size-2.5 rounded-full" style={{ backgroundColor: d.color }} />
+                      {d.name}
+                    </span>
+                    <span className="tabular text-muted-foreground">{formatVND(d.value)}</span>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -67,7 +96,12 @@ export function DesktopDashboard({
             <CardTitle>{t('dashboard.trend6m')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <TrendChart data={monthlyTrend} height={260} />
+            <TrendChart
+              data={trendData}
+              height={260}
+              incomeLabel={t('dashboard.income')}
+              expenseLabel={t('dashboard.expense')}
+            />
             <div className="mt-3 flex gap-6 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <span className="size-2.5 rounded-full bg-income" /> {t('dashboard.income')}

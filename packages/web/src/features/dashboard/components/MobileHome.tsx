@@ -1,31 +1,54 @@
 
 import { ArrowDownLeft, ArrowUpRight, ChevronRight, TrendingUp } from 'lucide-react'
+import { DATE_LOCALE } from '@/core/i18n'
 import { CategoryDonut, TrendChart } from '@/shared/components/Charts'
 import { AccountList } from '@/features/accounts/components/AccountList'
 import { BudgetBars } from '@/features/budgets/components/BudgetBars'
+import { useMonthlyTotals } from '@/features/dashboard/queries'
 import { TransactionRow } from '@/features/transactions/components/TransactionRow'
 import { Card, CardContent } from '@/shared/components/ui/card'
-import { monthlyTrend } from '@/core/data'
 import { buildDonutData, monthSummary } from '@/shared/lib/derive'
 import { formatVND, monthLabel } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { useTransactions } from '@/features/transactions/queries'
+import { todayLocalMonthIso } from '@/shared/lib/date'
 import { useCategoryLookup } from '@/features/categories/queries'
 import type { Transaction } from '@/core/types'
+
+function toTrendLabel(month: string, lang: 'vi' | 'en') {
+  const monthIndex = Number(month.slice(5, 7)) - 1
+  if (lang === 'vi') return `T${monthIndex + 1}`
+  return DATE_LOCALE.en.months[monthIndex].slice(0, 3)
+}
 
 export function MobileHome({
   onNavigate,
   onEdit,
 }: {
-  onNavigate: (s: string) => void
+  onNavigate: (section: string, search?: Record<string, string | undefined>) => void
   onEdit: (tx: Transaction) => void
 }) {
   const { data: transactions = [] } = useTransactions()
+  const { data: monthlyTotals = [] } = useMonthlyTotals()
   const getCategory = useCategoryLookup()
   const { t, lang } = useLang()
   const summary = monthSummary(transactions)
   const { data, total } = buildDonutData(transactions, getCategory)
   const recent = transactions.slice(0, 4)
+  const currentMonth = todayLocalMonthIso()
+  const trendData = monthlyTotals.map((entry) => ({
+    month: toTrendLabel(entry.month, lang),
+    income: entry.income,
+    expense: entry.expense,
+  }))
+
+  const handleCategorySelect = (categoryId?: string) => {
+    if (!categoryId) return
+    onNavigate('transactions', {
+      month: currentMonth,
+      categoryId,
+    })
+  }
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -62,18 +85,29 @@ export function MobileHome({
           <SectionTitle title={t('dashboard.byCategory')} />
           <div className="mt-3 flex items-center gap-3">
             <div className="w-[9.375rem] shrink-0">
-              <CategoryDonut data={data} total={total} size={142} />
+              <CategoryDonut
+                data={data}
+                total={total}
+                size={142}
+                onSelect={(datum) => handleCategorySelect(datum.id)}
+              />
             </div>
             <ul className="flex min-w-0 flex-1 flex-col gap-2">
               {data.slice(0, 5).map((d) => (
-                <li key={d.name} className="flex items-center justify-between gap-2 text-xs">
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
-                    <span className="truncate">{d.name}</span>
-                  </span>
-                  <span className="tabular shrink-0 text-muted-foreground">
-                    {Math.round((d.value / total) * 100)}%
-                  </span>
+                <li key={d.name}>
+                  <button
+                    type="button"
+                    onClick={() => handleCategorySelect(d.id)}
+                    className="flex w-full items-center justify-between gap-2 text-left text-xs transition-colors hover:text-foreground"
+                  >
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
+                      <span className="truncate">{d.name}</span>
+                    </span>
+                    <span className="tabular shrink-0 text-muted-foreground">
+                      {Math.round((d.value / total) * 100)}%
+                    </span>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -96,7 +130,12 @@ export function MobileHome({
         <CardContent className="p-5">
           <SectionTitle title={t('dashboard.trend6mShort')} />
           <div className="mt-2">
-            <TrendChart data={monthlyTrend} height={170} />
+            <TrendChart
+              data={trendData}
+              height={170}
+              incomeLabel={t('dashboard.income')}
+              expenseLabel={t('dashboard.expense')}
+            />
           </div>
         </CardContent>
       </Card>

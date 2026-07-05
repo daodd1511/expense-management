@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useLang } from '@/core/i18n'
+import { monthFromHref } from '@/features/transactions/view-state'
 import { BottomSheet, Drawer } from '@/shared/components/ui/overlay'
 import { useAddTransaction, useTransactions, useUpdateTransaction } from '@/features/transactions/queries'
 import type { TransactionOverlayState } from '@/routing/transaction-overlay'
@@ -15,9 +16,10 @@ export function TransactionRouteOverlay({
 }) {
   const navigate = useNavigate()
   const { t } = useLang()
-  const { data: transactions = [] } = useTransactions()
-  const addTransaction = useAddTransaction()
-  const updateTransaction = useUpdateTransaction()
+  const month = overlay ? monthFromHref(overlay.returnTo) : undefined
+  const { data: transactions = [] } = useTransactions(month)
+  const addTransaction = useAddTransaction(month)
+  const updateTransaction = useUpdateTransaction(month)
   const editing =
     overlay?.mode === 'edit'
       ? transactions.find((transaction) => transaction.id === overlay.transactionId)

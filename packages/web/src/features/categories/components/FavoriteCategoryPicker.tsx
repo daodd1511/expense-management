@@ -7,17 +7,8 @@ import { useLang } from '@/core/i18n'
 import type { Category } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
-function buildFavoritesList(
-  categories: Category[],
-  favoriteCategoryIds: Set<string>,
-  selectedId: string | null,
-): Category[] {
-  const favorites = categories.filter((c) => favoriteCategoryIds.has(c.id))
-  if (selectedId && !favoriteCategoryIds.has(selectedId)) {
-    const selected = categories.find((c) => c.id === selectedId)
-    if (selected) return [...favorites, selected]
-  }
-  return favorites
+function buildFavoritesList(categories: Category[], favoriteCategoryIds: Set<string>): Category[] {
+  return categories.filter((category) => favoriteCategoryIds.has(category.id))
 }
 
 function buildCategoryMeta(categories: Category[], category: Category) {
@@ -47,7 +38,11 @@ export function FavoriteCategoryPicker({
 }) {
   const { t } = useLang()
   const [showAllOpen, setShowAllOpen] = useState(false)
-  const favorites = buildFavoritesList(categories, favoriteCategoryIds, selectedId)
+  const favorites = buildFavoritesList(categories, favoriteCategoryIds)
+  const selectedNonFavorite =
+    selectedId && !favoriteCategoryIds.has(selectedId)
+      ? categories.find((category) => category.id === selectedId) ?? null
+      : null
 
   const handleShowAll = useCallback(() => setShowAllOpen(true), [])
   const handleCloseShowAll = useCallback(() => setShowAllOpen(false), [])
@@ -82,16 +77,25 @@ export function FavoriteCategoryPicker({
               <span className="min-w-0 flex-1 text-sm font-medium">{clearLabel}</span>
             </button>
           )}
-          {favorites.map((category) => (
-            <FavoriteCategoryButton
-              key={category.id}
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {favorites.map((category) => (
+              <FavoriteCategoryTile
+                key={category.id}
+                category={category}
+                active={selectedId === category.id}
+                onSelect={onSelect}
+                disabled={disabled}
+              />
+            ))}
+          </div>
+          {selectedNonFavorite && (
+            <SelectedCategoryRow
               categories={categories}
-              category={category}
-              active={selectedId === category.id}
+              category={selectedNonFavorite}
               onSelect={onSelect}
               disabled={disabled}
             />
-          ))}
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
@@ -112,6 +116,14 @@ export function FavoriteCategoryPicker({
             </button>
           )}
           <p className="text-sm text-muted-foreground">{t('category.noFavorites')}</p>
+          {selectedNonFavorite && (
+            <SelectedCategoryRow
+              categories={categories}
+              category={selectedNonFavorite}
+              onSelect={onSelect}
+              disabled={disabled}
+            />
+          )}
         </div>
       )}
 
@@ -150,16 +162,50 @@ export function FavoriteCategoryPicker({
   )
 }
 
-function FavoriteCategoryButton({
-  categories,
+function FavoriteCategoryTile({
   category,
   active,
   onSelect,
   disabled = false,
 }: {
-  categories: Category[]
   category: Category
   active: boolean
+  onSelect: (id: string) => void
+  disabled?: boolean
+}) {
+  const handleSelect = useCallback(() => onSelect(category.id), [category.id, onSelect])
+
+  return (
+    <button
+      type="button"
+      onClick={handleSelect}
+      aria-pressed={active}
+      disabled={disabled}
+      className={cn(
+        'flex min-w-0 flex-col items-center gap-2 rounded-xl border px-2 py-3 text-center transition-colors',
+        active ? 'border-primary bg-accent ring-1 ring-primary/25' : 'border-border hover:bg-muted',
+        disabled && 'cursor-not-allowed opacity-60',
+      )}
+    >
+      <span
+        className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl text-white"
+        style={{ backgroundColor: colorVar(category.color) }}
+      >
+        <CategoryIcon name={category.icon} className="size-4" />
+      </span>
+      <span className="line-clamp-2 text-xs font-medium text-foreground">{category.name}</span>
+    </button>
+  )
+}
+
+function SelectedCategoryRow({
+  categories,
+  category,
+  onSelect,
+  disabled = false,
+}: {
+  categories: Category[]
+  category: Category
   onSelect: (id: string) => void
   disabled?: boolean
 }) {
@@ -170,11 +216,10 @@ function FavoriteCategoryButton({
     <button
       type="button"
       onClick={handleSelect}
-      aria-pressed={active}
+      aria-pressed
       disabled={disabled}
       className={cn(
-        'flex min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors',
-        active ? 'bg-accent ring-1 ring-primary/25' : 'hover:bg-muted',
+        'flex min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors bg-accent ring-1 ring-primary/25',
         disabled && 'cursor-not-allowed opacity-60',
       )}
     >

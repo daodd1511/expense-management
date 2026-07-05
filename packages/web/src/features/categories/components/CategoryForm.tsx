@@ -7,23 +7,24 @@ import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
 import { Input, Label } from '@/shared/components/ui/input'
 import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
+import { CATEGORY_ICON_OPTIONS } from '@/shared/icons'
 import { useLang } from '@/core/i18n'
 import type { Category } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
-const COLOR_OPTIONS = ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5', 'income', 'expense'] as const
-
-const ICON_OPTIONS = [
-  'Utensils',
-  'Bus',
-  'House',
-  'ReceiptText',
-  'Gamepad2',
-  'HeartPulse',
-  'ShoppingBag',
-  'Briefcase',
-  'Gift',
-  'Tag',
+const COLOR_OPTIONS = [
+  'chart-1',
+  'chart-2',
+  'chart-3',
+  'chart-4',
+  'chart-5',
+  'chart-6',
+  'chart-7',
+  'chart-8',
+  'chart-9',
+  'chart-10',
+  'chart-11',
+  'chart-12',
 ] as const
 
 export interface CategoryFormState {
@@ -197,7 +198,7 @@ export function CategoryForm({
         <div className="flex flex-col gap-2">
           <Label>{t('settings.icon')}</Label>
           <div className="flex flex-wrap gap-2">
-            {ICON_OPTIONS.map((icon) => (
+            {CATEGORY_ICON_OPTIONS.map((icon) => (
               <button
                 key={icon}
                 type="button"

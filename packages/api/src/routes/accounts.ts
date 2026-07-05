@@ -1,11 +1,14 @@
 import { Hono } from 'hono'
 import {
+  computeBalance,
   accountCreateSchema,
   accountPatchToRow,
   accountPatchSchema,
   accountRowSchema,
+  transactionRowSchema,
   fromAccount,
   toAccount,
+  toTransaction,
 } from '@wallet/shared'
 import { getSupabase } from '../db/supabase'
 import { jsonError, mapDbError, parseJsonBody, parseRows } from '../lib/http'
@@ -27,7 +30,22 @@ accountsRouter.get('/', async (c) => {
     return mapDbError(c, error)
   }
 
-  return c.json({ data: parseRows(data, accountRowSchema, toAccount) })
+  const { data: transactionData, error: transactionError } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('owner_id', userId)
+
+  if (transactionError) {
+    return mapDbError(c, transactionError)
+  }
+
+  const transactions = parseRows(transactionData, transactionRowSchema, toTransaction)
+  const accounts = parseRows(data, accountRowSchema, toAccount).map((account) => ({
+    ...account,
+    balance: computeBalance(account.id, transactions, account.openingBalance),
+  }))
+
+  return c.json({ data: accounts })
 })
 
 accountsRouter.post('/', async (c) => {

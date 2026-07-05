@@ -14,6 +14,7 @@ import { formatVND } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/utils'
 
 export interface DonutDatum {
+  id?: string
   name: string
   value: number
   color: string
@@ -23,10 +24,14 @@ export function CategoryDonut({
   data,
   total,
   size = 180,
+  centerLabel = 'Tổng chi',
+  onSelect,
 }: {
   data: DonutDatum[]
   total: number
   size?: number
+  centerLabel?: string
+  onSelect?: (datum: DonutDatum) => void
 }) {
   const compact = size < 170
 
@@ -42,6 +47,9 @@ export function CategoryDonut({
             outerRadius="100%"
             paddingAngle={2}
             stroke="none"
+            onClick={(_, index) => {
+              if (onSelect && typeof index === 'number' && data[index]) onSelect(data[index])
+            }}
           >
             {data.map((d) => (
               <Cell key={d.name} fill={d.color} />
@@ -63,7 +71,7 @@ export function CategoryDonut({
       </ResponsiveContainer>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
         <span className={cn('text-muted-foreground', compact ? 'text-[0.65rem]' : 'text-xs')}>
-          Tổng chi
+          {centerLabel}
         </span>
         <span
           className={cn(
@@ -82,9 +90,13 @@ export function CategoryDonut({
 export function TrendChart({
   data,
   height = 200,
+  incomeLabel = 'Thu',
+  expenseLabel = 'Chi',
 }: {
   data: { month: string; income: number; expense: number }[]
   height?: number
+  incomeLabel?: string
+  expenseLabel?: string
 }) {
   return (
     <div style={{ height }}>
@@ -120,10 +132,10 @@ export function TrendChart({
                         style={{ backgroundColor: p.color as string }}
                       />
                       <span className="text-muted-foreground">
-                        {p.dataKey === 'income' ? 'Thu' : 'Chi'}:
+                        {p.dataKey === 'income' ? incomeLabel : expenseLabel}:
                       </span>
                       <span className="font-medium text-popover-foreground">
-                        {Number(p.value).toFixed(1)}tr
+                        {formatVND(Number(p.value))}
                       </span>
                     </div>
                   ))}

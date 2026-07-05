@@ -8,20 +8,19 @@ import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Modal } from '@/shared/components/ui/overlay'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { computeBalance } from '@/shared/lib/derive'
 import { useAccounts, useAddAccount, useDeleteAccount, useUpdateAccount } from '@/features/accounts/queries'
-import { useTransactions } from '@/features/transactions/queries'
 import type { Account, AccountKind } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
+type AccountInput = Omit<Account, 'id' | 'balance'>
+
 export function DesktopAccounts() {
   const { data: accounts = [] } = useAccounts()
-  const { data: transactions = [] } = useTransactions()
   const addAcc = useAddAccount()
   const updateAcc = useUpdateAccount()
   const deleteAcc = useDeleteAccount()
   const { t } = useLang()
-  const total = accounts.reduce((s, a) => s + computeBalance(a.id, transactions, a.openingBalance), 0)
+  const total = accounts.reduce((sum, account) => sum + (account.balance ?? account.openingBalance), 0)
   const [editing, setEditing] = useState<Account | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
@@ -48,7 +47,7 @@ export function DesktopAccounts() {
     setEditing(null)
   }
 
-  const handleSubmit = async (data: Omit<Account, 'id'>) => {
+  const handleSubmit = async (data: AccountInput) => {
     if (editing) await updateAcc.mutateAsync({ id: editing.id, patch: data })
     else await addAcc.mutateAsync(data)
     close()
@@ -80,7 +79,7 @@ export function DesktopAccounts() {
         {accounts.map((a) => {
           const meta = KIND[a.kind]
           const Icon = meta.icon
-          const bal = computeBalance(a.id, transactions, a.openingBalance)
+          const bal = a.balance ?? a.openingBalance
           const negative = bal < 0
           return (
             <Card key={a.id} className="group flex flex-col gap-4 p-5">

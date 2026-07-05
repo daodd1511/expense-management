@@ -19,6 +19,20 @@ export function todayLocalIso(date: Date = new Date()): string {
   return `${year}-${month}-${day}`
 }
 
+/** Today's month as a local 'YYYY-MM' string. */
+export function todayLocalMonthIso(date: Date = new Date()): string {
+  return todayLocalIso(date).slice(0, 7)
+}
+
+/** Shifts a 'YYYY-MM' month string by `delta` months and returns the same format. */
+export function shiftMonthIso(monthIso: string, delta: number): string {
+  const [year, month] = monthIso.split('-').map(Number)
+  const next = new Date(year, month - 1 + delta, 1)
+  const nextYear = next.getFullYear()
+  const nextMonth = String(next.getMonth() + 1).padStart(2, '0')
+  return `${nextYear}-${nextMonth}`
+}
+
 /** Whether `iso` falls in the same local calendar month as `ref` (defaults to today). */
 export function isSameLocalMonth(iso: string, ref: Date = new Date()): boolean {
   const d = parseLocalDate(iso)

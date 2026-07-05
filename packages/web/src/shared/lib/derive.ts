@@ -59,7 +59,7 @@ export function buildDonutData(
   const data: DonutDatum[] = [...map.entries()]
     .map(([catId, value]) => {
       const cat = getCategory(catId)
-      return { name: cat?.name ?? 'Khác', value, color: colorVar(cat?.color ?? 'chart-1') }
+      return { id: catId, name: cat?.name ?? 'Khác', value, color: colorVar(cat?.color ?? 'chart-1') }
     })
     .sort((a, b) => b.value - a.value)
   const total = data.reduce((s, d) => s + d.value, 0)

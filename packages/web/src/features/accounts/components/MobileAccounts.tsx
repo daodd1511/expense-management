@@ -8,9 +8,7 @@ import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { BottomSheet } from '@/shared/components/ui/overlay'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { computeBalance } from '@/shared/lib/derive'
 import { useAccounts, useAddAccount, useDeleteAccount, useUpdateAccount } from '@/features/accounts/queries'
-import { useTransactions } from '@/features/transactions/queries'
 import type { Account, AccountKind } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
@@ -102,12 +100,11 @@ function AccountRow({
 
 export function MobileAccounts() {
   const { data: accounts = [] } = useAccounts()
-  const { data: transactions = [] } = useTransactions()
   const addAcc = useAddAccount()
   const updateAcc = useUpdateAccount()
   const deleteAcc = useDeleteAccount()
   const { t } = useLang()
-  const net = accounts.reduce((s, a) => s + computeBalance(a.id, transactions, a.openingBalance), 0)
+  const net = accounts.reduce((sum, account) => sum + (account.balance ?? account.openingBalance), 0)
   const [editing, setEditing] = useState<Account | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
@@ -134,7 +131,7 @@ export function MobileAccounts() {
     setEditing(null)
   }
 
-  const handleSubmit = async (data: Omit<Account, 'id'>) => {
+  const handleSubmit = async (data: Omit<Account, 'id' | 'balance'>) => {
     if (editing) await updateAcc.mutateAsync({ id: editing.id, patch: data })
     else await addAcc.mutateAsync(data)
     close()
@@ -161,7 +158,7 @@ export function MobileAccounts() {
             <AccountRow
               key={a.id}
               account={a}
-              balance={computeBalance(a.id, transactions, a.openingBalance)}
+              balance={a.balance ?? a.openingBalance}
               kindLabel={KIND_LABELS[a.kind]}
               onEdit={() => openEdit(a)}
               onDelete={() => setPendingDeleteId(a.id)}

@@ -1,4 +1,10 @@
 export {
+  monthlyTotalSchema,
+  monthlyTotalsResponseSchema,
+  type MonthlyTotal,
+  type MonthlyTotalsResponse,
+} from './analytics.dto'
+export {
   accountCreateSchema,
   accountPatchSchema,
   accountRowSchema,

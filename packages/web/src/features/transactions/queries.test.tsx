@@ -5,11 +5,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Transaction } from '@/core/types'
 import {
   useAddTransaction,
+  useTransactions,
   useDeleteTransaction,
   useUpdateTransaction,
 } from './queries'
 
 const transactionDbMocks = vi.hoisted(() => ({
+  fetchTransactions: vi.fn(),
   insertTransaction: vi.fn(),
   patchTransaction: vi.fn(),
   deleteTransaction: vi.fn(),
@@ -25,6 +27,7 @@ vi.mock('./db', async () => {
   const actual = await vi.importActual<typeof import('./db')>('./db')
   return {
     ...actual,
+    fetchTransactions: transactionDbMocks.fetchTransactions,
     insertTransaction: transactionDbMocks.insertTransaction,
     patchTransaction: transactionDbMocks.patchTransaction,
     deleteTransaction: transactionDbMocks.deleteTransaction,
@@ -75,15 +78,27 @@ describe('transaction optimistic mutations', () => {
     vi.clearAllMocks()
   })
 
+  it('fetches the selected month with a month-scoped query key', async () => {
+    transactionDbMocks.fetchTransactions.mockResolvedValueOnce([EXISTING_TRANSACTION])
+    const queryClient = createQueryClient()
+    const wrapper = createWrapper(queryClient)
+
+    const { result } = renderHook(() => useTransactions('2026-07'), { wrapper })
+
+    await waitFor(() => expect(result.current.data).toEqual([EXISTING_TRANSACTION]))
+    expect(transactionDbMocks.fetchTransactions).toHaveBeenCalledWith('2026-07')
+    expect(queryClient.getQueryData(['transactions', 'user-1', '2026-07'])).toEqual([EXISTING_TRANSACTION])
+  })
+
   it('optimistically adds a transaction and rolls back on error', async () => {
     const queryClient = createQueryClient()
     const wrapper = createWrapper(queryClient)
     const deferred = createDeferred<void>()
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
     transactionDbMocks.insertTransaction.mockReturnValueOnce(deferred.promise)
-    queryClient.setQueryData(['transactions', 'user-1'], [EXISTING_TRANSACTION])
+    queryClient.setQueryData(['transactions', 'user-1', '2026-07'], [EXISTING_TRANSACTION])
 
-    const { result } = renderHook(() => useAddTransaction(), { wrapper })
+    const { result } = renderHook(() => useAddTransaction('2026-07'), { wrapper })
 
     act(() => {
       result.current.mutate({
@@ -101,7 +116,7 @@ describe('transaction optimistic mutations', () => {
     })
 
     await waitFor(() =>
-      expect(queryClient.getQueryData<Transaction[]>(['transactions', 'user-1'])).toEqual([
+      expect(queryClient.getQueryData<Transaction[]>(['transactions', 'user-1', '2026-07'])).toEqual([
         expect.objectContaining({
           id: expect.stringMatching(/^temp-/),
           merchant: 'Coffee',
@@ -114,7 +129,7 @@ describe('transaction optimistic mutations', () => {
     deferred.reject(new Error('offline'))
 
     await waitFor(() =>
-      expect(queryClient.getQueryData(['transactions', 'user-1'])).toEqual([
+      expect(queryClient.getQueryData(['transactions', 'user-1', '2026-07'])).toEqual([
         EXISTING_TRANSACTION,
       ]),
     )
@@ -127,9 +142,9 @@ describe('transaction optimistic mutations', () => {
     const deferred = createDeferred<void>()
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
     transactionDbMocks.patchTransaction.mockReturnValueOnce(deferred.promise)
-    queryClient.setQueryData(['transactions', 'user-1'], [EXISTING_TRANSACTION])
+    queryClient.setQueryData(['transactions', 'user-1', '2026-07'], [EXISTING_TRANSACTION])
 
-    const { result } = renderHook(() => useUpdateTransaction(), { wrapper })
+    const { result } = renderHook(() => useUpdateTransaction('2026-07'), { wrapper })
 
     act(() => {
       result.current.mutate({
@@ -139,7 +154,7 @@ describe('transaction optimistic mutations', () => {
     })
 
     await waitFor(() =>
-      expect(queryClient.getQueryData<Transaction[]>(['transactions', 'user-1'])).toEqual([
+      expect(queryClient.getQueryData<Transaction[]>(['transactions', 'user-1', '2026-07'])).toEqual([
         expect.objectContaining({
           id: 'tx-1',
           merchant: 'Brunch',
@@ -161,22 +176,22 @@ describe('transaction optimistic mutations', () => {
     const deferred = createDeferred<void>()
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
     transactionDbMocks.deleteTransaction.mockReturnValueOnce(deferred.promise)
-    queryClient.setQueryData(['transactions', 'user-1'], [EXISTING_TRANSACTION])
+    queryClient.setQueryData(['transactions', 'user-1', '2026-07'], [EXISTING_TRANSACTION])
 
-    const { result } = renderHook(() => useDeleteTransaction(), { wrapper })
+    const { result } = renderHook(() => useDeleteTransaction('2026-07'), { wrapper })
 
     act(() => {
       result.current.mutate('tx-1')
     })
 
     await waitFor(() =>
-      expect(queryClient.getQueryData<Transaction[]>(['transactions', 'user-1'])).toEqual([]),
+      expect(queryClient.getQueryData<Transaction[]>(['transactions', 'user-1', '2026-07'])).toEqual([]),
     )
 
     deferred.reject(new Error('offline'))
 
     await waitFor(() =>
-      expect(queryClient.getQueryData(['transactions', 'user-1'])).toEqual([
+      expect(queryClient.getQueryData(['transactions', 'user-1', '2026-07'])).toEqual([
         EXISTING_TRANSACTION,
       ]),
     )

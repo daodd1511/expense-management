@@ -1,3 +1,4 @@
+import { startTransition } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import { SubscriptionDueBanner } from '@/features/subscriptions/components/SubscriptionDueBanner'
@@ -18,6 +19,7 @@ import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicat
 import { useIsDesktop } from '@/shared/hooks/useIsDesktop'
 import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
 import type { Transaction } from '@/core/types'
+import { buildTransactionsSearch, parseTransactionsViewState, type TransactionsViewState } from '@/features/transactions/view-state'
 import { sectionFromPath } from './app-route-state'
 
 function useAppNavigation() {
@@ -25,7 +27,7 @@ function useAppNavigation() {
 
   return {
     goDashboard: () => navigate({ to: '/' }),
-    goTransactions: () => navigate({ to: '/transactions' }),
+    goTransactions: (search?: Record<string, string | undefined>) => navigate({ to: '/transactions', search }),
     goBudgets: () => navigate({ to: '/budgets' }),
     goSubscriptions: () => navigate({ to: '/subscriptions' }),
     goAccounts: () => navigate({ to: '/accounts' }),
@@ -72,10 +74,10 @@ export function DashboardPage() {
   if (isDesktop) {
     return (
       <DesktopDashboard
-        onNavigate={(section) => {
+        onNavigate={(section, search) => {
           if (section === 'budgets') navigation.goBudgets()
           else if (section === 'accounts') navigation.goAccounts()
-          else if (section === 'transactions') navigation.goTransactions()
+          else if (section === 'transactions') navigation.goTransactions(search)
         }}
         onEdit={openEdit}
       />
@@ -97,10 +99,10 @@ export function DashboardPage() {
       >
         <SubscriptionDueBanner />
         <MobileHome
-          onNavigate={(section) => {
+          onNavigate={(section, search) => {
             if (section === 'budgets') navigation.goBudgets()
             else if (section === 'accounts') navigation.goAccounts()
-            else if (section === 'transactions') navigation.goTransactions()
+            else if (section === 'transactions') navigation.goTransactions(search)
           }}
           onEdit={openEdit}
         />
@@ -111,9 +113,56 @@ export function DashboardPage() {
 
 export function TransactionsPage() {
   const isDesktop = useIsDesktop()
+  const location = useLocation()
+  const navigate = useNavigate()
   const { openEdit } = useTransactionNavigation()
+  const state = parseTransactionsViewState(location.search as Record<string, unknown>)
 
-  return isDesktop ? <DesktopTransactionsTable onEdit={openEdit} /> : <MobileTransactions onEdit={openEdit} />
+  const updateTransactionsState = (
+    patch: Partial<TransactionsViewState> | ((current: TransactionsViewState) => TransactionsViewState),
+  ) => {
+    const nextState =
+      typeof patch === 'function'
+        ? patch(state)
+        : { ...state, ...patch }
+    startTransition(() => {
+      void navigate({
+        to: '/transactions',
+        search: buildTransactionsSearch(nextState),
+        replace: true,
+      })
+    })
+  }
+
+  return isDesktop ? (
+    <DesktopTransactionsTable
+      onEdit={openEdit}
+      month={state.month}
+      query={state.query}
+      type={state.type}
+      categoryId={state.categoryId}
+      accountId={state.accountId}
+      onMonthChange={(month) => updateTransactionsState({ month })}
+      onQueryChange={(query) => updateTransactionsState({ query })}
+      onTypeChange={(type) => updateTransactionsState({ type })}
+      onCategoryChange={(categoryId) => updateTransactionsState({ categoryId })}
+      onAccountChange={(accountId) => updateTransactionsState({ accountId })}
+    />
+  ) : (
+    <MobileTransactions
+      onEdit={openEdit}
+      month={state.month}
+      query={state.query}
+      type={state.type}
+      categoryId={state.categoryId}
+      accountId={state.accountId}
+      onMonthChange={(month) => updateTransactionsState({ month })}
+      onQueryChange={(query) => updateTransactionsState({ query })}
+      onTypeChange={(type) => updateTransactionsState({ type })}
+      onCategoryChange={(categoryId) => updateTransactionsState({ categoryId })}
+      onAccountChange={(accountId) => updateTransactionsState({ accountId })}
+    />
+  )
 }
 
 export function BudgetsPage() {

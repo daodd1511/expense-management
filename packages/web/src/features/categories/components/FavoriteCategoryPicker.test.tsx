@@ -23,7 +23,7 @@ const transport: Category = { id: 'transport', name: 'Transport', icon: 'Bus', c
 const categories = [food, restaurant, transport]
 
 describe('FavoriteCategoryPicker', () => {
-  it('renders favorited categories as a row list', () => {
+  it('renders favorited categories as compact tiles only', () => {
     render(
       <FavoriteCategoryPicker
         categories={categories}
@@ -37,7 +37,7 @@ describe('FavoriteCategoryPicker', () => {
     expect(screen.queryByRole('button', { name: 'Transport' })).toBeNull()
   })
 
-  it('shows the parent name above a selected child category', () => {
+  it('keeps a favorited child category as a selected tile', () => {
     render(
       <FavoriteCategoryPicker
         categories={categories}
@@ -47,8 +47,7 @@ describe('FavoriteCategoryPicker', () => {
       />,
     )
 
-    expect(screen.getByText('Food')).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Food Restaurant' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Restaurant' })).toBeDefined()
   })
 
   it('shows an empty-state message when nothing is favorited', () => {
@@ -64,7 +63,7 @@ describe('FavoriteCategoryPicker', () => {
     expect(screen.getByText('No favorites yet')).toBeDefined()
   })
 
-  it('appends the current selection even if it is not a favorite', () => {
+  it('shows the current non-favorite selection as a separate full-width row', () => {
     render(
       <FavoriteCategoryPicker
         categories={categories}
@@ -76,6 +75,7 @@ describe('FavoriteCategoryPicker', () => {
 
     expect(screen.getByRole('button', { name: 'Food' })).toBeDefined()
     expect(screen.getByRole('button', { name: 'Transport' })).toBeDefined()
+    expect(screen.getAllByRole('button', { name: 'Transport' })).toHaveLength(1)
   })
 
   it('does not duplicate the current selection when it is already a favorite', () => {
