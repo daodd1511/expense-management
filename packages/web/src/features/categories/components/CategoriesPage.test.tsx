@@ -12,6 +12,10 @@ const storeMocks = vi.hoisted(() => ({
   removeFavorite: vi.fn(),
 }))
 
+function asMutation(fn: (...args: never[]) => unknown) {
+  return { mutateAsync: fn }
+}
+
 const systemCategory: Category = {
   id: 'system-food',
   name: 'System food',
@@ -52,12 +56,19 @@ const incomeCategory: Category = {
   parentId: null,
 }
 
-vi.mock('@/core/store', () => ({
-  useStore: () => ({
-    categories: [systemCategory, customCategory, nestedExpenseCategory, incomeCategory],
-    favoriteCategoryIds: new Set<string>(),
-    ...storeMocks,
+vi.mock('@/features/categories/queries', () => ({
+  useCategories: () => ({
+    data: [systemCategory, customCategory, nestedExpenseCategory, incomeCategory],
   }),
+  useAddCategory: () => asMutation(storeMocks.addCategory),
+  useUpdateCategory: () => asMutation(storeMocks.updateCategory),
+  useDeleteCategory: () => asMutation(storeMocks.deleteCategory),
+}))
+
+vi.mock('@/features/categories/favorites-queries', () => ({
+  useFavoriteCategoryIds: () => new Set<string>(),
+  useAddFavorite: () => asMutation(storeMocks.addFavorite),
+  useRemoveFavorite: () => asMutation(storeMocks.removeFavorite),
 }))
 
 vi.mock('@/core/i18n', () => ({

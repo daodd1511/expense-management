@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/auth'
 import { archiveAccount, fetchAccounts, insertAccount, patchAccount } from '@/features/accounts/db'
@@ -10,6 +11,15 @@ export function useAccounts() {
     queryFn: fetchAccounts,
     enabled: !!user,
   })
+}
+
+/** Account id → Account lookup, memoized over the current accounts list. */
+export function useAccountLookup(): (id: string | null | undefined) => Account | undefined {
+  const { data: accounts = [] } = useAccounts()
+  return useMemo(() => {
+    const map = new Map(accounts.map((account) => [account.id, account]))
+    return (id: string | null | undefined) => (id ? map.get(id) : undefined)
+  }, [accounts])
 }
 
 export function useAddAccount() {

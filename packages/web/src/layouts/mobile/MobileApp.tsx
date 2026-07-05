@@ -10,7 +10,9 @@ import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicat
 import { LoadingScreen } from '@/shared/components/LoadingScreen'
 import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import { useAddTransaction, useTransactions, useUpdateTransaction } from '@/features/transactions/queries'
+import { useSubscriptions } from '@/features/subscriptions/queries'
+import { useAppDataLoading } from '@/shared/hooks/useAppDataLoading'
 import { dueBanner } from '@/features/subscriptions/helpers'
 import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
@@ -25,7 +27,11 @@ import { useAuth } from '@/features/auth/auth'
 type Screen = 'home' | 'transactions' | 'planning' | 'accounts' | 'settings' | 'categories'
 
 export function MobileApp() {
-  const { addTransaction, updateTransaction, subscriptions, transactions, loading } = useStore()
+  const { data: subscriptions = [] } = useSubscriptions()
+  const { data: transactions = [] } = useTransactions()
+  const addTx = useAddTransaction()
+  const updateTx = useUpdateTransaction()
+  const loading = useAppDataLoading()
   const { user } = useAuth()
   const { t } = useLang()
   const queryClient = useQueryClient()
@@ -167,8 +173,8 @@ export function MobileApp() {
             initial={editing ?? undefined}
             onCancel={close}
             onSubmit={async (tx) => {
-              if (editing) await updateTransaction(editing.id, tx)
-              else await addTransaction(tx)
+              if (editing) await updateTx.mutateAsync({ id: editing.id, patch: tx })
+              else await addTx.mutateAsync(tx)
               close()
             }}
           />

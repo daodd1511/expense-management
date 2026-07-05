@@ -8,7 +8,6 @@ import { createRoot } from 'react-dom/client'
 import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 import { AuthProvider } from './features/auth/auth'
-import { StoreProvider } from './core/store'
 import { LangProvider } from './core/i18n'
 import { ErrorBoundary } from './core/ErrorBoundary'
 import { handleMutationError } from './core/mutationErrorHandler'
@@ -37,9 +36,7 @@ createRoot(document.getElementById('root')!).render(
             <OfflineBanner />
             <ErrorBoundary>
               <AuthGate>
-                <StoreProvider>
-                  <ResponsiveApp />
-                </StoreProvider>
+                <ResponsiveApp />
               </AuthGate>
             </ErrorBoundary>
           </LangProvider>

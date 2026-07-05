@@ -7,7 +7,17 @@ import { BottomSheet, Drawer } from '@/shared/components/ui/overlay'
 import { groupCategories } from '@/features/categories/group'
 import { CategoryForm, type CategoryFormState } from '@/features/categories/components/CategoryForm'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import {
+  useAddCategory,
+  useCategories,
+  useDeleteCategory,
+  useUpdateCategory,
+} from '@/features/categories/queries'
+import {
+  useAddFavorite,
+  useFavoriteCategoryIds,
+  useRemoveFavorite,
+} from '@/features/categories/favorites-queries'
 import type { Category } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
@@ -19,8 +29,13 @@ export function CategoriesPage({
   onBack: () => void
 }) {
   const isMobile = variant === 'mobile'
-  const { categories, addCategory, updateCategory, deleteCategory, favoriteCategoryIds, addFavorite, removeFavorite } =
-    useStore()
+  const { data: categories = [] } = useCategories()
+  const addCat = useAddCategory()
+  const updateCat = useUpdateCategory()
+  const deleteCat = useDeleteCategory()
+  const favoriteCategoryIds = useFavoriteCategoryIds()
+  const addFav = useAddFavorite()
+  const removeFav = useRemoveFavorite()
   const { t } = useLang()
   const [activeType, setActiveType] = useState<Category['type']>('expense')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -43,22 +58,25 @@ export function CategoriesPage({
 
   const handleSaveCategory = async (form: CategoryFormState) => {
     if (editingId) {
-      await updateCategory(editingId, { name: form.name, icon: form.icon, color: form.color, parentId: form.parentId })
+      await updateCat.mutateAsync({
+        id: editingId,
+        patch: { name: form.name, icon: form.icon, color: form.color, parentId: form.parentId },
+      })
     } else {
-      await addCategory({ name: form.name, icon: form.icon, color: form.color, type: form.type, parentId: form.parentId })
+      await addCat.mutateAsync({ name: form.name, icon: form.icon, color: form.color, type: form.type, parentId: form.parentId })
     }
     closeForm()
   }
 
   const handleDeleteCategory = async () => {
     if (!editingId) return
-    await deleteCategory(editingId)
+    await deleteCat.mutateAsync(editingId)
     closeForm()
   }
 
   const handleToggleFavorite = (categoryId: string) => {
-    if (favoriteCategoryIds.has(categoryId)) removeFavorite(categoryId)
-    else addFavorite(categoryId)
+    if (favoriteCategoryIds.has(categoryId)) removeFav.mutateAsync(categoryId)
+    else addFav.mutateAsync(categoryId)
   }
 
   const categoryForm = (

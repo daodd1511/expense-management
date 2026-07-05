@@ -3,12 +3,15 @@ import { Banknote, CreditCard, Landmark, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { computeBalance, useStore } from '@/core/store'
+import { computeBalance } from '@/shared/lib/derive'
+import { useAccounts } from '@/features/accounts/queries'
+import { useTransactions } from '@/features/transactions/queries'
 import type { AccountKind } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
 export function AccountList({ className }: { className?: string }) {
-  const { accounts, transactions } = useStore()
+  const { data: accounts = [] } = useAccounts()
+  const { data: transactions = [] } = useTransactions()
   const { t } = useLang()
 
   const KIND: Record<AccountKind, { icon: LucideIcon; label: string }> = {

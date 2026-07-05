@@ -7,7 +7,9 @@ import { Input, Label } from '@/shared/components/ui/input'
 import { formatVND } from '@/shared/lib/format'
 import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import { useCategories } from '@/features/categories/queries'
+import { useFavoriteCategoryIds } from '@/features/categories/favorites-queries'
+import { useBudgets } from '@/features/budgets/queries'
 import type { Budget, Category } from '@/core/types'
 
 interface BudgetFormProps {
@@ -35,7 +37,9 @@ export function conflictsWithExistingBudget(
 }
 
 export function BudgetForm({ initial, onSubmit, onCancel }: BudgetFormProps) {
-  const { categories, budgets, favoriteCategoryIds } = useStore()
+  const { data: categories = [] } = useCategories()
+  const { data: budgets = [] } = useBudgets()
+  const favoriteCategoryIds = useFavoriteCategoryIds()
   const { t } = useLang()
 
   const availableCategories = categories.filter(

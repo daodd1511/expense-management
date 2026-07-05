@@ -6,10 +6,11 @@ import { BudgetBars } from '@/features/budgets/components/BudgetBars'
 import { TransactionRow } from '@/features/transactions/components/TransactionRow'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { monthlyTrend } from '@/core/data'
-import { buildDonutData } from '@/shared/lib/derive'
+import { buildDonutData, monthSummary } from '@/shared/lib/derive'
 import { formatVND, monthLabel } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { monthSummary, useStore } from '@/core/store'
+import { useTransactions } from '@/features/transactions/queries'
+import { useCategoryLookup } from '@/features/categories/queries'
 import type { Transaction } from '@/core/types'
 
 export function MobileHome({
@@ -19,7 +20,8 @@ export function MobileHome({
   onNavigate: (s: string) => void
   onEdit: (tx: Transaction) => void
 }) {
-  const { transactions, getCategory } = useStore()
+  const { data: transactions = [] } = useTransactions()
+  const getCategory = useCategoryLookup()
   const { t, lang } = useLang()
   const summary = monthSummary(transactions)
   const { data, total } = buildDonutData(transactions, getCategory)

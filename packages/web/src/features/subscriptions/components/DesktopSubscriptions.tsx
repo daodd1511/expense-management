@@ -9,7 +9,15 @@ import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Drawer } from '@/shared/components/ui/overlay'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import {
+  useAddSubscription,
+  useDeleteSubscription,
+  useLogSubscription,
+  useSubscriptions,
+  useUpdateSubscription,
+} from '@/features/subscriptions/queries'
+import { useCategoryLookup } from '@/features/categories/queries'
+import { useAccountLookup } from '@/features/accounts/queries'
 import { daysUntilDue, isDue, isDueSoon, monthlyEquivalent, totalMonthlyCost } from '@/features/subscriptions/helpers'
 import type { Subscription } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
@@ -36,7 +44,8 @@ function SubCard({
   onLog: () => void
 }) {
   const { t } = useLang()
-  const { getCategory, getAccount } = useStore()
+  const getCategory = useCategoryLookup()
+  const getAccount = useAccountLookup()
   const cat = getCategory(sub.categoryId)
   const acc = getAccount(sub.accountId)
   const badge = dueBadge(sub)
@@ -143,7 +152,11 @@ function SubCard({
 }
 
 export function DesktopSubscriptions() {
-  const { subscriptions, addSubscription, updateSubscription, deleteSubscription, logSubscription } = useStore()
+  const { data: subscriptions = [] } = useSubscriptions()
+  const addSub = useAddSubscription()
+  const updateSub = useUpdateSubscription()
+  const deleteSub = useDeleteSubscription()
+  const logSub = useLogSubscription()
   const { t } = useLang()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<Subscription | undefined>(undefined)
@@ -163,8 +176,8 @@ export function DesktopSubscriptions() {
   const close = () => { setDrawerOpen(false); setEditing(undefined) }
 
   const handleSubmit = async (data: Omit<Subscription, 'id'>) => {
-    if (editing) await updateSubscription(editing.id, data)
-    else await addSubscription(data)
+    if (editing) await updateSub.mutateAsync({ id: editing.id, patch: data })
+    else await addSub.mutateAsync(data)
     close()
   }
 
@@ -221,8 +234,8 @@ export function DesktopSubscriptions() {
               sub={s}
               onEdit={() => openEdit(s)}
               onDelete={() => setPendingDeleteId(s.id)}
-              onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
-              onLog={() => logSubscription(s.id)}
+              onToggleActive={() => updateSub.mutateAsync({ id: s.id, patch: { active: !s.active } })}
+              onLog={() => logSub.mutateAsync(s)}
             />
           ))}
         </div>
@@ -238,8 +251,8 @@ export function DesktopSubscriptions() {
               sub={s}
               onEdit={() => openEdit(s)}
               onDelete={() => setPendingDeleteId(s.id)}
-              onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
-              onLog={() => logSubscription(s.id)}
+              onToggleActive={() => updateSub.mutateAsync({ id: s.id, patch: { active: !s.active } })}
+              onLog={() => logSub.mutateAsync(s)}
             />
           ))}
         </div>
@@ -255,8 +268,8 @@ export function DesktopSubscriptions() {
               sub={s}
               onEdit={() => openEdit(s)}
               onDelete={() => setPendingDeleteId(s.id)}
-              onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
-              onLog={() => logSubscription(s.id)}
+              onToggleActive={() => updateSub.mutateAsync({ id: s.id, patch: { active: !s.active } })}
+              onLog={() => logSub.mutateAsync(s)}
             />
           ))}
         </div>
@@ -286,7 +299,7 @@ export function DesktopSubscriptions() {
         open={pendingDeleteId !== null}
         onCancel={() => setPendingDeleteId(null)}
         onConfirm={async () => {
-          if (pendingDeleteId) await deleteSubscription(pendingDeleteId)
+          if (pendingDeleteId) await deleteSub.mutateAsync(pendingDeleteId)
           setPendingDeleteId(null)
         }}
       />

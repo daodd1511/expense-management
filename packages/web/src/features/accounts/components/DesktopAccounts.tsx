@@ -8,12 +8,18 @@ import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Modal } from '@/shared/components/ui/overlay'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { computeBalance, useStore } from '@/core/store'
+import { computeBalance } from '@/shared/lib/derive'
+import { useAccounts, useAddAccount, useDeleteAccount, useUpdateAccount } from '@/features/accounts/queries'
+import { useTransactions } from '@/features/transactions/queries'
 import type { Account, AccountKind } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
 export function DesktopAccounts() {
-  const { accounts, transactions, addAccount, updateAccount, deleteAccount } = useStore()
+  const { data: accounts = [] } = useAccounts()
+  const { data: transactions = [] } = useTransactions()
+  const addAcc = useAddAccount()
+  const updateAcc = useUpdateAccount()
+  const deleteAcc = useDeleteAccount()
   const { t } = useLang()
   const total = accounts.reduce((s, a) => s + computeBalance(a.id, transactions, a.openingBalance), 0)
   const [editing, setEditing] = useState<Account | null>(null)
@@ -43,8 +49,8 @@ export function DesktopAccounts() {
   }
 
   const handleSubmit = async (data: Omit<Account, 'id'>) => {
-    if (editing) await updateAccount(editing.id, data)
-    else await addAccount(data)
+    if (editing) await updateAcc.mutateAsync({ id: editing.id, patch: data })
+    else await addAcc.mutateAsync(data)
     close()
   }
 
@@ -126,7 +132,7 @@ export function DesktopAccounts() {
         open={pendingDeleteId !== null}
         onCancel={() => setPendingDeleteId(null)}
         onConfirm={async () => {
-          if (pendingDeleteId) await deleteAccount(pendingDeleteId)
+          if (pendingDeleteId) await deleteAcc.mutateAsync(pendingDeleteId)
           setPendingDeleteId(null)
         }}
       />

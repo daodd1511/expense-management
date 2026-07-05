@@ -9,13 +9,17 @@ import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
 import { Input } from '@/shared/components/ui/input'
 import { formatDayLabel, formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import { useTransactions } from '@/features/transactions/queries'
+import { useCategoryLookup } from '@/features/categories/queries'
+import { useAccountLookup } from '@/features/accounts/queries'
 import type { Transaction, TxType } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
 export function MobileTransactions({ onEdit }: { onEdit: (tx: Transaction) => void }) {
   const { user } = useAuth()
-  const { transactions, getCategory, getAccount } = useStore()
+  const { data: transactions = [] } = useTransactions()
+  const getCategory = useCategoryLookup()
+  const getAccount = useAccountLookup()
   const { t, lang } = useLang()
   const queryClient = useQueryClient()
   const [query, setQuery] = useState('')

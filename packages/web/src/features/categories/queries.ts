@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/auth'
 import {
@@ -15,6 +16,15 @@ export function useCategories() {
     queryFn: fetchCategories,
     enabled: !!user,
   })
+}
+
+/** Category id → Category lookup, memoized over the current categories list. */
+export function useCategoryLookup(): (id: string | null | undefined) => Category | undefined {
+  const { data: categories = [] } = useCategories()
+  return useMemo(() => {
+    const map = new Map(categories.map((category) => [category.id, category]))
+    return (id: string | null | undefined) => (id ? map.get(id) : undefined)
+  }, [categories])
 }
 
 export function useAddCategory() {

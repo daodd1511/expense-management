@@ -11,11 +11,19 @@ import { BottomSheet } from '@/shared/components/ui/overlay'
 import { Progress } from '@/shared/components/ui/progress'
 import { formatVND, monthLabel } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { spentForCategory, useStore } from '@/core/store'
+import { spentForCategory } from '@/shared/lib/derive'
+import { useAddBudget, useBudgets, useDeleteBudget, useUpdateBudget } from '@/features/budgets/queries'
+import { useCategoryLookup } from '@/features/categories/queries'
+import { useTransactions } from '@/features/transactions/queries'
 import type { Budget } from '@/core/types'
 
 export function MobileBudgets() {
-  const { budgets, transactions, getCategory, addBudget, updateBudget, deleteBudget } = useStore()
+  const { data: budgets = [] } = useBudgets()
+  const { data: transactions = [] } = useTransactions()
+  const getCategory = useCategoryLookup()
+  const addBud = useAddBudget()
+  const updateBud = useUpdateBudget()
+  const deleteBud = useDeleteBudget()
   const { t, lang } = useLang()
   const [sheet, setSheet] = useState<'add' | Budget | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
@@ -25,8 +33,8 @@ export function MobileBudgets() {
   const pct = totalLimit > 0 ? Math.round((totalSpent / totalLimit) * 100) : 0
 
   const handleSubmit = async (b: Budget) => {
-    if (sheet === 'add') await addBudget(b)
-    else await updateBudget(b.categoryId, b.limit)
+    if (sheet === 'add') await addBud.mutateAsync(b)
+    else await updateBud.mutateAsync(b)
     setSheet(null)
   }
 
@@ -119,7 +127,7 @@ export function MobileBudgets() {
         open={pendingDeleteId !== null}
         onCancel={() => setPendingDeleteId(null)}
         onConfirm={async () => {
-          if (pendingDeleteId) await deleteBudget(pendingDeleteId)
+          if (pendingDeleteId) await deleteBud.mutateAsync(pendingDeleteId)
           setPendingDeleteId(null)
         }}
       />

@@ -7,10 +7,11 @@ import { BudgetBars } from '@/features/budgets/components/BudgetBars'
 import { TransactionRow } from '@/features/transactions/components/TransactionRow'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { monthlyTrend } from '@/core/data'
-import { buildDonutData } from '@/shared/lib/derive'
+import { buildDonutData, monthSummary } from '@/shared/lib/derive'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { monthSummary, useStore } from '@/core/store'
+import { useTransactions } from '@/features/transactions/queries'
+import { useCategoryLookup } from '@/features/categories/queries'
 import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
@@ -21,7 +22,8 @@ export function DesktopDashboard({
   onNavigate: (s: string) => void
   onEdit: (tx: Transaction) => void
 }) {
-  const { transactions, getCategory } = useStore()
+  const { data: transactions = [] } = useTransactions()
+  const getCategory = useCategoryLookup()
   const { t } = useLang()
   const summary = monthSummary(transactions)
   const { data, total } = buildDonutData(transactions, getCategory)

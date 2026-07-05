@@ -15,7 +15,9 @@ import { TransactionForm } from '@/features/transactions/components/TransactionF
 import { Drawer } from '@/shared/components/ui/overlay'
 import { LoadingScreen } from '@/shared/components/LoadingScreen'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import { useAddTransaction, useTransactions, useUpdateTransaction } from '@/features/transactions/queries'
+import { useSubscriptions } from '@/features/subscriptions/queries'
+import { useAppDataLoading } from '@/shared/hooks/useAppDataLoading'
 import { dueBanner } from '@/features/subscriptions/helpers'
 import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
@@ -30,7 +32,11 @@ import { CategoriesPage } from '@/features/categories/components/CategoriesPage'
 type Tab = 'dashboard' | 'transactions' | 'budgets' | 'subscriptions' | 'accounts' | 'settings' | 'categories'
 
 export function DesktopApp() {
-  const { addTransaction, updateTransaction, subscriptions, transactions, loading } = useStore()
+  const { data: subscriptions = [] } = useSubscriptions()
+  const { data: transactions = [] } = useTransactions()
+  const addTx = useAddTransaction()
+  const updateTx = useUpdateTransaction()
+  const loading = useAppDataLoading()
   const { t } = useLang()
   const [tab, setTab] = useState<Tab>('dashboard')
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -135,8 +141,8 @@ export function DesktopApp() {
             variant="desktop"
             initial={editing}
             onSubmit={async (tx) => {
-              if (editing) await updateTransaction(editing.id, tx)
-              else await addTransaction(tx)
+              if (editing) await updateTx.mutateAsync({ id: editing.id, patch: tx })
+              else await addTx.mutateAsync(tx)
               setDrawerOpen(false)
             }}
             onCancel={() => setDrawerOpen(false)}

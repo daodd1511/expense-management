@@ -9,16 +9,22 @@ const MOCK_CATEGORIES = [
   { id: 'salary', name: 'Salary', icon: 'wallet', color: 'green', type: 'income', parentId: null },
 ]
 
-vi.mock('@/core/store', () => ({
-  useStore: () => ({
-    categories: MOCK_CATEGORIES,
-    // both marked favorite so they appear directly, without needing "Show all"
-    favoriteCategoryIds: new Set(['food', 'salary']),
-    accounts: [
+vi.mock('@/features/categories/queries', () => ({
+  useCategories: () => ({ data: MOCK_CATEGORIES }),
+  useCategoryLookup: () => (id: string | null | undefined) => MOCK_CATEGORIES.find((c) => c.id === id),
+}))
+
+vi.mock('@/features/categories/favorites-queries', () => ({
+  // both marked favorite so they appear directly, without needing "Show all"
+  useFavoriteCategoryIds: () => new Set(['food', 'salary']),
+}))
+
+vi.mock('@/features/accounts/queries', () => ({
+  useAccounts: () => ({
+    data: [
       { id: 'cash', name: 'Cash' },
       { id: 'bank', name: 'Bank' },
     ],
-    getCategory: (id: string | null | undefined) => MOCK_CATEGORIES.find((c) => c.id === id),
   }),
 }))
 

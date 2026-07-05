@@ -1,14 +1,17 @@
 import { Bell, X } from 'lucide-react'
 import { useState } from 'react'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import { useLogSubscription, useSubscriptions } from '@/features/subscriptions/queries'
+import { useTransactions } from '@/features/transactions/queries'
 import { Button } from '@/shared/components/ui/button'
 import { dueBanner } from '@/features/subscriptions/helpers'
 import { formatVND } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/utils'
 
 export function SubscriptionDueBanner({ onLog }: { onLog?: (id: string) => void }) {
-  const { subscriptions, transactions, logSubscription } = useStore()
+  const { data: subscriptions = [] } = useSubscriptions()
+  const { data: transactions = [] } = useTransactions()
+  const logSub = useLogSubscription()
   const { t } = useLang()
   const [dismissed, setDismissed] = useState(false)
   const [pendingId, setPendingId] = useState<string | null>(null)
@@ -18,9 +21,11 @@ export function SubscriptionDueBanner({ onLog }: { onLog?: (id: string) => void 
   if (dismissed || due.length === 0) return null
 
   const handleLog = async (id: string) => {
+    const sub = subscriptions.find((s) => s.id === id)
+    if (!sub) return
     setPendingId(id)
     try {
-      await logSubscription(id)
+      await logSub.mutateAsync(sub)
       onLog?.(id)
     } finally {
       setPendingId((current) => (current === id ? null : current))

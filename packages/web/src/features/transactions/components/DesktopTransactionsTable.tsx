@@ -7,7 +7,9 @@ import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Input } from '@/shared/components/ui/input'
 import { amountColorClass, formatShortDate, formatSigned } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import { useDeleteTransactions, useTransactions } from '@/features/transactions/queries'
+import { useCategoryLookup } from '@/features/categories/queries'
+import { useAccountLookup } from '@/features/accounts/queries'
 import type { Transaction, TxType } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
@@ -27,7 +29,10 @@ function getTransactionCategoryLabel({
 }
 
 export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction) => void }) {
-  const { transactions, getCategory, getAccount, deleteTransaction } = useStore()
+  const { data: transactions = [] } = useTransactions()
+  const getCategory = useCategoryLookup()
+  const getAccount = useAccountLookup()
+  const deleteTxs = useDeleteTransactions()
   const { t } = useLang()
   const [query, setQuery] = useState('')
   const [type, setType] = useState<TxType | 'all'>('all')
@@ -118,7 +123,7 @@ export function DesktopTransactionsTable({ onEdit }: { onEdit: (tx: Transaction)
     setPendingDeleteIds(Array.from(selected))
   }
   const confirmDelete = async () => {
-    await Promise.all(pendingDeleteIds.map((id) => deleteTransaction(id)))
+    await deleteTxs.mutateAsync(pendingDeleteIds)
     setSelected(new Set())
     setPendingDeleteIds([])
   }

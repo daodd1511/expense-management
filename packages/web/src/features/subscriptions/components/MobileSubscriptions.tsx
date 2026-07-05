@@ -6,7 +6,13 @@ import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { BottomSheet } from '@/shared/components/ui/overlay'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import {
+  useAddSubscription,
+  useDeleteSubscription,
+  useLogSubscription,
+  useSubscriptions,
+  useUpdateSubscription,
+} from '@/features/subscriptions/queries'
 import { daysUntilDue, isDue, isDueSoon, monthlyEquivalent, totalMonthlyCost } from '@/features/subscriptions/helpers'
 import type { Subscription } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
@@ -132,7 +138,11 @@ function SubRow({
 }
 
 export function MobileSubscriptions() {
-  const { subscriptions, addSubscription, updateSubscription, deleteSubscription, logSubscription } = useStore()
+  const { data: subscriptions = [] } = useSubscriptions()
+  const addSub = useAddSubscription()
+  const updateSub = useUpdateSubscription()
+  const deleteSub = useDeleteSubscription()
+  const logSub = useLogSubscription()
   const { t } = useLang()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Subscription | null>(null)
@@ -149,8 +159,8 @@ export function MobileSubscriptions() {
   const close = () => { setSheetOpen(false); setEditing(null) }
 
   const handleSubmit = async (data: Omit<Subscription, 'id'>) => {
-    if (editing) await updateSubscription(editing.id, data)
-    else await addSubscription(data)
+    if (editing) await updateSub.mutateAsync({ id: editing.id, patch: data })
+    else await addSub.mutateAsync(data)
     close()
   }
 
@@ -180,8 +190,8 @@ export function MobileSubscriptions() {
                 sub={s}
                 onEdit={() => openEdit(s)}
                 onDelete={() => setPendingDeleteId(s.id)}
-                onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
-                onLog={() => logSubscription(s.id)}
+                onToggleActive={() => updateSub.mutateAsync({ id: s.id, patch: { active: !s.active } })}
+                onLog={() => logSub.mutateAsync(s)}
               />
             ))}
           </div>
@@ -202,8 +212,8 @@ export function MobileSubscriptions() {
                 sub={s}
                 onEdit={() => openEdit(s)}
                 onDelete={() => setPendingDeleteId(s.id)}
-                onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
-                onLog={() => logSubscription(s.id)}
+                onToggleActive={() => updateSub.mutateAsync({ id: s.id, patch: { active: !s.active } })}
+                onLog={() => logSub.mutateAsync(s)}
               />
             ))}
           </div>
@@ -224,8 +234,8 @@ export function MobileSubscriptions() {
                 sub={s}
                 onEdit={() => openEdit(s)}
                 onDelete={() => setPendingDeleteId(s.id)}
-                onToggleActive={() => updateSubscription(s.id, { active: !s.active })}
-                onLog={() => logSubscription(s.id)}
+                onToggleActive={() => updateSub.mutateAsync({ id: s.id, patch: { active: !s.active } })}
+                onLog={() => logSub.mutateAsync(s)}
               />
             ))}
           </div>
@@ -270,7 +280,7 @@ export function MobileSubscriptions() {
         open={pendingDeleteId !== null}
         onCancel={() => setPendingDeleteId(null)}
         onConfirm={async () => {
-          if (pendingDeleteId) await deleteSubscription(pendingDeleteId)
+          if (pendingDeleteId) await deleteSub.mutateAsync(pendingDeleteId)
           setPendingDeleteId(null)
         }}
       />

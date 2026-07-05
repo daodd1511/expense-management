@@ -10,11 +10,19 @@ import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Progress } from '@/shared/components/ui/progress'
 import { formatVND, monthLabel } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { spentForCategory, useStore } from '@/core/store'
+import { spentForCategory } from '@/shared/lib/derive'
+import { useAddBudget, useBudgets, useDeleteBudget, useUpdateBudget } from '@/features/budgets/queries'
+import { useCategoryLookup } from '@/features/categories/queries'
+import { useTransactions } from '@/features/transactions/queries'
 import type { Budget } from '@/core/types'
 
 export function DesktopBudgets() {
-  const { budgets, transactions, getCategory, addBudget, updateBudget, deleteBudget } = useStore()
+  const { data: budgets = [] } = useBudgets()
+  const { data: transactions = [] } = useTransactions()
+  const getCategory = useCategoryLookup()
+  const addBud = useAddBudget()
+  const updateBud = useUpdateBudget()
+  const deleteBud = useDeleteBudget()
   const { t, lang } = useLang()
   const [editing, setEditing] = useState<Budget | 'add' | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
@@ -25,8 +33,8 @@ export function DesktopBudgets() {
   const over = budgets.filter((b) => spentForCategory(transactions, b.categoryId) >= b.limit).length
 
   const handleSubmit = async (b: Budget) => {
-    if (editing === 'add') await addBudget(b)
-    else await updateBudget(b.categoryId, b.limit)
+    if (editing === 'add') await addBud.mutateAsync(b)
+    else await updateBud.mutateAsync(b)
     setEditing(null)
   }
 
@@ -141,7 +149,7 @@ export function DesktopBudgets() {
         open={pendingDeleteId !== null}
         onCancel={() => setPendingDeleteId(null)}
         onConfirm={async () => {
-          if (pendingDeleteId) await deleteBudget(pendingDeleteId)
+          if (pendingDeleteId) await deleteBud.mutateAsync(pendingDeleteId)
           setPendingDeleteId(null)
         }}
       />

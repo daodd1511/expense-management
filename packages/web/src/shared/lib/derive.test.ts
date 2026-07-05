@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Transaction } from '@/core/types'
-import { monthSummary } from './store'
+import { computeBalance, monthSummary } from './derive'
 
 function makeTx(overrides: Partial<Transaction> = {}): Transaction {
   return {
@@ -50,5 +50,44 @@ describe('monthSummary', () => {
   it('includes a transaction dated the 1st of the current month (F3 boundary regression)', () => {
     const summary = monthSummary([makeTx({ type: 'expense', amount: 100, date: '2026-07-01' })])
     expect(summary.expense).toBe(100)
+  })
+})
+
+describe('computeBalance', () => {
+  it('starts from the opening balance', () => {
+    expect(computeBalance('acc-1', [], 1_000_000)).toBe(1_000_000)
+  })
+
+  it('adds income and subtracts expense for the matching account', () => {
+    const balance = computeBalance(
+      'acc-1',
+      [
+        makeTx({ type: 'income', amount: 500_000, accountId: 'acc-1' }),
+        makeTx({ type: 'expense', amount: 200_000, accountId: 'acc-1' }),
+      ],
+      1_000_000,
+    )
+    expect(balance).toBe(1_300_000)
+  })
+
+  it('ignores transactions on other accounts', () => {
+    const balance = computeBalance(
+      'acc-1',
+      [makeTx({ type: 'income', amount: 500_000, accountId: 'acc-2' })],
+      1_000_000,
+    )
+    expect(balance).toBe(1_000_000)
+  })
+
+  it('subtracts a transfer out and adds a transfer in for the matching account', () => {
+    const balance = computeBalance(
+      'acc-1',
+      [
+        makeTx({ type: 'transfer', amount: 100_000, accountId: 'acc-1', toAccountId: 'acc-2' }),
+        makeTx({ type: 'transfer', amount: 50_000, accountId: 'acc-2', toAccountId: 'acc-1' }),
+      ],
+      1_000_000,
+    )
+    expect(balance).toBe(1_000_000 - 100_000 + 50_000)
   })
 })

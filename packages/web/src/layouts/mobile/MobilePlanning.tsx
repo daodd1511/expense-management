@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import { useSubscriptions } from '@/features/subscriptions/queries'
+import { useTransactions } from '@/features/transactions/queries'
 import { dueBanner } from '@/features/subscriptions/helpers'
 import { cn } from '@/shared/lib/utils'
 import { MobileBudgets } from '@/features/budgets/components/MobileBudgets'
@@ -11,7 +12,8 @@ type PlanTab = 'budgets' | 'subscriptions'
 export function MobilePlanning() {
   const [tab, setTab] = useState<PlanTab>('budgets')
   const { t } = useLang()
-  const { subscriptions, transactions } = useStore()
+  const { data: subscriptions = [] } = useSubscriptions()
+  const { data: transactions = [] } = useTransactions()
   const dueCount = dueBanner(subscriptions, transactions).length
 
   return (

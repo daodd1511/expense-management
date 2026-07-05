@@ -5,7 +5,9 @@ import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { amountColorClass, formatSigned, formatTime } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
-import { useStore } from '@/core/store'
+import { useCategoryLookup } from '@/features/categories/queries'
+import { useAccountLookup } from '@/features/accounts/queries'
+import { useDeleteTransaction } from '@/features/transactions/queries'
 import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
@@ -22,7 +24,7 @@ function formatCategoryLabel({
 }
 
 function Leading({ tx }: { tx: Transaction }) {
-  const { getCategory } = useStore()
+  const getCategory = useCategoryLookup()
   if (tx.type === 'transfer') {
     return (
       <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-transfer">
@@ -54,7 +56,9 @@ export function TransactionRow({
   onClick?: () => void
   swipe?: boolean
 }) {
-  const { getCategory, getAccount, deleteTransaction } = useStore()
+  const getCategory = useCategoryLookup()
+  const getAccount = useAccountLookup()
+  const deleteTx = useDeleteTransaction()
   const { t } = useLang()
   const [dx, setDx] = useState(0)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
@@ -145,7 +149,7 @@ export function TransactionRow({
         open={confirmDeleteOpen}
         onCancel={() => setConfirmDeleteOpen(false)}
         onConfirm={async () => {
-          await deleteTransaction(tx.id)
+          await deleteTx.mutateAsync(tx.id)
           setConfirmDeleteOpen(false)
         }}
       />
