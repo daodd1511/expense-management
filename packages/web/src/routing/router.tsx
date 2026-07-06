@@ -11,6 +11,8 @@ import {
   AccountsPage,
   BudgetsPage,
   DashboardPage,
+  OtherPage,
+  ReportsPage,
   SettingsCategoriesPage,
   SettingsPage,
   SubscriptionsPage,
@@ -25,7 +27,7 @@ import { SignIn } from '@/features/auth/components/SignIn'
 import { SignUpPage } from '@/features/auth/components/SignUp'
 import { currentRedirectPath, normalizeRedirectPath, validateAuthSearch } from './auth-redirect'
 import { validateCreateIntentSearch } from './create-intent'
-import { validateTransactionOverlaySearch } from './transaction-overlay'
+import { validateReportsSearch } from './reports-search'
 
 type RouterContext = {
   auth: AuthContextValue
@@ -152,18 +154,11 @@ const transactionsRoute = createRoute({
   component: TransactionsPage,
 })
 
-const transactionCreateRoute = createRoute({
+const reportsRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: 'transactions/new',
-  validateSearch: validateTransactionOverlaySearch,
-  component: EmptyRouteComponent,
-})
-
-const transactionEditRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: 'transactions/$transactionId/edit',
-  validateSearch: validateTransactionOverlaySearch,
-  component: EmptyRouteComponent,
+  path: 'reports',
+  validateSearch: validateReportsSearch,
+  component: ReportsPage,
 })
 
 const budgetsRoute = createRoute({
@@ -185,6 +180,12 @@ const accountsRoute = createRoute({
   path: 'accounts',
   validateSearch: validateCreateIntentSearch,
   component: AccountsPage,
+})
+
+const otherRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: 'other',
+  component: OtherPage,
 })
 
 const settingsRoute = createRoute({
@@ -221,11 +222,11 @@ const routeTree = rootRoute.addChildren([
   appRoute.addChildren([
     dashboardRoute,
     transactionsRoute,
-    transactionCreateRoute,
-    transactionEditRoute,
+    reportsRoute,
     budgetsRoute,
     subscriptionsRoute,
     accountsRoute,
+    otherRoute,
     settingsRoute,
     settingsCategoriesRoute,
     planningRedirectRoute,

@@ -171,3 +171,26 @@ export function CategoriesSkeleton({ mobile = false }: { mobile?: boolean }) {
     </div>
   )
 }
+
+export function ReportsSkeleton({ mobile = false }: { mobile?: boolean }) {
+  return mobile ? (
+    <div className="flex flex-col gap-4 p-4" data-testid="reports-skeleton">
+      <Skeleton className="h-24 rounded-2xl" />
+      <Skeleton className="h-44 rounded-2xl" />
+      <Skeleton className="h-56 rounded-2xl" />
+    </div>
+  ) : (
+    <div className="flex flex-col gap-6" data-testid="reports-skeleton">
+      <Skeleton className="h-24" />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => (
+          <Skeleton key={index} className="h-24" />
+        ))}
+      </div>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
+        <Skeleton className="h-[28rem]" />
+        <Skeleton className="h-[28rem]" />
+      </div>
+    </div>
+  )
+}

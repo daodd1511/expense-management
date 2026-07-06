@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { BottomSheet } from '@/shared/components/ui/overlay'
 import { Progress } from '@/shared/components/ui/progress'
+import { MobilePageContainer } from '@/shared/components/MobilePageContainer'
 import { formatVND, monthLabel } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { spentForCategory } from '@/shared/lib/derive'
@@ -42,7 +43,7 @@ export function MobileBudgets() {
   if (budgetsPending || transactionsPending) return <BudgetsSkeleton mobile />
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <MobilePageContainer>
       <Card>
         <CardContent className="p-5">
           <span className="text-sm text-muted-foreground">{t('budget.total', { month: monthLabel(new Date(), lang) })}</span>
@@ -134,6 +135,6 @@ export function MobileBudgets() {
           setPendingDeleteId(null)
         }}
       />
-    </div>
+    </MobilePageContainer>
   )
 }

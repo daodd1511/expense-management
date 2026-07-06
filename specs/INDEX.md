@@ -17,6 +17,7 @@ _git and `EXECUTION.md` STATUS blocks win._
 | [mobile-ux](mobile-ux/PLAN.md) | Done | 5/5 | — | Produced via /grill-me. All decisions below were explicitly confirmed; do not reinterpret or… |
 | [polish](polish/PLAN.md) | Done | 3/3 | — | Third of three sibling specs from the "all Fixes + Features 7–13" batch. Builds on Spec 1… |
 | [pwa](pwa/PLAN.md) | Done | 2/2 | ⚠ manual browser checks (2 items) deferred; review checklist incomplete | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
+| [reports](reports/PLAN.md) | Done | 3/3 | — | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
 | [spec-index](spec-index/PLAN.md) | Done | — | — | A generated specs/INDEX.md giving a single kanban-style view of every spec's state (done / in… |
 
 ## Reference

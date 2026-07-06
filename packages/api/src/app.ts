@@ -5,6 +5,7 @@ import { analyticsRouter } from './features/analytics/routes'
 import { budgetsRouter } from './features/budgets/routes'
 import { categoriesRouter } from './features/categories/routes'
 import { favoritesRouter } from './features/favorites/routes'
+import { reportsRouter } from './features/reports/routes'
 import { subscriptionsRouter } from './features/subscriptions/routes'
 import { transactionsRouter } from './features/transactions/routes'
 import { authMiddleware, type AuthEnv } from './middleware/auth'
@@ -29,6 +30,7 @@ export function createApp() {
   api.route('/categories', categoriesRouter)
   api.route('/budgets', budgetsRouter)
   api.route('/favorites', favoritesRouter)
+  api.route('/reports', reportsRouter)
   api.route('/subscriptions', subscriptionsRouter)
   api.route('/analytics', analyticsRouter)
 

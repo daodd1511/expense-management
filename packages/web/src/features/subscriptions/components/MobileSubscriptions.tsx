@@ -4,6 +4,7 @@ import { SubscriptionLogConfirm } from '@/features/subscriptions/components/Subs
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm'
 import { SubscriptionsSkeleton } from '@/shared/components/Skeleton'
 import { useSwipeActions } from '@/shared/hooks/useSwipeActions'
+import { MobilePageContainer } from '@/shared/components/MobilePageContainer'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { BottomSheet } from '@/shared/components/ui/overlay'
@@ -170,7 +171,7 @@ export function MobileSubscriptions() {
   if (isPending) return <SubscriptionsSkeleton mobile />
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <MobilePageContainer>
       {/* Summary card */}
       <Card className="border-0 bg-primary text-primary-foreground">
         <CardContent className="p-5">
@@ -298,6 +299,6 @@ export function MobileSubscriptions() {
         onCancel={() => setPendingLogSubscription(null)}
         onConfirm={handleConfirmLog}
       />
-    </div>
+    </MobilePageContainer>
   )
 }

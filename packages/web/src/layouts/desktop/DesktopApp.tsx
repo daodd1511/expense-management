@@ -1,5 +1,6 @@
 import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import {
+  ChartPie,
   CalendarClock,
   CreditCard,
   LayoutDashboard,
@@ -10,19 +11,18 @@ import {
   Wallet,
 } from 'lucide-react'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
-import { TransactionRouteOverlay } from '@/features/transactions/components/TransactionRouteOverlay'
+import { TransactionOverlaySheet, useTransactionOverlay } from '@/features/transactions/transaction-overlay'
 import { LoadingScreen } from '@/shared/components/LoadingScreen'
 import { CommandPalette, type CommandPaletteAction } from '@/shared/components/CommandPalette'
 import { useKeyboardShortcuts } from '@/shared/hooks/useKeyboardShortcuts'
 import { useLang } from '@/core/i18n'
-import { AppRouteContent } from '@/routing/app-pages'
 import { useTransactions } from '@/features/transactions/queries'
+import { monthFromHref } from '@/features/transactions/view-state'
 import { useSubscriptions } from '@/features/subscriptions/queries'
 import { useAppDataLoading } from '@/shared/hooks/useAppDataLoading'
 import { dueBanner } from '@/features/subscriptions/helpers'
 import { cn } from '@/shared/lib/utils'
 import { sectionFromPath } from '@/routing/app-route-state'
-import { getTransactionOverlayState } from '@/routing/transaction-overlay'
 
 export function DesktopApp() {
   const { data: subscriptions = [] } = useSubscriptions()
@@ -31,15 +31,13 @@ export function DesktopApp() {
   const { t } = useLang()
   const navigate = useNavigate()
   const location = useLocation()
-  const overlay = getTransactionOverlayState(
-    location.pathname,
-    location.search as Record<string, unknown>,
-  )
-  const section = sectionFromPath(overlay?.returnToPathname ?? location.pathname)
+  const { openCreate } = useTransactionOverlay()
+  const section = sectionFromPath(location.pathname)
   const dueCount = dueBanner(subscriptions, transactions).length
 
-  const NAV: { href: '/' | '/transactions' | '/budgets' | '/subscriptions' | '/accounts' | '/settings'; section: typeof section; label: string; icon: typeof LayoutDashboard; badge?: number }[] = [
+  const NAV: { href: '/' | '/reports' | '/transactions' | '/budgets' | '/subscriptions' | '/accounts' | '/settings'; section: typeof section; label: string; icon: typeof LayoutDashboard; badge?: number }[] = [
     { href: '/', section: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { href: '/reports', section: 'reports', label: t('nav.reports'), icon: ChartPie },
     { href: '/transactions', section: 'transactions', label: t('nav.transactions'), icon: Receipt },
     { href: '/budgets', section: 'budgets', label: t('nav.budgets'), icon: Target },
     { href: '/subscriptions', section: 'subscriptions', label: t('nav.subscriptions'), icon: CalendarClock, badge: dueCount },
@@ -47,7 +45,7 @@ export function DesktopApp() {
     { href: '/settings', section: 'settings', label: t('nav.settings'), icon: Settings },
   ]
 
-  const openNewTransaction = () => navigate({ to: '/transactions/new', search: { returnTo: location.href } })
+  const openNewTransaction = () => openCreate(monthFromHref(location.href))
 
   const focusTransactionsSearch = () => {
     if (section === 'transactions') {
@@ -64,6 +62,12 @@ export function DesktopApp() {
       section: t('palette.sectionNavigate'),
       onRun: () => navigate({ to: item.href }),
     })),
+    {
+      id: 'nav-other',
+      label: t('nav.other'),
+      section: t('palette.sectionNavigate'),
+      onRun: () => navigate({ to: '/other' }),
+    },
     {
       id: 'nav-settings-categories',
       label: t('settings.categories'),
@@ -165,11 +169,11 @@ export function DesktopApp() {
       {/* Main */}
       <main className="flex-1 overflow-x-hidden px-5 py-6 lg:px-10 lg:py-8">
         <div className="mx-auto max-w-6xl">
-          {overlay ? <AppRouteContent pathname={overlay.returnToPathname} /> : <Outlet />}
+          <Outlet />
         </div>
       </main>
 
-      <TransactionRouteOverlay variant="desktop" overlay={overlay} />
+      <TransactionOverlaySheet variant="desktop" />
       <CommandPalette actions={paletteActions} />
     </div>
   )
