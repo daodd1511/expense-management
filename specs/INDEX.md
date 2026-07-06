@@ -5,7 +5,6 @@ _git and `EXECUTION.md` STATUS blocks win._
 
 | Spec | Status | Phases | Debt | Description |
 |------|--------|--------|------|-------------|
-| [kanagawa-theme](kanagawa-theme/PLAN.md) | In progress | 1/2 | — | Recolor the app to a Kanagawa-inspired "pigment on paper" palette: Washi (softened cream paper)… |
 | [be-integration](be-integration/PLAN.md) | Not started | — | — |  FE (browser) 1. Google OAuth via Supabase Auth → receives access_token (JWT) 2. Stores token in… |
 | [api-restructure](api-restructure/PLAN.md) | Done | 4/4 | — | Fourth and final spec of the batch. A behavior-preserving migration of packages/api from flat… |
 | [auth-routing](auth-routing/PLAN.md) | Done | 3/3 | — | Add email/password auth alongside the existing Google OAuth flow, and replace the app's… |
@@ -14,6 +13,7 @@ _git and `EXECUTION.md` STATUS blocks win._
 | [error-handling](error-handling/PLAN.md) | Done | 3/3 | ⚠ manual browser checks (3 items) deferred; review checklist incomplete | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
 | [feature-ux](feature-ux/PLAN.md) | Done | 5/5 | — | Second of three sibling specs from the "all Fixes + Features 7–13" batch. Builds on Spec 1… |
 | [foundation](foundation/PLAN.md) | Done | 3/3 | — | Backend correctness, date-handling, and the store.tsx architecture refactor. First of three… |
+| [kanagawa-theme](kanagawa-theme/PLAN.md) | Done | 2/2 | — | Recolor the app to a Kanagawa-inspired "pigment on paper" palette: Washi (softened cream paper)… |
 | [mobile-ux](mobile-ux/PLAN.md) | Done | 5/5 | — | Produced via /grill-me. All decisions below were explicitly confirmed; do not reinterpret or… |
 | [polish](polish/PLAN.md) | Done | 3/3 | — | Third of three sibling specs from the "all Fixes + Features 7–13" batch. Builds on Spec 1… |
 | [pwa](pwa/PLAN.md) | Done | 2/2 | ⚠ manual browser checks (2 items) deferred; review checklist incomplete | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |

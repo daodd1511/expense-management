@@ -147,7 +147,7 @@ export function TransactionForm({
                     ? 'bg-income text-income-foreground'
                     : tab.value === 'expense'
                       ? 'bg-expense text-expense-foreground'
-                      : 'bg-card text-foreground shadow-sm'
+                      : 'bg-card text-foreground'
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >

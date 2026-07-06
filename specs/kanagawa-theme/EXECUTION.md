@@ -5,9 +5,9 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 1 — done
+- Current phase: All phases complete
 - Phase 1 — Palette tokens + PWA colors: done
-- Phase 2 — Matte pass + hardcoded color sweep: pending
+- Phase 2 — Matte pass + hardcoded color sweep: done
 - Verification debt: none
 
 ## Phase 1 — Palette tokens + PWA colors
@@ -69,7 +69,7 @@ stacked)
 Component-level edits, separated from the token swap so each diff is small and revertable:
 shadows→borders can only be judged against the Phase 1 palette.
 
-- [ ] Shadow → border matte pass over the ~18 `shadow-*` occurrences. In-flow surfaces
+- [x] Shadow → border matte pass over the ~18 `shadow-*` occurrences. In-flow surfaces
       (cards, tiles, stat blocks) drop the shadow class and get a visible `border-border`;
       floating layers (popover, select dropdown, overlay/sheet) keep exactly one minimal
       low-alpha shadow (PLAN.md judgment call). Files:
@@ -80,17 +80,18 @@ shadows→borders can only be judged against the Phase 1 palette.
       `features/auth/components/SignIn.tsx`, `features/auth/components/AuthCardLayout.tsx`,
       `features/categories/components/CategoriesPage.tsx`,
       `features/transactions/components/TransactionForm.tsx`.
-- [ ] Hardcoded color literal sweep: `rg` for hex/`oklch(`/`rgb(` literals in
+- [x] Hardcoded color literal sweep: `rg` for hex/`oklch(`/`rgb(` literals in
       `packages/web/src` outside `globals.css`; re-point chart/inline-style colors at
       tokens (`var(--chart-n)`, semantic tokens). Leave non-themable literals (e.g.
-      pure-black scrims) only with an inline justification.
-- [ ] Verify no `shadow-sm|md|lg|xl|2xl|shadow-primary|shadow-black` classes remain except
+      pure-black scrims) only with an inline justification. Result: only the Google logo
+      fills in `SignIn.tsx` remain, documented inline as branded asset colors.
+- [x] Verify no `shadow-sm|md|lg|xl|2xl|shadow-primary|shadow-black` classes remain except
       the sanctioned floating-layer shadows (`rg` check, list survivors in the PR).
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test`
-- [ ] `pnpm build`
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm --filter @wallet/web test`
+- [x] `pnpm build`
 
 **Review checklist (user, at PR review):**
 - [ ] Cards/tiles sit flat on the paper background, separated by ink borders — no floating

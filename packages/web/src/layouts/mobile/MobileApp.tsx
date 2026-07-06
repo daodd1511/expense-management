@@ -95,7 +95,7 @@ export function MobileApp() {
                 type="button"
                 onClick={() => setIsQuickAddOpen(true)}
                 aria-label={t('app.addTransaction')}
-                className="-mt-7 inline-flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-background transition-transform active:scale-95"
+                className="-mt-7 inline-flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground ring-4 ring-background transition-transform active:scale-95"
               >
                 <Plus className="size-6" />
               </button>
