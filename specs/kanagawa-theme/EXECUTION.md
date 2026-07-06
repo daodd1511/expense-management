@@ -5,9 +5,9 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 1 — done
+- Current phase: All phases complete
 - Phase 1 — Palette tokens + PWA colors: done
-- Phase 2 — Matte pass + hardcoded color sweep: pending
+- Phase 2 — Matte pass + hardcoded color sweep: done
 - Verification debt: none
 
 ## Phase 1 — Palette tokens + PWA colors
@@ -89,9 +89,9 @@ shadows→borders can only be judged against the Phase 1 palette.
       the sanctioned floating-layer shadows (`rg` check, list survivors in the PR).
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test`
-- [ ] `pnpm build`
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm --filter @wallet/web test`
+- [x] `pnpm build`
 
 **Review checklist (user, at PR review):**
 - [ ] Cards/tiles sit flat on the paper background, separated by ink borders — no floating
