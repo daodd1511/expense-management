@@ -8,7 +8,7 @@ import {
   toAccount,
   toTransaction,
 } from '@wallet/shared'
-import { getSupabase } from '../db/supabase'
+import { getSupabase } from '../config/supabase'
 import { jsonError, mapDbError, parseRows } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
 

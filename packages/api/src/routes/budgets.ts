@@ -6,7 +6,7 @@ import {
   fromBudget,
   toBudget,
 } from '@wallet/shared'
-import { getSupabase } from '../db/supabase'
+import { getSupabase } from '../config/supabase'
 import { jsonError, mapDbError, parseJsonBody, parseRows } from '../lib/http'
 import type { AuthEnv } from '../middleware/auth'
 

@@ -1,18 +1,5 @@
 import type { Context } from 'hono'
-import { secureParse } from '@wallet/shared'
-import type { ZodSchema } from 'zod'
-
-type ApiErrorStatus = 400 | 401 | 403 | 404 | 409 | 500
-
-export function jsonError(c: Context, status: ApiErrorStatus, error: string, details?: unknown) {
-  return c.json(
-    {
-      error,
-      ...(details !== undefined && { details }),
-    },
-    status,
-  )
-}
+import { jsonError, parseJsonBody, parseRawJsonBody, parseRows } from './response'
 
 /** Minimal shape of a Supabase/PostgREST error — only the fields `mapDbError` branches on. */
 export type DbError = { code: string; message: string }
@@ -36,47 +23,4 @@ export function mapDbError(c: Context, error: DbError) {
   return jsonError(c, 500, 'Internal server error')
 }
 
-/**
- * Parses a request body as JSON without validating it against a schema. Shared by
- * `parseJsonBody` and by handlers that need to inspect the raw body before schema
- * validation (e.g. rejecting an immutable field with a specific message, rather than
- * letting a schema silently strip it).
- */
-export async function parseRawJsonBody(
-  c: Context,
-): Promise<{ success: true; data: unknown } | { success: false; response: Response }> {
-  try {
-    return { success: true, data: await c.req.json() }
-  } catch {
-    return { success: false, response: jsonError(c, 400, 'Invalid JSON body') }
-  }
-}
-
-export async function parseJsonBody<T>(
-  c: Context,
-  schema: ZodSchema<T>,
-): Promise<{ success: true; data: T } | { success: false; response: Response }> {
-  const raw = await parseRawJsonBody(c)
-  if (!raw.success) return raw
-
-  const result = schema.safeParse(raw.data)
-  if (!result.success) {
-    return {
-      success: false,
-      response: jsonError(c, 400, 'Invalid request body', result.error.flatten()),
-    }
-  }
-
-  return { success: true, data: result.data }
-}
-
-export function parseRows<TParsed, TMapped>(
-  rows: unknown[] | null,
-  schema: ZodSchema<TParsed>,
-  map: (row: TParsed) => TMapped,
-) {
-  return (rows ?? [])
-    .map((row) => secureParse(schema, row))
-    .filter((row): row is TParsed => row !== null)
-    .map(map)
-}
+export { jsonError, parseJsonBody, parseRawJsonBody, parseRows }

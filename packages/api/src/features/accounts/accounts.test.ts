@@ -1,16 +1,16 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AuthEnv } from '../middleware/auth'
+import type { AuthEnv } from '../../middleware/auth'
 
 const { getSupabase } = vi.hoisted(() => ({
   getSupabase: vi.fn(),
 }))
 
-vi.mock('../db/supabase', () => ({
+vi.mock('../../config/supabase', () => ({
   getSupabase,
 }))
 
-import { accountsRouter } from './accounts'
+import { accountsRouter } from './routes'
 
 function buildAccountsSelectResult(accountData: unknown[], transactionData: unknown[] = []) {
   const order = vi.fn().mockResolvedValue({ data: accountData, error: null })
@@ -30,7 +30,6 @@ function buildAccountsSelectResult(accountData: unknown[], transactionData: unkn
     client: {
       from,
     },
-    spies: { order, firstEq, secondEq, accountSelect, transactionEq, transactionSelect, from },
   }
 }
 

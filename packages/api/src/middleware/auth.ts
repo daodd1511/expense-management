@@ -1,31 +1,11 @@
 import { createMiddleware } from 'hono/factory'
-import { createRemoteJWKSet, jwtVerify } from 'jose'
-import { jsonError } from '../lib/http'
+import { jsonError } from '../lib/response'
+import { verifyAccessToken } from '../lib/jwt'
 
 export type AuthEnv = {
   Variables: {
     userId: string
   }
-}
-
-let projectJwks: ReturnType<typeof createRemoteJWKSet> | null = null
-
-function getSupabaseUrl() {
-  const supabaseUrl = process.env.SUPABASE_URL
-  if (!supabaseUrl) {
-    throw new Error('Missing SUPABASE_URL')
-  }
-
-  return supabaseUrl
-}
-
-function getProjectJwks() {
-  if (!projectJwks) {
-    const supabaseUrl = getSupabaseUrl()
-    projectJwks = createRemoteJWKSet(new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`))
-  }
-
-  return projectJwks
 }
 
 export const authMiddleware = createMiddleware<AuthEnv>(async (c, next) => {
@@ -35,15 +15,12 @@ export const authMiddleware = createMiddleware<AuthEnv>(async (c, next) => {
   }
   const token = header.slice(7)
   try {
-    const supabaseUrl = getSupabaseUrl()
-    const { payload } = await jwtVerify(token, getProjectJwks(), {
-      issuer: `${supabaseUrl}/auth/v1`,
-    })
+    const userId = await verifyAccessToken(token)
 
-    if (typeof payload.sub !== 'string' || payload.sub.length === 0) {
+    if (typeof userId !== 'string' || userId.length === 0) {
       return jsonError(c, 401, 'Invalid token')
     }
-    c.set('userId', payload.sub)
+    c.set('userId', userId)
   } catch {
     return jsonError(c, 401, 'Invalid token')
   }
