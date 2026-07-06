@@ -32,10 +32,10 @@ net; flagged per-phase below as a review-checklist item, not agent debt.
 
 ## STATUS
 
-- Current phase: 2 — done
+- Current phase: 3 — done
 - Phase 1 — Infra + accounts reference feature: done
 - Phase 2 — Simple domains (transactions, budgets, favorites, analytics): done
-- Phase 3 — Complex domains (categories, subscriptions): pending
+- Phase 3 — Complex domains (categories, subscriptions): done
 - Phase 4 — Cleanup + docs: pending
 - Verification debt: none yet
 
@@ -143,28 +143,28 @@ These two carry real business logic beyond CRUD (category hierarchy rules, the
 `log_subscription` RPC + date math) — split from Phase 2 so that logic lands in
 `service.ts` deliberately rather than as a batch afterthought.
 
-- [ ] `packages/api/src/features/categories/{schema,repository,service,controller,
+- [x] `packages/api/src/features/categories/{schema,repository,service,controller,
   routes}.ts` — migrate `routes/categories.ts` (266 lines): `service.ts` owns
   `loadParentCandidate`, the 2-level nesting cap, type-match rules, and the
   re-parent/child/budget-conflict checks currently inline in the POST/PATCH/DELETE
   handlers; `repository.ts` wraps the `categories`/`transactions`/`subscriptions`/
   `budgets` table access needed for the cascading updates on delete. Move
   `categories.test.ts` (233 lines)
-- [ ] `packages/api/src/features/subscriptions/{schema,repository,service,controller,
+- [x] `packages/api/src/features/subscriptions/{schema,repository,service,controller,
   routes}.ts` — migrate `routes/subscriptions.ts` (274 lines): `service.ts` owns the
   `buildNextDueDate`/`advanceNextDueDate` orchestration and the `log_subscription` RPC
   call + `LogSubscriptionRpcRow` mapping currently inline in `POST /:id/log` and `PATCH`;
   `repository.ts` wraps subscriptions table CRUD + the RPC call. **No existing test to
   move** — see review checklist below
-- [ ] Wire both routers into `app.ts`; remove `routes/categories.ts`,
+- [x] Wire both routers into `app.ts`; remove `routes/categories.ts`,
   `routes/categories.test.ts`, `routes/subscriptions.ts`
-- [ ] Delete `lib/http.ts` and `routes/` directory now that nothing imports them (or
-  defer final deletion to Phase 4 if anything still lingers)
+- [x] Delete `lib/http.ts`; `packages/api/src/routes/` now has no remaining files, with
+  final empty-directory cleanup deferred to Phase 4
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/api typecheck`
-- [ ] `pnpm --filter @wallet/api test`
-- [ ] `pnpm --filter @wallet/api build`
+- [x] `pnpm --filter @wallet/api typecheck`
+- [x] `pnpm --filter @wallet/api test`
+- [x] `pnpm --filter @wallet/api build`
 
 **Review checklist (user, at PR review):**
 - [ ] Manually verify category CRUD including the nesting-cap, type-mismatch, and
