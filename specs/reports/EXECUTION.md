@@ -9,7 +9,7 @@ Integration branch: `develop`. Branch model: stacked (default).
 - Phase 1 — Shared contract and reports API: done
 - Phase 2 — Web reports data layer and navigation shell: done
 - Phase 3 — Income vs Expense report UI: done
-- Verification debt: none
+- Verification debt: all 3 phases landed in one commit (21cb284), merged directly to `develop` (fast-forward, no PR) instead of the stacked phase-2/phase-3 branches this plan calls for. Two Phase 2/3 bullets describe the original route-based transaction overlay, superseded post-hoc by a context-based `TransactionOverlayProvider` in the same commit (see inline notes). All agent gates re-verified passing; all Review checklist items below remain unverified — no browser automation or live Supabase session available in this environment to drive the app.
 
 ## Phase 1 — Shared contract and reports API
 
@@ -52,7 +52,7 @@ This phase wires the new report endpoint through the web app and creates the rou
 - [x] Add `ReportsPage` and `OtherPage` exports in `packages/web/src/routing/app-pages.tsx`.
 - [x] Add `/reports` and `/other` routes in `packages/web/src/routing/router.tsx`.
 - [x] Update `packages/web/src/routing/app-route-state.ts` to recognize `reports` and `other`.
-- [x] Update transaction overlay return handling so `/reports` is allowed as a `returnTo` target for `/transactions/$transactionId/edit`.
+- [x] Update transaction overlay return handling so `/reports` is allowed as a `returnTo` target for `/transactions/$transactionId/edit`. *(Superseded in the same commit: route-based overlay removed entirely, replaced by `features/transactions/transaction-overlay.tsx`'s `TransactionOverlayProvider`/`useTransactionOverlay` context — no more `returnTo`/route.)*
 - [x] Update `packages/web/src/layouts/desktop/DesktopApp.tsx` to add Reports to the sidebar between Overview and Transactions.
 - [x] Update `packages/web/src/layouts/mobile/MobileApp.tsx` bottom navigation to `Home / Accounts / Reports / Other`, keeping the center add-transaction FAB.
 - [x] Add the `Other` hub page in the web routing layer with links to Transactions, Planning (`/subscriptions`), Categories (`/settings/categories`), and Settings.
@@ -84,7 +84,7 @@ This phase builds the actual v1 report experience on top of the API and route sh
 - [x] Use the shadcn MCP before implementing report UI primitives: inspect `@shadcn/card`, `@shadcn/tabs`, `@shadcn/collapsible` or `@shadcn/accordion`, and `@shadcn/chart`; prefer existing wrappers in `packages/web/src/shared/components/ui/` and add/adapt shadcn-backed wrappers only where missing.
 - [x] Use `CategoryDonut` from `packages/web/src/shared/components/Charts.tsx` for the expense pie chart, mapping expense category aggregates to category labels, icons, and colors via existing category lookups.
 - [x] Resolve account labels for expanded transaction rows through existing account lookups.
-- [x] On transaction row click, navigate to `/transactions/$transactionId/edit` with `returnTo` set to the current Reports URL so the existing transaction edit overlay opens and returns correctly.
+- [x] On transaction row click, navigate to `/transactions/$transactionId/edit` with `returnTo` set to the current Reports URL so the existing transaction edit overlay opens and returns correctly. *(Superseded: row click now calls `openEdit(transactionId, month)` on the `TransactionOverlayProvider` context directly — no navigation, no route, no `returnTo`. The underlying Reports page no longer unmounts while the form is open.)*
 - [x] Add Reports loading and empty states using existing skeleton/state patterns from `packages/web/src/shared/components/Skeleton.tsx`.
 - [x] Add vi/en i18n keys in `packages/web/src/core/i18n.tsx` for report totals, empty states, category breakdown, transaction count copy, and expand/collapse labels.
 - [x] Add or update report component tests covering report empty state, expense category sorting descending, category expand/collapse, and transaction row click opening the edit route.
