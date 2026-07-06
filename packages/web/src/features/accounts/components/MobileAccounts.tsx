@@ -1,9 +1,10 @@
 
 import { Banknote, CreditCard, Landmark, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
 import { AccountsSkeleton } from '@/shared/components/Skeleton'
+import { useSwipeActions } from '@/shared/hooks/useSwipeActions'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { BottomSheet } from '@/shared/components/ui/overlay'
@@ -20,6 +21,8 @@ const KIND_ICONS: Record<AccountKind, LucideIcon> = {
   ewallet: Wallet,
 }
 
+const SWIPE_ACTION_WIDTH = 132
+
 function AccountRow({
   account,
   balance,
@@ -33,23 +36,9 @@ function AccountRow({
   onEdit: () => void
   onDelete: () => void
 }) {
-  const [dx, setDx] = useState(0)
-  const startX = useRef<number | null>(null)
+  const { offset, isDragging, bind } = useSwipeActions(SWIPE_ACTION_WIDTH)
   const Icon = KIND_ICONS[account.kind]
   const negative = balance < 0
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    startX.current = e.touches[0].clientX
-  }
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (startX.current == null) return
-    const delta = e.touches[0].clientX - startX.current
-    if (delta < 0) setDx(Math.max(delta, -132))
-  }
-  const onTouchEnd = () => {
-    setDx((d) => (d < -66 ? -132 : 0))
-    startX.current = null
-  }
 
   return (
     <div className="relative overflow-hidden">
@@ -72,11 +61,9 @@ function AccountRow({
         </button>
       </div>
       <div
-        className="flex items-center gap-3 bg-card py-3"
-        style={{ transform: `translateX(${dx}px)`, transition: 'transform 0.2s' }}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
+        className="touch-pan-y flex items-center gap-3 bg-card py-3"
+        style={{ transform: `translateX(${offset}px)`, transition: isDragging ? 'none' : 'transform 0.2s ease-out' }}
+        {...bind}
       >
         <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
           <Icon className="size-4" />

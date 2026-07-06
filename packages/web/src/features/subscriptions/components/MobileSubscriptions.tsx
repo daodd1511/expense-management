@@ -1,8 +1,9 @@
 import { CalendarClock, Pause, Play, Plus, RefreshCw, Trash2 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { SubscriptionLogConfirm } from '@/features/subscriptions/components/SubscriptionLogConfirm'
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm'
 import { SubscriptionsSkeleton } from '@/shared/components/Skeleton'
+import { useSwipeActions } from '@/shared/hooks/useSwipeActions'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { BottomSheet } from '@/shared/components/ui/overlay'
@@ -19,6 +20,8 @@ import { daysUntilDue, isDue, isDueSoon, monthlyEquivalent, totalMonthlyCost } f
 import type { Subscription } from '@/core/types'
 import { todayLocalIso } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
+
+const SWIPE_ACTION_WIDTH = 148
 
 function dueBadge(sub: Subscription, t: (k: string, v?: Record<string, string | number>) => string) {
   const days = daysUntilDue(sub)
@@ -42,21 +45,9 @@ function SubRow({
   onLog: () => void
 }) {
   const { t } = useLang()
-  const [dx, setDx] = useState(0)
-  const startX = useRef<number | null>(null)
+  const { offset, isDragging, bind } = useSwipeActions(SWIPE_ACTION_WIDTH)
   const badge = dueBadge(sub, t as (k: string, v?: Record<string, string | number>) => string)
   const due = isDue(sub)
-
-  const onTouchStart = (e: React.TouchEvent) => { startX.current = e.touches[0].clientX }
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (startX.current == null) return
-    const delta = e.touches[0].clientX - startX.current
-    setDx(Math.max(Math.min(delta, 0), -148))
-  }
-  const onTouchEnd = () => {
-    setDx((d) => (d < -74 ? -148 : 0))
-    startX.current = null
-  }
 
   return (
     <div className="relative overflow-hidden">
@@ -80,11 +71,12 @@ function SubRow({
       </div>
 
       <div
-        className="flex items-center gap-3 bg-card py-3"
-        style={{ transform: `translateX(${dx}px)`, transition: 'transform 0.2s' }}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
+        className="touch-pan-y flex items-center gap-3 bg-card py-3"
+        style={{
+          transform: `translateX(${offset}px)`,
+          transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+        }}
+        {...bind}
       >
         <button
           type="button"

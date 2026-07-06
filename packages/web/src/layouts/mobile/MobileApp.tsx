@@ -42,10 +42,10 @@ export function MobileApp() {
               ? t('nav.planning')
               : t('nav.dashboard')
 
-  const NAV: { href: '/' | '/transactions' | '/budgets' | '/accounts'; label: string; icon: typeof Home; active: boolean; badge?: number }[] = [
+  const NAV: { href: '/' | '/transactions' | '/subscriptions' | '/accounts'; label: string; icon: typeof Home; active: boolean; badge?: number }[] = [
     { href: '/', label: t('nav.home'), icon: Home, active: section === 'dashboard' },
     { href: '/transactions', label: t('nav.transactions'), icon: ArrowLeftRight, active: section === 'transactions' },
-    { href: '/budgets', label: t('nav.planning'), icon: CalendarClock, active: isPlanningSection(section), badge: dueCount },
+    { href: '/subscriptions', label: t('nav.planning'), icon: CalendarClock, active: isPlanningSection(section), badge: dueCount },
     { href: '/accounts', label: t('nav.accounts'), icon: Wallet, active: section === 'accounts' },
   ]
 

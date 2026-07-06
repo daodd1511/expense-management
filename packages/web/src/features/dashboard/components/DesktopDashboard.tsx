@@ -1,10 +1,9 @@
 
-import { ArrowDownLeft, ArrowUpRight, ChevronRight, PiggyBank, Wallet } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, CalendarClock, ChevronRight, PiggyBank, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { DATE_LOCALE } from '@/core/i18n'
 import { BalanceTrendChart, CategoryDonut } from '@/shared/components/Charts'
 import { AccountList } from '@/features/accounts/components/AccountList'
-import { BudgetBars } from '@/features/budgets/components/BudgetBars'
 import { useBalanceTrend } from '@/features/dashboard/queries'
 import { TransactionRow } from '@/features/transactions/components/TransactionRow'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
@@ -16,7 +15,8 @@ import { useTransactions } from '@/features/transactions/queries'
 import { todayLocalMonthIso } from '@/shared/lib/date'
 import { useCategoryLookup } from '@/features/categories/queries'
 import { useAccounts } from '@/features/accounts/queries'
-import { useBudgets } from '@/features/budgets/queries'
+import { useSubscriptions } from '@/features/subscriptions/queries'
+import { isDue, isDueSoon, totalMonthlyCost } from '@/features/subscriptions/helpers'
 import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
@@ -36,7 +36,7 @@ export function DesktopDashboard({
   const { data: transactions = [], isPending: transactionsPending } = useTransactions()
   const { data: balanceTrend = [], isPending: balanceTrendPending } = useBalanceTrend()
   const { isPending: accountsPending } = useAccounts()
-  const { isPending: budgetsPending } = useBudgets()
+  const { data: subscriptions = [], isPending: subscriptionsPending } = useSubscriptions()
   const getCategory = useCategoryLookup()
   const { t, lang } = useLang()
   const summary = monthSummary(transactions)
@@ -44,6 +44,9 @@ export function DesktopDashboard({
   const savingRate = summary.income > 0 ? Math.round((summary.balance / summary.income) * 100) : 0
   const recent = transactions.slice(0, 6)
   const currentMonth = todayLocalMonthIso()
+  const activeSubscriptions = subscriptions.filter((subscription) => subscription.active)
+  const dueSoonSubscriptions = activeSubscriptions.filter((subscription) => isDue(subscription) || isDueSoon(subscription))
+  const monthlySubscriptionCost = totalMonthlyCost(subscriptions)
   const trendData = balanceTrend.map((entry) => ({
     month: toTrendLabel(entry.month, lang),
     balance: entry.balance,
@@ -57,7 +60,7 @@ export function DesktopDashboard({
     })
   }
 
-  if (transactionsPending || balanceTrendPending || accountsPending || budgetsPending) {
+  if (transactionsPending || balanceTrendPending || accountsPending || subscriptionsPending) {
     return <DashboardSkeleton />
   }
 
@@ -112,11 +115,40 @@ export function DesktopDashboard({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>{t('dashboard.budgets')}</CardTitle>
-            <Action label={t('dashboard.viewAll')} onClick={() => onNavigate('budgets')} />
+            <CardTitle>{t('nav.subscriptions')}</CardTitle>
+            <Action label={t('dashboard.viewAll')} onClick={() => onNavigate('subscriptions')} />
           </CardHeader>
-          <CardContent>
-            <BudgetBars limit={4} />
+          <CardContent className="space-y-4">
+            <div className="rounded-xl bg-muted/60 p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CalendarClock className="size-4" />
+                {t('sub.monthlyCost')}
+              </div>
+              <div className="tabular mt-2 text-2xl font-bold tracking-tight">{formatVND(monthlySubscriptionCost)}</div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-border p-4">
+                <div className="text-xs text-muted-foreground">{t('sub.active')}</div>
+                <div className="mt-1 text-2xl font-semibold">{activeSubscriptions.length}</div>
+              </div>
+              <div className="rounded-xl border border-expense/20 bg-expense-muted/20 p-4">
+                <div className="text-xs text-expense">{t('sub.dueSoon')}</div>
+                <div className="mt-1 text-2xl font-semibold">{dueSoonSubscriptions.length}</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {dueSoonSubscriptions.slice(0, 3).map((subscription) => (
+                <div key={subscription.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3 text-sm">
+                  <span className="truncate font-medium">{subscription.name}</span>
+                  <span className="tabular shrink-0 text-muted-foreground">{formatVND(subscription.amount)}</span>
+                </div>
+              ))}
+              {dueSoonSubscriptions.length === 0 && (
+                <div className="rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground">
+                  {t('dashboard.subscriptionsClear')}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 

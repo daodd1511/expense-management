@@ -1,8 +1,9 @@
 
 import { ArrowLeftRight, Paperclip, Pencil, Trash2 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
+import { useSwipeActions } from '@/shared/hooks/useSwipeActions'
 import { amountColorClass, formatSigned, formatTime } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { useCategoryLookup } from '@/features/categories/queries'
@@ -10,6 +11,8 @@ import { useAccountLookup } from '@/features/accounts/queries'
 import { useDeleteTransaction } from '@/features/transactions/queries'
 import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
+
+const SWIPE_ACTION_WIDTH = 132
 
 function formatCategoryLabel({
   categoryName,
@@ -60,9 +63,8 @@ export function TransactionRow({
   const getAccount = useAccountLookup()
   const deleteTx = useDeleteTransaction()
   const { t } = useLang()
-  const [dx, setDx] = useState(0)
+  const { offset, isDragging, bind } = useSwipeActions(SWIPE_ACTION_WIDTH)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
-  const startX = useRef<number | null>(null)
   const cat = getCategory(tx.categoryId)
   const parentCat = cat?.parentId ? getCategory(cat.parentId) : undefined
   const acc = getAccount(tx.accountId)
@@ -78,26 +80,14 @@ export function TransactionRow({
       ? `${acc?.name} → ${getAccount(tx.toAccountId)?.name}`
       : acc?.name
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    startX.current = e.touches[0].clientX
-  }
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (startX.current == null) return
-    const delta = e.touches[0].clientX - startX.current
-    if (delta < 0) setDx(Math.max(delta, -132))
-  }
-  const onTouchEnd = () => {
-    setDx((d) => (d < -66 ? -132 : 0))
-    startX.current = null
-  }
-
   const content = (
     <div
-      className="flex items-center gap-3 bg-card px-1 py-2.5"
-      style={swipe ? { transform: `translateX(${dx}px)`, transition: 'transform 0.2s' } : undefined}
-      onTouchStart={swipe ? onTouchStart : undefined}
-      onTouchMove={swipe ? onTouchMove : undefined}
-      onTouchEnd={swipe ? onTouchEnd : undefined}
+      className={cn('flex items-center gap-3 bg-card px-1 py-2.5', swipe && 'touch-pan-y')}
+      style={swipe ? { transform: `translateX(${offset}px)`, transition: isDragging ? 'none' : 'transform 0.2s ease-out' } : undefined}
+      onTouchStart={swipe ? bind.onTouchStart : undefined}
+      onTouchMove={swipe ? bind.onTouchMove : undefined}
+      onTouchEnd={swipe ? bind.onTouchEnd : undefined}
+      onTouchCancel={swipe ? bind.onTouchCancel : undefined}
     >
       <Leading tx={tx} />
       <button

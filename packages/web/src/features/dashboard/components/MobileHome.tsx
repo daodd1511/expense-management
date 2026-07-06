@@ -3,7 +3,6 @@ import { ArrowDownLeft, ArrowUpRight, ChevronRight, TrendingUp } from 'lucide-re
 import { DATE_LOCALE } from '@/core/i18n'
 import { BalanceTrendChart, CategoryDonut } from '@/shared/components/Charts'
 import { AccountList } from '@/features/accounts/components/AccountList'
-import { BudgetBars } from '@/features/budgets/components/BudgetBars'
 import { useBalanceTrend } from '@/features/dashboard/queries'
 import { TransactionRow } from '@/features/transactions/components/TransactionRow'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -15,7 +14,8 @@ import { useTransactions } from '@/features/transactions/queries'
 import { todayLocalMonthIso } from '@/shared/lib/date'
 import { useCategoryLookup } from '@/features/categories/queries'
 import { useAccounts } from '@/features/accounts/queries'
-import { useBudgets } from '@/features/budgets/queries'
+import { useSubscriptions } from '@/features/subscriptions/queries'
+import { isDue, isDueSoon, totalMonthlyCost } from '@/features/subscriptions/helpers'
 import type { Transaction } from '@/core/types'
 
 function toTrendLabel(month: string, lang: 'vi' | 'en') {
@@ -34,13 +34,16 @@ export function MobileHome({
   const { data: transactions = [], isPending: transactionsPending } = useTransactions()
   const { data: balanceTrend = [], isPending: balanceTrendPending } = useBalanceTrend()
   const { isPending: accountsPending } = useAccounts()
-  const { isPending: budgetsPending } = useBudgets()
+  const { data: subscriptions = [], isPending: subscriptionsPending } = useSubscriptions()
   const getCategory = useCategoryLookup()
   const { t, lang } = useLang()
   const summary = monthSummary(transactions)
   const { data, total } = buildDonutData(transactions, getCategory)
   const recent = transactions.slice(0, 4)
   const currentMonth = todayLocalMonthIso()
+  const activeSubscriptions = subscriptions.filter((subscription) => subscription.active)
+  const dueSoonSubscriptions = activeSubscriptions.filter((subscription) => isDue(subscription) || isDueSoon(subscription))
+  const monthlySubscriptionCost = totalMonthlyCost(subscriptions)
   const trendData = balanceTrend.map((entry) => ({
     month: toTrendLabel(entry.month, lang),
     balance: entry.balance,
@@ -54,7 +57,7 @@ export function MobileHome({
     })
   }
 
-  if (transactionsPending || balanceTrendPending || accountsPending || budgetsPending) {
+  if (transactionsPending || balanceTrendPending || accountsPending || subscriptionsPending) {
     return <DashboardSkeleton mobile />
   }
 
@@ -123,12 +126,35 @@ export function MobileHome({
         </CardContent>
       </Card>
 
-      {/* Budgets */}
+      {/* Subscriptions */}
       <Card>
         <CardContent className="p-5">
-          <SectionTitle title={t('dashboard.budgets')} action={t('dashboard.viewAll')} onAction={() => onNavigate('budgets')} />
-          <div className="mt-4">
-            <BudgetBars limit={3} />
+          <SectionTitle title={t('nav.subscriptions')} action={t('dashboard.viewAll')} onAction={() => onNavigate('subscriptions')} />
+          <div className="mt-4 space-y-3">
+            <div className="rounded-xl bg-muted/60 p-4">
+              <div className="text-xs text-muted-foreground">{t('sub.monthlyCost')}</div>
+              <div className="tabular mt-1 text-2xl font-semibold tracking-tight">
+                {formatVND(monthlySubscriptionCost)}
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                {t('sub.activeCount', { n: activeSubscriptions.length })}
+              </div>
+            </div>
+            {dueSoonSubscriptions.length > 0 ? (
+              <div className="rounded-xl border border-expense/20 bg-expense-muted/20 p-4">
+                <div className="text-xs font-medium text-expense">{t('sub.dueSoon')}</div>
+                <div className="mt-1 text-sm">
+                  {dueSoonSubscriptions[0]?.name}
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {t('dashboard.subscriptionsDueCount', { n: dueSoonSubscriptions.length })}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-border bg-background p-4 text-xs text-muted-foreground">
+                {t('dashboard.subscriptionsClear')}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

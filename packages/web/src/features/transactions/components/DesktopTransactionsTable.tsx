@@ -1,4 +1,15 @@
 import { ArrowLeftRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Paperclip, Pencil, Search, Trash2 } from 'lucide-react'
+import {
+  type ColumnDef,
+  type PaginationState,
+  type RowSelectionState,
+  type SortingState,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAccounts, useAccountLookup } from '@/features/accounts/queries'
 import { useCategories, useCategoryLookup } from '@/features/categories/queries'
@@ -14,11 +25,22 @@ import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Input } from '@/shared/components/ui/input'
 import { TransactionsSkeleton } from '@/shared/components/Skeleton'
 import { Select, SelectItem, SelectPopup, SelectPortal, SelectPositioner, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { amountColorClass, formatShortDate, formatSigned } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/utils'
 
-type SortKey = 'date' | 'category' | 'account' | 'amount'
 const PAGE_SIZE = 9
+
+type TransactionRow = {
+  id: string
+  transaction: Transaction
+  dateLabel: string
+  categoryLabel: string
+  noteLabel?: string
+  categoryIcon?: string
+  categoryColor: string
+  accountLabel: string
+}
 
 function getTransactionCategoryLabel({
   transaction,
@@ -68,10 +90,9 @@ export function DesktopTransactionsTable({
   const getAccount = useAccountLookup()
   const deleteTxs = useDeleteTransactions()
   const { t } = useLang()
-  const [sortKey, setSortKey] = useState<SortKey>('date')
-  const [asc, setAsc] = useState(false)
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [page, setPage] = useState(1)
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }])
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: PAGE_SIZE })
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([])
   const searchRef = useRef<HTMLInputElement | null>(null)
 
@@ -83,7 +104,8 @@ export function DesktopTransactionsTable({
   ]
 
   const filtered = useMemo(() => {
-    const rows = transactions.filter((tx) => {
+    return transactions
+      .filter((tx) => {
       if (type !== 'all' && tx.type !== type) return false
       if (categoryId && tx.categoryId !== categoryId) return false
       if (accountId && tx.accountId !== accountId) return false
@@ -102,68 +124,193 @@ export function DesktopTransactionsTable({
       }
       return true
     })
+      .map<TransactionRow>((tx) => {
+        const category = getCategory(tx.categoryId)
 
-    const direction = asc ? 1 : -1
-    return [...rows].sort((a, b) => {
-      switch (sortKey) {
-        case 'category':
-          return getTransactionCategoryLabel({
-            transaction: a,
-            categoryName: getCategory(a.categoryId)?.name,
+        return {
+          id: tx.id,
+          transaction: tx,
+          dateLabel: formatShortDate(tx.date),
+          categoryLabel: getTransactionCategoryLabel({
+            transaction: tx,
+            categoryName: category?.name,
             transferLabel: t('tx.transfer'),
-          }).localeCompare(
-            getTransactionCategoryLabel({
-              transaction: b,
-              categoryName: getCategory(b.categoryId)?.name,
-              transferLabel: t('tx.transfer'),
-            }),
-          ) * direction
-        case 'account':
-          return (getAccount(a.accountId)?.name ?? '').localeCompare(getAccount(b.accountId)?.name ?? '') * direction
-        case 'amount':
-          return (a.amount - b.amount) * direction
-        default:
-          return a.date.localeCompare(b.date) * direction
-      }
-    })
-  }, [transactions, type, categoryId, accountId, query, sortKey, asc, getCategory, getAccount, t])
+          }),
+          noteLabel: tx.note?.trim() || undefined,
+          categoryIcon: category?.icon,
+          categoryColor: category?.color ?? 'chart-1',
+          accountLabel: getAccount(tx.accountId)?.name ?? '',
+        }
+      })
+  }, [transactions, type, categoryId, accountId, query, getCategory, getAccount, t])
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const current = Math.min(page, pageCount)
-  const rows = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
+  const columns = useMemo<ColumnDef<TransactionRow>[]>(
+    () => [
+      {
+        id: 'select',
+        enableSorting: false,
+        header: ({ table }) => (
+          <input
+            type="checkbox"
+            checked={table.getIsAllPageRowsSelected()}
+            onChange={table.getToggleAllPageRowsSelectedHandler()}
+            aria-label={t('tx.selectAll')}
+            className="size-4 accent-primary"
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            onChange={row.getToggleSelectedHandler()}
+            aria-label={t('tx.selectItem', { name: row.original.categoryLabel })}
+            className="size-4 accent-primary"
+          />
+        ),
+      },
+      {
+        accessorKey: 'dateLabel',
+        id: 'date',
+        sortingFn: (a, b) => a.original.transaction.date.localeCompare(b.original.transaction.date),
+        header: ({ column }) => (
+          <SortHeader
+            label={t('tx.colDate')}
+            sorted={column.getIsSorted()}
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          />
+        ),
+        cell: ({ row }) => <span className="tabular whitespace-nowrap text-muted-foreground">{row.original.dateLabel}</span>,
+      },
+      {
+        accessorKey: 'categoryLabel',
+        id: 'category',
+        sortingFn: 'alphanumeric',
+        header: ({ column }) => (
+          <SortHeader
+            label={t('tx.colCategory')}
+            sorted={column.getIsSorted()}
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          />
+        ),
+        cell: ({ row }) => {
+          const tx = row.original.transaction
 
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setAsc((currentAsc) => !currentAsc)
-      return
-    }
+          if (tx.type === 'transfer') {
+            return (
+              <span className="inline-flex items-center gap-1.5 text-transfer">
+                <ArrowLeftRight className="size-3.5" /> {t('tx.transfer')}
+              </span>
+            )
+          }
 
-    setSortKey(key)
-    setAsc(false)
-  }
+          return (
+            <span className="inline-flex items-center gap-1.5">
+              <CategoryIcon
+                name={row.original.categoryIcon}
+                className="size-3.5"
+                style={{ color: colorVar(row.original.categoryColor) }}
+              />
+              <span className="flex items-center gap-1.5">
+                {row.original.categoryLabel}
+                {tx.receipt && <Paperclip className="size-3 text-muted-foreground" />}
+              </span>
+            </span>
+          )
+        },
+      },
+      {
+        accessorKey: 'noteLabel',
+        id: 'description',
+        sortingFn: 'alphanumeric',
+        header: ({ column }) => (
+          <SortHeader
+            label={t('tx.colDescription')}
+            sorted={column.getIsSorted()}
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          />
+        ),
+        cell: ({ row }) => (
+          <span className="block max-w-[20rem] truncate text-muted-foreground">
+            {row.original.noteLabel ?? '—'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'accountLabel',
+        id: 'account',
+        sortingFn: 'alphanumeric',
+        header: ({ column }) => (
+          <SortHeader
+            label={t('tx.colAccount')}
+            sorted={column.getIsSorted()}
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          />
+        ),
+        cell: ({ row }) => <span className="text-muted-foreground">{row.original.accountLabel}</span>,
+      },
+      {
+        accessorKey: 'amount',
+        id: 'amount',
+        sortingFn: (a, b) => a.original.transaction.amount - b.original.transaction.amount,
+        header: ({ column }) => (
+          <SortHeader
+            label={t('tx.colAmount')}
+            sorted={column.getIsSorted()}
+            align="right"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          />
+        ),
+        cell: ({ row }) => (
+          <span className={cn('block text-right tabular font-semibold', amountColorClass(row.original.transaction.type))}>
+            {formatSigned(row.original.transaction.amount, row.original.transaction.type)}
+          </span>
+        ),
+      },
+      {
+        id: 'actions',
+        enableSorting: false,
+        header: () => null,
+        cell: ({ row }) => (
+          <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            <button
+              type="button"
+              onClick={() => onEdit(row.original.transaction)}
+              aria-label={t('tx.edit')}
+              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <Pencil className="size-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPendingDeleteIds([row.original.transaction.id])}
+              aria-label={t('tx.deleteOne')}
+              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-expense-muted hover:text-expense"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          </div>
+        ),
+      },
+    ],
+    [onEdit, t],
+  )
 
-  const allOnPageSelected = rows.length > 0 && rows.every((row) => selected.has(row.id))
-
-  const handleToggleAll = () => {
-    setSelected((previous) => {
-      const next = new Set(previous)
-      if (allOnPageSelected) rows.forEach((row) => next.delete(row.id))
-      else rows.forEach((row) => next.add(row.id))
-      return next
-    })
-  }
-
-  const handleToggleOne = (id: string) => {
-    setSelected((previous) => {
-      const next = new Set(previous)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
+  const table = useReactTable({
+    data: filtered,
+    columns,
+    state: { sorting, rowSelection, pagination },
+    onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
+    onPaginationChange: setPagination,
+    getRowId: (row) => row.id,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  })
 
   const handleConfirmDelete = async () => {
     await deleteTxs.mutateAsync(pendingDeleteIds)
-    setSelected(new Set())
+    setRowSelection({})
     setPendingDeleteIds([])
   }
 
@@ -174,9 +321,17 @@ export function DesktopTransactionsTable({
     onSearchFocusHandled?.()
   }, [shouldFocusSearch, onSearchFocusHandled])
 
+  useEffect(() => {
+    setPagination((current) => ({ ...current, pageIndex: 0 }))
+  }, [month, query, type, categoryId, accountId])
+
   if (transactionsPending || categoriesPending || accountsPending) {
     return <TransactionsSkeleton />
   }
+
+  const selectedCount = table.getFilteredSelectedRowModel().rows.length
+  const pageCount = Math.max(1, table.getPageCount())
+  const currentPage = table.getState().pagination.pageIndex + 1
 
   return (
     <div className="flex flex-col gap-4">
@@ -190,7 +345,6 @@ export function DesktopTransactionsTable({
             value={query}
             onChange={(event) => {
               onQueryChange(event.target.value)
-              setPage(1)
             }}
             placeholder={t('tx.search')}
             className="pl-9"
@@ -204,7 +358,6 @@ export function DesktopTransactionsTable({
             emptyLabel={t('tx.filterCategoryAll')}
             onChange={(value) => {
               onCategoryChange(value)
-              setPage(1)
             }}
           />
         </div>
@@ -216,7 +369,6 @@ export function DesktopTransactionsTable({
             options={accounts.map((account) => ({ value: account.id, label: account.name }))}
             onChange={(value) => {
               onAccountChange(value)
-              setPage(1)
             }}
           />
         </div>
@@ -227,7 +379,6 @@ export function DesktopTransactionsTable({
               type="button"
               onClick={() => {
                 onTypeChange(filterOption.value)
-                setPage(1)
               }}
               className={cn(
                 'rounded-md px-3 py-1 text-sm font-medium transition-colors',
@@ -243,14 +394,18 @@ export function DesktopTransactionsTable({
         <span className="ml-auto text-sm text-muted-foreground">{t('tx.count', { n: filtered.length })}</span>
       </div>
 
-      {selected.size > 0 && (
+      {selectedCount > 0 && (
         <div className="flex items-center justify-between rounded-lg border border-border bg-accent px-4 py-2 text-sm">
-          <span className="font-medium text-accent-foreground">{t('tx.selected', { n: selected.size })}</span>
+          <span className="font-medium text-accent-foreground">{t('tx.selected', { n: selectedCount })}</span>
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+            <Button variant="ghost" size="sm" onClick={() => setRowSelection({})}>
               {t('tx.deselect')}
             </Button>
-            <Button variant="destructive" size="sm" onClick={() => setPendingDeleteIds(Array.from(selected))}>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setPendingDeleteIds(table.getFilteredSelectedRowModel().rows.map((row) => row.original.transaction.id))}
+            >
               <Trash2 className="size-3.5" /> {t('tx.delete')}
             </Button>
           </div>
@@ -258,111 +413,69 @@ export function DesktopTransactionsTable({
       )}
 
       <div className="overflow-hidden rounded-xl border border-border bg-card">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/40 text-left text-xs text-muted-foreground">
-              <th className="w-10 px-4 py-3">
-                <input
-                  type="checkbox"
-                  checked={allOnPageSelected}
-                  onChange={handleToggleAll}
-                  aria-label={t('tx.selectAll')}
-                  className="size-4 accent-primary"
-                />
-              </th>
-              <SortHeader label={t('tx.colDate')} col="date" sortKey={sortKey} asc={asc} onClick={handleSort} />
-              <SortHeader label={t('tx.colCategory')} col="category" sortKey={sortKey} asc={asc} onClick={handleSort} />
-              <SortHeader label={t('tx.colAccount')} col="account" sortKey={sortKey} asc={asc} onClick={handleSort} />
-              <SortHeader label={t('tx.colAmount')} col="amount" sortKey={sortKey} asc={asc} onClick={handleSort} align="right" />
-              <th className="w-20 px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {rows.map((row) => {
-              const category = getCategory(row.categoryId)
-              const categoryLabel = getTransactionCategoryLabel({
-                transaction: row,
-                categoryName: category?.name,
-                transferLabel: t('tx.transfer'),
-              })
-
-              return (
-                <tr
-                  key={row.id}
-                  className={cn('group transition-colors hover:bg-muted/40', selected.has(row.id) && 'bg-accent/40')}
-                >
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selected.has(row.id)}
-                      onChange={() => handleToggleOne(row.id)}
-                      aria-label={t('tx.selectItem', { name: categoryLabel })}
-                      className="size-4 accent-primary"
-                    />
-                  </td>
-                  <td className="px-4 py-3 tabular whitespace-nowrap text-muted-foreground">
-                    {formatShortDate(row.date)}
-                  </td>
-                  <td className="px-4 py-3">
-                    {row.type === 'transfer' ? (
-                      <span className="inline-flex items-center gap-1.5 text-transfer">
-                        <ArrowLeftRight className="size-3.5" /> {t('tx.transfer')}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5">
-                        <CategoryIcon
-                          name={category?.icon}
-                          className="size-3.5"
-                          style={{ color: colorVar(category?.color ?? 'chart-1') }}
-                        />
-                        <span className="flex items-center gap-1.5">
-                          {category?.name}
-                          {row.receipt && <Paperclip className="size-3 text-muted-foreground" />}
-                        </span>
-                      </span>
+        <Table>
+          <TableHeader className="bg-muted/40 text-xs">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className={cn(
+                      header.id === 'select' && 'w-10',
+                      header.id === 'actions' && 'w-20',
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{getAccount(row.accountId)?.name}</td>
-                  <td className={cn('px-4 py-3 text-right tabular font-semibold', amountColorClass(row.type))}>
-                    {formatSigned(row.amount, row.type)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                      <button
-                        type="button"
-                        onClick={() => onEdit(row)}
-                        aria-label={t('tx.edit')}
-                        className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                      >
-                        <Pencil className="size-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPendingDeleteIds([row.id])}
-                        aria-label={t('tx.deleteOne')}
-                        className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-expense-muted hover:text-expense"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-        {rows.length === 0 && (
-          <p className="py-12 text-center text-sm text-muted-foreground">{t('tx.notFound')}</p>
-        )}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  className="group"
+                  data-state={row.getIsSelected() ? 'selected' : undefined}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={columns.length} className="py-12 text-center text-sm text-muted-foreground">
+                  {t('tx.notFound')}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>{t('tx.page', { n: current, total: pageCount })}</span>
+        <span>{t('tx.page', { n: currentPage, total: pageCount })}</span>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" disabled={current <= 1} onClick={() => setPage(current - 1)}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!table.getCanPreviousPage()}
+            onClick={() => table.previousPage()}
+          >
             <ChevronLeft className="size-3.5" /> {t('tx.pagePrev')}
           </Button>
-          <Button variant="outline" size="sm" disabled={current >= pageCount} onClick={() => setPage(current + 1)}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!table.getCanNextPage()}
+            onClick={() => table.nextPage()}
+          >
             {t('tx.pageNext')} <ChevronRight className="size-3.5" />
           </Button>
         </div>
@@ -413,38 +526,32 @@ function FilterSelect({
 
 function SortHeader({
   label,
-  col,
-  sortKey,
-  asc,
+  sorted,
   onClick,
   align = 'left',
 }: {
   label: string
-  col: SortKey
-  sortKey: SortKey
-  asc: boolean
-  onClick: (col: SortKey) => void
+  sorted: false | 'asc' | 'desc'
+  onClick: () => void
   align?: 'left' | 'right'
 }) {
-  const active = sortKey === col
-
   return (
-    <th className={cn('px-4 py-3 font-medium', align === 'right' && 'text-right')}>
+    <div className={cn(align === 'right' && 'text-right')}>
       <button
         type="button"
-        onClick={() => onClick(col)}
+        onClick={onClick}
         className={cn(
           'inline-flex items-center gap-1 transition-colors hover:text-foreground',
           align === 'right' && 'ml-auto',
         )}
       >
         {label}
-        {active ? (
-          asc ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />
+        {sorted ? (
+          sorted === 'asc' ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />
         ) : (
           <ChevronDown className="size-3.5 opacity-40" />
         )}
       </button>
-    </th>
+    </div>
   )
 }

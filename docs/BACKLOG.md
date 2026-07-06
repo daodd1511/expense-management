@@ -19,6 +19,5 @@ their session summary). Delete a line when the item ships or graduates into a
 - [ ] Add adjustment account feature (2026-07-05)
 - [ ] Add fee feature (2026-07-05)
 - [ ] Better credit card information: view balance, due date, payment status (2026-07-05)
-- [ ] Use shadcn data table (2026-07-06)
 
 ## Ideas
