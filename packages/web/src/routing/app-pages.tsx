@@ -1,21 +1,28 @@
 import { startTransition } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useLocation, useNavigate } from '@tanstack/react-router'
+import { Link, useLocation, useNavigate } from '@tanstack/react-router'
+import { ArrowLeftRight, CalendarClock, Settings, Tags, Target } from 'lucide-react'
 import { SubscriptionDueBanner } from '@/features/subscriptions/components/SubscriptionDueBanner'
+import { useTransactionOverlay } from '@/features/transactions/transaction-overlay'
 import { useAuth } from '@/features/auth/auth'
 import { MobileAccounts } from '@/features/accounts/components/MobileAccounts'
 import { DesktopAccounts } from '@/features/accounts/components/DesktopAccounts'
 import { DesktopBudgets } from '@/features/budgets/components/DesktopBudgets'
+import { MobileBudgets } from '@/features/budgets/components/MobileBudgets'
 import { CategoriesPage } from '@/features/categories/components/CategoriesPage'
 import { DesktopDashboard } from '@/features/dashboard/components/DesktopDashboard'
 import { MobileHome } from '@/features/dashboard/components/MobileHome'
 import { DesktopSettings } from '@/features/settings/components/Settings'
 import { MobileSettings } from '@/features/settings/components/MobileSettings'
 import { DesktopSubscriptions } from '@/features/subscriptions/components/DesktopSubscriptions'
+import { MobileSubscriptions } from '@/features/subscriptions/components/MobileSubscriptions'
+import { ReportsPage as ReportsShell } from '@/features/reports/components/ReportsPage'
 import { DesktopTransactionsTable } from '@/features/transactions/components/DesktopTransactionsTable'
 import { MobileTransactions } from '@/features/transactions/components/MobileTransactions'
-import { MobilePlanning } from '@/layouts/mobile/MobilePlanning'
 import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicator'
+import { MobilePageContainer } from '@/shared/components/MobilePageContainer'
+import { Card, CardContent } from '@/shared/components/ui/card'
+import { useLang } from '@/core/i18n'
 import { useIsDesktop } from '@/shared/hooks/useIsDesktop'
 import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
 import type { Transaction } from '@/core/types'
@@ -33,21 +40,15 @@ function useAppNavigation() {
     goSubscriptions: () => navigate({ to: '/subscriptions' }),
     goAccounts: () => navigate({ to: '/accounts' }),
     goSettings: () => navigate({ to: '/settings' }),
-    goCategories: () => navigate({ to: '/settings/categories' }),
+    goOther: () => navigate({ to: '/other' }),
   }
 }
 
 function useTransactionNavigation() {
-  const navigate = useNavigate()
-  const location = useLocation()
+  const { openEdit } = useTransactionOverlay()
 
   return {
-    openEdit: (transaction: Transaction) =>
-      navigate({
-        to: '/transactions/$transactionId/edit',
-        params: { transactionId: transaction.id },
-        search: { returnTo: location.href },
-      }),
+    openEdit: (transaction: Transaction) => openEdit(transaction.id, transaction.date.slice(0, 7)),
   }
 }
 
@@ -189,29 +190,16 @@ function useCreateIntent(path: '/accounts' | '/budgets' | '/subscriptions') {
 
 export function BudgetsPage() {
   const isDesktop = useIsDesktop()
-  const navigation = useAppNavigation()
   const createIntent = useCreateIntent('/budgets')
 
-  return isDesktop ? (
-    <DesktopBudgets {...createIntent} />
-  ) : (
-    <MobilePlanning tab="budgets" onTabChange={(tab) => (tab === 'budgets' ? navigation.goBudgets() : navigation.goSubscriptions())} />
-  )
+  return isDesktop ? <DesktopBudgets {...createIntent} /> : <MobileBudgets />
 }
 
 export function SubscriptionsPage() {
   const isDesktop = useIsDesktop()
-  const navigation = useAppNavigation()
   const createIntent = useCreateIntent('/subscriptions')
 
-  return isDesktop ? (
-    <DesktopSubscriptions {...createIntent} />
-  ) : (
-    <MobilePlanning
-      tab="subscriptions"
-      onTabChange={(tab) => (tab === 'budgets' ? navigation.goBudgets() : navigation.goSubscriptions())}
-    />
-  )
+  return isDesktop ? <DesktopSubscriptions {...createIntent} /> : <MobileSubscriptions />
 }
 
 export function AccountsPage() {
@@ -221,15 +209,14 @@ export function AccountsPage() {
   return isDesktop ? <DesktopAccounts {...createIntent} /> : <MobileAccounts />
 }
 
+export function ReportsPage() {
+  return <ReportsShell />
+}
+
 export function SettingsPage() {
   const isDesktop = useIsDesktop()
-  const navigation = useAppNavigation()
 
-  return isDesktop ? (
-    <DesktopSettings onNavigateToCategories={navigation.goCategories} />
-  ) : (
-    <MobileSettings onNavigateToCategories={navigation.goCategories} />
-  )
+  return isDesktop ? <DesktopSettings /> : <MobileSettings />
 }
 
 export function SettingsCategoriesPage() {
@@ -239,8 +226,75 @@ export function SettingsCategoriesPage() {
   return (
     <CategoriesPage
       variant={isDesktop ? 'desktop' : 'mobile'}
-      onBack={navigation.goSettings}
+      onBack={navigation.goOther}
     />
+  )
+}
+
+export function OtherPage() {
+  const { t } = useLang()
+
+  const items = [
+    {
+      to: '/transactions',
+      label: t('other.transactions'),
+      description: t('other.transactionsDesc'),
+      icon: ArrowLeftRight,
+    },
+    {
+      to: '/budgets',
+      label: t('other.budgets'),
+      description: t('other.budgetsDesc'),
+      icon: Target,
+    },
+    {
+      to: '/subscriptions',
+      label: t('other.subscriptions'),
+      description: t('other.subscriptionsDesc'),
+      icon: CalendarClock,
+    },
+    {
+      to: '/settings/categories',
+      label: t('other.categories'),
+      description: t('other.categoriesDesc'),
+      icon: Tags,
+    },
+    {
+      to: '/settings',
+      label: t('other.settings'),
+      description: t('other.settingsDesc'),
+      icon: Settings,
+    },
+  ] as const
+
+  return (
+    <MobilePageContainer className="gap-6 lg:p-0">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">{t('other.title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('other.subtitle')}</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {items.map((item) => {
+          const Icon = item.icon
+          return (
+            <Link key={item.to} to={item.to} className="block">
+              <Card className="h-full transition-colors hover:bg-muted/50">
+                <CardContent className="flex h-full items-start gap-3 p-5">
+                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+                    <Icon className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">{item.label}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          )
+        })}
+      </div>
+    </MobilePageContainer>
   )
 }
 
@@ -248,6 +302,8 @@ export function AppRouteContent({ pathname }: { pathname: string }) {
   const section = sectionFromPath(pathname)
 
   switch (section) {
+    case 'reports':
+      return <ReportsPage />
     case 'transactions':
       return <TransactionsPage />
     case 'budgets':
@@ -256,6 +312,8 @@ export function AppRouteContent({ pathname }: { pathname: string }) {
       return <SubscriptionsPage />
     case 'accounts':
       return <AccountsPage />
+    case 'other':
+      return <OtherPage />
     case 'settings':
       return <SettingsPage />
     case 'settings-categories':

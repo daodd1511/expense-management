@@ -28,6 +28,17 @@ export {
   type CategoryPatch,
   type CategoryRow,
 } from './category.dto'
+export {
+  incomeExpenseReportResponseSchema,
+  reportCategoryAggregateSchema,
+  reportSeriesPointSchema,
+  reportTransactionRowSchema,
+  type IncomeExpenseReport,
+  type IncomeExpenseReportResponse,
+  type ReportCategoryAggregate,
+  type ReportSeriesPoint,
+  type ReportTransactionRow,
+} from './report.dto'
 export { atLeastOneKey, isoDateSchema, monthFilterSchema } from './common.dto'
 export {
   favoriteCreateSchema,

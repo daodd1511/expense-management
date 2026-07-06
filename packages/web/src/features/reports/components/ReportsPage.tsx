@@ -1,0 +1,123 @@
+import { useEffect, useState } from 'react'
+import { ChartPie } from 'lucide-react'
+import { useLocation, useNavigate } from '@tanstack/react-router'
+import { useLang } from '@/core/i18n'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Select, SelectItem, SelectPopup, SelectPortal, SelectPositioner, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
+import { TransactionsMonthSwitcher } from '@/features/transactions/components/TransactionsMonthSwitcher'
+import { MobilePageContainer } from '@/shared/components/MobilePageContainer'
+import { useIsDesktop } from '@/shared/hooks/useIsDesktop'
+import { DEFAULT_REPORT_TYPE_ID, REPORT_TYPES, type ReportTypeId } from '../report-types'
+import { currentReportMonth } from '../report-date'
+import { IncomeExpenseReport } from './IncomeExpenseReport'
+
+const REPORT_TYPE_OPTIONS = Object.values(REPORT_TYPES)
+
+export function ReportsPage() {
+  const { t } = useLang()
+  const isDesktop = useIsDesktop()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [activeType, setActiveType] = useState<ReportTypeId>(DEFAULT_REPORT_TYPE_ID)
+  const activeReportType = REPORT_TYPES[activeType]
+
+  const isReportsRoute = location.pathname === '/reports'
+  const searchMonth = isReportsRoute ? getSearchMonth(location.search as Record<string, unknown>) : undefined
+  const [selectedMonth, setSelectedMonth] = useState(() => currentReportMonth(searchMonth))
+
+  useEffect(() => {
+    if (isReportsRoute && !searchMonth) {
+      void navigate({ to: '/reports', search: { month: selectedMonth }, replace: true })
+    }
+  }, [isReportsRoute, navigate, searchMonth, selectedMonth])
+
+  useEffect(() => {
+    if (isReportsRoute && searchMonth && searchMonth !== selectedMonth) {
+      setSelectedMonth(searchMonth)
+    }
+  }, [isReportsRoute, searchMonth, selectedMonth])
+
+  const handleMonthChange = (nextMonth: string) => {
+    setSelectedMonth(nextMonth)
+    void navigate({ to: '/reports', search: { month: nextMonth }, replace: true })
+  }
+
+  return (
+    <MobilePageContainer className="gap-6 lg:gap-4 lg:p-0">
+      {isDesktop ? (
+        <>
+          <div className="flex flex-col gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">{t('reports.title')}</h1>
+            <p className="text-sm text-muted-foreground">{t('reports.subtitle')}</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <ReportTypeSelect value={activeType} onChange={setActiveType} className="w-56" />
+            {activeType === 'income-expense' && (
+              <TransactionsMonthSwitcher month={selectedMonth} onChange={handleMonthChange} />
+            )}
+          </div>
+        </>
+      ) : (
+        <Card>
+          <CardHeader className="flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <ChartPie className="size-4 text-muted-foreground" />
+              <CardTitle>{t('reports.typeLabel')}</CardTitle>
+            </div>
+            <div className="w-full sm:max-w-xs">
+              <ReportTypeSelect value={activeType} onChange={setActiveType} />
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            <p className="text-sm font-medium">{t(activeReportType.labelKey)}</p>
+            <p className="text-sm text-muted-foreground">{t(activeReportType.descriptionKey)}</p>
+            {activeType === 'income-expense' && (
+              <TransactionsMonthSwitcher month={selectedMonth} onChange={handleMonthChange} className="justify-between sm:justify-start sm:self-start" />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {activeType === 'income-expense' && <IncomeExpenseReport month={selectedMonth} />}
+    </MobilePageContainer>
+  )
+}
+
+function getSearchMonth(search: Record<string, unknown>) {
+  return typeof search.month === 'string' && /^\d{4}-\d{2}$/.test(search.month) ? search.month : undefined
+}
+
+function ReportTypeSelect({
+  value,
+  onChange,
+  className,
+}: {
+  value: ReportTypeId
+  onChange: (value: ReportTypeId) => void
+  className?: string
+}) {
+  const { t } = useLang()
+
+  return (
+    <Select value={value} onValueChange={(nextValue) => nextValue && onChange(nextValue as ReportTypeId)}>
+      <SelectTrigger aria-label={t('reports.typeLabel')} className={className}>
+        <SelectValue>{t(REPORT_TYPES[value].labelKey)}</SelectValue>
+      </SelectTrigger>
+      <SelectPortal>
+        <SelectPositioner>
+          <SelectPopup>
+            {REPORT_TYPE_OPTIONS.map((option) => (
+              <SelectItem key={option.id} value={option.id}>
+                <div className="flex flex-col items-start gap-0.5">
+                  <span>{t(option.labelKey)}</span>
+                  <span className="text-xs text-muted-foreground">{t(option.descriptionKey)}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectPopup>
+        </SelectPositioner>
+      </SelectPortal>
+    </Select>
+  )
+}

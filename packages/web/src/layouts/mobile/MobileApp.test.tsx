@@ -4,11 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { MobileApp } from './MobileApp'
 
 const navigate = vi.fn()
-const quickAddSheet = vi.fn<(props: {
-  open: boolean
-  returnTo: string
-  onClose: () => void
-}) => null>(() => null)
+const openCreate = vi.fn()
 
 vi.mock('@tanstack/react-router', () => ({
   Outlet: () => <div>outlet</div>,
@@ -20,19 +16,9 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => navigate,
 }))
 
-vi.mock('@/features/transactions/components/TransactionRouteOverlay', () => ({
-  TransactionRouteOverlay: () => null,
-}))
-
-vi.mock('@/features/transactions/components/MobileQuickAddTransactionSheet', () => ({
-  MobileQuickAddTransactionSheet: (props: {
-    open: boolean
-    returnTo: string
-    onClose: () => void
-  }) => {
-    quickAddSheet(props)
-    return props.open ? <div data-testid="quick-add-sheet" /> : null
-  },
+vi.mock('@/features/transactions/transaction-overlay', () => ({
+  useTransactionOverlay: () => ({ openCreate, openEdit: vi.fn(), close: vi.fn() }),
+  TransactionOverlaySheet: () => null,
 }))
 
 vi.mock('@/shared/components/LoadingScreen', () => ({
@@ -44,18 +30,14 @@ vi.mock('@/core/i18n', () => ({
     t: (key: string) =>
       ({
         'nav.home': 'Home',
-        'nav.transactions': 'Transactions',
-        'nav.planning': 'Planning',
         'nav.accounts': 'Accounts',
+        'nav.reports': 'Reports',
+        'nav.other': 'Other',
         'nav.settings': 'Settings',
         'nav.dashboard': 'Dashboard',
         'app.addTransaction': 'Add transaction',
       })[key] ?? key,
   }),
-}))
-
-vi.mock('@/routing/app-pages', () => ({
-  AppRouteContent: () => <div>route-content</div>,
 }))
 
 vi.mock('@/features/transactions/queries', () => ({
@@ -75,22 +57,27 @@ vi.mock('@/features/subscriptions/helpers', () => ({
 }))
 
 describe('MobileApp', () => {
-  it('opens the quick-add sheet without routing to /transactions/new', async () => {
+  it('opens the transaction overlay without routing to /transactions/new', async () => {
     const user = userEvent.setup()
-    quickAddSheet.mockClear()
+    openCreate.mockClear()
     navigate.mockReset()
 
     render(<MobileApp />)
 
+    const home = screen.getByRole('button', { name: 'Home' })
+    const accounts = screen.getByRole('button', { name: 'Accounts' })
+    const reports = screen.getByRole('button', { name: 'Reports' })
+    const other = screen.getByRole('button', { name: 'Other' })
+
+    expect(home.compareDocumentPosition(accounts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(accounts.compareDocumentPosition(reports) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(reports.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
     await user.click(screen.getByRole('button', { name: 'Add transaction' }))
 
-    expect(screen.getByTestId('quick-add-sheet')).toBeTruthy()
+    expect(openCreate).toHaveBeenCalledWith('2026-07')
     expect(navigate).not.toHaveBeenCalledWith(
       expect.objectContaining({ to: '/transactions/new' }),
     )
-    expect(quickAddSheet.mock.calls.at(-1)?.[0]).toMatchObject({
-      open: true,
-      returnTo: '/?month=2026-07',
-    })
   })
 })

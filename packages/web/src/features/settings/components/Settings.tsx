@@ -1,19 +1,13 @@
-import { Check, ChevronRight, LogOut, Moon, Sun } from 'lucide-react'
+import { Check, LogOut, Moon, Sun } from 'lucide-react'
 import { useTheme } from '@/shared/components/ThemeProvider'
 import { Button } from '@/shared/components/ui/button'
 import { Card } from '@/shared/components/ui/card'
 import { useAuth } from '@/features/auth/auth'
 import { useLang } from '@/core/i18n'
-import { useCategories } from '@/features/categories/queries'
 import type { Lang } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
-export function DesktopSettings({
-  onNavigateToCategories,
-}: {
-  onNavigateToCategories: () => void
-}) {
-  const { data: categories = [] } = useCategories()
+export function DesktopSettings() {
   const { theme, setTheme } = useTheme()
   const { t, lang, setLang } = useLang()
   const { user, signOut } = useAuth()
@@ -82,21 +76,6 @@ export function DesktopSettings({
               )
             })}
           </div>
-        </Card>
-
-        {/* Categories */}
-        <Card className="p-0 lg:col-span-2">
-          <button
-            type="button"
-            onClick={onNavigateToCategories}
-            className="flex w-full items-center justify-between gap-4 rounded-xl p-6 text-left transition-colors hover:bg-muted"
-          >
-            <div>
-              <h2 className="text-base font-semibold">{t('settings.categories')}</h2>
-              <p className="text-sm text-muted-foreground">{t('settings.categoriesActive', { n: categories.length })}</p>
-            </div>
-            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-          </button>
         </Card>
 
         {/* Account */}

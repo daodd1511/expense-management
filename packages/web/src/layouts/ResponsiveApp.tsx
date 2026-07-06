@@ -1,6 +1,7 @@
 
 import { DesktopApp } from '@/layouts/desktop/DesktopApp'
 import { MobileApp } from '@/layouts/mobile/MobileApp'
+import { TransactionOverlayProvider } from '@/features/transactions/transaction-overlay'
 import { useIsDesktop } from '@/shared/hooks/useIsDesktop'
 
 export function ResponsiveApp() {
@@ -10,5 +11,9 @@ export function ResponsiveApp() {
     return <div className="min-h-dvh bg-background" />
   }
 
-  return isDesktop ? <DesktopApp /> : <MobileApp />
+  return (
+    <TransactionOverlayProvider>
+      {isDesktop ? <DesktopApp /> : <MobileApp />}
+    </TransactionOverlayProvider>
+  )
 }

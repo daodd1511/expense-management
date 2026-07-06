@@ -12,6 +12,7 @@ import type { TransactionFilterType } from '@/features/transactions/view-state'
 import { useLang } from '@/core/i18n'
 import type { Transaction } from '@/core/types'
 import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicator'
+import { MobilePageContainer } from '@/shared/components/MobilePageContainer'
 import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
 import { Input } from '@/shared/components/ui/input'
 import { TransactionsSkeleton } from '@/shared/components/Skeleton'
@@ -108,8 +109,8 @@ export function MobileTransactions({
         isArmed={pullToRefresh.isArmed}
         isRefreshing={pullToRefresh.isRefreshing}
       />
-      <div
-        className="flex flex-col gap-3 p-4"
+      <MobilePageContainer
+        className="gap-3"
         style={{
           transform: `translateY(${pullToRefresh.pullDistance}px)`,
           transition: 'transform var(--duration-base) var(--ease-out)',
@@ -206,7 +207,7 @@ export function MobileTransactions({
         {groups.length === 0 && (
           <p className="py-12 text-center text-sm text-muted-foreground">{t('tx.empty')}</p>
         )}
-      </div>
+      </MobilePageContainer>
     </div>
   )
 }

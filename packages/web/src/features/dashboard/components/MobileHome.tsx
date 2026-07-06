@@ -7,6 +7,7 @@ import { useBalanceTrend } from '@/features/dashboard/queries'
 import { TransactionRow } from '@/features/transactions/components/TransactionRow'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { DashboardSkeleton } from '@/shared/components/Skeleton'
+import { MobilePageContainer } from '@/shared/components/MobilePageContainer'
 import { buildDonutData, monthSummary } from '@/shared/lib/derive'
 import { formatVND, monthLabel } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
@@ -62,7 +63,7 @@ export function MobileHome({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <MobilePageContainer>
       {/* Month summary hero */}
       <Card className="overflow-hidden border-0 bg-primary text-primary-foreground">
         <CardContent className="p-5">
@@ -190,7 +191,7 @@ export function MobileHome({
           </div>
         </CardContent>
       </Card>
-    </div>
+    </MobilePageContainer>
   )
 }
 

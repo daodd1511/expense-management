@@ -8,6 +8,7 @@ import { useSwipeActions } from '@/shared/hooks/useSwipeActions'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { BottomSheet } from '@/shared/components/ui/overlay'
+import { MobilePageContainer } from '@/shared/components/MobilePageContainer'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { useAccounts, useAddAccount, useDeleteAccount, useUpdateAccount } from '@/features/accounts/queries'
@@ -128,7 +129,7 @@ export function MobileAccounts() {
   if (isPending) return <AccountsSkeleton mobile />
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <MobilePageContainer>
       <Card className="border-0 bg-primary text-primary-foreground">
         <CardContent className="p-5">
           <div className="flex items-center gap-2 text-sm opacity-80">
@@ -181,6 +182,6 @@ export function MobileAccounts() {
           setPendingDeleteId(null)
         }}
       />
-    </div>
+    </MobilePageContainer>
   )
 }

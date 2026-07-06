@@ -59,10 +59,14 @@ export function CategoryDonut({
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null
               const p = payload[0]
+              const value = Number(p.value)
+              const percent = total > 0 ? Math.round((value / total) * 100) : 0
               return (
                 <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-sm">
                   <div className="font-medium text-popover-foreground">{p.name}</div>
-                  <div className="tabular text-muted-foreground">{formatVND(Number(p.value))}</div>
+                  <div className="tabular text-muted-foreground">
+                    {formatVND(value)} · {percent}%
+                  </div>
                 </div>
               )
             }}
