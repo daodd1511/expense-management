@@ -1,7 +1,9 @@
 import { Hono } from 'hono'
 import { describe, expect, it, vi } from 'vitest'
 import { accountCreateSchema } from '@wallet/shared'
-import { mapDbError, parseJsonBody } from './http'
+import { logger } from '../middleware/logger'
+import { handleError } from '../middleware/error'
+import { parseJsonBody } from './response'
 
 describe('parseJsonBody', () => {
   it('returns a 400 response for invalid JSON', async () => {
@@ -50,10 +52,10 @@ describe('parseJsonBody', () => {
   })
 })
 
-describe('mapDbError', () => {
+describe('handleError', () => {
   function respond(error: { code: string; message: string }) {
     const app = new Hono()
-    app.post('/', (c) => mapDbError(c, error))
+    app.post('/', (c) => handleError(error, c))
     return app.request('/', { method: 'POST' })
   }
 
@@ -79,12 +81,12 @@ describe('mapDbError', () => {
   })
 
   it('logs the full error server-side for unrecognized codes', async () => {
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const spy = vi.spyOn(logger, 'error').mockImplementation(() => logger)
     const error = { code: '57P01', message: 'terminating connection due to administrator command' }
 
     await respond(error)
 
-    expect(spy).toHaveBeenCalledWith('[db] unexpected error:', error)
+    expect(spy).toHaveBeenCalledWith({ error }, 'database unexpected error')
     spy.mockRestore()
   })
 })

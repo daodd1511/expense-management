@@ -1,26 +1,20 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AuthEnv } from '../middleware/auth'
+import type { AuthEnv } from '../../middleware/auth'
+import { handleError } from '../../middleware/error'
 
 const { getSupabase } = vi.hoisted(() => ({
   getSupabase: vi.fn(),
 }))
 
-vi.mock('../config/supabase', () => ({
+vi.mock('../../config/supabase', () => ({
   getSupabase,
 }))
 
-import { categoriesRouter } from './categories'
+import { categoriesRouter } from './routes'
 
 type StubResult = { data?: unknown; error?: unknown; count?: number }
 
-/**
- * Generic chainable Supabase client stub. Every query-builder method returns
- * the same object so any call sequence (`.from().select().eq()...`) chains
- * cleanly; awaiting the chain at any point (via an explicit terminal method
- * like `.maybeSingle()`/`.single()`, or by awaiting the chain itself for
- * head-count queries) consumes the next queued result in order.
- */
 function createSupabaseStub(results: StubResult[]) {
   let call = 0
   const next = () => results[call++] ?? { data: null, error: null }
@@ -46,6 +40,7 @@ function createSupabaseStub(results: StubResult[]) {
 
 function buildApp() {
   const app = new Hono<AuthEnv>()
+  app.onError(handleError)
   app.use('*', async (c, next) => {
     c.set('userId', 'user-1')
     await next()
@@ -202,7 +197,7 @@ describe('categoriesRouter', () => {
 
   it('returns 403 when deleting a system-owned category', async () => {
     getSupabase.mockReturnValue(
-      createSupabaseStub([{ data: { id: 'cat-1', owner_id: null }, error: null }]),
+      createSupabaseStub([{ data: { id: 'cat-1', owner_id: null, type: 'expense', parent_id: null }, error: null }]),
     )
 
     const app = buildApp()
@@ -217,7 +212,7 @@ describe('categoriesRouter', () => {
   it('returns 409 when deleting a category that has children', async () => {
     getSupabase.mockReturnValue(
       createSupabaseStub([
-        { data: { id: 'cat-1', owner_id: 'user-1' }, error: null },
+        { data: { id: 'cat-1', owner_id: 'user-1', type: 'expense', parent_id: null }, error: null },
         { data: null, error: null, count: 2 },
       ]),
     )

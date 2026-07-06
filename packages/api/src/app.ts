@@ -3,13 +3,13 @@ import { cors } from 'hono/cors'
 import { accountsRouter } from './features/accounts/routes'
 import { analyticsRouter } from './features/analytics/routes'
 import { budgetsRouter } from './features/budgets/routes'
+import { categoriesRouter } from './features/categories/routes'
 import { favoritesRouter } from './features/favorites/routes'
+import { subscriptionsRouter } from './features/subscriptions/routes'
 import { transactionsRouter } from './features/transactions/routes'
 import { authMiddleware, type AuthEnv } from './middleware/auth'
 import { errorMiddleware, handleError } from './middleware/error'
 import { loggerMiddleware } from './middleware/logger'
-import { categoriesRouter } from './routes/categories'
-import { subscriptionsRouter } from './routes/subscriptions'
 
 /** Builds the Hono app with cross-cutting middleware and all feature routes wired in. */
 export function createApp() {
