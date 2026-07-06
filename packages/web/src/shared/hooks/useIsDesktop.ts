@@ -2,9 +2,17 @@ import { useEffect, useState } from 'react'
 
 const DESKTOP_QUERY = '(min-width: 1024px)'
 
-/** `null` until the first media-query read completes on the client. */
+function getInitialIsDesktop(): boolean | null {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return null
+  }
+
+  return window.matchMedia(DESKTOP_QUERY).matches
+}
+
+/** Synchronously reflects the current desktop breakpoint on the client. */
 export function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState<boolean | null>(null)
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(getInitialIsDesktop)
 
   useEffect(() => {
     const media = window.matchMedia(DESKTOP_QUERY)
