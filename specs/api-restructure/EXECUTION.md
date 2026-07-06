@@ -32,11 +32,11 @@ net; flagged per-phase below as a review-checklist item, not agent debt.
 
 ## STATUS
 
-- Current phase: 3 — done
+- Current phase: All phases complete
 - Phase 1 — Infra + accounts reference feature: done
 - Phase 2 — Simple domains (transactions, budgets, favorites, analytics): done
 - Phase 3 — Complex domains (categories, subscriptions): done
-- Phase 4 — Cleanup + docs: pending
+- Phase 4 — Cleanup + docs: done
 - Verification debt: none yet
 
 ## Phase 1 — Infra + accounts reference feature
@@ -184,20 +184,20 @@ Branch: `api-restructure/phase-4-cleanup` (off
 Final pass once every feature has moved: remove now-dead scaffolding and re-baseline the
 docs that still describe the old flat-route shape.
 
-- [ ] Delete `packages/api/src/routes/` (should already be empty), `packages/api/src/
-  lib/http.ts`, `packages/api/src/db/` if anything remains
-- [ ] `rg` the repo for any leftover imports of the deleted paths (`routes/`, `lib/http`,
+- [x] Delete `packages/api/src/routes/`, `packages/api/src/lib/http.ts`, and
+  `packages/api/src/db/`
+- [x] `rg` the repo for any leftover imports of the deleted paths (`routes/`, `lib/http`,
   `db/supabase`) and fix/remove them
-- [ ] Re-baseline `CLAUDE.md`'s architecture section (lines ~25-27, ~75, ~115, ~253) —
+- [x] Re-baseline `CLAUDE.md`'s architecture section (lines ~25-27, ~75, ~115, ~253) —
   currently describes `packages/api/src/routes/<entity>.ts` as the flow; replace with the
   `features/<domain>/{controller,service,repository,schema,routes}.ts` layered shape
-- [ ] Same pass on `AGENTS.md` wherever it mirrors the same `packages/api` description
+- [x] Same pass on `AGENTS.md` wherever it mirrors the same `packages/api` description
 
 **Agent gate (hard):**
-- [ ] `pnpm typecheck` (full monorepo — confirms `packages/web`/`packages/shared` have no
+- [x] `pnpm typecheck` (full monorepo — confirms `packages/web`/`packages/shared` have no
   stray references to deleted API-internal paths)
-- [ ] `pnpm test` (full monorepo)
-- [ ] `pnpm --filter @wallet/api build`
+- [x] `pnpm test` (full monorepo)
+- [x] `pnpm --filter @wallet/api build`
 
 **Review checklist (user, at PR review):**
 - [ ] Confirm the final `packages/api/src` tree matches PLAN.md's target structure
