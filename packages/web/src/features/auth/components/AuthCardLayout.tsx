@@ -25,7 +25,7 @@ export function AuthCardLayout({
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-background px-4 py-10 text-foreground">
       <div className="flex flex-col items-center gap-4">
-        <span className="inline-flex size-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
+        <span className="inline-flex size-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
           <CreditCard className="size-8" />
         </span>
         <div className="text-center">
@@ -34,7 +34,7 @@ export function AuthCardLayout({
         </div>
       </div>
 
-      <Card className="w-full max-w-md rounded-3xl border-border/80 bg-card/95 shadow-xl shadow-black/5">
+      <Card className="w-full max-w-md rounded-3xl border-border/80 bg-card/95">
         <CardHeader className="gap-2 pb-3 text-center">
           <CardTitle className="text-xl">{title}</CardTitle>
           <p className="text-sm text-muted-foreground">{subtitle}</p>

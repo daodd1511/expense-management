@@ -60,7 +60,7 @@ export function CategoryDonut({
               if (!active || !payload?.length) return null
               const p = payload[0]
               return (
-                <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
+                <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-sm">
                   <div className="font-medium text-popover-foreground">{p.name}</div>
                   <div className="tabular text-muted-foreground">{formatVND(Number(p.value))}</div>
                 </div>
@@ -124,7 +124,7 @@ export function BalanceTrendChart({
             content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null
               return (
-                <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
+                <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-sm">
                   <div className="mb-1 font-medium text-popover-foreground">{label}</div>
                   <div className="flex items-center gap-2 tabular">
                     <span className="size-2 rounded-full" style={{ backgroundColor: 'var(--color-primary)' }} />

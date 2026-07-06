@@ -134,7 +134,7 @@ export function CategoriesPage({
               className={cn(
                 'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 activeType === option.value
-                  ? 'bg-card text-foreground shadow-sm'
+                  ? 'bg-card text-foreground'
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >

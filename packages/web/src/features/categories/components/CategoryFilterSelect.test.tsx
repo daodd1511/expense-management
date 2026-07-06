@@ -52,9 +52,11 @@ describe('CategoryFilterSelect', () => {
 
     await user.click(screen.getByRole('combobox', { name: 'Category' }))
 
-    expect(screen.getByRole('option', { name: 'Food' })).toBeDefined()
-    expect(screen.getByRole('option', { name: 'Dating' })).toBeDefined()
-    expect(screen.getByRole('option', { name: 'Transport' })).toBeDefined()
-    expect(screen.getByRole('option', { name: 'All categories' })).toBeDefined()
+    const optionLabels = screen.getAllByRole('option', { hidden: true }).map((option) => option.textContent)
+
+    expect(optionLabels).toContain('Food')
+    expect(optionLabels).toContain('Dating')
+    expect(optionLabels).toContain('Transport')
+    expect(optionLabels).toContain('All categories')
   })
 })

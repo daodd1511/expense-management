@@ -9,14 +9,7 @@ Integration branch: `develop`. Branch model: stacked (default).
 - Phase 1 — Subscription confirm-payment: done
 - Phase 2 — Loading states: done
 - Phase 3 — Shortcuts + command palette: done
-- Verification debt: none. Phases 1 and 2 landed in one commit (`9b0784e`) on
-  `polish/phase-1-subscription-confirm-payment` rather than on separate stacked branches —
-  a prior session's Phase 2 edits were started directly on the Phase 1 branch and were
-  interrupted mid-patch (`DesktopAccounts.tsx` left syntactically broken, no Phase 2 branch
-  ever created). Repaired the syntax break, added the one missing test the checklist asked
-  for (`Skeleton.test.tsx`), and committed both phases together since their diffs were
-  already interleaved in the same files. Phase 3 will branch off this branch/commit as
-  `polish/phase-3-command-palette`, per the stacked model.
+- Verification debt: none (phases 1–2 landed together in `9b0784e` after a repaired mid-patch interruption; see git log)
 
 ## Phase 1 — Subscription confirm-payment
 

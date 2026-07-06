@@ -26,7 +26,7 @@ function PopoverPopup({
   return (
     <PopoverPrimitive.Popup
       className={cn(
-        'rounded-xl border border-border bg-card p-0 text-card-foreground shadow-lg outline-none',
+        'rounded-xl border border-border bg-card p-0 text-card-foreground shadow-sm outline-none',
         'origin-[var(--transform-origin)] data-[starting-style]:scale-95 data-[ending-style]:scale-95 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 transition-[transform,opacity] duration-150',
         className,
       )}

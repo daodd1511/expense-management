@@ -51,7 +51,7 @@ function SelectPopup({
   return (
     <SelectPrimitive.Popup
       className={cn(
-        'max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none',
+        'max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-sm outline-none',
         'origin-[var(--transform-origin)] data-[starting-style]:scale-95 data-[ending-style]:scale-95 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 transition-[transform,opacity] duration-150',
         className,
       )}

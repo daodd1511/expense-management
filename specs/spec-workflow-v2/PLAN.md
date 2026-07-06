@@ -1,5 +1,7 @@
 # Spec Workflow v2 — Redesign of spec-plan / spec-phase
 
+status: reference
+
 Grilled 2026-07-03. Redesign of the spec-driven execution workflow from first principles,
 motivated by an architecture review of the current skills against 4 executed specs
 (`pwa`, `error-handling`, `category-redesign`, `category-ux`). The review found the two

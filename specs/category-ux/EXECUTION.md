@@ -5,9 +5,9 @@ Spec: [PLAN.md](PLAN.md). Rulebook: `CLAUDE.md` → "Spec-Driven Execution Workf
 ## STATUS
 
 - Current phase: All phases complete
-- Phase 1 — Settings sidebar + Categories page link: `done`
-- Phase 2 — Categories management page: `done`
-- Phase 3 — Favorites: `done-with-debt`
+- Phase 1 — Settings sidebar + Categories page link: done
+- Phase 2 — Categories management page: done
+- Phase 3 — Favorites: done-with-debt
 - Verification debt: manual browser checks (2 items) deferred; review checklist incomplete
 
 ---

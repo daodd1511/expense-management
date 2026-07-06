@@ -72,10 +72,11 @@ Path alias `@/` → `packages/web/src`.
 Component → `features/<f>/queries.ts` (TanStack Query hooks: `useX`, `useAddX`,
 `useUpdateX`, `useDeleteX`; queryKey `['<entity>', user?.id]`, invalidated on
 mutation success) → `features/<f>/db.ts` (`apiJson('/path', zodResponseSchema, init)`)
-→ `packages/api/src/routes/<entity>.ts` (Hono route; auth middleware sets `userId`;
-body parsed with shared create/patch schemas; DB errors mapped via `mapDbError`) →
-Supabase Postgres, with `packages/shared/src/mappers/*` converting rows↔models
-(`toX` row→model, `fromX` model→row, `xPatchToRow`).
+→ `packages/api/src/features/<domain>/routes.ts` (Hono route wiring; auth middleware
+sets `userId`) → `controller.ts` (HTTP-only request/response handling and validation) →
+`service.ts` (business rules/orchestration) → `repository.ts` (Supabase access via
+shared mappers) → Supabase Postgres, with `packages/shared/src/mappers/*` converting
+rows↔models (`toX` row→model, `fromX` model→row, `xPatchToRow`).
 
 ### Data model
 

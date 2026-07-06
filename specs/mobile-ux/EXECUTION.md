@@ -8,12 +8,12 @@ chain merges. Frontend code via `react-frontend-developer`; `terse-commit` befor
 
 ## STATUS
 
-- Current phase: All phases complete on `mobile-ux/phase-5-pull-to-refresh`
-- Phase 1 — Transaction form fixes: `done`
-- Phase 2 — Transaction list parent: `done`
-- Phase 3 — Categories redesign: `done`
-- Phase 4 — Optimistic transaction updates: `done`
-- Phase 5 — Pull-to-refresh: `done`
+- Current phase: All phases complete
+- Phase 1 — Transaction form fixes: done
+- Phase 2 — Transaction list parent: done
+- Phase 3 — Categories redesign: done
+- Phase 4 — Optimistic transaction updates: done
+- Phase 5 — Pull-to-refresh: done
 - Verification debt: none
 
 ---

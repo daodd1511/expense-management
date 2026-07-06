@@ -72,10 +72,11 @@ Path alias `@/` → `packages/web/src`.
 Component → `features/<f>/queries.ts` (TanStack Query hooks: `useX`, `useAddX`,
 `useUpdateX`, `useDeleteX`; queryKey `['<entity>', user?.id]`, invalidated on
 mutation success) → `features/<f>/db.ts` (`apiJson('/path', zodResponseSchema, init)`)
-→ `packages/api/src/routes/<entity>.ts` (Hono route; auth middleware sets `userId`;
-body parsed with shared create/patch schemas; DB errors mapped via `mapDbError`) →
-Supabase Postgres, with `packages/shared/src/mappers/*` converting rows↔models
-(`toX` row→model, `fromX` model→row, `xPatchToRow`).
+→ `packages/api/src/features/<domain>/routes.ts` (Hono route wiring; auth middleware
+sets `userId`) → `controller.ts` (HTTP-only request/response handling and validation) →
+`service.ts` (business rules/orchestration) → `repository.ts` (Supabase access via
+shared mappers) → Supabase Postgres, with `packages/shared/src/mappers/*` converting
+rows↔models (`toX` row→model, `fromX` model→row, `xPatchToRow`).
 
 ### Data model
 
@@ -187,6 +188,11 @@ Large/architectural changes flow: `/grill-me` → `specs/<feature>/PLAN.md` →
   `[ ]`/`[x]`; an item may be `[~]` (deferred) only when environment-blocked (missing
   tool/credentials, not effort), with substitute evidence inline and a mirrored STATUS debt
   entry. A phase is in-progress iff it has unchecked **non-deferred** items.
+- `specs/INDEX.md` is a **generated report** (`pnpm specs:index`), never hand-edited.
+  After touching any STATUS block, rerun it and commit the regenerated INDEX.md in the
+  same commit. STATUS blocks must keep the canonical format the script enforces (see
+  `specs/spec-index/PLAN.md`); the script fails loudly on drift. On conflict, git and
+  STATUS win — INDEX.md is advisory, like `HANDOFF.md`.
 
 ### Branch model — stacked by default
 - **Default: stacked.** Each phase branches off the **previous phase's branch** (phase 1

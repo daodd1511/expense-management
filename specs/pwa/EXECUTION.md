@@ -5,8 +5,8 @@ Spec: [PLAN.md](PLAN.md). Rulebook: `CLAUDE.md` → "Spec-Driven Execution Workf
 ## STATUS
 
 - Current phase: All phases complete
-- Phase 1 — Installable icons + manifest + favicon: `done`
-- Phase 2 — Service worker offline: `done-with-debt`
+- Phase 1 — Installable icons + manifest + favicon: done
+- Phase 2 — Service worker offline: done-with-debt
 - Verification debt: manual browser checks (2 items) deferred; review checklist incomplete
 
 ---

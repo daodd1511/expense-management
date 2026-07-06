@@ -9,9 +9,9 @@ Frontend code via `react-frontend-developer`; `terse-commit` before commits.
 ## STATUS
 
 - Current phase: All phases complete
-- Phase 1 — Backend atomicity + tooling: `done`
-- Phase 2 — Date policy: `done`
-- Phase 3 — Store refactor + bulk delete + docs: `done`
+- Phase 1 — Backend atomicity + tooling: done
+- Phase 2 — Date policy: done
+- Phase 3 — Store refactor + bulk delete + docs: done
 - Verification debt: none — migration applied by the user via `npx supabase db push`.
 
 ---
