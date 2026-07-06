@@ -1,23 +1,24 @@
 import { startTransition } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
-import { ArrowLeftRight, CalendarClock, Settings, Tags } from 'lucide-react'
+import { ArrowLeftRight, CalendarClock, Settings, Tags, Target } from 'lucide-react'
 import { SubscriptionDueBanner } from '@/features/subscriptions/components/SubscriptionDueBanner'
 import { useTransactionOverlay } from '@/features/transactions/transaction-overlay'
 import { useAuth } from '@/features/auth/auth'
 import { MobileAccounts } from '@/features/accounts/components/MobileAccounts'
 import { DesktopAccounts } from '@/features/accounts/components/DesktopAccounts'
 import { DesktopBudgets } from '@/features/budgets/components/DesktopBudgets'
+import { MobileBudgets } from '@/features/budgets/components/MobileBudgets'
 import { CategoriesPage } from '@/features/categories/components/CategoriesPage'
 import { DesktopDashboard } from '@/features/dashboard/components/DesktopDashboard'
 import { MobileHome } from '@/features/dashboard/components/MobileHome'
 import { DesktopSettings } from '@/features/settings/components/Settings'
 import { MobileSettings } from '@/features/settings/components/MobileSettings'
 import { DesktopSubscriptions } from '@/features/subscriptions/components/DesktopSubscriptions'
+import { MobileSubscriptions } from '@/features/subscriptions/components/MobileSubscriptions'
 import { ReportsPage as ReportsShell } from '@/features/reports/components/ReportsPage'
 import { DesktopTransactionsTable } from '@/features/transactions/components/DesktopTransactionsTable'
 import { MobileTransactions } from '@/features/transactions/components/MobileTransactions'
-import { MobilePlanning } from '@/layouts/mobile/MobilePlanning'
 import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicator'
 import { MobilePageContainer } from '@/shared/components/MobilePageContainer'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -39,7 +40,7 @@ function useAppNavigation() {
     goSubscriptions: () => navigate({ to: '/subscriptions' }),
     goAccounts: () => navigate({ to: '/accounts' }),
     goSettings: () => navigate({ to: '/settings' }),
-    goCategories: () => navigate({ to: '/settings/categories' }),
+    goOther: () => navigate({ to: '/other' }),
   }
 }
 
@@ -189,29 +190,16 @@ function useCreateIntent(path: '/accounts' | '/budgets' | '/subscriptions') {
 
 export function BudgetsPage() {
   const isDesktop = useIsDesktop()
-  const navigation = useAppNavigation()
   const createIntent = useCreateIntent('/budgets')
 
-  return isDesktop ? (
-    <DesktopBudgets {...createIntent} />
-  ) : (
-    <MobilePlanning tab="budgets" onTabChange={(tab) => (tab === 'budgets' ? navigation.goBudgets() : navigation.goSubscriptions())} />
-  )
+  return isDesktop ? <DesktopBudgets {...createIntent} /> : <MobileBudgets />
 }
 
 export function SubscriptionsPage() {
   const isDesktop = useIsDesktop()
-  const navigation = useAppNavigation()
   const createIntent = useCreateIntent('/subscriptions')
 
-  return isDesktop ? (
-    <DesktopSubscriptions {...createIntent} />
-  ) : (
-    <MobilePlanning
-      tab="subscriptions"
-      onTabChange={(tab) => (tab === 'budgets' ? navigation.goBudgets() : navigation.goSubscriptions())}
-    />
-  )
+  return isDesktop ? <DesktopSubscriptions {...createIntent} /> : <MobileSubscriptions />
 }
 
 export function AccountsPage() {
@@ -227,13 +215,8 @@ export function ReportsPage() {
 
 export function SettingsPage() {
   const isDesktop = useIsDesktop()
-  const navigation = useAppNavigation()
 
-  return isDesktop ? (
-    <DesktopSettings onNavigateToCategories={navigation.goCategories} />
-  ) : (
-    <MobileSettings onNavigateToCategories={navigation.goCategories} />
-  )
+  return isDesktop ? <DesktopSettings /> : <MobileSettings />
 }
 
 export function SettingsCategoriesPage() {
@@ -243,7 +226,7 @@ export function SettingsCategoriesPage() {
   return (
     <CategoriesPage
       variant={isDesktop ? 'desktop' : 'mobile'}
-      onBack={navigation.goSettings}
+      onBack={navigation.goOther}
     />
   )
 }
@@ -259,9 +242,15 @@ export function OtherPage() {
       icon: ArrowLeftRight,
     },
     {
+      to: '/budgets',
+      label: t('other.budgets'),
+      description: t('other.budgetsDesc'),
+      icon: Target,
+    },
+    {
       to: '/subscriptions',
-      label: t('other.planning'),
-      description: t('other.planningDesc'),
+      label: t('other.subscriptions'),
+      description: t('other.subscriptionsDesc'),
       icon: CalendarClock,
     },
     {

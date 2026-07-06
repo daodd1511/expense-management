@@ -7,6 +7,7 @@ import {
   Plus,
   Receipt,
   Settings,
+  Tags,
   Target,
   Wallet,
 } from 'lucide-react'
@@ -35,13 +36,14 @@ export function DesktopApp() {
   const section = sectionFromPath(location.pathname)
   const dueCount = dueBanner(subscriptions, transactions).length
 
-  const NAV: { href: '/' | '/reports' | '/transactions' | '/budgets' | '/subscriptions' | '/accounts' | '/settings'; section: typeof section; label: string; icon: typeof LayoutDashboard; badge?: number }[] = [
+  const NAV: { href: '/' | '/reports' | '/transactions' | '/budgets' | '/subscriptions' | '/accounts' | '/settings/categories' | '/settings'; section: typeof section; label: string; icon: typeof LayoutDashboard; badge?: number }[] = [
     { href: '/', section: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
     { href: '/reports', section: 'reports', label: t('nav.reports'), icon: ChartPie },
     { href: '/transactions', section: 'transactions', label: t('nav.transactions'), icon: Receipt },
     { href: '/budgets', section: 'budgets', label: t('nav.budgets'), icon: Target },
     { href: '/subscriptions', section: 'subscriptions', label: t('nav.subscriptions'), icon: CalendarClock, badge: dueCount },
     { href: '/accounts', section: 'accounts', label: t('nav.accounts'), icon: Wallet },
+    { href: '/settings/categories', section: 'settings-categories', label: t('settings.categories'), icon: Tags },
     { href: '/settings', section: 'settings', label: t('nav.settings'), icon: Settings },
   ]
 
@@ -67,12 +69,6 @@ export function DesktopApp() {
       label: t('nav.other'),
       section: t('palette.sectionNavigate'),
       onRun: () => navigate({ to: '/other' }),
-    },
-    {
-      id: 'nav-settings-categories',
-      label: t('settings.categories'),
-      section: t('palette.sectionNavigate'),
-      onRun: () => navigate({ to: '/settings/categories' }),
     },
     {
       id: 'create-transaction',
@@ -124,7 +120,7 @@ export function DesktopApp() {
         <nav className="mt-4 flex flex-col gap-1">
           {NAV.map((item) => {
             const Icon = item.icon
-            const active = item.section === 'settings' ? section === 'settings' || section === 'settings-categories' : section === item.section
+            const active = section === item.section
             return (
               <button
                 key={item.href}

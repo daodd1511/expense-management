@@ -21,10 +21,6 @@ export function sectionFromPath(pathname: string): AppSection {
   return 'dashboard'
 }
 
-export function isPlanningSection(section: AppSection) {
-  return section === 'budgets' || section === 'subscriptions'
-}
-
 export function isSettingsSection(section: AppSection) {
   return section === 'settings' || section === 'settings-categories'
 }

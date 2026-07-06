@@ -10,7 +10,6 @@ import { useLang } from "@/core/i18n";
 import { useAppDataLoading } from "@/shared/hooks/useAppDataLoading";
 import { cn } from "@/shared/lib/utils";
 import {
-  isPlanningSection,
   isSettingsSection,
   sectionFromPath,
 } from "@/routing/app-route-state";
@@ -32,13 +31,15 @@ export function MobileApp() {
           ? t("nav.transactions")
           : section === "accounts"
             ? t("nav.accounts")
-            : section === "settings"
-              ? t("nav.settings")
-              : section === "settings-categories"
-                ? t("settings.categories")
-                : isPlanningSection(section)
-                  ? t("nav.planning")
-                  : t("nav.dashboard");
+            : section === "budgets"
+              ? t("nav.budgets")
+              : section === "subscriptions"
+                ? t("nav.subscriptions")
+                : section === "settings"
+                  ? t("nav.settings")
+                  : section === "settings-categories"
+                    ? t("settings.categories")
+                    : t("nav.dashboard");
 
   const NAV: {
     href: "/" | "/accounts" | "/reports" | "/other";
