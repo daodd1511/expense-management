@@ -6,7 +6,7 @@ export function LoadingScreen() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background px-4 text-center text-foreground">
-      <span className="inline-flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+      <span className="inline-flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
         <Wallet className="size-7" />
       </span>
       <div className="flex flex-col items-center gap-2">
