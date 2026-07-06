@@ -39,23 +39,23 @@ function mapDbError(c: Context, error: DbError) {
 }
 
 /** Centralized error middleware for typed service errors and raw Postgres failures. */
-export const errorMiddleware = createMiddleware(async (c, next) => {
-  try {
-    await next()
-  } catch (error) {
-    if (error instanceof ApiError) {
-      if (error.status >= 500) {
-        logger.error({ error }, 'application error')
-      }
-
-      return jsonError(c, error.status, error.clientMessage, error.details)
+export function handleError(error: unknown, c: Context) {
+  if (error instanceof ApiError) {
+    if (error.status >= 500) {
+      logger.error({ error }, 'application error')
     }
 
-    if (isDbError(error)) {
-      return mapDbError(c, error)
-    }
-
-    logger.error({ error }, 'uncaught application error')
-    return jsonError(c, 500, 'Internal server error')
+    return jsonError(c, error.status, error.clientMessage, error.details)
   }
+
+  if (isDbError(error)) {
+    return mapDbError(c, error)
+  }
+
+  logger.error({ error }, 'uncaught application error')
+  return jsonError(c, 500, 'Internal server error')
+}
+
+export const errorMiddleware = createMiddleware(async (_c, next) => {
+  await next()
 })

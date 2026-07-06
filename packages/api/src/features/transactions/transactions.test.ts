@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
 import { describe, expect, it } from 'vitest'
-import type { AuthEnv } from '../middleware/auth'
-import { transactionsRouter } from './transactions'
+import type { AuthEnv } from '../../middleware/auth'
+import { handleError } from '../../middleware/error'
+import { transactionsRouter } from './routes'
 
 function tomorrowIsoDate() {
   const date = new Date()
@@ -15,6 +16,7 @@ function tomorrowIsoDate() {
 describe('transactionsRouter', () => {
   it('rejects future transaction dates', async () => {
     const app = new Hono<AuthEnv>()
+    app.onError(handleError)
     app.use('*', async (c, next) => {
       c.set('userId', 'user-1')
       await next()

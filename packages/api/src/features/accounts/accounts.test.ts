@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AuthEnv } from '../../middleware/auth'
+import { handleError } from '../../middleware/error'
 
 const { getSupabase } = vi.hoisted(() => ({
   getSupabase: vi.fn(),
@@ -87,6 +88,7 @@ describe('accountsRouter', () => {
     getSupabase.mockReturnValue(client)
 
     const app = new Hono<AuthEnv>()
+    app.onError(handleError)
     app.use('*', async (c, next) => {
       c.set('userId', 'user-1')
       await next()

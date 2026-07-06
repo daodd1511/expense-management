@@ -1,20 +1,20 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AuthEnv } from '../middleware/auth'
+import type { AuthEnv } from '../../middleware/auth'
+import { handleError } from '../../middleware/error'
 
 const { getSupabase } = vi.hoisted(() => ({
   getSupabase: vi.fn(),
 }))
 
-vi.mock('../config/supabase', () => ({
+vi.mock('../../config/supabase', () => ({
   getSupabase,
 }))
 
-import { favoritesRouter } from './favorites'
+import { favoritesRouter } from './routes'
 
 type StubResult = { data?: unknown; error?: unknown; count?: number }
 
-/** Same generic chainable Supabase stub used in categories.test.ts. */
 function createSupabaseStub(results: StubResult[]) {
   let call = 0
   const next = () => results[call++] ?? { data: null, error: null }
@@ -40,6 +40,7 @@ function createSupabaseStub(results: StubResult[]) {
 
 function buildApp() {
   const app = new Hono<AuthEnv>()
+  app.onError(handleError)
   app.use('*', async (c, next) => {
     c.set('userId', 'user-1')
     await next()

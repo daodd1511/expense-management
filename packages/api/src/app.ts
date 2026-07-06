@@ -1,15 +1,15 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { accountsRouter } from './features/accounts/routes'
+import { analyticsRouter } from './features/analytics/routes'
+import { budgetsRouter } from './features/budgets/routes'
+import { favoritesRouter } from './features/favorites/routes'
+import { transactionsRouter } from './features/transactions/routes'
 import { authMiddleware, type AuthEnv } from './middleware/auth'
-import { errorMiddleware } from './middleware/error'
+import { errorMiddleware, handleError } from './middleware/error'
 import { loggerMiddleware } from './middleware/logger'
-import { analyticsRouter } from './routes/analytics'
-import { budgetsRouter } from './routes/budgets'
 import { categoriesRouter } from './routes/categories'
-import { favoritesRouter } from './routes/favorites'
 import { subscriptionsRouter } from './routes/subscriptions'
-import { transactionsRouter } from './routes/transactions'
 
 /** Builds the Hono app with cross-cutting middleware and all feature routes wired in. */
 export function createApp() {
@@ -18,6 +18,7 @@ export function createApp() {
   app.use('*', loggerMiddleware)
   app.use('*', cors())
   app.use('*', errorMiddleware)
+  app.onError(handleError)
 
   app.get('/health', (c) => c.json({ ok: true }))
 
