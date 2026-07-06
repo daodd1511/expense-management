@@ -78,8 +78,19 @@ export function TransactionForm({
     type === 'transfer' ? t('form.defaultTransfer') : getCategory(categoryId)?.name || t('form.defaultTx')
 
   useEffect(() => {
-    amountInputRef.current?.focus()
-  }, [])
+    const input = amountInputRef.current
+    if (!input) return
+
+    if (variant === 'mobile') {
+      const timeoutId = window.setTimeout(() => {
+        input.focus({ preventScroll: true })
+      }, 250)
+
+      return () => window.clearTimeout(timeoutId)
+    }
+
+    input.focus()
+  }, [variant])
 
   const submit = () => {
     if (!canSubmit) return

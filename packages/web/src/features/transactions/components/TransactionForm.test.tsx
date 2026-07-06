@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TransactionForm } from './TransactionForm'
 
 const MOCK_CATEGORIES = [
@@ -74,12 +74,16 @@ vi.mock('@/shared/components/ui/date-picker', () => ({
 }))
 
 describe('TransactionForm', () => {
-  it('autofocuses the amount input and formats digits inline while typing', async () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('autofocuses the amount input on desktop and formats digits inline while typing', async () => {
     const user = userEvent.setup()
 
     render(
       <TransactionForm
-        variant="mobile"
+        variant="desktop"
         onSubmit={vi.fn().mockResolvedValue(undefined)}
         onCancel={() => undefined}
       />,
@@ -92,6 +96,21 @@ describe('TransactionForm', () => {
 
     expect(amountInput.value).toBe('1.000.000')
     expect(screen.queryByText('1.000.000 ₫')).toBeNull()
+  })
+
+  it('avoids immediate autofocus on mobile sheet open', () => {
+    vi.useFakeTimers()
+
+    render(
+      <TransactionForm
+        variant="mobile"
+        onSubmit={vi.fn().mockResolvedValue(undefined)}
+        onCancel={() => undefined}
+      />,
+    )
+
+    const amountInput = screen.getByPlaceholderText('0') as HTMLInputElement
+    expect(document.activeElement).not.toBe(amountInput)
   })
 
   it('submits a date-only ISO string', async () => {

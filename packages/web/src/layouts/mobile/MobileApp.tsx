@@ -1,6 +1,8 @@
 import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import { ArrowLeftRight, CalendarClock, Home, Plus, Settings, Wallet } from 'lucide-react'
+import { useState } from 'react'
 import { TransactionRouteOverlay } from '@/features/transactions/components/TransactionRouteOverlay'
+import { MobileQuickAddTransactionSheet } from '@/features/transactions/components/MobileQuickAddTransactionSheet'
 import { LoadingScreen } from '@/shared/components/LoadingScreen'
 import { useLang } from '@/core/i18n'
 import { AppRouteContent } from '@/routing/app-pages'
@@ -19,6 +21,7 @@ export function MobileApp() {
   const { t } = useLang()
   const navigate = useNavigate()
   const location = useLocation()
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
   const overlay = getTransactionOverlayState(
     location.pathname,
     location.search as Record<string, unknown>,
@@ -90,7 +93,7 @@ export function MobileApp() {
             <div className="flex justify-center">
               <button
                 type="button"
-                onClick={() => navigate({ to: '/transactions/new', search: { returnTo: location.href } })}
+                onClick={() => setIsQuickAddOpen(true)}
                 aria-label={t('app.addTransaction')}
                 className="-mt-7 inline-flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-background transition-transform active:scale-95"
               >
@@ -105,6 +108,11 @@ export function MobileApp() {
       </nav>
 
       <TransactionRouteOverlay variant="mobile" overlay={overlay} />
+      <MobileQuickAddTransactionSheet
+        open={isQuickAddOpen}
+        returnTo={location.href}
+        onClose={() => setIsQuickAddOpen(false)}
+      />
     </div>
   )
 }
