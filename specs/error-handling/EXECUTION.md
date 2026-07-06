@@ -5,9 +5,9 @@ Spec: [PLAN.md](PLAN.md). Rulebook: `CLAUDE.md` → "Spec-Driven Execution Workf
 ## STATUS
 
 - Current phase: All phases complete
-- Phase 1 — BE error mapping: `done`
-- Phase 2 — FE error display: `done`
-- Phase 3 — Manual tests: `done-with-debt`
+- Phase 1 — BE error mapping: done
+- Phase 2 — FE error display: done
+- Phase 3 — Manual tests: done-with-debt
 - Verification debt: manual browser checks (3 items) deferred; review checklist incomplete
 
 ---

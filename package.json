@@ -9,7 +9,8 @@
     "preview": "pnpm --filter @wallet/web preview",
     "dev:api": "pnpm --filter @wallet/api dev",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "specs:index": "node scripts/spec-index.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.10.4",

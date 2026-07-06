@@ -37,7 +37,7 @@ net; flagged per-phase below as a review-checklist item, not agent debt.
 - Phase 2 — Simple domains (transactions, budgets, favorites, analytics): done
 - Phase 3 — Complex domains (categories, subscriptions): done
 - Phase 4 — Cleanup + docs: done
-- Verification debt: none yet
+- Verification debt: none
 
 ## Phase 1 — Infra + accounts reference feature
 
