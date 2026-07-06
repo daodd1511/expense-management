@@ -24,7 +24,7 @@ export function MobilePlanning({
     <div className="flex flex-col">
       {/* Inner tab bar */}
       <div className="sticky top-[57px] z-20 flex border-b border-border bg-background/95 backdrop-blur-md">
-        {(['budgets', 'subscriptions'] as const).map((id) => (
+        {(['subscriptions', 'budgets'] as const).map((id) => (
           <button
             key={id}
             type="button"
@@ -47,7 +47,7 @@ export function MobilePlanning({
         ))}
       </div>
 
-      {tab === 'budgets' ? <MobileBudgets /> : <MobileSubscriptions />}
+      {tab === 'subscriptions' ? <MobileSubscriptions /> : <MobileBudgets />}
     </div>
   )
 }

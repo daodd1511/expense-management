@@ -43,7 +43,9 @@ export function usePullToRefresh({
       return
     }
 
-    event.preventDefault()
+    if (event.cancelable) {
+      event.preventDefault()
+    }
     setDistance(Math.min(MAX_PULL_DISTANCE, delta * 0.45))
   }
 

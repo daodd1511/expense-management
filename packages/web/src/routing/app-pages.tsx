@@ -77,6 +77,7 @@ export function DashboardPage() {
       <DesktopDashboard
         onNavigate={(section, search) => {
           if (section === 'budgets') navigation.goBudgets()
+          else if (section === 'subscriptions') navigation.goSubscriptions()
           else if (section === 'accounts') navigation.goAccounts()
           else if (section === 'transactions') navigation.goTransactions(search)
         }}
@@ -102,6 +103,7 @@ export function DashboardPage() {
         <MobileHome
           onNavigate={(section, search) => {
             if (section === 'budgets') navigation.goBudgets()
+            else if (section === 'subscriptions') navigation.goSubscriptions()
             else if (section === 'accounts') navigation.goAccounts()
             else if (section === 'transactions') navigation.goTransactions(search)
           }}
