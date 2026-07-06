@@ -11,9 +11,12 @@ import { AuthProvider } from './features/auth/auth'
 import { LangProvider } from './core/i18n'
 import { ErrorBoundary } from './core/ErrorBoundary'
 import { handleMutationError } from './core/mutationErrorHandler'
+import { registerForegroundSWUpdateCheck } from './core/swUpdate'
 import { AppRouter } from './routing/router'
 import { ThemeProvider } from './shared/components/ThemeProvider'
 import { OfflineBanner } from './shared/components/OfflineBanner'
+
+registerForegroundSWUpdateCheck()
 
 const queryClient = new QueryClient({
   defaultOptions: {
