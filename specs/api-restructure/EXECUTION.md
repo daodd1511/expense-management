@@ -32,9 +32,9 @@ net; flagged per-phase below as a review-checklist item, not agent debt.
 
 ## STATUS
 
-- Current phase: 1 — done
+- Current phase: 2 — done
 - Phase 1 — Infra + accounts reference feature: done
-- Phase 2 — Simple domains (transactions, budgets, favorites, analytics): pending
+- Phase 2 — Simple domains (transactions, budgets, favorites, analytics): done
 - Phase 3 — Complex domains (categories, subscriptions): pending
 - Phase 4 — Cleanup + docs: pending
 - Verification debt: none yet
@@ -103,27 +103,27 @@ These four routes are comparatively thin CRUD/read handlers with no cross-entity
 cascade or RPC orchestration — same shape as the `accounts` reference, migrated as a
 batch.
 
-- [ ] `packages/api/src/features/transactions/{schema,repository,service,controller,
+- [x] `packages/api/src/features/transactions/{schema,repository,service,controller,
   routes}.ts` — migrate `routes/transactions.ts` (149 lines); move
   `transactions.test.ts`
-- [ ] `packages/api/src/features/budgets/{schema,repository,service,controller,
+- [x] `packages/api/src/features/budgets/{schema,repository,service,controller,
   routes}.ts` — migrate `routes/budgets.ts` (102 lines); **no existing test to move** —
   see review checklist below
-- [ ] `packages/api/src/features/favorites/{schema,repository,service,controller,
+- [x] `packages/api/src/features/favorites/{schema,repository,service,controller,
   routes}.ts` — migrate `routes/favorites.ts` (91 lines); move `favorites.test.ts`
-- [ ] `packages/api/src/features/analytics/{schema,repository,service,controller,
+- [x] `packages/api/src/features/analytics/{schema,repository,service,controller,
   routes}.ts` — migrate `routes/analytics.ts` (77 lines, carries the
   `computeBalanceTrend` wiring from `feature-ux` — keep that call in `service.ts`); move
   `analytics.test.ts`
-- [ ] Wire all four routers into `app.ts`; remove the four old `routes/*.ts` files and
+- [x] Wire all four routers into `app.ts`; remove the four old `routes/*.ts` files and
   their moved test files
-- [ ] Delete `lib/http.ts` if `categories`/`subscriptions` (still on old routes until
-  Phase 3) are its only remaining consumers — otherwise leave it until Phase 3
+- [x] Leave `lib/http.ts` in place for Phase 3 because `categories`/`subscriptions`
+  are still the remaining consumers on the old route stack
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/api typecheck`
-- [ ] `pnpm --filter @wallet/api test`
-- [ ] `pnpm --filter @wallet/api build`
+- [x] `pnpm --filter @wallet/api typecheck`
+- [x] `pnpm --filter @wallet/api test`
+- [x] `pnpm --filter @wallet/api build`
 
 **Review checklist (user, at PR review):**
 - [ ] Manually verify `budgets` CRUD via the running dev server/UI (no automated
