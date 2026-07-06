@@ -16,8 +16,8 @@ export default defineConfig({
       manifest: {
         name: 'Sổ Chi Tiêu',
         short_name: 'Wallet',
-        theme_color: '#fbfaf7',
-        background_color: '#fbfaf7',
+        theme_color: '#F4EFDD',
+        background_color: '#F4EFDD',
         display: 'standalone',
         start_url: '/',
         lang: 'vi',
