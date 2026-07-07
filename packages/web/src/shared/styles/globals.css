@@ -118,10 +118,10 @@
   --radius: 0.75rem;
 
   --income: oklch(0.595 0.089 128.258);
-  --income-foreground: oklch(0.203 0.014 285.102);
+  --income-foreground: oklch(0.966 0.019 93.663);
   --income-muted: oklch(0.905 0.050 108.600);
   --expense: oklch(0.618 0.171 16.478);
-  --expense-foreground: oklch(0.203 0.014 285.102);
+  --expense-foreground: oklch(0.966 0.019 93.663);
   --expense-muted: oklch(0.894 0.036 59.171);
   --transfer: oklch(0.555 0.040 182.728);
   --transfer-muted: oklch(0.910 0.023 120.215);
@@ -173,7 +173,7 @@
   --income-foreground: oklch(0.203 0.014 285.102);
   --income-muted: oklch(0.335 0.036 134.286);
   --expense: oklch(0.617 0.162 18.160);
-  --expense-foreground: oklch(0.203 0.014 285.102);
+  --expense-foreground: oklch(0.966 0.019 93.663);
   --expense-muted: oklch(0.303 0.048 7.834);
   --transfer: oklch(0.696 0.051 181.304);
   --transfer-muted: oklch(0.329 0.022 172.507);
