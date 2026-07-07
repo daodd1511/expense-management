@@ -35,6 +35,7 @@ type TransactionRow = {
   id: string
   transaction: Transaction
   dateLabel: string
+  timeLabel?: string
   categoryLabel: string
   noteLabel?: string
   categoryIcon?: string
@@ -131,6 +132,7 @@ export function DesktopTransactionsTable({
           id: tx.id,
           transaction: tx,
           dateLabel: formatShortDate(tx.date),
+          timeLabel: tx.time,
           categoryLabel: getTransactionCategoryLabel({
             transaction: tx,
             categoryName: category?.name,
@@ -179,7 +181,12 @@ export function DesktopTransactionsTable({
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           />
         ),
-        cell: ({ row }) => <span className="tabular whitespace-nowrap text-muted-foreground">{row.original.dateLabel}</span>,
+        cell: ({ row }) => (
+          <span className="flex flex-col tabular whitespace-nowrap text-muted-foreground">
+            <span>{row.original.dateLabel}</span>
+            {row.original.timeLabel && <span className="text-xs">{row.original.timeLabel}</span>}
+          </span>
+        ),
       },
       {
         accessorKey: 'categoryLabel',

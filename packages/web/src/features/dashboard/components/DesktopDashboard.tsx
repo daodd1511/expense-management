@@ -81,7 +81,13 @@ export function DesktopDashboard({
             <CardTitle>{t('dashboard.byCategory')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <CategoryDonut data={data} total={total} size={200} onSelect={(datum) => handleCategorySelect(datum.id)} />
+            <CategoryDonut
+              data={data}
+              total={total}
+              size={200}
+              centerLabel={t('reports.expenseDonutCenter')}
+              onSelect={(datum) => handleCategorySelect(datum.id)}
+            />
             <ul className="mt-4 flex flex-col gap-2">
               {data.map((d) => (
                 <li key={d.name}>

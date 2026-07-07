@@ -18,6 +18,7 @@ node_modules
 dist
 *.tsbuildinfo
 execution/
+docs/dashboard.html
 
 # Claude Code — track skills/config, but never worktrees or local settings
 .claude/worktrees/

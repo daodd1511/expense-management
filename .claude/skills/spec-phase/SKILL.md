@@ -1,10 +1,10 @@
 ---
 name: spec-phase
-description: Drive phased execution of a spec produced by /grill-me — start the next phase, or resume mid-phase work correctly. Use when the user says "start phase N", "continue the spec", "resume execution", "next phase", or references a specs/<feature>/EXECUTION.md.
+description: Drive phased execution of a spec produced by /grill-me — start the next phase, or resume mid-phase work correctly. Use when the user says "start phase N", "continue the spec", "resume execution", "next phase", or references a docs/specs/<feature>/EXECUTION.md.
 argument-hint: "<feature-slug> [phase-n] — omit phase-n to auto-detect where to resume"
 ---
 
-Drives execution of `specs/<feature-slug>/PLAN.md` + `specs/<feature-slug>/EXECUTION.md`.
+Drives execution of `docs/specs/<feature-slug>/PLAN.md` + `docs/specs/<feature-slug>/EXECUTION.md`.
 The rulebook (state model, branch model, gate lanes, checkpoints, parking) is `CLAUDE.md` →
 "Spec-Driven Execution Workflow" — this skill is the procedure that implements it.
 
@@ -12,17 +12,17 @@ The rulebook (state model, branch model, gate lanes, checkpoints, parking) is `C
 
 1. Run `git status` and `git branch --show-current`. The branch name encodes spec+phase;
    the working tree and commit log encode progress. **This is the authoritative state.**
-2. Read `specs/<feature-slug>/EXECUTION.md` — its STATUS block and checklist (ask the user
+2. Read `docs/specs/<feature-slug>/EXECUTION.md` — its STATUS block and checklist (ask the user
    for the slug if not given and the current branch doesn't encode it — do not guess
-   between multiple specs under `specs/`).
+   between multiple specs under `docs/specs/`).
 3. If STATUS disagrees with git on a mechanical fact (which branch exists, what's
    committed, what's merged), **git wins silently** — correct STATUS to match, no
    user-reconciliation ceremony. STATUS is only trusted for what git can't express:
    verification debt, park reasons, phase intent.
-4. Read `specs/<feature-slug>/PLAN.md` for the decisions the phase must honor.
+4. Read `docs/specs/<feature-slug>/PLAN.md` for the decisions the phase must honor.
 5. `HANDOFF.md`, if present, is advisory context only (why something was parked, what the
    user said) — never resume from it, never treat it as state.
-6. **One-spec-in-flight check**: scan other `specs/*/EXECUTION.md` STATUS blocks. If a
+6. **One-spec-in-flight check**: scan other `docs/specs/*/EXECUTION.md` STATUS blocks. If a
    different spec has an `in-progress` phase, stop — the user must finish or park it
    before this spec proceeds.
 

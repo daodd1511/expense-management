@@ -101,6 +101,7 @@ export function MobileHome({
                 data={data}
                 total={total}
                 size={142}
+                centerLabel={t('reports.expenseDonutCenter')}
                 onSelect={(datum) => handleCategorySelect(datum.id)}
               />
             </div>

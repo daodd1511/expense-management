@@ -14,7 +14,7 @@ import type { Category } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
 /**
- * Renders as the "Chip / Filter Pill" documented in docs/DESIGN.md, not a vertical list of
+ * Renders as the "Chip / Filter Pill" documented in docs/design/DESIGN.md, not a vertical list of
  * option rows — selection is shown by the category's own color filling the pill, so this
  * bypasses the shared SelectItem wrapper (which always renders a checkmark indicator) in
  * favor of the raw primitive with fully custom, indicator-less styling. `active` is computed
@@ -45,7 +45,7 @@ function CategoryChipItem({ category, active }: { category: Category; active: bo
 
 /**
  * A category-picking `Select` grouped by parent, rendering the documented Chip/Filter Pill
- * (docs/DESIGN.md) inside the popup instead of a flat, icon-less list of option rows.
+ * (docs/design/DESIGN.md) inside the popup instead of a flat, icon-less list of option rows.
  */
 export function CategoryFilterSelect({
   categories,

@@ -80,11 +80,18 @@ export function IncomeExpenseReport({ month }: { month: string }) {
         <div className="grid gap-4 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
           <Card>
             <CardContent className="flex h-full flex-col items-center justify-center gap-4 p-5">
+              <div className="flex flex-col items-center gap-1 text-center">
+                <span className="text-xs text-muted-foreground">{t('reports.expenseDonutCenter')}</span>
+                <span className="tabular text-lg font-bold tracking-tight" title={formatVND(report.totals.expense)}>
+                  {formatVND(report.totals.expense)}
+                </span>
+              </div>
               <div className="w-full">
                 <CategoryDonut
                   data={expenseDonutData}
                   total={report.totals.expense}
                   centerLabel={t('reports.expenseDonutCenter')}
+                  showCenterTotal={false}
                 />
               </div>
               <div className="w-full space-y-2">

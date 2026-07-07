@@ -45,6 +45,9 @@ vi.mock('@/core/i18n', () => ({
         'form.category': 'Category',
         'form.amount': 'Amount',
         'form.date': 'Date',
+        'form.time': 'Time',
+        'form.timeHour': 'Hour',
+        'form.timeMinute': 'Minute',
         'form.addTitle': 'Add transaction',
         'form.editTitle': 'Edit transaction',
         'form.close': 'Close',
@@ -138,6 +141,7 @@ describe('TransactionForm', () => {
         accountId: 'cash',
         merchant: 'Food',
         date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        time: expect.stringMatching(/^\d{2}:\d{2}$/),
       }),
     )
 

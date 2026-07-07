@@ -10,7 +10,8 @@
     "dev:api": "pnpm --filter @wallet/api dev",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "specs:index": "node scripts/spec-index.mjs"
+    "specs:index": "node scripts/spec-index.mjs",
+    "docs:dashboard": "node scripts/docs-dashboard.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.10.4",

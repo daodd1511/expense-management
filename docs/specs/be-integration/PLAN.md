@@ -1,5 +1,7 @@
 # BE Integration Plan
 
+status: done
+
 ## Decisions
 
 | Decision | Choice | Reason |
