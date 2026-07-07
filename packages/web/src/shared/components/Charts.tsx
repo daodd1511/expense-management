@@ -24,13 +24,13 @@ export function CategoryDonut({
   data,
   total,
   size = 180,
-  centerLabel = 'Tổng chi',
+  centerLabel,
   onSelect,
 }: {
   data: DonutDatum[]
   total: number
   size?: number
-  centerLabel?: string
+  centerLabel: string
   onSelect?: (datum: DonutDatum) => void
 }) {
   const compact = size < 170
@@ -94,11 +94,11 @@ export function CategoryDonut({
 export function BalanceTrendChart({
   data,
   height = 200,
-  balanceLabel = 'Số dư',
+  balanceLabel,
 }: {
   data: { month: string; balance: number }[]
   height?: number
-  balanceLabel?: string
+  balanceLabel: string
 }) {
   const balances = data.map((d) => d.balance)
   const min = balances.length ? Math.min(...balances) : 0
