@@ -51,6 +51,11 @@ _Avoid_: tag, group
 A category owned by no user and shared by everyone; users cannot delete it.
 _Avoid_: default category, global category, preset
 
+**Category display name**:
+The category label shown to the user in the current app language; for a custom
+category, it is the user's own name.
+_Avoid_: canonical category name, translated name
+
 **Favorite**:
 A category the user has pinned for quick access. A favorite is a separate pin,
 not a property of the category itself.
