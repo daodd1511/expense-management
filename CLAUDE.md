@@ -116,23 +116,6 @@ class on `<html>`. `useTheme()` exposes `{ theme, resolvedTheme, setTheme }`.
 Supabase Auth. `packages/api/src/middleware/auth.ts` verifies the JWT (via `jose`)
 and sets `userId` on the Hono context (`AuthEnv`); every `/api/*` route requires it.
 
-### Subscriptions feature
-
-`packages/web/src/features/subscriptions/helpers.ts` — pure helpers: `isDue`,
-`isDueSoon`, `isAlreadyLoggedThisCycle`, `daysUntilDue`, `dueBanner`,
-`monthlyEquivalent`, `totalMonthlyCost`, `buildNextDueDate`.
-
-Due banner appears on home screen when `nextDueDate <= today` and no same-cycle
-transaction with matching `subscriptionId` exists. One-tap log calls
-`useLogSubscription().mutateAsync(subscription)` (`features/subscriptions/queries.ts`),
-which hits `POST /subscriptions/:id/log` → the `log_subscription` Postgres RPC
-(`supabase/migrations/`) — inserts the Transaction and advances `next_due_date` in a
-single DB transaction. The cadence math itself (`advanceNextDueDate`) stays in TS,
-computed before the RPC call and passed in as a parameter.
-
-Mobile: "Kế hoạch" (Planning) tab replaces the Budgets tab; inner tab bar switches
-between Ngân sách and Đăng ký. Desktop: "Đăng ký" sidebar item after Budgets.
-
 ### Dates
 
 `tx_date` / `nextDueDate` are date-only `'YYYY-MM-DD'` strings with no time or
@@ -226,6 +209,7 @@ re-deriving it.
 
 ## Coding Standards
 - Always use `react-frontend-developer` skill for frontend code generation.
+
 ### Reuse First
 - Prefer existing components, hooks, utilities, and models before creating new ones.
 - Before creating a new component, check both [packages/web/src/shared/components](packages/web/src/shared/components) and the relevant feature module for a compatible pattern.
