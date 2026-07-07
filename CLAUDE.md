@@ -143,6 +143,25 @@ scale: `--z-dropdown` through `--z-tooltip`. OKLCH color space throughout.
   imperative subject, no Conventional Commits prefix). Always invoke it before
   running `git commit` in this repo, regardless of how the request is phrased.
 
+## Domain Model & Decisions
+
+Three homes for terminology and decisions — keep them from bleeding into each
+other. The `domain-modeling` skill (and `grill-with-docs`, which folds it into a
+grilling session) maintains the first two.
+
+- **`CONTEXT.md`** (repo root) — the ubiquitous-language glossary, and nothing
+  else. Use its canonical terms (and avoid the `_Avoid_` synonyms) in code,
+  docs, specs, and UI copy. It is devoid of implementation detail: no schema, no
+  file references, no "how it works". Add or sharpen a term the moment grilling
+  resolves one; never let it become a spec or scratchpad.
+- **`docs/adr/`** — one short ADR per **app-wide** decision that is hard to
+  reverse, surprising without context, and the result of a real trade-off (all
+  three, or it is not an ADR). A handful, ever. Numbered `NNNN-slug.md`, 1–3
+  sentences.
+- **`docs/specs/<feature>/PLAN.md` "Decisions"** — feature-scoped choices that live
+  and die with the spec. The default home. If a decision only matters inside one
+  feature, it stays here and does **not** become an ADR.
+
 ## Backlog
 
 `docs/BACKLOG.md` is the single inbox for fixes, features, and ideas (no separate
@@ -150,14 +169,15 @@ features doc). Capture via the `capture` skill: one line per item, `- [ ] <desc>
 appended to the matching section. Agents may capture proactively when they notice
 out-of-scope issues, but must list those additions in the session's final summary.
 Never auto-commit a capture. Delete a line only when the item ships or graduates into a
-`specs/<feature>/` plan.
+`docs/specs/<feature>/` plan.
 
 ## Spec-Driven Execution Workflow
 
-Large/architectural changes flow: `/grill-me` → `specs/<feature>/PLAN.md` →
-`specs/<feature>/EXECUTION.md` (via the `spec-plan` skill) → phased implementation (via the
+Large/architectural changes flow: `/grill-me` → `docs/specs/<feature>/PLAN.md` →
+`docs/specs/<feature>/EXECUTION.md` (via the `spec-plan` skill) → phased implementation (via the
 `spec-phase` skill). These rules bind even when neither skill is invoked. Design rationale:
-`specs/spec-workflow-v2/PLAN.md`.
+`docs/specs/spec-workflow-v2/PLAN.md`. Use `/grill-with-docs` instead of `/grill-me` when the
+grilling should also maintain the glossary and ADRs (see "Domain Model & Decisions").
 
 ### State model
 - **Git is the authoritative state store**: branch name encodes spec+phase
@@ -171,10 +191,10 @@ Large/architectural changes flow: `/grill-me` → `specs/<feature>/PLAN.md` →
   `[ ]`/`[x]`; an item may be `[~]` (deferred) only when environment-blocked (missing
   tool/credentials, not effort), with substitute evidence inline and a mirrored STATUS debt
   entry. A phase is in-progress iff it has unchecked **non-deferred** items.
-- `specs/INDEX.md` is a **generated report** (`pnpm specs:index`), never hand-edited.
+- `docs/specs/INDEX.md` is a **generated report** (`pnpm specs:index`), never hand-edited.
   After touching any STATUS block, rerun it and commit the regenerated INDEX.md in the
   same commit. STATUS blocks must keep the canonical format the script enforces (see
-  `specs/spec-index/PLAN.md`); the script fails loudly on drift. On conflict, git and
+  `docs/specs/spec-index/PLAN.md`); the script fails loudly on drift. On conflict, git and
   STATUS win — INDEX.md is advisory, like `HANDOFF.md`.
 
 ### Branch model — stacked by default

@@ -1,6 +1,6 @@
-// Generates specs/INDEX.md from every specs/*/PLAN.md + EXECUTION.md.
+// Generates docs/specs/INDEX.md from every docs/specs/*/PLAN.md + EXECUTION.md.
 // Contract: EXECUTION.md STATUS blocks must match the canonical format documented in
-// specs/spec-index/PLAN.md — this parser is deliberately strict and exits nonzero
+// docs/specs/spec-index/PLAN.md — this parser is deliberately strict and exits nonzero
 // naming the offending file rather than rendering a silently wrong board.
 //
 // Usage: node scripts/spec-index.mjs   (or: pnpm specs:index)
@@ -9,7 +9,7 @@ import { readdirSync, readFileSync, existsSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const SPECS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'specs')
+const SPECS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'specs')
 const STATES = ['pending', 'in-progress', 'done', 'done-with-debt']
 
 const CURRENT_RE = /^- Current phase: (All phases complete|\d+ — (?:pending|in-progress|done|done-with-debt))$/
@@ -103,7 +103,7 @@ for (const slug of readdirSync(SPECS_DIR).sort()) {
     continue
   }
 
-  const { phases, debt } = parseStatus(`specs/${slug}/EXECUTION.md`, readFileSync(execPath, 'utf8'))
+  const { phases, debt } = parseStatus(`docs/specs/${slug}/EXECUTION.md`, readFileSync(execPath, 'utf8'))
   const doneCount = phases.filter((p) => p.state === 'done' || p.state === 'done-with-debt').length
   const hasDebt = !debt.startsWith('none')
   rows.push({
@@ -135,4 +135,4 @@ if (referenceRows.length > 0) {
 out.push('')
 
 writeFileSync(join(SPECS_DIR, 'INDEX.md'), out.join('\n'))
-console.log(`spec-index: wrote specs/INDEX.md (${rows.length} specs, ${referenceRows.length} reference)`)
+console.log(`spec-index: wrote docs/specs/INDEX.md (${rows.length} specs, ${referenceRows.length} reference)`)

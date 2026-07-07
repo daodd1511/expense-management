@@ -2,7 +2,7 @@
 
 status: done
 
-A generated `specs/INDEX.md` giving a single kanban-style view of every spec's state
+A generated `docs/specs/INDEX.md` giving a single kanban-style view of every spec's state
 (done / in progress / pending / not started), so status doesn't have to be assembled by
 opening ten EXECUTION.md files.
 
@@ -45,10 +45,10 @@ the `n/m` column come from the `Phase <n>` lines; a spec is Pending when every p
 
 1. `scripts/spec-index.mjs` — strict STATUS parser + table generator as specified above.
 2. Root `package.json` — add `"specs:index": "node scripts/spec-index.mjs"`.
-3. One-time normalization pass over all existing `specs/*/EXECUTION.md` STATUS blocks
+3. One-time normalization pass over all existing `docs/specs/*/EXECUTION.md` STATUS blocks
    (10 files) — format only, no state changes.
-4. Add `status: reference` marker to `specs/spec-workflow-v2/PLAN.md`.
-5. Generate the initial `specs/INDEX.md`.
+4. Add `status: reference` marker to `docs/specs/spec-workflow-v2/PLAN.md`.
+5. Generate the initial `docs/specs/INDEX.md`.
 6. CLAUDE.md — add the regenerate-at-checkpoint rule to the Spec-Driven Execution
    Workflow section, and note INDEX.md is generated/advisory (git + STATUS still win).
 

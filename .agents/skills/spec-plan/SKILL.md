@@ -1,10 +1,10 @@
 ---
 name: spec-plan
-description: Turn a /grill-me PLAN.md into a phased specs/<feature>/EXECUTION.md ready for the spec-phase skill to run. Use when a grill session just produced a PLAN.md with no EXECUTION.md yet, or when the user says "make the execution plan", "break this into phases", "turn PLAN.md into an execution file".
-argument-hint: "<feature-slug> — the specs/<feature-slug>/PLAN.md must already exist"
+description: Turn a /grill-me PLAN.md into a phased docs/specs/<feature>/EXECUTION.md ready for the spec-phase skill to run. Use when a grill session just produced a PLAN.md with no EXECUTION.md yet, or when the user says "make the execution plan", "break this into phases", "turn PLAN.md into an execution file".
+argument-hint: "<feature-slug> — the docs/specs/<feature-slug>/PLAN.md must already exist"
 ---
 
-Produces `specs/<feature-slug>/EXECUTION.md` from `specs/<feature-slug>/PLAN.md`. This skill
+Produces `docs/specs/<feature-slug>/EXECUTION.md` from `docs/specs/<feature-slug>/PLAN.md`. This skill
 only plans phases and writes the checklist file — it does not write code. Once EXECUTION.md
 exists, hand off to the `spec-phase` skill to actually run a phase.
 
@@ -13,14 +13,14 @@ The rulebook (state model, branch model, gate lanes, checkpoints) is `CLAUDE.md`
 
 ## Step 0 — Load state
 
-1. Read `specs/<feature-slug>/PLAN.md` in full. If it doesn't exist, stop and ask for the
+1. Read `docs/specs/<feature-slug>/PLAN.md` in full. If it doesn't exist, stop and ask for the
    slug or tell the user to run `/grill-me` first.
-2. Check whether `specs/<feature-slug>/EXECUTION.md` already exists. If it does and has any
+2. Check whether `docs/specs/<feature-slug>/EXECUTION.md` already exists. If it does and has any
    checked-off items, stop — regenerating would destroy execution history. Ask the user
    whether they want to append new phases or start over (only start over if they explicitly
    say so).
 3. **One-spec-in-flight check**: scan the STATUS blocks of every other
-   `specs/*/EXECUTION.md`. If another spec has a phase in `in-progress` (or uncommitted
+   `docs/specs/*/EXECUTION.md`. If another spec has a phase in `in-progress` (or uncommitted
    work on its branch), stop — don't plan a new spec on top of one mid-flight; the user
    must finish or park it first.
 4. Resolve the **integration branch** (check `CLAUDE.md`, then `git branch` for the
@@ -83,7 +83,7 @@ Gates come in **two lanes**:
 
 ## Step 4 — Assemble EXECUTION.md
 
-Use this skeleton exactly (do not copy the shape from older `specs/*/EXECUTION.md` files —
+Use this skeleton exactly (do not copy the shape from older `docs/specs/*/EXECUTION.md` files —
 they predate v2 and carry stale conventions):
 
 ```markdown

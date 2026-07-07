@@ -3,7 +3,7 @@
 Inbox for fixes, features, and ideas — one line per item, newest last in each section.
 Capture via `/capture` or by editing directly; agents may append proactively (reported in
 their session summary). Delete a line when the item ships or graduates into a
-`specs/<feature>/` plan — git history is the archive. No done-lists, no status ceremony.
+`docs/specs/<feature>/` plan — git history is the archive. No done-lists, no status ceremony.
 
 ## Fixes
 

@@ -3,7 +3,7 @@
 Recolor the app to a Kanagawa-inspired "pigment on paper" palette: **Washi** (softened
 cream paper) for light mode, **Wave** (sumi ink) for dark mode, derived from the
 kanagawa.nvim Lotus/Wave palettes. Colors only — typography, icons, radius, spacing, and
-motion are untouched. Chosen from `specs/kanagawa-theme/mockup.html` (variant B + C).
+motion are untouched. Chosen from `docs/specs/kanagawa-theme/mockup.html` (variant B + C).
 
 ## Decisions (from grill session, 2026-07-06)
 

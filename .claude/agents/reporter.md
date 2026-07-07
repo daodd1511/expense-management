@@ -2,7 +2,7 @@
 name: reporter
 description: >-
   Read-only compression of token-heavy material into a short brief: git history
-  ranges, PR threads (via gh), long docs (docs/, specs/), verbose command output,
+  ranges, PR threads (via gh), long docs (docs/, docs/specs/), verbose command output,
   changelogs. Use whenever the main thread would otherwise read >100 lines of prose
   or log just to extract a few facts. NOT for code investigation ("how does X
   work" → explorer; "where is X" → code-locator). Never edits anything.
@@ -21,9 +21,9 @@ Vietnamese-first personal expense app; amounts are VND integers.
 
 Where the long material lives:
 
-- `docs/` — `BACKLOG.md` (single inbox of `- [ ]` items), `PRODUCT.md`, `DESIGN.md`,
+- `docs/` — `BACKLOG.md` (single inbox of `- [ ]` items), `design/PRODUCT.md`, `design/DESIGN.md`,
   `PLAN.md`
-- `specs/<feature>/` — `PLAN.md` + `EXECUTION.md` per feature; `EXECUTION.md` opens
+- `docs/specs/<feature>/` — `PLAN.md` + `EXECUTION.md` per feature; `EXECUTION.md` opens
   with a STATUS block (current phase, per-phase state, verification debt). Git is
   the authoritative state store — branch names encode spec+phase.
 - Git conventions: branches `<feature-slug>/phase-<n>-<desc>` off `develop`, PRs

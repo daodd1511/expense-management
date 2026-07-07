@@ -12,7 +12,7 @@ Session baton only — advisory context, not state. Trust git and any spec
   session) has been fully superseded — those specs are long done and merged;
   don't resume them.
 - No spec has an `in-progress` phase right now (checked every
-  `specs/*/EXECUTION.md` STATUS block). Slate is clear for new spec work.
+  `docs/specs/*/EXECUTION.md` STATUS block). Slate is clear for new spec work.
 
 ## What Shipped (most recent first, this session)
 
@@ -28,8 +28,8 @@ Session baton only — advisory context, not state. Trust git and any spec
 - **Reports feature** (`21cb284`, corrected in `7a9731d`): new `/reports`
   page — monthly income/expense/net totals, expense category breakdown with
   drill-down to transactions, expense donut chart with per-category
-  percentages. Full detail: `specs/reports/PLAN.md` and
-  `specs/reports/EXECUTION.md`.
+  percentages. Full detail: `docs/specs/reports/PLAN.md` and
+  `docs/specs/reports/EXECUTION.md`.
   - **Architectural change bundled in the same commit, repo-wide**: the
     transaction add/edit form no longer routes through `/transactions/new`
     or `/transactions/$transactionId/edit` — those routes are gone. A new
@@ -43,7 +43,7 @@ Session baton only — advisory context, not state. Trust git and any spec
     default `p-4` wrapper now used by every mobile-only page. New mobile
     pages should use it rather than hand-rolling padding (that inconsistency
     is what caused the Reports/Other edge-spacing bug fixed this session).
-  - **Known debt, recorded in `specs/reports/EXECUTION.md` STATUS**: all 3
+  - **Known debt, recorded in `docs/specs/reports/EXECUTION.md` STATUS**: all 3
     phases landed as one commit on `reports/phase-1-api-contract` instead of
     the stacked phase-2/phase-3 branches the plan called for (now merged and
     the branch deleted, so this is permanent history, not fixable
@@ -53,7 +53,7 @@ Session baton only — advisory context, not state. Trust git and any spec
     available in this sandbox to drive the app end-to-end. Worth an actual
     manual pass if you have a browser handy.
   - Kanagawa theme (palette + matte pass) predates this session's work but
-    was the most recent thing merged before it; see `specs/kanagawa-theme/`
+    was the most recent thing merged before it; see `docs/specs/kanagawa-theme/`
     if styling questions come up.
 
 ## Notes For Next Agent
@@ -70,7 +70,7 @@ Session baton only — advisory context, not state. Trust git and any spec
 - `docs/BACKLOG.md`'s "Reports: monthly report, category drill-down..."
   Features line is now shipped and stale — prune it next time you're in
   that file (not done this session, out of scope for a nav-cleanup pass).
-- Before starting new spec work, check `specs/*/EXECUTION.md` STATUS blocks
+- Before starting new spec work, check `docs/specs/*/EXECUTION.md` STATUS blocks
   for anything `in-progress` (one-spec-in-flight rule) — clear as of this
   write.
 
@@ -82,7 +82,7 @@ Reference: [docs/BACKLOG.md](docs/BACKLOG.md) — re-check items against
 ## Suggested Skills
 
 - `spec-plan` / `grill-me` — for phasing the next backlog batch
-- `spec-phase` — only if resuming an existing `specs/<slug>/EXECUTION.md`
+- `spec-phase` — only if resuming an existing `docs/specs/<slug>/EXECUTION.md`
 - `react-frontend-developer` — required for frontend code generation per
   project CLAUDE.md
 - `terse-commit` — before any `git commit`

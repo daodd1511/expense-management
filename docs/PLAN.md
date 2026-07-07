@@ -148,12 +148,12 @@ Mechanical; small surface. Few Next-specific APIs in use:
   required. PWA install requires HTTPS — Caddy handles certs.
 
 ### Design system — keep this repo's identity, cherry-pick from the deprecated wallet docs
-This repo's existing visual identity stays (see this repo's `DESIGN.md`):
+This repo's existing visual identity stays (see this repo's `docs/design/DESIGN.md`):
 **register-gold action accent, tonal/no-shadow depth, warm-paper neutrals,
 green=income / red=expense semantic contract.** It is more distinctive than the
 deprecated wallet docs' indigo+terracotta+shadow direction and already built.
 The two systems are ~80% aligned in spirit (calm, numbers-lead, anti-SaaS,
-anti-bank). Import only what's missing here, from the old wallet `DESIGN.md`:
+anti-bank). Import only what's missing here, from the old wallet `docs/design/DESIGN.md`:
 - **Be Vietnam Pro** font (system font has weaker Vietnamese diacritics; app is VN-first) via `@fontsource/be-vietnam-pro`.
 - **Motion tokens** (durations + easings) and **z-index scale**.
 - Explicit **Vietnamese-specific rules** (VND `Intl` format, week starts Monday, `name_vi` fallback).

@@ -3,7 +3,7 @@ import type { Category } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
 /**
- * The "Chip / Filter Pill" documented in docs/DESIGN.md for category selection: fully
+ * The "Chip / Filter Pill" documented in docs/design/DESIGN.md for category selection: fully
  * rounded, 6px/12px padding, 14px icon with a 6px gap. Selected state fills with the
  * category's own color and white text/icon; unselected is a bordered pill that fills to
  * Warm Fill (`--muted`) on hover.
