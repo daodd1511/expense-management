@@ -14,6 +14,7 @@ pnpm build                   # web build → packages/web/dist/
 pnpm preview                 # serve web build locally
 pnpm typecheck               # recursive: tsc --noEmit across all packages
 pnpm test                    # recursive: vitest run across all packages (non-watch, safe for agents)
+pnpm docs:dashboard          # generate docs/dashboard.html and open it locally
 ```
 
 Scoped equivalents: `pnpm --filter @wallet/web <script>`, `--filter @wallet/api`, `--filter @wallet/shared`.
