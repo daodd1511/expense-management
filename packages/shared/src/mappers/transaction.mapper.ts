@@ -12,6 +12,7 @@ export function toTransaction(row: TransactionRow): Transaction {
     merchant: row.merchant,
     note: row.note ?? undefined,
     date: row.tx_date,
+    time: row.tx_time?.slice(0, 5) ?? undefined,
     receipt: row.receipt_url ?? undefined,
     subscriptionId: row.subscription_id,
   }
@@ -32,6 +33,7 @@ export function fromTransaction(params: {
     merchant: transaction.merchant,
     note: transaction.note ?? null,
     tx_date: transaction.date,
+    tx_time: transaction.time ?? null,
     receipt_url: transaction.receipt ?? null,
     subscription_id: transaction.subscriptionId ?? null,
   }
@@ -47,6 +49,7 @@ export function transactionPatchToRow(patch: TransactionPatch) {
     ...(patch.merchant !== undefined && { merchant: patch.merchant }),
     ...(patch.note !== undefined && { note: patch.note }),
     ...(patch.date !== undefined && { tx_date: patch.date }),
+    ...(patch.time !== undefined && { tx_time: patch.time }),
     ...(patch.receipt !== undefined && { receipt_url: patch.receipt }),
   }
 }

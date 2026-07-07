@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { txTypeSchema } from '../models'
-import { atLeastOneKey, isoDateSchema } from './common.dto'
+import { atLeastOneKey, isoDateSchema, localTimeSchema } from './common.dto'
 
 function todayIsoDate() {
   const today = new Date()
@@ -25,6 +25,7 @@ export const transactionRowSchema = z.object({
   merchant: z.string(),
   note: z.string().nullable(),
   tx_date: z.string(),
+  tx_time: z.string().nullable().optional(),
   receipt_url: z.string().nullable(),
   subscription_id: z.string().nullable(),
   created_at: z.string(),
@@ -39,6 +40,7 @@ export const transactionCreateSchema = z.object({
   merchant: z.string().trim().min(1),
   note: z.string().trim().optional(),
   date: transactionDateSchema,
+  time: localTimeSchema.optional(),
   receipt: z.string().trim().nullable().optional(),
   subscriptionId: z.string().min(1).nullable().optional(),
 })
@@ -52,6 +54,7 @@ export const transactionPatchSchema = atLeastOneKey({
   merchant: z.string().trim().min(1),
   note: z.string().trim().nullable(),
   date: transactionDateSchema,
+  time: localTimeSchema.nullable(),
   receipt: z.string().trim().nullable(),
 })
 

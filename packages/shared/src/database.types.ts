@@ -226,6 +226,7 @@ export type Database = {
           subscription_id: string | null
           to_account_id: string | null
           tx_date: string
+          tx_time: string | null
           type: string
         }
         Insert: {
@@ -241,6 +242,7 @@ export type Database = {
           subscription_id?: string | null
           to_account_id?: string | null
           tx_date: string
+          tx_time?: string | null
           type: string
         }
         Update: {
@@ -256,6 +258,7 @@ export type Database = {
           subscription_id?: string | null
           to_account_id?: string | null
           tx_date?: string
+          tx_time?: string | null
           type?: string
         }
         Relationships: [

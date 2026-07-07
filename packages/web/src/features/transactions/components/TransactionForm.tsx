@@ -1,11 +1,18 @@
 
-import { ArrowRight, X } from 'lucide-react'
+import { ArrowRight, Clock, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { FavoriteCategoryPicker } from '@/features/categories/components/FavoriteCategoryPicker'
 import { Button } from '@/shared/components/ui/button'
 import { DatePicker } from '@/shared/components/ui/date-picker'
 import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
-import { Label, Textarea } from '@/shared/components/ui/input'
+import { Input, Label, Textarea } from '@/shared/components/ui/input'
+import {
+  Popover,
+  PopoverPortal,
+  PopoverPositioner,
+  PopoverPopup,
+  PopoverTrigger,
+} from '@/shared/components/ui/popover'
 import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
@@ -22,6 +29,237 @@ function todayIsoDate() {
   const month = String(today.getMonth() + 1).padStart(2, '0')
   const day = String(today.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+function currentLocalTime() {
+  const now = new Date()
+  const hour = String(now.getHours()).padStart(2, '0')
+  const minute = String(now.getMinutes()).padStart(2, '0')
+  return `${hour}:${minute}`
+}
+
+function timeParts(value: string) {
+  const [hour = '', minute = ''] = value.split(':')
+  return { hour, minute }
+}
+
+function clampTimePart(value: string, max: number) {
+  const digits = value.replace(/\D/g, '').slice(0, 2)
+  if (!digits) return ''
+  return String(Math.min(Number(digits), max)).padStart(2, '0')
+}
+
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'))
+const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
+
+function TimeWheelColumn({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string
+  options: readonly string[]
+  value: string
+  onChange: (value: string) => void
+}) {
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  const selectedRef = useRef<HTMLButtonElement>(null)
+  const scrollFrameRef = useRef<number | null>(null)
+  const scrollEndTimeoutRef = useRef<number | null>(null)
+  const isUserScrollingRef = useRef(false)
+
+  useEffect(() => {
+    if (isUserScrollingRef.current) return
+    selectedRef.current?.scrollIntoView({ block: 'center' })
+  }, [value])
+
+  useEffect(() => {
+    return () => {
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current)
+      }
+
+      if (scrollEndTimeoutRef.current !== null) {
+        window.clearTimeout(scrollEndTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const handleScroll = () => {
+    isUserScrollingRef.current = true
+
+    if (scrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(scrollFrameRef.current)
+    }
+
+    scrollFrameRef.current = window.requestAnimationFrame(() => {
+      const scroller = scrollerRef.current
+      if (!scroller) return
+
+      const scrollerRect = scroller.getBoundingClientRect()
+      const scrollerCenter = scrollerRect.top + scrollerRect.height / 2
+      const optionButtons = Array.from(scroller.querySelectorAll<HTMLButtonElement>('[data-time-option]'))
+      const closestOption = optionButtons.reduce<{ value: string; distance: number } | null>(
+        (closest, button) => {
+          const optionValue = button.dataset.timeOption
+          if (!optionValue) return closest
+
+          const buttonRect = button.getBoundingClientRect()
+          const buttonCenter = buttonRect.top + buttonRect.height / 2
+          const distance = Math.abs(buttonCenter - scrollerCenter)
+
+          if (!closest || distance < closest.distance) {
+            return { value: optionValue, distance }
+          }
+
+          return closest
+        },
+        null,
+      )
+
+      if (closestOption && closestOption.value !== value) {
+        onChange(closestOption.value)
+      }
+    })
+
+    if (scrollEndTimeoutRef.current !== null) {
+      window.clearTimeout(scrollEndTimeoutRef.current)
+    }
+
+    scrollEndTimeoutRef.current = window.setTimeout(() => {
+      isUserScrollingRef.current = false
+    }, 120)
+  }
+
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <Label className="text-center text-xs">{label}</Label>
+      <div
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        className="relative h-44 overflow-y-auto rounded-xl border border-border bg-muted/25 p-1 [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_82%,transparent)] snap-y snap-mandatory"
+      >
+        <div className="h-16" aria-hidden="true" />
+        {options.map((option) => {
+          const selected = option === value
+
+          return (
+            <button
+              key={option}
+              ref={selected ? selectedRef : undefined}
+              type="button"
+              aria-pressed={selected}
+              data-time-option={option}
+              onClick={() => onChange(option)}
+              className={cn(
+                'h-10 w-full snap-center rounded-lg text-center text-base tabular transition-colors',
+                selected
+                  ? 'bg-card font-semibold text-foreground shadow-sm ring-1 ring-border'
+                  : 'text-muted-foreground hover:bg-background/70 hover:text-foreground',
+              )}
+            >
+              {option}
+            </button>
+          )
+        })}
+        <div className="h-16" aria-hidden="true" />
+      </div>
+    </div>
+  )
+}
+
+function TimePicker({
+  value,
+  onChange,
+  label,
+  hourLabel,
+  minuteLabel,
+}: {
+  value: string
+  onChange: (value: string) => void
+  label: string
+  hourLabel: string
+  minuteLabel: string
+}) {
+  const { hour, minute } = timeParts(value)
+  const selectedHour = hour || '00'
+  const selectedMinute = minute || '00'
+
+  const setHour = (nextValue: string) => {
+    onChange(`${clampTimePart(nextValue, 23) || '00'}:${selectedMinute}`)
+  }
+
+  const setMinute = (nextValue: string) => {
+    onChange(`${selectedHour}:${clampTimePart(nextValue, 59) || '00'}`)
+  }
+
+  return (
+    <Popover>
+      <PopoverTrigger className="flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 text-left text-sm outline-none transition-colors hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30">
+        <span className="tabular">{value || label}</span>
+        <Clock className="size-4 shrink-0 text-muted-foreground" />
+      </PopoverTrigger>
+      <PopoverPortal>
+        <PopoverPositioner align="start">
+          <PopoverPopup className="w-[min(22rem,calc(100vw-2rem))] p-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:hidden">
+              <TimeWheelColumn
+                label={hourLabel}
+                options={HOUR_OPTIONS}
+                value={selectedHour}
+                onChange={setHour}
+              />
+              <span className="pt-6 text-lg font-semibold text-muted-foreground">:</span>
+              <TimeWheelColumn
+                label={minuteLabel}
+                options={MINUTE_OPTIONS}
+                value={selectedMinute}
+                onChange={setMinute}
+              />
+            </div>
+            <div className="hidden grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 sm:grid">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="transaction-time-hour">{hourLabel}</Label>
+                <Input
+                  id="transaction-time-hour"
+                  value={selectedHour}
+                  inputMode="numeric"
+                  className="tabular text-center text-lg font-semibold"
+                  onChange={(event) => setHour(event.target.value)}
+                  onBlur={(event) => setHour(event.target.value)}
+                />
+              </div>
+              <span className="pb-2 text-lg font-semibold text-muted-foreground">:</span>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="transaction-time-minute">{minuteLabel}</Label>
+                <Input
+                  id="transaction-time-minute"
+                  value={selectedMinute}
+                  inputMode="numeric"
+                  className="tabular text-center text-lg font-semibold"
+                  onChange={(event) => setMinute(event.target.value)}
+                  onBlur={(event) => setMinute(event.target.value)}
+                />
+              </div>
+            </div>
+            <div className="mt-3 hidden grid-cols-4 gap-1.5 sm:grid">
+              {['00', '15', '30', '45'].map((quickMinute) => (
+                <button
+                  key={quickMinute}
+                  type="button"
+                  onClick={() => setMinute(quickMinute)}
+                  className="rounded-md border border-border bg-background px-2 py-1.5 text-sm tabular text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  :{quickMinute}
+                </button>
+              ))}
+            </div>
+          </PopoverPopup>
+        </PopoverPositioner>
+      </PopoverPortal>
+    </Popover>
+  )
 }
 
 export function TransactionForm({
@@ -49,6 +287,7 @@ export function TransactionForm({
   )
   const [note, setNote] = useState(initial?.note ?? '')
   const [date, setDate] = useState((initial?.date ?? todayIsoDate()).slice(0, 10))
+  const [time, setTime] = useState(initial ? initial.time ?? '' : currentLocalTime())
   const amountInputRef = useRef<HTMLInputElement>(null)
 
   const TYPE_TABS: { value: TxType; label: string }[] = [
@@ -95,6 +334,7 @@ export function TransactionForm({
       merchant: initial?.merchant?.trim() || fallbackMerchant,
       note: note.trim() || undefined,
       date,
+      time: time || undefined,
       receipt: null,
     })
   }
@@ -208,6 +448,18 @@ export function TransactionForm({
         <div className="flex flex-col gap-2">
           <Label>{t('form.date')}</Label>
           <DatePicker value={date} onChange={setDate} max={todayIsoDate()} />
+        </div>
+
+        {/* Time */}
+        <div className="flex flex-col gap-2">
+          <Label>{t('form.time')}</Label>
+          <TimePicker
+            value={time}
+            onChange={setTime}
+            label={t('form.time')}
+            hourLabel={t('form.timeHour')}
+            minuteLabel={t('form.timeMinute')}
+          />
         </div>
 
         {/* Note */}

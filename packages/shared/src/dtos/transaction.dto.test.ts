@@ -41,4 +41,49 @@ describe('transactionCreateSchema', () => {
       expect(result.error.issues[0]?.message).toBe('Transaction date cannot be in the future')
     }
   })
+
+  it('accepts local HH:MM transaction time', () => {
+    const result = transactionCreateSchema.parse({
+      type: 'expense',
+      amount: 1213,
+      categoryId: 'cat-1',
+      accountId: 'acc-1',
+      merchant: 'AAA',
+      date: '2026-07-01',
+      time: '09:45',
+      receipt: null,
+    })
+
+    expect(result.time).toBe('09:45')
+  })
+
+  it('rejects non-local transaction time values', () => {
+    const result = transactionCreateSchema.safeParse({
+      type: 'expense',
+      amount: 1213,
+      categoryId: 'cat-1',
+      accountId: 'acc-1',
+      merchant: 'AAA',
+      date: '2026-07-01',
+      time: '09:45:30',
+      receipt: null,
+    })
+
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects out-of-range transaction time values', () => {
+    const result = transactionCreateSchema.safeParse({
+      type: 'expense',
+      amount: 1213,
+      categoryId: 'cat-1',
+      accountId: 'acc-1',
+      merchant: 'AAA',
+      date: '2026-07-01',
+      time: '24:00',
+      receipt: null,
+    })
+
+    expect(result.success).toBe(false)
+  })
 })

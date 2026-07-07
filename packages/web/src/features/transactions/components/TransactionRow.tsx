@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { useSwipeActions } from '@/shared/hooks/useSwipeActions'
-import { amountColorClass, formatSigned, formatTime } from '@/shared/lib/format'
+import { amountColorClass, formatSigned } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { useCategoryLookup } from '@/features/categories/queries'
 import { useAccountLookup } from '@/features/accounts/queries'
@@ -106,7 +106,7 @@ export function TransactionRow({
           <span className={cn('tabular text-sm font-semibold', amountColorClass(tx.type))}>
             {formatSigned(tx.amount, tx.type)}
           </span>
-          <span className="text-xs text-muted-foreground">{formatTime(tx.date)}</span>
+          {tx.time && <span className="text-xs text-muted-foreground">{tx.time}</span>}
         </span>
       </button>
     </div>

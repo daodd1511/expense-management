@@ -126,6 +126,7 @@ export async function logSubscription(params: {
     merchant: rpc.data.tx_merchant,
     note: rpc.data.tx_note,
     tx_date: rpc.data.tx_tx_date,
+    tx_time: null,
     receipt_url: rpc.data.tx_receipt_url,
     subscription_id: rpc.data.tx_subscription_id,
     created_at: rpc.data.tx_created_at,
