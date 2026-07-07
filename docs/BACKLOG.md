@@ -9,12 +9,11 @@ their session summary). Delete a line when the item ships or graduates into a
 
 ## Features
 
-- [ ] Reports: monthly report, category drill-down (tap chart segment / budget bar → transactions), year-over-year (2026-07-04)
 - [ ] Export & backup: CSV export, JSON backup/restore (2026-07-04)
 - [ ] Budget rollover + near-limit alerts (2026-07-04)
 - [ ] Household sharing — deferred until all core functions are present; household/membership schema first, UI later (2026-07-04)
 - [ ] Offline write queue for the PWA (2026-07-04)
-- [ ] Small UX batch: account reorder, currency format preference, PIN/biometric lock, per-locale number format (2026-07-04)
+- [ ] Small UX batch: account reorder, currency format preference, per-locale number format (2026-07-04)
 - [ ] Better analytics on spendings (2026-07-05)
 - [ ] Add adjustment account feature (2026-07-05)
 - [ ] Add fee feature (2026-07-05)
