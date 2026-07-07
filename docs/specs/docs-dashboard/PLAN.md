@@ -1,5 +1,7 @@
 # Docs Dashboard — Plan
 
+status: done
+
 Produced via /grill-me interview, prompted by
 https://spin.atomicobject.com/html-spec-dashboard/. All decisions below were
 explicitly confirmed; do not reinterpret or expand scope during implementation.
