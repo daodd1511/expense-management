@@ -20,3 +20,5 @@ their session summary). Delete a line when the item ships or graduates into a
 - [ ] Better credit card information: view balance, due date, payment status (2026-07-05)
 
 ## Ideas
+
+- [ ] Figure ways to update the PWA app (2026-07-07)
