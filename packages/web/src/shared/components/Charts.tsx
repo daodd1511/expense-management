@@ -25,12 +25,14 @@ export function CategoryDonut({
   total,
   size = 180,
   centerLabel,
+  showCenterTotal = true,
   onSelect,
 }: {
   data: DonutDatum[]
   total: number
   size?: number
   centerLabel: string
+  showCenterTotal?: boolean
   onSelect?: (datum: DonutDatum) => void
 }) {
   const compact = size < 170
@@ -73,20 +75,22 @@ export function CategoryDonut({
           />
         </PieChart>
       </ResponsiveContainer>
-      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-        <span className={cn('text-muted-foreground', compact ? 'text-[0.65rem]' : 'text-xs')}>
-          {centerLabel}
-        </span>
-        <span
-          className={cn(
-            'tabular max-w-[72%] truncate text-center font-bold tracking-tight',
-            compact ? 'text-xs' : 'text-lg',
-          )}
-          title={formatVND(total)}
-        >
-          {formatVND(total)}
-        </span>
-      </div>
+      {showCenterTotal && (
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+          <span className={cn('text-muted-foreground', compact ? 'text-[0.65rem]' : 'text-xs')}>
+            {centerLabel}
+          </span>
+          <span
+            className={cn(
+              'tabular block max-w-[58%] truncate text-center font-bold tracking-tight',
+              compact ? 'text-xs' : 'text-lg',
+            )}
+            title={formatVND(total)}
+          >
+            {formatVND(total)}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
