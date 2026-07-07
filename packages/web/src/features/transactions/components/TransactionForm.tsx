@@ -7,20 +7,12 @@ import { DatePicker } from '@/shared/components/ui/date-picker'
 import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
 import { Label, Textarea } from '@/shared/components/ui/input'
 import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
-import {
-  Select,
-  SelectItem,
-  SelectPopup,
-  SelectPositioner,
-  SelectPortal,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { useCategories, useCategoryLookup } from '@/features/categories/queries'
 import { useFavoriteCategoryIds } from '@/features/categories/favorites-queries'
 import { useAccounts } from '@/features/accounts/queries'
+import { AccountSelect } from '@/features/accounts/components/AccountSelect'
 import type { Transaction, TxType } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
@@ -254,38 +246,5 @@ export function TransactionForm({
         </Button>
       </div>
     </div>
-  )
-}
-
-function AccountSelect({
-  value,
-  onChange,
-  accounts,
-  placeholder,
-}: {
-  value: string
-  onChange: (v: string) => void
-  accounts: { id: string; name: string }[]
-  placeholder: string
-}) {
-  const labels = Object.fromEntries(accounts.map((account) => [account.id, account.name]))
-
-  return (
-    <Select value={value} onValueChange={(nextValue) => nextValue && onChange(nextValue)}>
-      <SelectTrigger>
-        <SelectValue>{(selected: string | null) => labels[selected ?? ''] ?? placeholder}</SelectValue>
-      </SelectTrigger>
-      <SelectPortal>
-        <SelectPositioner>
-          <SelectPopup>
-            {accounts.map((account) => (
-              <SelectItem key={account.id} value={account.id}>
-                {account.name}
-              </SelectItem>
-            ))}
-          </SelectPopup>
-        </SelectPositioner>
-      </SelectPortal>
-    </Select>
   )
 }

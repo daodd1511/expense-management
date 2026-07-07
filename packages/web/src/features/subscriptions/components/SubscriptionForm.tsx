@@ -3,12 +3,22 @@ import { FavoriteCategoryPicker } from '@/features/categories/components/Favorit
 import { Button } from '@/shared/components/ui/button'
 import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
 import { Input, Label } from '@/shared/components/ui/input'
+import {
+  Select,
+  SelectItem,
+  SelectPopup,
+  SelectPositioner,
+  SelectPortal,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
 import { useLang } from '@/core/i18n'
 import { buildNextDueDate } from '@/features/subscriptions/helpers'
 import { useCategories, useCategoryLookup } from '@/features/categories/queries'
 import { useFavoriteCategoryIds } from '@/features/categories/favorites-queries'
 import { useAccounts } from '@/features/accounts/queries'
+import { AccountSelect } from '@/features/accounts/components/AccountSelect'
 import type { Subscription, SubscriptionCadence } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 import { formatVND } from '@/shared/lib/format'
@@ -166,16 +176,23 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
         {cadence === 'yearly' && (
           <div className="flex flex-col gap-2">
             <Label htmlFor="sub-month">{t('sub.monthOfYear')}</Label>
-            <select
-              id="sub-month"
-              value={monthOfYear}
-              onChange={(e) => setMonthOfYear(Number(e.target.value))}
-              className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+            <Select
+              value={String(monthOfYear)}
+              onValueChange={(nextValue) => nextValue && setMonthOfYear(Number(nextValue))}
             >
-              {MONTHS.map((m, i) => (
-                <option key={i + 1} value={i + 1}>{m}</option>
-              ))}
-            </select>
+              <SelectTrigger id="sub-month">
+                <SelectValue>{(selected: string | null) => MONTHS[Number(selected) - 1] ?? MONTHS[0]}</SelectValue>
+              </SelectTrigger>
+              <SelectPortal>
+                <SelectPositioner>
+                  <SelectPopup>
+                    {MONTHS.map((m, i) => (
+                      <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>
+                    ))}
+                  </SelectPopup>
+                </SelectPositioner>
+              </SelectPortal>
+            </Select>
           </div>
         )}
       </div>
@@ -195,16 +212,13 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
       {/* Account */}
       <div className="flex flex-col gap-2">
         <Label htmlFor="sub-account">{t('form.account')}</Label>
-        <select
+        <AccountSelect
           id="sub-account"
           value={accountId}
-          onChange={(e) => setAccountId(e.target.value)}
-          className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-        >
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>{a.name}</option>
-          ))}
-        </select>
+          onChange={setAccountId}
+          accounts={accounts}
+          placeholder={t('form.selectAccount')}
+        />
       </div>
 
       {/* Note */}
