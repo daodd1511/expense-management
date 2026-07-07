@@ -17,14 +17,23 @@ are added.
 _Avoid_: initial balance, starting balance
 
 **Computed balance**:
-An account's balance as of now, derived from its opening balance plus every
-income, minus every expense, adjusted for transfers. Derived on demand, never
-stored.
+An account's balance at a point in the ledger, derived from its opening balance
+plus every income, minus every expense, adjusted for transfers. Derived on
+demand, never stored.
 _Avoid_: current balance, running balance
+
+**Post-transaction balance**:
+An account's computed balance immediately after a particular transaction is
+applied.
+_Avoid_: remaining balance, balance after
 
 **Transaction**:
 A single movement of money: an income, an expense, or a transfer.
 _Avoid_: entry, record, payment
+
+**Ledger order**:
+The chronological order in which transactions are applied to derive balances.
+_Avoid_: display order, row order, sort order
 
 **Transfer**:
 A transaction that moves money between two of the user's own accounts. It is
@@ -89,4 +98,8 @@ _Avoid_: cents, minor units, decimal amount
 **Local date**:
 A calendar date with no time and no timezone (a plain year-month-day), not an
 instant.
+_Avoid_: timestamp, datetime
+
+**Local time**:
+A wall-clock hour and minute with no date and no timezone.
 _Avoid_: timestamp, datetime

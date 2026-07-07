@@ -5,8 +5,11 @@ _git and `EXECUTION.md` STATUS blocks win._
 
 | Spec | Status | Phases | Debt | Description |
 |------|--------|--------|------|-------------|
+| [transaction-running-balance](transaction-running-balance/PLAN.md) | In progress | 1/3 | — | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
+| [balance-adjustment](balance-adjustment/PLAN.md) | Not started | — | — | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
 | [be-integration](be-integration/PLAN.md) | Not started | — | — |  FE (browser) 1. Google OAuth via Supabase Auth → receives access_token (JWT) 2. Stores token in… |
 | [docs-dashboard](docs-dashboard/PLAN.md) | Not started | — | — | Produced via /grill-me interview, prompted by… |
+| [transfer-fee](transfer-fee/PLAN.md) | Not started | — | — | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
 | [api-restructure](api-restructure/PLAN.md) | Done | 4/4 | — | Fourth and final spec of the batch. A behavior-preserving migration of packages/api from flat… |
 | [auth-routing](auth-routing/PLAN.md) | Done | 3/3 | — | Add email/password auth alongside the existing Google OAuth flow, and replace the app's… |
 | [category-redesign](category-redesign/PLAN.md) | Done | 3/3 | ⚠ manual browser checks (2 items) deferred; review checklist incomplete | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |

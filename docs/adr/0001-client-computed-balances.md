@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0004
+---
+
 # Balances are computed on the client, not stored or served
 
 Account balances are derived on the client by folding every transaction over
