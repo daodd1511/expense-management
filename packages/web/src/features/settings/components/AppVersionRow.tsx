@@ -6,23 +6,18 @@ import { Card } from '@/shared/components/ui/card'
 
 export function AppVersionRow() {
   const { t } = useLang()
-  const { isUpdateToastVisible, needRefresh, toggleUpdateToast, updateServiceWorker } = usePwaUpdate()
+  const { needRefresh, updateServiceWorker } = usePwaUpdate()
 
   return (
     <Card className="flex flex-col gap-2 px-5 py-4">
       <p className="text-sm font-medium">{t('settings.version')}</p>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">{APP_VERSION} · {APP_COMMIT} · {APP_COMMIT_DATE}</p>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={toggleUpdateToast}>
-            {isUpdateToastVisible ? t('settings.hideUpdateToast') : t('settings.showUpdateToast')}
+        {needRefresh ? (
+          <Button variant="outline" size="sm" onClick={() => void updateServiceWorker(true)}>
+            {t('settings.updateAction')}
           </Button>
-          {needRefresh ? (
-            <Button variant="outline" size="sm" onClick={() => void updateServiceWorker(true)}>
-              {t('settings.updateAction')}
-            </Button>
-          ) : null}
-        </div>
+        ) : null}
       </div>
     </Card>
   )

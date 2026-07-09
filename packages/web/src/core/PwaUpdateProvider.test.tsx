@@ -1,9 +1,7 @@
 import { render, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { dismissMock, toastMock, setNeedRefreshMock, updateServiceWorkerMock, useRegisterSWMock } = vi.hoisted(() => ({
-  dismissMock: vi.fn(),
+const { toastMock, setNeedRefreshMock, updateServiceWorkerMock, useRegisterSWMock } = vi.hoisted(() => ({
   toastMock: vi.fn(),
   setNeedRefreshMock: vi.fn(),
   updateServiceWorkerMock: vi.fn().mockResolvedValue(undefined),
@@ -12,7 +10,6 @@ const { dismissMock, toastMock, setNeedRefreshMock, updateServiceWorkerMock, use
 
 vi.mock('sonner', () => ({
   toast: Object.assign(toastMock, {
-    dismiss: dismissMock,
     error: vi.fn(),
   }),
 }))
@@ -22,17 +19,10 @@ vi.mock('virtual:pwa-register/react', () => ({
 }))
 
 import { LangProvider } from '@/core/i18n'
-import { PwaUpdateProvider, usePwaUpdate } from './PwaUpdateProvider'
-
-function ToggleToastProbe() {
-  const { toggleUpdateToast } = usePwaUpdate()
-
-  return <button onClick={toggleUpdateToast}>toggle</button>
-}
+import { PwaUpdateProvider } from './PwaUpdateProvider'
 
 describe('PwaUpdateProvider', () => {
   beforeEach(() => {
-    dismissMock.mockReset()
     toastMock.mockReset()
     setNeedRefreshMock.mockReset()
     updateServiceWorkerMock.mockReset()
@@ -91,30 +81,5 @@ describe('PwaUpdateProvider', () => {
     )
 
     expect(toastMock).not.toHaveBeenCalled()
-  })
-
-  it('toggles the preview toast on and off', async () => {
-    const user = userEvent.setup()
-    useRegisterSWMock.mockReturnValue({
-      needRefresh: [false, setNeedRefreshMock],
-      offlineReady: [false, vi.fn()],
-      updateServiceWorker: updateServiceWorkerMock,
-    })
-
-    const { getByRole } = render(
-      <LangProvider>
-        <PwaUpdateProvider>
-          <ToggleToastProbe />
-        </PwaUpdateProvider>
-      </LangProvider>,
-    )
-
-    await user.click(getByRole('button', { name: 'toggle' }))
-    expect(toastMock).toHaveBeenCalledWith('Update available', expect.objectContaining({
-      id: 'pwa-update-toast',
-    }))
-
-    await user.click(getByRole('button', { name: 'toggle' }))
-    expect(dismissMock).toHaveBeenCalledWith('pwa-update-toast')
   })
 })
