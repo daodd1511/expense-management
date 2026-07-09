@@ -5,9 +5,9 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 1 — done
+- Current phase: 2 — done
 - Phase 1 — Version display + build stamping: done
-- Phase 2 — Prompt-mode update flow: pending
+- Phase 2 — Prompt-mode update flow: done
 - Verification debt: none
 
 ## Phase 1 — Version display + build stamping
@@ -63,29 +63,29 @@ control attaches to the `AppVersionRow` component. Prompt-mode switch and the ap
 (provider + toast + Settings control) must land together — switching to `prompt` without them
 would leave the waiting worker never activating.
 
-- [ ] `packages/web/vite.config.ts` — change `registerType: 'autoUpdate'` → `'prompt'`; set
+- [x] `packages/web/vite.config.ts` — change `registerType: 'autoUpdate'` → `'prompt'`; set
       `injectRegister` so the worker registers exactly once via the app hook (not also via an
       auto-injected `registerSW.js`). Judgment call left to impl: exact `injectRegister` value —
       verify only one registration happens.
-- [ ] New `PwaUpdateProvider` (`packages/web/src/core/PwaUpdateProvider.tsx`) — calls
+- [x] New `PwaUpdateProvider` (`packages/web/src/core/PwaUpdateProvider.tsx`) — calls
       `useRegisterSW()` from `virtual:pwa-register/react` once; in `onRegisteredSW`, run
       waiting-at-startup logic (if `registration.waiting` exists at launch → show one sticky
       `sonner` toast with an "Update" action → `updateServiceWorker(true)`). Expose
       `{ needRefresh, updateServiceWorker }` via React context. Mid-session `needRefresh` → no
       toast (context only).
-- [ ] `packages/web/src/main.tsx` — mount `PwaUpdateProvider` around the tree (Toaster already
+- [x] `packages/web/src/main.tsx` — mount `PwaUpdateProvider` around the tree (Toaster already
       present).
-- [ ] Extend `AppVersionRow` — when `needRefresh` is true, show an inline "Update" button →
+- [x] Extend `AppVersionRow` — when `needRefresh` is true, show an inline "Update" button →
       `updateServiceWorker(true)`; otherwise version string only.
-- [ ] i18n: add VI + EN keys for toast title/body/action and the "Update" button in
+- [x] i18n: add VI + EN keys for toast title/body/action and the "Update" button in
       `packages/web/src/core/i18n.tsx` (both objects).
-- [ ] Leave `packages/web/src/core/swUpdate.ts` unchanged — it still drives foreground detection
+- [x] Leave `packages/web/src/core/swUpdate.ts` unchanged — it still drives foreground detection
       that feeds `needRefresh`; confirm it's not double-registering against the provider.
 
 **Agent gate (hard):**
-- [ ] `pnpm typecheck`
-- [ ] `pnpm test`
-- [ ] `pnpm build`
+- [x] `pnpm typecheck`
+- [x] `pnpm test`
+- [x] `pnpm build`
 
 **Review checklist (user, at PR review — requires a real deploy + device/browser, not
 agent-runnable):**
