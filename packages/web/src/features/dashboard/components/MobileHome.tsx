@@ -1,4 +1,3 @@
-
 import { ArrowDownLeft, ArrowUpRight, ChevronRight, TrendingUp } from 'lucide-react'
 import { DATE_LOCALE } from '@/core/i18n'
 import { BalanceTrendChart, CategoryDonut } from '@/shared/components/Charts'
@@ -68,7 +67,6 @@ export function MobileHome({
       <Card className="overflow-hidden border-0 bg-primary text-primary-foreground">
         <CardContent className="p-5">
           <div className="flex items-center justify-between">
-            <span>Test deploy</span>
             <span className="text-sm opacity-80">{t('dashboard.monthBalance')} · {monthLabel(new Date(), lang)}</span>
             <TrendingUp className="size-4 opacity-80" />
           </div>
