@@ -108,7 +108,7 @@ export function TransactionRow({
           </span>
           {typeof tx.balanceAfter === 'number' && (
             <span className="text-xs tabular text-muted-foreground">
-              {t('tx.balanceAfter', { amount: formatVND(tx.balanceAfter) })}
+              {formatVND(tx.balanceAfter)}
             </span>
           )}
           {tx.time && <span className="text-xs text-muted-foreground">{tx.time}</span>}

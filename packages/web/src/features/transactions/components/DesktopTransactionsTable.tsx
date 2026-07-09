@@ -274,7 +274,7 @@ export function DesktopTransactionsTable({
             </span>
             {typeof row.original.transaction.balanceAfter === 'number' && (
               <span className="text-xs tabular text-muted-foreground">
-                {t('tx.balanceAfter', { amount: formatVND(row.original.transaction.balanceAfter) })}
+                {formatVND(row.original.transaction.balanceAfter)}
               </span>
             )}
           </span>
