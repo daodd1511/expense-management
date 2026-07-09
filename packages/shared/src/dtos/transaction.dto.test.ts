@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { transactionCreateSchema } from './transaction.dto'
+import { transactionCreateSchema, transactionPatchSchema } from './transaction.dto'
 
 function tomorrowIsoDate() {
   const date = new Date()
@@ -82,6 +82,31 @@ describe('transactionCreateSchema', () => {
       date: '2026-07-01',
       time: '24:00',
       receipt: null,
+    })
+
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects response-only balanceAfter in create payloads', () => {
+    const result = transactionCreateSchema.safeParse({
+      type: 'expense',
+      amount: 1213,
+      categoryId: 'cat-1',
+      accountId: 'acc-1',
+      merchant: 'AAA',
+      date: '2026-07-01',
+      balanceAfter: 999,
+      receipt: null,
+    })
+
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('transactionPatchSchema', () => {
+  it('rejects response-only balanceAfter in patch payloads', () => {
+    const result = transactionPatchSchema.safeParse({
+      balanceAfter: 999,
     })
 
     expect(result.success).toBe(false)

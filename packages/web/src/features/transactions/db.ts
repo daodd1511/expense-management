@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { Transaction } from '@/core/types'
 import { apiJson } from '@/core/api'
-import { transactionSchema } from '@wallet/shared'
+import { transactionSchema, type TransactionCreate, type TransactionPatch } from '@wallet/shared'
 
 const transactionsResponseSchema = z.object({
   data: z.array(transactionSchema),
@@ -27,17 +27,14 @@ export async function fetchTransactions(month: string): Promise<Transaction[]> {
   return response.data
 }
 
-export async function insertTransaction(transaction: Omit<Transaction, 'id'>): Promise<void> {
+export async function insertTransaction(transaction: TransactionCreate): Promise<void> {
   await apiJson('/transactions', transactionResponseSchema, {
     method: 'POST',
     body: JSON.stringify(transaction),
   })
 }
 
-export async function patchTransaction(
-  id: string,
-  patch: Partial<Transaction>,
-): Promise<void> {
+export async function patchTransaction(id: string, patch: TransactionPatch): Promise<void> {
   await apiJson(`/transactions/${id}`, transactionResponseSchema, {
     method: 'PATCH',
     body: JSON.stringify(patch),

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/auth'
+import { invalidateSubscriptionLogDependentQueries } from '@/core/query-invalidation'
 import {
   deleteSubscription,
   fetchSubscriptions,
@@ -51,9 +52,6 @@ export function useLogSubscription() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (subscription: Subscription) => logSubscription(subscription),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['transactions', user?.id] })
-      qc.invalidateQueries({ queryKey: ['subscriptions', user?.id] })
-    },
+    onSuccess: () => invalidateSubscriptionLogDependentQueries(qc, user?.id),
   })
 }

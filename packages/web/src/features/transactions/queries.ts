@@ -7,8 +7,10 @@ import {
   insertTransaction,
   patchTransaction,
 } from '@/features/transactions/db'
+import { invalidateTransactionDependentQueries } from '@/core/query-invalidation'
 import { todayLocalMonthIso } from '@/shared/lib/date'
 import type { Transaction } from '@/core/types'
+import type { TransactionCreate, TransactionPatch } from '@wallet/shared'
 
 type TransactionQueryKey = ['transactions', string | undefined, string]
 
@@ -20,10 +22,30 @@ function getTransactionsQueryKey(userId: string | undefined, month: string): Tra
   return ['transactions', userId, month]
 }
 
-function createOptimisticTransaction(transaction: Omit<Transaction, 'id'>): Transaction {
+function createOptimisticTransaction(transaction: TransactionCreate): Transaction {
   return {
     id: `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     ...transaction,
+  }
+}
+
+function applyOptimisticPatch(transaction: Transaction, patch: TransactionPatch): Transaction {
+  const normalizedPatch: Partial<Transaction> = {
+    ...(patch.type !== undefined && { type: patch.type }),
+    ...(patch.amount !== undefined && { amount: patch.amount }),
+    ...(patch.categoryId !== undefined && { categoryId: patch.categoryId }),
+    ...(patch.accountId !== undefined && { accountId: patch.accountId }),
+    ...(patch.toAccountId !== undefined && { toAccountId: patch.toAccountId }),
+    ...(patch.merchant !== undefined && { merchant: patch.merchant }),
+    ...(patch.note !== undefined && { note: patch.note ?? undefined }),
+    ...(patch.date !== undefined && { date: patch.date }),
+    ...(patch.time !== undefined && { time: patch.time ?? undefined }),
+    ...(patch.receipt !== undefined && { receipt: patch.receipt }),
+  }
+
+  return {
+    ...transaction,
+    ...normalizedPatch,
   }
 }
 
@@ -41,7 +63,7 @@ export function useAddTransaction(month: string = todayLocalMonthIso()) {
   const qc = useQueryClient()
   const queryKey = getTransactionsQueryKey(user?.id, month)
   return useMutation({
-    mutationFn: (transaction: Omit<Transaction, 'id'>) => insertTransaction(transaction),
+    mutationFn: (transaction: TransactionCreate) => insertTransaction(transaction),
     onMutate: async (transaction): Promise<TransactionMutationContext> => {
       await qc.cancelQueries({ queryKey })
       const previousTransactions = qc.getQueryData<Transaction[]>(queryKey)
@@ -56,7 +78,7 @@ export function useAddTransaction(month: string = todayLocalMonthIso()) {
     onError: (_error, _transaction, context) => {
       qc.setQueryData(queryKey, context?.previousTransactions)
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['transactions', user?.id] }),
+    onSettled: () => invalidateTransactionDependentQueries(qc, user?.id),
   })
 }
 
@@ -65,14 +87,14 @@ export function useUpdateTransaction(month: string = todayLocalMonthIso()) {
   const qc = useQueryClient()
   const queryKey = getTransactionsQueryKey(user?.id, month)
   return useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: Partial<Transaction> }) => patchTransaction(id, patch),
+    mutationFn: ({ id, patch }: { id: string; patch: TransactionPatch }) => patchTransaction(id, patch),
     onMutate: async ({ id, patch }): Promise<TransactionMutationContext> => {
       await qc.cancelQueries({ queryKey })
       const previousTransactions = qc.getQueryData<Transaction[]>(queryKey)
       qc.setQueryData<Transaction[]>(queryKey, (current = []) =>
         current.map((transaction) =>
           transaction.id === id
-            ? { ...transaction, ...patch }
+            ? applyOptimisticPatch(transaction, patch)
             : transaction,
         ),
       )
@@ -84,7 +106,7 @@ export function useUpdateTransaction(month: string = todayLocalMonthIso()) {
     onError: (_error, _variables, context) => {
       qc.setQueryData(queryKey, context?.previousTransactions)
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['transactions', user?.id] }),
+    onSettled: () => invalidateTransactionDependentQueries(qc, user?.id),
   })
 }
 
@@ -105,7 +127,7 @@ export function useDeleteTransaction(month: string = todayLocalMonthIso()) {
     onError: (_error, _id, context) => {
       qc.setQueryData(queryKey, context?.previousTransactions)
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['transactions', user?.id] }),
+    onSettled: () => invalidateTransactionDependentQueries(qc, user?.id),
   })
 }
 
@@ -114,6 +136,6 @@ export function useDeleteTransactions() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (ids: string[]) => deleteTransactions(ids),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['transactions', user?.id] }),
+    onSuccess: () => invalidateTransactionDependentQueries(qc, user?.id),
   })
 }

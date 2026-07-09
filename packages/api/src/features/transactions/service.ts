@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { type TransactionCreate, type TransactionPatch } from '@wallet/shared'
+import { computeRunningBalances, transactionSchema, type TransactionCreate, type TransactionPatch } from '@wallet/shared'
 import { ApiError } from '../../middleware/error'
 import * as repository from './repository'
 import { monthFilterSchema } from './schema'
@@ -15,17 +15,37 @@ function monthBounds(month: string) {
 }
 
 export async function listTransactions(userId: string, month?: string) {
-  if (month === undefined) {
-    return repository.listTransactions({ userId })
+  let start: string | undefined
+  let end: string | undefined
+
+  if (month !== undefined) {
+    const parsedMonth = monthFilterSchema.safeParse(month)
+    if (!parsedMonth.success) {
+      throw new ApiError(400, 'Invalid month query', z.flattenError(parsedMonth.error))
+    }
+
+    const bounds = monthBounds(parsedMonth.data)
+    start = bounds.start
+    end = bounds.end
   }
 
-  const parsedMonth = monthFilterSchema.safeParse(month)
-  if (!parsedMonth.success) {
-    throw new ApiError(400, 'Invalid month query', z.flattenError(parsedMonth.error))
+  const [openingBalances, ledgerTransactions] = await Promise.all([
+    repository.listAccountOpeningBalances(userId),
+    repository.listTransactionsForBalance({ userId, throughExclusive: end }),
+  ])
+
+  const transactionsWithBalances = computeRunningBalances(ledgerTransactions, openingBalances)
+  const visibleTransactions =
+    start === undefined || end === undefined
+      ? transactionsWithBalances
+      : transactionsWithBalances.filter((transaction) => transaction.date >= start && transaction.date < end)
+
+  const response = z.array(transactionSchema).safeParse(visibleTransactions.toReversed())
+  if (!response.success) {
+    throw new ApiError(500, 'Transaction list failed validation', z.flattenError(response.error))
   }
 
-  const { start, end } = monthBounds(parsedMonth.data)
-  return repository.listTransactions({ userId, start, end })
+  return response.data
 }
 
 export async function createTransaction(userId: string, transaction: TransactionCreate) {

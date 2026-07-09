@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/auth'
 import { archiveAccount, fetchAccounts, insertAccount, patchAccount } from '@/features/accounts/db'
+import { invalidateAccountDependentQueries } from '@/core/query-invalidation'
 import type { Account } from '@/core/types'
 
 type AccountInput = Omit<Account, 'id' | 'balance'>
@@ -29,7 +30,7 @@ export function useAddAccount() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (account: AccountInput) => insertAccount(account),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts', user?.id] }),
+    onSuccess: () => invalidateAccountDependentQueries(qc, user?.id),
   })
 }
 
@@ -38,7 +39,7 @@ export function useUpdateAccount() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: Partial<AccountInput> }) => patchAccount(id, patch),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts', user?.id] }),
+    onSuccess: () => invalidateAccountDependentQueries(qc, user?.id),
   })
 }
 
@@ -47,6 +48,6 @@ export function useDeleteAccount() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => archiveAccount(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts', user?.id] }),
+    onSuccess: () => invalidateAccountDependentQueries(qc, user?.id),
   })
 }

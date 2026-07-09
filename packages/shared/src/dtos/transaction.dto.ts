@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { txTypeSchema } from '../models'
-import { atLeastOneKey, isoDateSchema, localTimeSchema } from './common.dto'
+import { isoDateSchema, localTimeSchema } from './common.dto'
 
 function todayIsoDate() {
   const today = new Date()
@@ -43,9 +43,9 @@ export const transactionCreateSchema = z.object({
   time: localTimeSchema.optional(),
   receipt: z.string().trim().nullable().optional(),
   subscriptionId: z.string().min(1).nullable().optional(),
-})
+}).strict()
 
-export const transactionPatchSchema = atLeastOneKey({
+const transactionPatchObjectSchema = z.object({
   type: txTypeSchema,
   amount: z.number(),
   categoryId: z.string().min(1).nullable(),
@@ -56,6 +56,10 @@ export const transactionPatchSchema = atLeastOneKey({
   date: transactionDateSchema,
   time: localTimeSchema.nullable(),
   receipt: z.string().trim().nullable(),
+}).partial().strict()
+
+export const transactionPatchSchema = transactionPatchObjectSchema.refine((value) => Object.keys(value).length > 0, {
+  message: 'At least one field is required',
 })
 
 export const transactionBulkDeleteSchema = z.object({

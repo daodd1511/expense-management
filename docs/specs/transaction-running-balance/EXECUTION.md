@@ -5,10 +5,10 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 2 — pending
+- Current phase: All phases complete
 - Phase 1 — Transaction time prerequisite: done
-- Phase 2 — Backend balance calculation: pending
-- Phase 3 — Frontend balance display: pending
+- Phase 2 — Backend balance calculation: done
+- Phase 3 — Frontend balance display: done
 - Verification debt: none
 
 ## Phase 1 - Transaction time prerequisite
@@ -47,24 +47,24 @@ Branch: `transaction-running-balance/phase-2-backend-balance` (off `develop`, st
 
 This phase owns the backend and shared response contract so every returned transaction can carry a stable account-specific `balanceAfter` before the UI tries to display it.
 
-- [ ] `packages/shared/src/models/transaction.model.ts` adds response-only `balanceAfter?: number` to `transactionSchema`.
-- [ ] `packages/shared/src/dtos/transaction.dto.ts` adds `balanceAfter?: number` only to response/model validation where needed; `transactionCreateSchema` and `transactionPatchSchema` must not accept it.
-- [ ] `packages/shared/src/mappers/transaction.mapper.ts` preserves `balanceAfter` when mapping validated response rows/models and does not write any balance field in `fromTransaction` or `transactionPatchToRow`.
-- [ ] `packages/shared/src/finance.ts` adds or reuses pure ledger helpers for per-account running balances, including income, expense, source-account transfer debit, and destination-account transfer credit.
-- [ ] `packages/shared/src/finance.test.ts` covers account-specific `balanceAfter`, same-day `time` ordering, null-time fallback behavior, and transfer source/destination balance effects.
-- [ ] `packages/api/src/features/transactions/repository.ts` fetches the account opening balances needed for the requesting user.
-- [ ] `packages/api/src/features/transactions/repository.ts` fetches enough user transactions for balance calculation: all rows for no `month`, and all rows through the requested month end for `month=YYYY-MM`.
-- [ ] `packages/api/src/features/transactions/repository.ts` orders ledger input deterministically by `tx_date ASC`, `tx_time ASC` with null-time fallback to `created_at`, then `created_at ASC`, then `id ASC`, while preserving the current newest-first display return order.
-- [ ] `packages/api/src/features/transactions/service.ts` computes account running balances in ledger order and attaches each visible row's source-account `balanceAfter`.
-- [ ] `packages/api/src/features/transactions/service.ts` returns only requested-month rows when `month=YYYY-MM`, but calculates their balances from all prior same-user rows through the month end.
-- [ ] `packages/api/src/features/transactions/service.ts` leaves create/update/delete behavior unchanged; recalculation happens on the next list read after existing invalidation/refetch.
-- [ ] `packages/api/src/features/transactions/transactions.test.ts` covers unfiltered list balances, month-filtered balances that include prior history, edit/delete recalculation via list refetch, same-day time ordering, null-time deterministic fallback, and transfer source/destination effects.
+- [x] `packages/shared/src/models/transaction.model.ts` adds response-only `balanceAfter?: number` to `transactionSchema`.
+- [x] `packages/shared/src/dtos/transaction.dto.ts` adds `balanceAfter?: number` only to response/model validation where needed; `transactionCreateSchema` and `transactionPatchSchema` must not accept it.
+- [x] `packages/shared/src/mappers/transaction.mapper.ts` preserves `balanceAfter` when mapping validated response rows/models and does not write any balance field in `fromTransaction` or `transactionPatchToRow`.
+- [x] `packages/shared/src/finance.ts` adds or reuses pure ledger helpers for per-account running balances, including income, expense, source-account transfer debit, and destination-account transfer credit.
+- [x] `packages/shared/src/finance.test.ts` covers account-specific `balanceAfter`, same-day `time` ordering, null-time fallback behavior, and transfer source/destination balance effects.
+- [x] `packages/api/src/features/transactions/repository.ts` fetches the account opening balances needed for the requesting user.
+- [x] `packages/api/src/features/transactions/repository.ts` fetches enough user transactions for balance calculation: all rows for no `month`, and all rows through the requested month end for `month=YYYY-MM`.
+- [x] `packages/api/src/features/transactions/repository.ts` orders ledger input deterministically by `tx_date ASC`, `tx_time ASC` with null-time fallback to `created_at`, then `created_at ASC`, then `id ASC`, while preserving the current newest-first display return order.
+- [x] `packages/api/src/features/transactions/service.ts` computes account running balances in ledger order and attaches each visible row's source-account `balanceAfter`.
+- [x] `packages/api/src/features/transactions/service.ts` returns only requested-month rows when `month=YYYY-MM`, but calculates their balances from all prior same-user rows through the month end.
+- [x] `packages/api/src/features/transactions/service.ts` leaves create/update/delete behavior unchanged; recalculation happens on the next list read after existing invalidation/refetch.
+- [x] `packages/api/src/features/transactions/transactions.test.ts` covers unfiltered list balances, month-filtered balances that include prior history, edit/delete recalculation via list refetch, same-day time ordering, null-time deterministic fallback, and transfer source/destination effects.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/shared test -- finance transaction.dto`
-- [ ] `pnpm --filter @wallet/api test -- transactions`
-- [ ] `pnpm --filter @wallet/api typecheck`
-- [ ] `pnpm typecheck`
+- [x] `pnpm --filter @wallet/shared test -- finance transaction.dto`
+- [x] `pnpm --filter @wallet/api test -- transactions`
+- [x] `pnpm --filter @wallet/api typecheck`
+- [x] `pnpm typecheck`
 
 **Review checklist (user, at PR review):**
 - [ ] Inspect API response examples for `GET /transactions` and `GET /transactions?month=YYYY-MM`; each returned transaction includes account-specific `balanceAfter`.
@@ -78,17 +78,17 @@ Branch: `transaction-running-balance/phase-3-frontend-display` (off `transaction
 
 This phase is display-only and depends on Phase 2 exposing `balanceAfter` in the transaction model.
 
-- [ ] `packages/web/src/core/types.ts` or the shared transaction import path used by the web app accepts `balanceAfter?: number` from the API response.
-- [ ] `packages/web/src/features/transactions/components/DesktopTransactionsTable.tsx` renders `balanceAfter` below the amount in muted tabular text and does not add a new desktop table column.
-- [ ] `packages/web/src/features/transactions/components/TransactionRow.tsx` renders `balanceAfter` below the amount in muted tabular text on mobile.
-- [ ] `packages/web/src/core/i18n.tsx` adds a compact localized balance subline label if needed, such as `tx.balanceAfter`.
-- [ ] `packages/web/src/features/transactions/components/TransactionRow.test.tsx` covers mobile balance subline rendering for income, expense, and transfer rows.
-- [ ] Add or extend the closest desktop transaction table test for `DesktopTransactionsTable.tsx`; if no harness exists, create a focused component test that verifies the amount cell shows the balance subline without changing column count.
+- [x] `packages/web/src/core/types.ts` or the shared transaction import path used by the web app accepts `balanceAfter?: number` from the API response.
+- [x] `packages/web/src/features/transactions/components/DesktopTransactionsTable.tsx` renders `balanceAfter` below the amount in muted tabular text and does not add a new desktop table column.
+- [x] `packages/web/src/features/transactions/components/TransactionRow.tsx` renders `balanceAfter` below the amount in muted tabular text on mobile.
+- [x] `packages/web/src/core/i18n.tsx` adds a compact localized balance subline label if needed, such as `tx.balanceAfter`.
+- [x] `packages/web/src/features/transactions/components/TransactionRow.test.tsx` covers mobile balance subline rendering for income, expense, and transfer rows.
+- [x] Add or extend the closest desktop transaction table test for `DesktopTransactionsTable.tsx`; if no harness exists, create a focused component test that verifies the amount cell shows the balance subline without changing column count.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web test -- TransactionRow DesktopTransactionsTable`
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm typecheck`
+- [x] `pnpm --filter @wallet/web test -- TransactionRow DesktopTransactionsTable`
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm typecheck`
 
 **Review checklist (user, at PR review):**
 - [ ] Desktop shows remaining balance below the amount with no extra table column.
