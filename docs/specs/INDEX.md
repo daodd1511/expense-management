@@ -5,6 +5,7 @@ _git and `EXECUTION.md` STATUS blocks win._
 
 | Spec | Status | Phases | Debt | Description |
 |------|--------|--------|------|-------------|
+| [pwa-update-prompt](pwa-update-prompt/PLAN.md) | In progress | 1/2 | — | Produced via /grill-with-docs interview. All decisions below were explicitly confirmed; do not… |
 | [transaction-running-balance](transaction-running-balance/PLAN.md) | In progress | 1/3 | — | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
 | [balance-adjustment](balance-adjustment/PLAN.md) | Not started | — | — | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
 | [system-category-translations](system-category-translations/PLAN.md) | Not started | — | — | Produced via /grill-me interview with /grill-with-docs follow-up. All decisions below were… |
