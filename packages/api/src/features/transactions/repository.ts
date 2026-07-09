@@ -1,11 +1,14 @@
 import {
+  accountRowSchema,
   fromTransaction,
   toTransaction,
   transactionPatchToRow,
   transactionRowSchema,
+  type AccountRow,
   type Transaction,
   type TransactionCreate,
   type TransactionPatch,
+  type TransactionRow,
 } from '@wallet/shared'
 import { getSupabase } from '../../config/supabase'
 import { parseRows } from '../../lib/response'
@@ -20,17 +23,44 @@ function parseTransactionRow(data: unknown, message: string): Transaction {
   return toTransaction(result.data)
 }
 
-export async function listTransactions(params: { userId: string; start?: string; end?: string }) {
+function compareLedgerRows(a: TransactionRow, b: TransactionRow) {
+  const dateComparison = a.tx_date.localeCompare(b.tx_date)
+  if (dateComparison !== 0) return dateComparison
+
+  const timeComparison = (a.tx_time ?? a.created_at.slice(11, 16)).localeCompare(b.tx_time ?? b.created_at.slice(11, 16))
+  if (timeComparison !== 0) return timeComparison
+
+  const createdAtComparison = a.created_at.localeCompare(b.created_at)
+  if (createdAtComparison !== 0) return createdAtComparison
+
+  return a.id.localeCompare(b.id)
+}
+
+export async function listAccountOpeningBalances(userId: string) {
+  const supabase = getSupabase()
+  const { data, error } = await supabase.from('accounts').select('*').eq('owner_id', userId)
+
+  if (error) {
+    throw error
+  }
+
+  const accounts = parseRows(data, accountRowSchema, (row: AccountRow) => row)
+  return Object.fromEntries(accounts.map((account) => [account.id, account.opening_balance]))
+}
+
+export async function listTransactionsForBalance(params: { userId: string; throughExclusive?: string }) {
   const supabase = getSupabase()
   let query = supabase
     .from('transactions')
     .select('*')
     .eq('owner_id', params.userId)
-    .order('tx_date', { ascending: false })
-    .order('created_at', { ascending: false })
+    .order('tx_date', { ascending: true })
+    .order('tx_time', { ascending: true })
+    .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
 
-  if (params.start !== undefined && params.end !== undefined) {
-    query = query.gte('tx_date', params.start).lt('tx_date', params.end)
+  if (params.throughExclusive !== undefined) {
+    query = query.lt('tx_date', params.throughExclusive)
   }
 
   const { data, error } = await query
@@ -38,7 +68,9 @@ export async function listTransactions(params: { userId: string; start?: string;
     throw error
   }
 
-  return parseRows(data, transactionRowSchema, toTransaction)
+  return parseRows(data, transactionRowSchema, (row) => row)
+    .sort(compareLedgerRows)
+    .map(toTransaction)
 }
 
 export async function createTransaction(userId: string, transaction: TransactionCreate) {
