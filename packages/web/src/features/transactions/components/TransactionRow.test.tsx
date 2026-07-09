@@ -29,10 +29,9 @@ vi.mock('@/features/transactions/queries', () => ({
 
 vi.mock('@/core/i18n', () => ({
   useLang: () => ({
-    t: (key: string, vars?: Record<string, string | number>) =>
+    t: (key: string) =>
       ({
         'tx.transfer': 'Transfer',
-        'tx.balanceAfter': `Balance ${vars?.amount ?? ''}`,
       })[key] ?? key,
   }),
 }))
@@ -105,7 +104,7 @@ describe('TransactionRow', () => {
   it('shows the balance subline for expense, income, and transfer rows', () => {
     const { rerender } = render(<TransactionRow tx={makeTransaction({ balanceAfter: 125000 })} />)
 
-    expect(screen.getByText('Balance 125.000 ₫')).toBeDefined()
+    expect(screen.getByText('125.000 ₫')).toBeDefined()
 
     rerender(
       <TransactionRow
@@ -119,7 +118,7 @@ describe('TransactionRow', () => {
         })}
       />,
     )
-    expect(screen.getByText('Balance 6.125.000 ₫')).toBeDefined()
+    expect(screen.getByText('6.125.000 ₫')).toBeDefined()
 
     rerender(
       <TransactionRow
@@ -133,6 +132,6 @@ describe('TransactionRow', () => {
         })}
       />,
     )
-    expect(screen.getByText('Balance 825.000 ₫')).toBeDefined()
+    expect(screen.getByText('825.000 ₫')).toBeDefined()
   })
 })

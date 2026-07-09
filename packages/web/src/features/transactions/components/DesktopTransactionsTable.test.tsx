@@ -80,7 +80,6 @@ vi.mock('@/core/i18n', () => ({
         'tx.selectAll': 'Select all',
         'tx.selectItem': `Select ${vars?.name ?? ''}`,
         'tx.notFound': 'No transactions found.',
-        'tx.balanceAfter': `Balance ${vars?.amount ?? ''}`,
       })[key] ?? key,
   }),
 }))
@@ -149,6 +148,6 @@ describe('DesktopTransactionsTable', () => {
 
     const amountCell = screen.getByText('−150.000 ₫').closest('td')
     expect(amountCell).not.toBeNull()
-    expect(within(amountCell as HTMLTableCellElement).getByText('Balance 850.000 ₫')).toBeDefined()
+    expect(within(amountCell as HTMLTableCellElement).getByText('850.000 ₫')).toBeDefined()
   })
 })
