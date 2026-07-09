@@ -29,30 +29,36 @@ vi.mock('@/features/transactions/queries', () => ({
 
 vi.mock('@/core/i18n', () => ({
   useLang: () => ({
-    t: (key: string) =>
+    t: (key: string, vars?: Record<string, string | number>) =>
       ({
         'tx.transfer': 'Transfer',
+        'tx.balanceAfter': `Balance ${vars?.amount ?? ''}`,
       })[key] ?? key,
   }),
 }))
+
+function makeTransaction(overrides: Partial<Parameters<typeof TransactionRow>[0]['tx']> = {}) {
+  return {
+    id: 'tx-1',
+    type: 'expense' as const,
+    amount: 150000,
+    categoryId: 'food',
+    accountId: 'cash',
+    toAccountId: null,
+    merchant: 'Coffee',
+    note: undefined,
+    date: '2026-07-05',
+    receipt: null,
+    subscriptionId: null,
+    ...overrides,
+  }
+}
 
 describe('TransactionRow', () => {
   it('shows the parent breadcrumb only for nested categories', () => {
     render(
       <TransactionRow
-        tx={{
-          id: 'tx-1',
-          type: 'expense',
-          amount: 150000,
-          categoryId: 'dating',
-          accountId: 'cash',
-          toAccountId: null,
-          merchant: 'Coffee',
-          note: undefined,
-          date: '2026-07-05T10:00:00.000Z',
-          receipt: null,
-          subscriptionId: null,
-        }}
+        tx={makeTransaction({ categoryId: 'dating' })}
       />,
     )
 
@@ -63,19 +69,14 @@ describe('TransactionRow', () => {
   it('keeps top-level categories flat', () => {
     render(
       <TransactionRow
-        tx={{
+        tx={makeTransaction({
           id: 'tx-2',
           type: 'income',
           amount: 5000000,
           categoryId: 'salary',
           accountId: 'bank',
-          toAccountId: null,
           merchant: 'Payroll',
-          note: undefined,
-          date: '2026-07-05T10:00:00.000Z',
-          receipt: null,
-          subscriptionId: null,
-        }}
+        })}
       />,
     )
 
@@ -86,23 +87,52 @@ describe('TransactionRow', () => {
   it('leaves transfer subtitles unchanged', () => {
     render(
       <TransactionRow
-        tx={{
+        tx={makeTransaction({
           id: 'tx-3',
           type: 'transfer',
           amount: 200000,
           categoryId: null,
-          accountId: 'cash',
           toAccountId: 'bank',
           merchant: 'Transfer',
-          note: undefined,
-          date: '2026-07-05T10:00:00.000Z',
-          receipt: null,
-          subscriptionId: null,
-        }}
+        })}
       />,
     )
 
     expect(screen.getByText('Transfer')).toBeDefined()
     expect(screen.getByText('Cash → Bank')).toBeDefined()
+  })
+
+  it('shows the balance subline for expense, income, and transfer rows', () => {
+    const { rerender } = render(<TransactionRow tx={makeTransaction({ balanceAfter: 125000 })} />)
+
+    expect(screen.getByText('Balance 125.000 ₫')).toBeDefined()
+
+    rerender(
+      <TransactionRow
+        tx={makeTransaction({
+          id: 'tx-2',
+          type: 'income',
+          accountId: 'bank',
+          categoryId: 'salary',
+          amount: 5000000,
+          balanceAfter: 6125000,
+        })}
+      />,
+    )
+    expect(screen.getByText('Balance 6.125.000 ₫')).toBeDefined()
+
+    rerender(
+      <TransactionRow
+        tx={makeTransaction({
+          id: 'tx-3',
+          type: 'transfer',
+          categoryId: null,
+          toAccountId: 'bank',
+          amount: 300000,
+          balanceAfter: 825000,
+        })}
+      />,
+    )
+    expect(screen.getByText('Balance 825.000 ₫')).toBeDefined()
   })
 })

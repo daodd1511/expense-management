@@ -26,7 +26,7 @@ import { Input } from '@/shared/components/ui/input'
 import { TransactionsSkeleton } from '@/shared/components/Skeleton'
 import { Select, SelectItem, SelectPopup, SelectPortal, SelectPositioner, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
-import { amountColorClass, formatShortDate, formatSigned } from '@/shared/lib/format'
+import { amountColorClass, formatShortDate, formatSigned, formatVND } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/utils'
 
 const PAGE_SIZE = 9
@@ -268,8 +268,15 @@ export function DesktopTransactionsTable({
           />
         ),
         cell: ({ row }) => (
-          <span className={cn('block text-right tabular font-semibold', amountColorClass(row.original.transaction.type))}>
-            {formatSigned(row.original.transaction.amount, row.original.transaction.type)}
+          <span className="flex flex-col items-end text-right">
+            <span className={cn('block tabular font-semibold', amountColorClass(row.original.transaction.type))}>
+              {formatSigned(row.original.transaction.amount, row.original.transaction.type)}
+            </span>
+            {typeof row.original.transaction.balanceAfter === 'number' && (
+              <span className="text-xs tabular text-muted-foreground">
+                {t('tx.balanceAfter', { amount: formatVND(row.original.transaction.balanceAfter) })}
+              </span>
+            )}
           </span>
         ),
       },
