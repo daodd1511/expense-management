@@ -5,10 +5,10 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 2 — done
+- Current phase: All phases complete
 - Phase 1 — Transaction time prerequisite: done
 - Phase 2 — Backend balance calculation: done
-- Phase 3 — Frontend balance display: pending
+- Phase 3 — Frontend balance display: done
 - Verification debt: none
 
 ## Phase 1 - Transaction time prerequisite
@@ -78,17 +78,17 @@ Branch: `transaction-running-balance/phase-3-frontend-display` (off `transaction
 
 This phase is display-only and depends on Phase 2 exposing `balanceAfter` in the transaction model.
 
-- [ ] `packages/web/src/core/types.ts` or the shared transaction import path used by the web app accepts `balanceAfter?: number` from the API response.
-- [ ] `packages/web/src/features/transactions/components/DesktopTransactionsTable.tsx` renders `balanceAfter` below the amount in muted tabular text and does not add a new desktop table column.
-- [ ] `packages/web/src/features/transactions/components/TransactionRow.tsx` renders `balanceAfter` below the amount in muted tabular text on mobile.
-- [ ] `packages/web/src/core/i18n.tsx` adds a compact localized balance subline label if needed, such as `tx.balanceAfter`.
-- [ ] `packages/web/src/features/transactions/components/TransactionRow.test.tsx` covers mobile balance subline rendering for income, expense, and transfer rows.
-- [ ] Add or extend the closest desktop transaction table test for `DesktopTransactionsTable.tsx`; if no harness exists, create a focused component test that verifies the amount cell shows the balance subline without changing column count.
+- [x] `packages/web/src/core/types.ts` or the shared transaction import path used by the web app accepts `balanceAfter?: number` from the API response.
+- [x] `packages/web/src/features/transactions/components/DesktopTransactionsTable.tsx` renders `balanceAfter` below the amount in muted tabular text and does not add a new desktop table column.
+- [x] `packages/web/src/features/transactions/components/TransactionRow.tsx` renders `balanceAfter` below the amount in muted tabular text on mobile.
+- [x] `packages/web/src/core/i18n.tsx` adds a compact localized balance subline label if needed, such as `tx.balanceAfter`.
+- [x] `packages/web/src/features/transactions/components/TransactionRow.test.tsx` covers mobile balance subline rendering for income, expense, and transfer rows.
+- [x] Add or extend the closest desktop transaction table test for `DesktopTransactionsTable.tsx`; if no harness exists, create a focused component test that verifies the amount cell shows the balance subline without changing column count.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web test -- TransactionRow DesktopTransactionsTable`
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm typecheck`
+- [x] `pnpm --filter @wallet/web test -- TransactionRow DesktopTransactionsTable`
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm typecheck`
 
 **Review checklist (user, at PR review):**
 - [ ] Desktop shows remaining balance below the amount with no extra table column.
