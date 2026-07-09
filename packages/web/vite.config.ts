@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -6,7 +7,23 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 const apiProxyTarget = process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:3000'
 
+function readGitValue(command: string) {
+  try {
+    return execSync(command, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || 'dev'
+  } catch {
+    return 'dev'
+  }
+}
+
+const appCommit = process.env.APP_COMMIT ?? readGitValue('git rev-parse --short HEAD')
+const appCommitDate =
+  process.env.APP_COMMIT_DATE ?? readGitValue('git log -1 --format=%cd --date=short')
+
 export default defineConfig({
+  define: {
+    __APP_COMMIT__: JSON.stringify(appCommit),
+    __APP_COMMIT_DATE__: JSON.stringify(appCommitDate),
+  },
   plugins: [
     react(),
     tailwindcss(),
