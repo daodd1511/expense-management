@@ -12,6 +12,7 @@ export const transactionSchema = z.object({
   note: z.string().optional(),
   date: z.string(),
   time: z.string().optional(),
+  balanceAfter: z.number().optional(),
   receipt: z.string().nullable().optional(),
   subscriptionId: z.string().nullable().optional(),
 })

@@ -1,6 +1,6 @@
 export type { Database, Json } from './database.types'
 export { secureParse } from './secure-parse'
-export { computeBalance, computeBalanceTrend } from './finance'
+export { computeBalance, computeBalanceTrend, computeRunningBalances } from './finance'
 export {
   accountKindSchema,
   accountSchema,

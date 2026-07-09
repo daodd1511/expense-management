@@ -1,18 +1,61 @@
 import type { BalanceTrendPoint } from './dtos'
 import type { Transaction } from './models'
 
+function getBalance(balanceByAccountId: Map<string, number>, accountId: string) {
+  return balanceByAccountId.get(accountId) ?? 0
+}
+
+function setBalance(balanceByAccountId: Map<string, number>, accountId: string, nextBalance: number) {
+  balanceByAccountId.set(accountId, nextBalance)
+}
+
+function applyTransaction(balanceByAccountId: Map<string, number>, transaction: Transaction): number {
+  if (transaction.type === 'income') {
+    const nextBalance = getBalance(balanceByAccountId, transaction.accountId) + transaction.amount
+    setBalance(balanceByAccountId, transaction.accountId, nextBalance)
+    return nextBalance
+  }
+
+  if (transaction.type === 'expense') {
+    const nextBalance = getBalance(balanceByAccountId, transaction.accountId) - transaction.amount
+    setBalance(balanceByAccountId, transaction.accountId, nextBalance)
+    return nextBalance
+  }
+
+  const sourceBalance = getBalance(balanceByAccountId, transaction.accountId) - transaction.amount
+  setBalance(balanceByAccountId, transaction.accountId, sourceBalance)
+
+  if (transaction.toAccountId) {
+    const destinationBalance = getBalance(balanceByAccountId, transaction.toAccountId) + transaction.amount
+    setBalance(balanceByAccountId, transaction.toAccountId, destinationBalance)
+  }
+
+  return sourceBalance
+}
+
 /** Computed balance = opening balance + all income - all expenses ± transfers. */
 export function computeBalance(accountId: string, transactions: Transaction[], openingBalance: number): number {
-  let balance = openingBalance
+  const balanceByAccountId = new Map<string, number>([[accountId, openingBalance]])
   for (const tx of transactions) {
-    if (tx.type === 'income' && tx.accountId === accountId) balance += tx.amount
-    else if (tx.type === 'expense' && tx.accountId === accountId) balance -= tx.amount
-    else if (tx.type === 'transfer') {
-      if (tx.accountId === accountId) balance -= tx.amount
-      if (tx.toAccountId === accountId) balance += tx.amount
-    }
+    applyTransaction(balanceByAccountId, tx)
   }
-  return balance
+  return getBalance(balanceByAccountId, accountId)
+}
+
+export function computeRunningBalances(
+  transactions: Transaction[],
+  openingBalanceByAccountId: ReadonlyMap<string, number> | Record<string, number>,
+): Transaction[] {
+  const initialEntries =
+    openingBalanceByAccountId instanceof Map
+      ? openingBalanceByAccountId.entries()
+      : Object.entries(openingBalanceByAccountId)
+  const balanceByAccountId = new Map<string, number>(initialEntries)
+
+  return transactions.map((transaction) => ({
+    ...transaction,
+    balanceAfter: applyTransaction(balanceByAccountId, transaction),
+  }))
 }
 
 function shiftMonth(monthIso: string, delta: number): string {

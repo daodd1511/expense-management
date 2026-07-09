@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeBalance, computeBalanceTrend } from './finance'
+import { computeBalance, computeBalanceTrend, computeRunningBalances } from './finance'
 import type { Transaction } from './models'
 
 function makeTx(overrides: Partial<Transaction> = {}): Transaction {
@@ -46,6 +46,55 @@ describe('computeBalance', () => {
       1000,
     )
     expect(balance).toBe(1000 - 100 + 50)
+  })
+})
+
+describe('computeRunningBalances', () => {
+  it('tracks account-specific balanceAfter values in ledger order', () => {
+    const balances = computeRunningBalances(
+      [
+        makeTx({ id: 'tx-1', type: 'income', amount: 500, accountId: 'cash' }),
+        makeTx({ id: 'tx-2', type: 'expense', amount: 200, accountId: 'cash' }),
+        makeTx({ id: 'tx-3', type: 'income', amount: 100, accountId: 'bank' }),
+      ],
+      { cash: 1000, bank: 50 },
+    )
+
+    expect(balances.map((tx) => ({ id: tx.id, balanceAfter: tx.balanceAfter }))).toEqual([
+      { id: 'tx-1', balanceAfter: 1500 },
+      { id: 'tx-2', balanceAfter: 1300 },
+      { id: 'tx-3', balanceAfter: 150 },
+    ])
+  })
+
+  it('uses input order for same-day transactions so callers can control time ordering', () => {
+    const balances = computeRunningBalances(
+      [
+        makeTx({ id: 'late', type: 'expense', amount: 400, accountId: 'cash', time: '18:00' }),
+        makeTx({ id: 'early', type: 'income', amount: 100, accountId: 'cash', time: '08:00' }),
+      ],
+      { cash: 1000 },
+    )
+
+    expect(balances.map((tx) => ({ id: tx.id, balanceAfter: tx.balanceAfter }))).toEqual([
+      { id: 'late', balanceAfter: 600 },
+      { id: 'early', balanceAfter: 700 },
+    ])
+  })
+
+  it('updates both source and destination balances for transfers but exposes the source account balanceAfter', () => {
+    const balances = computeRunningBalances(
+      [
+        makeTx({ id: 'transfer', type: 'transfer', amount: 250, accountId: 'cash', toAccountId: 'bank' }),
+        makeTx({ id: 'bank-expense', type: 'expense', amount: 50, accountId: 'bank' }),
+      ],
+      { cash: 1000, bank: 200 },
+    )
+
+    expect(balances.map((tx) => ({ id: tx.id, balanceAfter: tx.balanceAfter }))).toEqual([
+      { id: 'transfer', balanceAfter: 750 },
+      { id: 'bank-expense', balanceAfter: 400 },
+    ])
   })
 })
 
