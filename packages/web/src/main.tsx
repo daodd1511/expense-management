@@ -11,6 +11,7 @@ import { AuthProvider } from './features/auth/auth'
 import { LangProvider } from './core/i18n'
 import { ErrorBoundary } from './core/ErrorBoundary'
 import { handleMutationError } from './core/mutationErrorHandler'
+import { PwaUpdateProvider } from './core/PwaUpdateProvider'
 import { registerForegroundSWUpdateCheck } from './core/swUpdate'
 import { AppRouter } from './routing/router'
 import { ThemeProvider } from './shared/components/ThemeProvider'
@@ -34,11 +35,13 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <ThemeProvider>
           <LangProvider>
-            <Toaster richColors position="top-center" />
-            <OfflineBanner />
-            <ErrorBoundary>
-              <AppRouter />
-            </ErrorBoundary>
+            <PwaUpdateProvider>
+              <Toaster richColors position="top-center" />
+              <OfflineBanner />
+              <ErrorBoundary>
+                <AppRouter />
+              </ErrorBoundary>
+            </PwaUpdateProvider>
           </LangProvider>
         </ThemeProvider>
       </AuthProvider>

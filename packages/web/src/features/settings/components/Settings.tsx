@@ -5,6 +5,7 @@ import { Card } from '@/shared/components/ui/card'
 import { useAuth } from '@/features/auth/auth'
 import { useLang } from '@/core/i18n'
 import type { Lang } from '@/core/types'
+import { AppVersionRow } from '@/features/settings/components/AppVersionRow'
 import { cn } from '@/shared/lib/utils'
 
 export function DesktopSettings() {
@@ -89,6 +90,8 @@ export function DesktopSettings() {
             {t('auth.signOut')}
           </Button>
         </Card>
+
+        <AppVersionRow />
       </div>
     </div>
   )
