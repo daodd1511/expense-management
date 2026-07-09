@@ -7,6 +7,7 @@ import {
   insertTransaction,
   patchTransaction,
 } from '@/features/transactions/db'
+import { invalidateTransactionDependentQueries } from '@/core/query-invalidation'
 import { todayLocalMonthIso } from '@/shared/lib/date'
 import type { Transaction } from '@/core/types'
 import type { TransactionCreate, TransactionPatch } from '@wallet/shared'
@@ -77,7 +78,7 @@ export function useAddTransaction(month: string = todayLocalMonthIso()) {
     onError: (_error, _transaction, context) => {
       qc.setQueryData(queryKey, context?.previousTransactions)
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['transactions', user?.id] }),
+    onSettled: () => invalidateTransactionDependentQueries(qc, user?.id),
   })
 }
 
@@ -105,7 +106,7 @@ export function useUpdateTransaction(month: string = todayLocalMonthIso()) {
     onError: (_error, _variables, context) => {
       qc.setQueryData(queryKey, context?.previousTransactions)
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['transactions', user?.id] }),
+    onSettled: () => invalidateTransactionDependentQueries(qc, user?.id),
   })
 }
 
@@ -126,7 +127,7 @@ export function useDeleteTransaction(month: string = todayLocalMonthIso()) {
     onError: (_error, _id, context) => {
       qc.setQueryData(queryKey, context?.previousTransactions)
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['transactions', user?.id] }),
+    onSettled: () => invalidateTransactionDependentQueries(qc, user?.id),
   })
 }
 
@@ -135,6 +136,6 @@ export function useDeleteTransactions() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (ids: string[]) => deleteTransactions(ids),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['transactions', user?.id] }),
+    onSuccess: () => invalidateTransactionDependentQueries(qc, user?.id),
   })
 }

@@ -134,6 +134,9 @@ describe('transaction optimistic mutations', () => {
       ]),
     )
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['transactions', 'user-1'] })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['accounts', 'user-1'] })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['reports', 'user-1'] })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['analytics', 'balance-trend', 'user-1'] })
   })
 
   it('optimistically patches a transaction in the cache', async () => {
@@ -166,7 +169,7 @@ describe('transaction optimistic mutations', () => {
     deferred.resolve(undefined)
 
     await waitFor(() =>
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['transactions', 'user-1'] }),
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['analytics', 'balance-trend', 'user-1'] }),
     )
   })
 
@@ -196,5 +199,8 @@ describe('transaction optimistic mutations', () => {
       ]),
     )
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['transactions', 'user-1'] })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['accounts', 'user-1'] })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['reports', 'user-1'] })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['analytics', 'balance-trend', 'user-1'] })
   })
 })

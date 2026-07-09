@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/auth'
+import { invalidateCategoryDependentQueries } from '@/core/query-invalidation'
 import {
   deleteCategory,
   fetchCategories,
@@ -34,7 +35,7 @@ export function useAddCategory() {
     mutationFn: (
       category: Pick<Category, 'name' | 'icon' | 'color' | 'type'> & Partial<Pick<Category, 'parentId'>>,
     ) => insertCategory(category),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories', user?.id] }),
+    onSuccess: () => invalidateCategoryDependentQueries(qc, user?.id),
   })
 }
 
@@ -49,7 +50,7 @@ export function useUpdateCategory() {
       id: string
       patch: Partial<Pick<Category, 'name' | 'icon' | 'color' | 'parentId'>>
     }) => patchCategory(id, patch),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories', user?.id] }),
+    onSuccess: () => invalidateCategoryDependentQueries(qc, user?.id),
   })
 }
 
@@ -58,11 +59,6 @@ export function useDeleteCategory() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteCategory(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['categories', user?.id] })
-      qc.invalidateQueries({ queryKey: ['transactions', user?.id] })
-      qc.invalidateQueries({ queryKey: ['subscriptions', user?.id] })
-      qc.invalidateQueries({ queryKey: ['budgets', user?.id] })
-    },
+    onSuccess: () => invalidateCategoryDependentQueries(qc, user?.id),
   })
 }
