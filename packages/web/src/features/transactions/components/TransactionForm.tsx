@@ -297,7 +297,7 @@ export function TransactionForm({
   ]
 
   const numericAmount = Number(amount) || 0
-  const visibleCats = categories.filter((c) => c.type === type)
+  const visibleCats = categories.filter((c) => c.type === type && !c.isHidden)
 
   const canSubmit =
     numericAmount > 0 &&
