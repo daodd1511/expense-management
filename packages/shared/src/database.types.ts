@@ -146,6 +146,35 @@ export type Database = {
           },
         ]
       }
+      category_translations: {
+        Row: {
+          category_id: string
+          id: string
+          locale: string
+          name: string
+        }
+        Insert: {
+          category_id: string
+          id?: string
+          locale: string
+          name: string
+        }
+        Update: {
+          category_id?: string
+          id?: string
+          locale?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_translations_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           account_id: string
