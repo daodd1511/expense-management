@@ -20,6 +20,7 @@ import {
 } from '@/routing/app-pages'
 import { LoadingScreen } from '@/shared/components/LoadingScreen'
 import { ResponsiveApp } from '@/layouts/ResponsiveApp'
+import { VersionPage } from '@/features/version/components/VersionPage'
 import { useAuth, type AuthContextValue } from '@/features/auth/auth'
 import { ForgotPasswordPage } from '@/features/auth/components/ForgotPassword'
 import { ResetPasswordPage } from '@/features/auth/components/ResetPassword'
@@ -127,6 +128,12 @@ const resetPasswordRoute = createRoute({
   ),
 })
 
+const versionRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/version',
+  component: VersionPage,
+})
+
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'app',
@@ -213,6 +220,7 @@ const planningRedirectRoute = createRoute({
 })
 
 const routeTree = rootRoute.addChildren([
+  versionRoute,
   authRoute.addChildren([
     signInRoute,
     signUpRoute,

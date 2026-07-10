@@ -11,12 +11,6 @@ vi.mock('@/core/PwaUpdateProvider', () => ({
   usePwaUpdate: usePwaUpdateMock,
 }))
 
-vi.mock('@/core/appVersion', () => ({
-  APP_VERSION: '0.1.0',
-  APP_COMMIT: 'abc1234',
-  APP_COMMIT_DATE: '2026-07-09',
-}))
-
 import { LangProvider } from '@/core/i18n'
 import { AppVersionRow } from './AppVersionRow'
 
@@ -31,20 +25,19 @@ describe('AppVersionRow', () => {
     })
   })
 
-  it('renders the version string without an update button when no refresh is pending', () => {
+  it('renders nothing when no refresh is pending', () => {
     usePwaUpdateMock.mockReturnValue({
       needRefresh: false,
       updateServiceWorker: updateServiceWorkerMock,
     })
 
-    render(
+    const { container } = render(
       <LangProvider>
         <AppVersionRow />
       </LangProvider>,
     )
 
-    expect(screen.getByText('0.1.0 · abc1234 · 2026-07-09')).toBeDefined()
-    expect(screen.queryByRole('button', { name: 'Update' })).toBeNull()
+    expect(container.firstChild).toBeNull()
   })
 
   it('shows the update button and applies the waiting worker on click', async () => {
