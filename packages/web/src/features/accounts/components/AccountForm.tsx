@@ -31,7 +31,7 @@ export function AccountForm({
   const { t } = useLang()
   const [name, setName] = useState(initial?.name ?? '')
   const [kind, setKind] = useState<AccountKind>(initial?.kind ?? 'cash')
-  const [balance, setBalance] = useState(initial ? String(initial.openingBalance) : '0')
+  const [openingBalance, setOpeningBalance] = useState('0')
 
   const KIND_LABELS: Record<AccountKind, string> = {
     cash: t('accounts.kindCash'),
@@ -46,7 +46,11 @@ export function AccountForm({
 
   const submit = () => {
     if (!canSubmit) return
-    submitForm({ name: name.trim(), kind, openingBalance: Number(balance) || 0 })
+    submitForm({
+      name: name.trim(),
+      kind,
+      openingBalance: initial?.openingBalance ?? (Number(openingBalance) || 0),
+    })
   }
 
   return (
@@ -86,16 +90,17 @@ export function AccountForm({
         />
       </div>
 
-      {/* Balance */}
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="acc-balance">{t('accounts.balance')}</Label>
-        <Input
-          id="acc-balance"
-          type="number"
-          value={balance}
-          onChange={(e) => setBalance(e.target.value)}
-        />
-      </div>
+      {!initial && (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="acc-balance">{t('accounts.balance')}</Label>
+          <Input
+            id="acc-balance"
+            type="number"
+            value={openingBalance}
+            onChange={(e) => setOpeningBalance(e.target.value)}
+          />
+        </div>
+      )}
 
       {errorMessage && <FormErrorBanner message={errorMessage} />}
 

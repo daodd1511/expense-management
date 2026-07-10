@@ -33,9 +33,10 @@ export function ReconcileBalanceForm({ account, onCancel }: { account: Account; 
   const categoryId = findAdjustmentCategoryId(categories, type)
   const canSubmit = hasActualBalance && (delta === 0 || categoryId !== undefined)
 
-  const { submit, isSubmitting, errorMessage } = useFormSubmit<TransactionCreate>((transaction) =>
-    addTransaction.mutateAsync(transaction),
-  )
+  const { submit, isSubmitting, errorMessage } = useFormSubmit<TransactionCreate>(async (transaction) => {
+    await addTransaction.mutateAsync(transaction)
+    onCancel()
+  })
 
   const handleSubmit = () => {
     if (!canSubmit) return

@@ -68,7 +68,8 @@ describe('ReconcileBalanceForm', () => {
 
   it('creates an expense adjustment when the actual balance is lower', async () => {
     const user = userEvent.setup()
-    render(<ReconcileBalanceForm account={account} onCancel={vi.fn()} />)
+    const onCancel = vi.fn()
+    render(<ReconcileBalanceForm account={account} onCancel={onCancel} />)
 
     await user.clear(screen.getByLabelText('Actual balance'))
     await user.type(screen.getByLabelText('Actual balance'), '800')
@@ -84,6 +85,7 @@ describe('ReconcileBalanceForm', () => {
         }),
       )
     })
+    expect(onCancel).toHaveBeenCalledOnce()
   })
 
   it('creates an income adjustment when the actual balance is higher', async () => {
