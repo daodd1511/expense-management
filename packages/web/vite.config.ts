@@ -46,6 +46,16 @@ export default defineConfig({
         // adaptive icon.svg, not this fixed-color install icon.
         includeHtmlHeadLinks: false,
         injectThemeColor: false,
+        // Default preset gives the apple touch icon 30% padding + a white
+        // backdrop (meant for icons without their own safe zone). app-icon.svg
+        // already draws its own rounded-rect background at the size Apple
+        // expects, so let it fill the full 180x180 canvas — iOS applies its
+        // own corner mask, it doesn't need the built-in safe zone.
+        preset: {
+          transparent: { sizes: [64, 192, 512], favicons: [[48, 'favicon.ico']] },
+          maskable: { sizes: [512] },
+          apple: { sizes: [180], padding: 0 },
+        },
       },
     }),
   ],
