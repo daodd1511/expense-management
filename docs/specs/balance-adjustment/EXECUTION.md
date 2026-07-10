@@ -13,9 +13,9 @@ Reports) is unchanged, only which package implements it.
 
 ## STATUS
 
-- Current phase: 1 — in-progress
-- Phase 1 — schema, shared types, migration, reports exclusion: in-progress
-- Phase 2 — frontend category pickers: pending
+- Current phase: 2 — in-progress
+- Phase 1 — schema, shared types, migration, reports exclusion: done
+- Phase 2 — frontend category pickers: in-progress
 - Phase 3 — reconcile balance UI: pending
 - Verification debt: none
 
@@ -39,7 +39,7 @@ the database.
 **Agent gate (hard):**
 - [x] `pnpm --filter @wallet/shared exec tsc --noEmit` (categorySchema/dto/mapper changes)
 - [x] `pnpm --filter @wallet/api exec tsc --noEmit` (service.ts consumes shared types)
-- [ ] `pnpm --filter @wallet/api exec vitest run src/features/reports/reports.test.ts src/features/categories` (add/extend a reports test asserting a hidden-category transaction is excluded from totals/series/categoryGroups)
+- [x] `pnpm --filter @wallet/api exec vitest run src/features/reports/reports.test.ts src/features/categories` (add/extend a reports test asserting a hidden-category transaction is excluded from totals/series/categoryGroups)
 
 **Review checklist (user, at PR review):**
 - [ ] Apply the migration locally; confirm the two `Balance Adjustment` categories exist with `is_hidden = true` and correct `type`
