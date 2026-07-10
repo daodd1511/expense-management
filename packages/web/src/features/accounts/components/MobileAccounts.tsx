@@ -168,7 +168,7 @@ export function MobileAccounts() {
 
       <Card className="overflow-hidden">
         <CardContent className="px-4 py-3">
-          <h2 className="mb-2 text-sm font-semibold tracking-tight">{t('accounts.list')}</h2>
+          <h2 className="text-sm font-semibold tracking-tight">{t('accounts.list')}</h2>
         </CardContent>
         <div className="flex flex-col divide-y divide-border px-4">
           {accounts.map((a) => (
@@ -201,11 +201,13 @@ export function MobileAccounts() {
         onClose={close}
         title={reconciling ? t('accounts.reconcileTitle') : editing ? t('accounts.editTitle') : t('accounts.addTitle')}
       >
-        {reconciling ? (
-          <ReconcileBalanceForm account={reconciling} onCancel={close} />
-        ) : (
-          <AccountForm initial={editing ?? undefined} onSubmit={handleSubmit} onCancel={close} />
-        )}
+        <div className="pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {reconciling ? (
+            <ReconcileBalanceForm account={reconciling} onCancel={close} />
+          ) : (
+            <AccountForm initial={editing ?? undefined} onSubmit={handleSubmit} onCancel={close} />
+          )}
+        </div>
       </BottomSheet>
       <ConfirmDialog
         open={pendingDeleteId !== null}

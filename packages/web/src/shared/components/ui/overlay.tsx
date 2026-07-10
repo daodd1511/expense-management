@@ -47,7 +47,7 @@ export function BottomSheet({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="fixed inset-x-0 bottom-0 z-50 max-h-[92dvh] overflow-y-auto rounded-t-3xl border-t border-border bg-card pb-[max(1rem,env(safe-area-inset-bottom))] shadow-sm animate-in slide-in-from-bottom duration-300"
+        className="fixed inset-x-0 bottom-0 z-50 max-h-[92dvh] overflow-y-auto rounded-t-3xl border-t border-border bg-card shadow-sm animate-in slide-in-from-bottom duration-300"
       >
         <div className="sticky top-0 z-10 flex justify-center bg-card pt-3 pb-1">
           <div className="h-1.5 w-10 rounded-full bg-border" />
