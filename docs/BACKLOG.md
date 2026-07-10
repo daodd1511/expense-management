@@ -18,6 +18,7 @@ their session summary). Delete a line when the item ships or graduates into a
 - [ ] Better credit card information: view balance, due date, payment status (2026-07-05)
 - [ ] Lend and borrow feature (2026-07-05)
 ## Ideas
-- Improving backlog managements, should act like a kanban board (2026-07-10)
+- Improving backlog managements, should act like a kanban board, should have status to track (2026-07-10)
 - Maybe add a guide to install the app on mobile (2026-07-10)
 - Update the presentation with grill-with-docs and it's related skills (2026-07-10)
+- Create a list of features current and pending ones for release 1.0 (2026-07-10)
