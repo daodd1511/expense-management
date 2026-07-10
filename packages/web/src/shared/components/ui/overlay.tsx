@@ -32,11 +32,15 @@ export function BottomSheet({
   onClose,
   title,
   children,
+  fullHeight = false,
 }: {
   open: boolean
   onClose: () => void
   title?: string
   children: React.ReactNode
+  /** Fixed 92dvh instead of shrink-to-fit — for a sheet stacked on top of another sheet, so it
+   * consistently covers the sheet underneath instead of leaving a content-dependent gap. */
+  fullHeight?: boolean
 }) {
   useDismiss(open, onClose)
   if (!open) return null
@@ -47,7 +51,10 @@ export function BottomSheet({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="fixed inset-x-0 bottom-0 z-50 max-h-[92dvh] overflow-y-auto rounded-t-3xl border-t border-border bg-card pb-[max(1rem,env(safe-area-inset-bottom))] shadow-sm animate-in slide-in-from-bottom duration-300"
+        className={cn(
+          'fixed inset-x-0 bottom-0 z-50 overflow-y-auto rounded-t-3xl border-t border-border bg-card shadow-sm animate-in slide-in-from-bottom duration-300',
+          fullHeight ? 'h-[92dvh]' : 'max-h-[92dvh]',
+        )}
       >
         <div className="sticky top-0 z-10 flex justify-center bg-card pt-3 pb-1">
           <div className="h-1.5 w-10 rounded-full bg-border" />

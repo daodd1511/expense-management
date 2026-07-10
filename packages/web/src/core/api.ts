@@ -29,6 +29,26 @@ export function isClientError(error: unknown): boolean {
   return error instanceof ApiError && error.status < 500
 }
 
+/** Returns the first field-level API validation message when one is available. */
+export function getFieldErrorMessage(error: unknown): string | null {
+  if (!(error instanceof ApiError) || !error.details || typeof error.details !== 'object') {
+    return null
+  }
+
+  const fieldErrors = (error.details as { fieldErrors?: unknown }).fieldErrors
+  if (!fieldErrors || typeof fieldErrors !== 'object') {
+    return null
+  }
+
+  for (const messages of Object.values(fieldErrors)) {
+    if (!Array.isArray(messages)) continue
+    const message = messages.find((item): item is string => typeof item === 'string' && item.length > 0)
+    if (message) return message
+  }
+
+  return null
+}
+
 function apiBase() {
   return import.meta.env.VITE_API_BASE ?? '/api'
 }

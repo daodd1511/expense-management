@@ -5,19 +5,91 @@ import { BudgetForm } from '@/features/budgets/components/BudgetForm'
 import { budgetState } from '@/features/budgets/components/BudgetBars'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { BudgetsSkeleton } from '@/shared/components/Skeleton'
-import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { BottomSheet } from '@/shared/components/ui/overlay'
 import { Progress } from '@/shared/components/ui/progress'
 import { MobilePageContainer } from '@/shared/components/MobilePageContainer'
+import { useSwipeActions } from '@/shared/hooks/useSwipeActions'
 import { formatVND, monthLabel } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { spentForCategory } from '@/shared/lib/derive'
 import { useAddBudget, useBudgets, useDeleteBudget, useUpdateBudget } from '@/features/budgets/queries'
 import { useCategoryLookup } from '@/features/categories/queries'
 import { useTransactions } from '@/features/transactions/queries'
-import type { Budget } from '@/core/types'
+import type { Budget, Category } from '@/core/types'
+
+const SWIPE_ACTION_WIDTH = 148
+
+function BudgetRow({
+  budget,
+  category,
+  spent,
+  percent,
+  onEdit,
+  onDelete,
+  editLabel,
+  deleteLabel,
+}: {
+  budget: Budget
+  category: Category | undefined
+  spent: number
+  percent: number
+  onEdit: () => void
+  onDelete: () => void
+  editLabel: string
+  deleteLabel: string
+}) {
+  const { offset, isDragging, bind } = useSwipeActions(SWIPE_ACTION_WIDTH)
+  const state = budgetState(percent)
+
+  return (
+    <div className="relative overflow-hidden">
+      <div className="absolute inset-y-0 right-0 flex">
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={editLabel}
+          className="flex w-[74px] items-center justify-center bg-accent text-accent-foreground"
+        >
+          <Pencil className="size-4" />
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          aria-label={deleteLabel}
+          className="flex w-[74px] items-center justify-center bg-expense text-expense-foreground"
+        >
+          <Trash2 className="size-4" />
+        </button>
+      </div>
+
+      <div
+        className="touch-pan-y flex flex-col gap-1.5 bg-card py-3"
+        style={{ transform: `translateX(${offset}px)`, transition: isDragging ? 'none' : 'transform 0.2s ease-out' }}
+        {...bind}
+      >
+        <button type="button" onClick={onEdit} className="flex items-center justify-between gap-2 text-left">
+          <span className="flex items-center gap-2 text-sm font-medium">
+            <span
+              className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg"
+              style={{ backgroundColor: `color-mix(in oklab, ${colorVar(category?.color ?? 'chart-1')} 18%, transparent)` }}
+            >
+              <CategoryIcon name={category?.icon} className="size-3.5" style={{ color: colorVar(category?.color ?? 'chart-1') }} />
+            </span>
+            {category?.name}
+          </span>
+          <span className={`text-xs font-medium ${state.tone}`}>{percent}%</span>
+        </button>
+        <Progress value={percent} indicatorClassName={state.bar} />
+        <div className="flex justify-between text-xs text-muted-foreground tabular">
+          <span>{formatVND(spent)}</span>
+          <span>{formatVND(budget.limit)}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function MobileBudgets() {
   const { data: budgets = [], isPending: budgetsPending } = useBudgets()
@@ -58,61 +130,42 @@ export function MobileBudgets() {
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">{t('budget.perCategory')}</h2>
-        <Button size="sm" variant="outline" onClick={() => setSheet('add')}>
-          <Plus className="size-3.5" />
-          {t('budget.add')}
-        </Button>
-      </div>
+      {budgets.length > 0 && (
+        <Card className="overflow-hidden">
+          <CardContent className="px-4 py-3">
+            <h2 className="text-sm font-semibold tracking-tight">{t('budget.perCategory')}</h2>
+          </CardContent>
+          <div className="flex flex-col divide-y divide-border px-4">
+            {budgets.map((b) => {
+              const cat = getCategory(b.categoryId)
+              const spent = spentForCategory(transactions, b.categoryId)
+              const percent = Math.round((spent / b.limit) * 100)
+              return (
+                <BudgetRow
+                  key={b.categoryId}
+                  budget={b}
+                  category={cat}
+                  spent={spent}
+                  percent={percent}
+                  onEdit={() => setSheet(b)}
+                  onDelete={() => setPendingDeleteId(b.categoryId)}
+                  editLabel={t('budget.edit')}
+                  deleteLabel={t('confirm.delete')}
+                />
+              )
+            })}
+          </div>
+          <div className="pb-1" />
+        </Card>
+      )}
 
-      <div className="flex flex-col gap-3">
-        {budgets.map((b) => {
-          const cat = getCategory(b.categoryId)
-          const spent = spentForCategory(transactions, b.categoryId)
-          const p = Math.round((spent / b.limit) * 100)
-          const state = budgetState(p)
-          return (
-            <Card key={b.categoryId}>
-              <CardContent className="p-4">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 text-sm font-medium">
-                    <span
-                      className="inline-flex size-7 items-center justify-center rounded-lg"
-                      style={{ backgroundColor: `color-mix(in oklab, ${colorVar(cat?.color ?? 'chart-1')} 18%, transparent)` }}
-                    >
-                      <CategoryIcon name={cat?.icon} className="size-3.5" style={{ color: colorVar(cat?.color ?? 'chart-1') }} />
-                    </span>
-                    {cat?.name}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <span className={`text-xs font-medium ${state.tone}`}>{p}%</span>
-                    <button
-                      type="button"
-                      onClick={() => setSheet(b)}
-                      className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
-                    >
-                      <Pencil className="size-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPendingDeleteId(b.categoryId)}
-                      className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-expense"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
-                  </div>
-                </div>
-                <Progress value={p} indicatorClassName={state.bar} />
-                <div className="mt-1.5 flex justify-between text-xs text-muted-foreground tabular">
-                  <span>{formatVND(spent)}</span>
-                  <span>{formatVND(b.limit)}</span>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+      <button
+        type="button"
+        onClick={() => setSheet('add')}
+        className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-sm font-medium text-muted-foreground hover:bg-muted"
+      >
+        <Plus className="size-4" /> {t('budget.add')}
+      </button>
 
       <BottomSheet
         open={sheet !== null}

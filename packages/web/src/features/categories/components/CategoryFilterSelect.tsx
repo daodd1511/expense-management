@@ -60,8 +60,9 @@ export function CategoryFilterSelect({
   ariaLabel: string
   emptyLabel: string
 }) {
-  const groups = groupCategories(categories)
-  const byId = new Map(categories.map((category) => [category.id, category]))
+  const visibleCategories = categories.filter((category) => !category.isHidden)
+  const groups = groupCategories(visibleCategories)
+  const byId = new Map(visibleCategories.map((category) => [category.id, category]))
 
   return (
     <Select value={value} onValueChange={(nextValue) => onChange(nextValue ?? '')}>

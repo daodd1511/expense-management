@@ -1,12 +1,19 @@
 
-import { Banknote, CreditCard, Landmark, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
+import { ArrowLeftRight, Banknote, CreditCard, Landmark, MoreHorizontal, Pencil, Plus, Scale, Trash2, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
+import { ReconcileBalanceForm } from '@/features/accounts/components/ReconcileBalanceForm'
 import { AccountsSkeleton } from '@/shared/components/Skeleton'
 import { Card } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Modal } from '@/shared/components/ui/overlay'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { useAccounts, useAddAccount, useDeleteAccount, useUpdateAccount } from '@/features/accounts/queries'
@@ -18,9 +25,11 @@ type AccountInput = Omit<Account, 'id' | 'balance'>
 export function DesktopAccounts({
   createIntentToken,
   onCreateIntentHandled,
+  onViewTransactions,
 }: {
   createIntentToken?: string
   onCreateIntentHandled?: () => void
+  onViewTransactions: (accountId: string) => void
 }) {
   const accountsQuery = useAccounts()
   const { data: accounts = [], isPending } = accountsQuery
@@ -30,6 +39,7 @@ export function DesktopAccounts({
   const { t } = useLang()
   const total = accounts.reduce((sum, account) => sum + (account.balance ?? account.openingBalance), 0)
   const [editing, setEditing] = useState<Account | null>(null)
+  const [reconciling, setReconciling] = useState<Account | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [handledCreateIntent, setHandledCreateIntent] = useState<string | null>(null)
@@ -48,12 +58,20 @@ export function DesktopAccounts({
 
   const openEdit = (account: Account) => {
     setEditing(account)
+    setReconciling(null)
+    setModalOpen(true)
+  }
+
+  const openReconcile = (account: Account) => {
+    setEditing(null)
+    setReconciling(account)
     setModalOpen(true)
   }
 
   const close = () => {
     setModalOpen(false)
     setEditing(null)
+    setReconciling(null)
   }
 
   const handleSubmit = async (data: AccountInput) => {
@@ -106,23 +124,40 @@ export function DesktopAccounts({
                   <Icon className="size-5" />
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-muted-foreground">{meta.label}</span>
-                  <button
-                    type="button"
-                    onClick={() => openEdit(a)}
-                    aria-label={t('accounts.edit')}
-                    className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100"
+                <span className="text-xs font-medium text-muted-foreground">{meta.label}</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    aria-label={t('accounts.moreActions')}
+                    className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
-                    <Pencil className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPendingDeleteId(a.id)}
-                    aria-label={t('confirm.delete')}
-                    className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all hover:bg-expense/10 hover:text-expense group-hover:opacity-100"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
+                    <MoreHorizontal className="size-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent sideOffset={8}>
+                    <DropdownMenuItem onClick={() => onViewTransactions(a.id)}>
+                      <ArrowLeftRight className="size-3.5" />
+                      {t('accounts.viewTransactions')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => openEdit(a)}
+                    >
+                      <Pencil className="size-3.5" />
+                      {t('accounts.edit')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => openReconcile(a)}
+                    >
+                      <Scale className="size-3.5" />
+                      {t('accounts.reconcile')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setPendingDeleteId(a.id)}
+                      className="text-expense data-[highlighted]:bg-expense/10"
+                    >
+                      <Trash2 className="size-3.5" />
+                      {t('confirm.delete')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 </div>
               </div>
               <div>
@@ -140,10 +175,14 @@ export function DesktopAccounts({
       <Modal open={modalOpen} onClose={close}>
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="text-base font-semibold">
-            {editing ? t('accounts.editTitle') : t('accounts.addTitle')}
+            {reconciling ? t('accounts.reconcileTitle') : editing ? t('accounts.editTitle') : t('accounts.addTitle')}
           </h2>
         </div>
-        <AccountForm initial={editing ?? undefined} onSubmit={handleSubmit} onCancel={close} />
+        {reconciling ? (
+          <ReconcileBalanceForm account={reconciling} onCancel={close} />
+        ) : (
+          <AccountForm initial={editing ?? undefined} onSubmit={handleSubmit} onCancel={close} />
+        )}
       </Modal>
       <ConfirmDialog
         open={pendingDeleteId !== null}

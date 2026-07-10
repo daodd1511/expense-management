@@ -1,11 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { IncomeExpenseReportResponse } from '@wallet/shared'
 import { IncomeExpenseReport } from './IncomeExpenseReport'
 
 const openEdit = vi.fn()
 
-var mockedReport = makeReportWithExpenseCategories()
+let mockedReport: IncomeExpenseReportResponse = makeReportWithExpenseCategories()
 
 vi.mock('@/features/transactions/transaction-overlay', () => ({
   useTransactionOverlay: () => ({ openEdit, openCreate: vi.fn(), close: vi.fn() }),
@@ -36,6 +37,13 @@ vi.mock('@/core/i18n', () => ({
         'reports.categoryTransactions': `${vars?.n ?? '{n}'} transactions`,
         'reports.expenseEmptyTitle': 'No expense categories yet',
         'reports.expenseEmptyDesc': 'There are no expense categories in this period.',
+        'reports.incomeDonutCenter': 'Total income',
+        'reports.incomeCategories': 'Income by category',
+      'reports.incomeEmptyTitle': 'No income categories yet',
+      'reports.incomeEmptyDesc': 'There are no income categories in this period.',
+      'reports.categoryView': 'Report category type',
+      'dashboard.expense': 'Expense',
+      'dashboard.income': 'Income',
       })[key] ?? key,
   }),
 }))
@@ -57,6 +65,7 @@ vi.mock('@/features/categories/queries', () => ({
     ({
       'cat-transport': { id: 'cat-transport', name: 'Transport', icon: 'Bus', color: 'chart-1' },
       'cat-food': { id: 'cat-food', name: 'Food', icon: 'Coffee', color: 'chart-2' },
+      'cat-salary': { id: 'cat-salary', name: 'Salary', icon: 'Briefcase', color: 'chart-3' },
     })[id],
 }))
 
@@ -114,6 +123,18 @@ describe('IncomeExpenseReport', () => {
     await user.click(screen.getByText('Taxi'))
     expect(openEdit).toHaveBeenCalledWith('tx-transport', '2026-07')
   })
+
+  it('shows income categories and their transactions', () => {
+    const user = userEvent.setup()
+    mockedReport = makeReportWithIncomeCategories()
+
+    render(<IncomeExpenseReport month="2026-07" />)
+
+    return user.click(screen.getByRole('tab', { name: 'Income' })).then(() => {
+      expect(screen.getByText('Income by category')).toBeTruthy()
+      expect(screen.getAllByText('Salary')).toHaveLength(2)
+    })
+  })
 })
 
 function makeReportWithExpenseCategories() {
@@ -155,6 +176,35 @@ function makeReportWithExpenseCategories() {
               merchant: 'Taxi',
               note: 'Airport',
               amount: 1000,
+              accountId: 'acc-1',
+            },
+          ],
+        },
+      ],
+    },
+  }
+}
+
+function makeReportWithIncomeCategories() {
+  return {
+    data: {
+      range: { from: '2026-07-01', to: '2026-07-31', granularity: 'month' as const },
+      totals: { income: 900, expense: 0, net: 900, transactionCount: 1 },
+      series: [],
+      categories: [
+        {
+          categoryId: 'cat-salary',
+          parentCategoryId: null,
+          type: 'income' as const,
+          amount: 900,
+          transactionCount: 1,
+          percentage: 1,
+          transactions: [
+            {
+              id: 'tx-salary',
+              date: '2026-07-05',
+              merchant: 'Salary',
+              amount: 900,
               accountId: 'acc-1',
             },
           ],

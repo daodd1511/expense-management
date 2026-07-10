@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { isClientError } from '@/core/api'
+import { getFieldErrorMessage, isClientError } from '@/core/api'
 import { translate } from '@/core/i18n'
 
 /**
@@ -18,7 +18,9 @@ export function useFormSubmit<T>(onSubmit: (data: T) => Promise<void>) {
       setIsSubmitting(true)
       onSubmit(data)
         .catch((error: unknown) => {
-          setErrorMessage(translate(isClientError(error) ? 'error.badRequest' : 'error.server'))
+          setErrorMessage(
+            getFieldErrorMessage(error) ?? translate(isClientError(error) ? 'error.badRequest' : 'error.server'),
+          )
         })
         .finally(() => setIsSubmitting(false))
     },

@@ -1,15 +1,15 @@
 import type { Account, Budget, Category, Subscription, Transaction } from './types'
 
 export const categories: Category[] = [
-  { id: 'food', name: 'Ăn uống', icon: 'Utensils', color: 'chart-1', isSystem: true, type: 'expense', parentId: null },
-  { id: 'transport', name: 'Đi lại', icon: 'Bus', color: 'chart-2', isSystem: true, type: 'expense', parentId: null },
-  { id: 'home', name: 'Nhà cửa', icon: 'House', color: 'chart-3', isSystem: true, type: 'expense', parentId: null },
-  { id: 'bills', name: 'Hóa đơn', icon: 'ReceiptText', color: 'chart-4', isSystem: true, type: 'expense', parentId: null },
-  { id: 'fun', name: 'Giải trí', icon: 'Gamepad2', color: 'chart-5', isSystem: true, type: 'expense', parentId: null },
-  { id: 'health', name: 'Sức khỏe', icon: 'HeartPulse', color: 'chart-2', isSystem: true, type: 'expense', parentId: null },
-  { id: 'shopping', name: 'Mua sắm', icon: 'ShoppingBag', color: 'chart-3', isSystem: true, type: 'expense', parentId: null },
-  { id: 'salary', name: 'Lương', icon: 'Briefcase', color: 'chart-1', isSystem: true, type: 'income', parentId: null },
-  { id: 'other-income', name: 'Thu nhập khác', icon: 'Gift', color: 'chart-1', isSystem: true, type: 'income', parentId: null },
+  { id: 'food', name: 'Ăn uống', icon: 'Utensils', color: 'chart-1', isSystem: true, isHidden: false, type: 'expense', parentId: null },
+  { id: 'transport', name: 'Đi lại', icon: 'Bus', color: 'chart-2', isSystem: true, isHidden: false, type: 'expense', parentId: null },
+  { id: 'home', name: 'Nhà cửa', icon: 'House', color: 'chart-3', isSystem: true, isHidden: false, type: 'expense', parentId: null },
+  { id: 'bills', name: 'Hóa đơn', icon: 'ReceiptText', color: 'chart-4', isSystem: true, isHidden: false, type: 'expense', parentId: null },
+  { id: 'fun', name: 'Giải trí', icon: 'Gamepad2', color: 'chart-5', isSystem: true, isHidden: false, type: 'expense', parentId: null },
+  { id: 'health', name: 'Sức khỏe', icon: 'HeartPulse', color: 'chart-2', isSystem: true, isHidden: false, type: 'expense', parentId: null },
+  { id: 'shopping', name: 'Mua sắm', icon: 'ShoppingBag', color: 'chart-3', isSystem: true, isHidden: false, type: 'expense', parentId: null },
+  { id: 'salary', name: 'Lương', icon: 'Briefcase', color: 'chart-1', isSystem: true, isHidden: false, type: 'income', parentId: null },
+  { id: 'other-income', name: 'Thu nhập khác', icon: 'Gift', color: 'chart-1', isSystem: true, isHidden: false, type: 'income', parentId: null },
 ]
 
 export const accounts: Account[] = [

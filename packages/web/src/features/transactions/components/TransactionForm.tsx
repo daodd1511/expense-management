@@ -1,10 +1,12 @@
 
-import { ArrowRight, Clock, X } from 'lucide-react'
+import { ArrowRight, Clock } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { FavoriteCategoryPicker } from '@/features/categories/components/FavoriteCategoryPicker'
-import { Button } from '@/shared/components/ui/button'
+import { AmountField } from '@/shared/components/AmountField'
 import { DatePicker } from '@/shared/components/ui/date-picker'
 import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
+import { FormFooterBar } from '@/shared/components/FormFooterBar'
+import { SheetFormHeader } from '@/shared/components/SheetFormHeader'
 import { Input, Label, Textarea } from '@/shared/components/ui/input'
 import {
   Popover,
@@ -14,7 +16,6 @@ import {
   PopoverTrigger,
 } from '@/shared/components/ui/popover'
 import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
-import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { useCategories, useCategoryLookup } from '@/features/categories/queries'
 import { useFavoriteCategoryIds } from '@/features/categories/favorites-queries'
@@ -297,12 +298,12 @@ export function TransactionForm({
   ]
 
   const numericAmount = Number(amount) || 0
-  const visibleCats = categories.filter((c) => c.type === type)
+  const visibleCats = categories.filter((c) => c.type === type && !c.isHidden)
 
   const canSubmit =
     numericAmount > 0 &&
     (type === 'transfer' ? accountId !== toAccountId : true) &&
-    (type === 'transfer' || categoryId)
+    (type === 'transfer' || !!categoryId)
 
   const { submit: submitForm, isSubmitting, errorMessage } = useFormSubmit(onSubmit)
   const fallbackMerchant =
@@ -339,25 +340,15 @@ export function TransactionForm({
     })
   }
 
-  const amountTone =
-    type === 'income' ? 'text-income' : type === 'expense' ? 'text-expense' : 'text-foreground'
+  const amountTone = type === 'income' ? 'income' : type === 'expense' ? 'expense' : 'neutral'
 
   return (
     <div className="flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-2 pb-3 sm:px-5">
-        <h2 className="text-base font-semibold">
-          {initial ? t('form.editTitle') : t('form.addTitle')}
-        </h2>
-        <button
-          type="button"
-          onClick={onCancel}
-          aria-label={t('form.close')}
-          className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
-        >
-          <X className="size-4" />
-        </button>
-      </div>
+      <SheetFormHeader
+        title={initial ? t('form.editTitle') : t('form.addTitle')}
+        onClose={onCancel}
+        closeLabel={t('form.close')}
+      />
 
       {/* Type tabs */}
       <div className="px-4 sm:px-5">
@@ -389,26 +380,7 @@ export function TransactionForm({
         </div>
       </div>
 
-      {/* Amount input */}
-      <div className="flex flex-col items-center gap-1 px-4 py-5 sm:px-5">
-        <span className="text-xs text-muted-foreground">{t('form.amount')}</span>
-        <input
-          ref={amountInputRef}
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={amount ? formatVND(Number(amount), false) : ''}
-          onChange={(e) => {
-            const v = e.target.value.replace(/\D/g, '')
-            if (v.length <= 12) setAmount(v)
-          }}
-          placeholder="0"
-          className={cn(
-            'w-full bg-transparent text-center text-4xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/40',
-            amountTone,
-          )}
-        />
-      </div>
+      <AmountField label={t('form.amount')} value={amount} onChange={setAmount} tone={amountTone} inputRef={amountInputRef} />
 
       <div className="flex flex-col gap-4 px-4 sm:px-5">
         {/* Categories */}
@@ -482,21 +454,14 @@ export function TransactionForm({
         </div>
       )}
 
-      {/* Submit */}
-      <div className="sticky bottom-0 flex gap-2 bg-card p-4 sm:px-5">
-        <Button variant="outline" size="lg" className="h-11 flex-1" disabled={isSubmitting} onClick={onCancel}>
-          {t('form.cancel')}
-        </Button>
-        <Button
-          size="lg"
-          className="h-11 flex-[2]"
-          disabled={!canSubmit}
-          loading={isSubmitting}
-          onClick={submit}
-        >
-          {initial ? t('form.save') : t('form.submit')}
-        </Button>
-      </div>
+      <FormFooterBar
+        cancelLabel={t('form.cancel')}
+        onCancel={onCancel}
+        submitLabel={initial ? t('form.save') : t('form.submit')}
+        onSubmit={submit}
+        canSubmit={canSubmit}
+        isSubmitting={isSubmitting}
+      />
     </div>
   )
 }
