@@ -44,6 +44,7 @@ vi.mock('@/core/i18n', () => ({
       ({
         'accounts.computedBalance': 'Current balance',
         'accounts.actualBalance': 'Actual balance',
+        'accounts.actualBalanceSign': 'Toggle balance sign',
         'accounts.reconcile': 'Balance adjustment',
         'accounts.reconcileTransaction': 'Balance adjustment',
         'accounts.saveAdjustment': 'Save adjustment',
@@ -107,6 +108,38 @@ describe('ReconcileBalanceForm', () => {
         }),
       )
     })
+  })
+
+  it('accepts a negative actual balance via the sign toggle to represent a deficit', async () => {
+    const user = userEvent.setup()
+    render(<ReconcileBalanceForm account={account} onCancel={vi.fn()} />)
+
+    await user.clear(screen.getByLabelText('Actual balance'))
+    await user.type(screen.getByLabelText('Actual balance'), '300')
+    await user.click(screen.getByRole('button', { name: 'Toggle balance sign' }))
+    await user.click(screen.getByRole('button', { name: 'Save adjustment' }))
+
+    await waitFor(() => {
+      expect(mutationMocks.mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'expense',
+          categoryId: 'adjustment-expense',
+          amount: 1_300,
+          accountId: 'account-1',
+        }),
+      )
+    })
+  })
+
+  it('strips non-numeric characters from the amount input, with no minus key required', async () => {
+    const user = userEvent.setup()
+    render(<ReconcileBalanceForm account={account} onCancel={vi.fn()} />)
+
+    const input = screen.getByLabelText('Actual balance') as HTMLInputElement
+    await user.clear(input)
+    await user.type(input, 'a8b0c0x')
+
+    expect(input.value).toBe('800')
   })
 
   it('closes without creating a transaction when the balances match', async () => {

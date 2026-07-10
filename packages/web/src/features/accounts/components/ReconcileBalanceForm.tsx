@@ -1,3 +1,4 @@
+import { Plus, Minus } from 'lucide-react'
 import { useState } from 'react'
 import { useCategories } from '@/features/categories/queries'
 import { useAddTransaction } from '@/features/transactions/queries'
@@ -25,9 +26,10 @@ export function ReconcileBalanceForm({ account, onCancel }: { account: Account; 
   const addTransaction = useAddTransaction()
   const { t } = useLang()
   const computedBalance = account.balance ?? account.openingBalance
-  const [actualBalanceInput, setActualBalanceInput] = useState(String(computedBalance))
-  const actualBalance = Number(actualBalanceInput)
-  const hasActualBalance = actualBalanceInput.trim() !== '' && Number.isFinite(actualBalance)
+  const [isNegative, setIsNegative] = useState(computedBalance < 0)
+  const [magnitudeInput, setMagnitudeInput] = useState(String(Math.abs(computedBalance)))
+  const hasActualBalance = magnitudeInput.trim() !== ''
+  const actualBalance = hasActualBalance ? (isNegative ? -1 : 1) * Number(magnitudeInput) : 0
   const delta = hasActualBalance ? actualBalance - computedBalance : 0
   const type = delta < 0 ? 'expense' : 'income'
   const categoryId = findAdjustmentCategoryId(categories, type)
@@ -68,12 +70,26 @@ export function ReconcileBalanceForm({ account, onCancel }: { account: Account; 
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="actual-balance">{t('accounts.actualBalance')}</Label>
-        <Input
-          id="actual-balance"
-          type="number"
-          value={actualBalanceInput}
-          onChange={(event) => setActualBalanceInput(event.target.value)}
-        />
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-lg"
+            className="size-10 shrink-0"
+            aria-label={t('accounts.actualBalanceSign')}
+            aria-pressed={isNegative}
+            onClick={() => setIsNegative((value) => !value)}
+          >
+            {isNegative ? <Minus className="size-4" /> : <Plus className="size-4" />}
+          </Button>
+          <Input
+            id="actual-balance"
+            type="text"
+            inputMode="numeric"
+            value={magnitudeInput}
+            onChange={(event) => setMagnitudeInput(event.target.value.replace(/\D/g, ''))}
+          />
+        </div>
       </div>
 
       {errorMessage && <FormErrorBanner message={errorMessage} />}
