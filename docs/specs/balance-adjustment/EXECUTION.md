@@ -13,10 +13,10 @@ Reports) is unchanged, only which package implements it.
 
 ## STATUS
 
-- Current phase: 2 — done
+- Current phase: 3 — done
 - Phase 1 — schema, shared types, migration, reports exclusion: done
 - Phase 2 — frontend category pickers: done
-- Phase 3 — reconcile balance UI: pending
+- Phase 3 — reconcile balance UI: done
 - Verification debt: none
 
 ## Phase 1 — Schema, shared types, migration, reports exclusion
@@ -75,13 +75,13 @@ Branch: `balance-adjustment/phase-3-reconcile-ui` (off `balance-adjustment/phase
 
 The user-facing surface; depends on the hidden categories existing (Phase 1) and reuses the existing add-transaction mutation, so it lands last.
 
-- [ ] New `packages/web/src/features/accounts/components/ReconcileBalanceForm.tsx` — shows account's current `computeBalance` result, an actual-balance input, derives signed delta client-side (`actual − computed`), zero delta closes the form with no submission, non-zero submits via `useAddTransaction` with `type`/`categoryId` set per PLAN.md → "Representation" (expense+hidden-expense-category id if computed > actual, income+hidden-income-category id if actual > computed), `amount: Math.abs(delta)`
-- [ ] `packages/web/src/features/accounts/components/DesktopAccounts.tsx` — add "Reconcile balance" action to the account row (alongside existing edit/delete actions ~line 112), opens `ReconcileBalanceForm` in the existing `Modal`/drawer pattern
-- [ ] `packages/web/src/features/accounts/components/MobileAccounts.tsx` — add "Reconcile balance" action to the account detail `BottomSheet` (~line 170), opens `ReconcileBalanceForm`
+- [x] New `packages/web/src/features/accounts/components/ReconcileBalanceForm.tsx` — shows account's current `computeBalance` result, an actual-balance input, derives signed delta client-side (`actual − computed`), zero delta closes the form with no submission, non-zero submits via `useAddTransaction` with `type`/`categoryId` set per PLAN.md → "Representation" (expense+hidden-expense-category id if computed > actual, income+hidden-income-category id if actual > computed), `amount: Math.abs(delta)`
+- [x] `packages/web/src/features/accounts/components/DesktopAccounts.tsx` — add "Reconcile balance" action to the account row (alongside existing edit/delete actions ~line 112), opens `ReconcileBalanceForm` in the existing `Modal`/drawer pattern
+- [x] `packages/web/src/features/accounts/components/MobileAccounts.tsx` — add "Reconcile balance" action to the account detail `BottomSheet` (~line 170), opens `ReconcileBalanceForm`
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web exec tsc --noEmit`
-- [ ] `pnpm --filter @wallet/web exec vitest run packages/web/src/features/accounts` (add `ReconcileBalanceForm.test.tsx` covering: actual < computed → expense txn with hidden expense category id; actual > computed → income txn with hidden income category id; actual == computed → no mutation call)
+- [x] `pnpm --filter @wallet/web exec tsc --noEmit`
+- [x] `pnpm --filter @wallet/web exec vitest run src/features/accounts` (add `ReconcileBalanceForm.test.tsx` covering: actual < computed → expense txn with hidden expense category id; actual > computed → income txn with hidden income category id; actual == computed → no mutation call)
 
 **Review checklist (user, at PR review):**
 - [ ] Reconcile an account with actual < computed balance (mobile + desktop) — expense transaction created, account balance now matches actual
