@@ -1,4 +1,4 @@
-import type { CategoryCreate, CategoryPatch } from '@wallet/shared'
+import type { CategoryCreate, CategoryPatch, Lang } from '@wallet/shared'
 import { ApiError } from '../../middleware/error'
 import * as repository from './repository'
 
@@ -11,8 +11,8 @@ function assertValidParent(parent: repository.ParentCandidate, expectedType: str
   }
 }
 
-export async function listCategories(userId: string) {
-  return repository.listCategories(userId)
+export async function listCategories(userId: string, locale?: Lang) {
+  return repository.listCategories(userId, locale)
 }
 
 export async function createCategory(userId: string, category: CategoryCreate) {

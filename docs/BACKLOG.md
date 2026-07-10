@@ -6,7 +6,6 @@ their session summary). Delete a line when the item ships or graduates into a
 `docs/specs/<feature>/` plan — git history is the archive. No done-lists, no status ceremony.
 
 ## Fixes
-- Hide app version in the footer for non-selected accounts (2026-07-04)
 ## Features
 
 - [ ] Export & backup: CSV export, JSON backup/restore (2026-07-04)
@@ -15,11 +14,11 @@ their session summary). Delete a line when the item ships or graduates into a
 - [ ] Offline write queue for the PWA (2026-07-04)
 - [ ] Small UX batch: account reorder, currency format preference, per-locale number format (2026-07-04)
 - [ ] Better analytics on spendings (2026-07-05)
-- [ ] Add fee feature (2026-07-05)
+- [ ] Add fee feature (2026-07-05) (priority: high, need this before able to release 1.0)
 - [ ] Better credit card information: view balance, due date, payment status (2026-07-05)
 - [ ] Lend and borrow feature (2026-07-05)
 ## Ideas
-- Improving backlog managements, should act like a kanban board, should have status to track (2026-07-10)
+- Improving backlog managements, should act like a kanban board, should have status to track, maybe build a simple task management tool like trello to work on local(2026-07-10)
 - Maybe add a guide to install the app on mobile (2026-07-10)
 - Update the presentation with grill-with-docs and it's related skills (2026-07-10)
 - Create a list of features current and pending ones for release 1.0 (2026-07-10)

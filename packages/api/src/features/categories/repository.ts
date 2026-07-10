@@ -1,7 +1,9 @@
-import { categoryPatchToRow, categoryRowSchema, fromCategory, toCategory, type Category, type CategoryCreate, type CategoryPatch } from '@wallet/shared'
+import { categoryPatchToRow, categoryRowSchema, fromCategory, toCategory, type Category, type CategoryCreate, type CategoryPatch, type Lang } from '@wallet/shared'
 import { getSupabase } from '../../config/supabase'
 import { parseRows } from '../../lib/response'
 import { ApiError } from '../../middleware/error'
+
+const DEFAULT_LOCALE: Lang = 'vi'
 
 export type ParentCandidate = {
   id: string
@@ -21,19 +23,28 @@ function parseCategoryRow(data: unknown, message: string): Category {
   return toCategory(result.data)
 }
 
-export async function listCategories(userId: string) {
+export async function listCategories(userId: string, locale: Lang = DEFAULT_LOCALE) {
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from('categories')
-    .select('*')
+    .select('*, category_translations(name, locale)')
     .or(`owner_id.eq.${userId},owner_id.is.null`)
+    .eq('category_translations.locale', locale)
     .order('created_at', { ascending: true })
 
   if (error) {
     throw error
   }
 
-  return parseRows(data, categoryRowSchema, toCategory)
+  const localized = (data ?? []).map((row) => {
+    const { category_translations, ...rest } = row as typeof row & {
+      category_translations: { name: string; locale: string }[] | null
+    }
+    const translated = rest.owner_id === null ? category_translations?.[0]?.name : undefined
+    return { ...rest, name: translated ?? rest.name }
+  })
+
+  return parseRows(localized, categoryRowSchema, toCategory)
 }
 
 export async function loadParentCandidate(parentId: string, userId: string): Promise<ParentCandidate | null> {

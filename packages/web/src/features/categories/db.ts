@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { Category } from '@/core/types'
+import type { Category, Lang } from '@/core/types'
 import { apiJson } from '@/core/api'
 import { categorySchema } from '@wallet/shared'
 
@@ -15,8 +15,8 @@ const okResponseSchema = z.object({
   ok: z.literal(true),
 })
 
-export async function fetchCategories(): Promise<Category[]> {
-  const response = await apiJson('/categories', categoriesResponseSchema)
+export async function fetchCategories(locale: Lang): Promise<Category[]> {
+  const response = await apiJson(`/categories?locale=${locale}`, categoriesResponseSchema)
   return response.data
 }
 
