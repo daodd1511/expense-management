@@ -37,9 +37,9 @@ the database.
 - [x] `packages/api` category routes/controller/service/repository: no code change needed — `listCategories`/`listReportCategories` both `select('*')`, so `isHidden` passes through automatically once the shared mapper is updated. Confirm with the gate below rather than editing.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/shared exec tsc --noEmit` (categorySchema/dto/mapper changes)
-- [ ] `pnpm --filter @wallet/api exec tsc --noEmit` (service.ts consumes shared types)
-- [ ] `pnpm --filter @wallet/api exec vitest run packages/api/src/features/reports/reports.test.ts packages/api/src/features/categories` (add/extend a reports test asserting a hidden-category transaction is excluded from totals/series/categoryGroups)
+- [x] `pnpm --filter @wallet/shared exec tsc --noEmit` (categorySchema/dto/mapper changes)
+- [x] `pnpm --filter @wallet/api exec tsc --noEmit` (service.ts consumes shared types)
+- [ ] `pnpm --filter @wallet/api exec vitest run src/features/reports/reports.test.ts src/features/categories` (add/extend a reports test asserting a hidden-category transaction is excluded from totals/series/categoryGroups)
 
 **Review checklist (user, at PR review):**
 - [ ] Apply the migration locally; confirm the two `Balance Adjustment` categories exist with `is_hidden = true` and correct `type`
