@@ -10,11 +10,20 @@ vi.mock('@/core/i18n', () => ({
     t: (key: string, vars?: Record<string, string>) =>
       ({
         'category.showAll': 'Show all',
+        'category.allCategories': 'All categories',
         'category.noFavorites': 'No favorites yet',
+        'category.noFavoritesHint': 'Pick from the full list to get started',
+        'category.browseAll': 'Browse all categories',
         'category.expandGroup': `Expand ${vars?.name}`,
         'category.collapseGroup': `Collapse ${vars?.name}`,
       })[key] ?? key,
   }),
+}))
+
+const isDesktopMock = vi.hoisted(() => vi.fn(() => true))
+
+vi.mock('@/shared/hooks/useIsDesktop', () => ({
+  useIsDesktop: isDesktopMock,
 }))
 
 const food: Category = { id: 'food', name: 'Food', icon: 'Utensils', color: 'chart-1', isSystem: true, isHidden: false, type: 'expense', parentId: null }
@@ -50,7 +59,8 @@ describe('FavoriteCategoryPicker', () => {
     expect(screen.getByRole('button', { name: 'Restaurant' })).toBeDefined()
   })
 
-  it('shows an empty-state message when nothing is favorited', () => {
+  it('shows an inviting empty state with a browse CTA when nothing is favorited', async () => {
+    const user = userEvent.setup()
     render(
       <FavoriteCategoryPicker
         categories={categories}
@@ -61,6 +71,27 @@ describe('FavoriteCategoryPicker', () => {
     )
 
     expect(screen.getByText('No favorites yet')).toBeDefined()
+    expect(screen.getByText('Pick from the full list to get started')).toBeDefined()
+
+    const panel = screen.getByRole('button', { name: /No favorites yet.*Browse all categories/s })
+    await user.click(panel)
+    expect(screen.getByRole('button', { name: 'Transport' })).toBeDefined()
+  })
+
+  it('shows a static empty-state panel with no CTA when disabled and no favorites', () => {
+    render(
+      <FavoriteCategoryPicker
+        categories={categories}
+        favoriteCategoryIds={new Set()}
+        selectedId={null}
+        onSelect={vi.fn()}
+        disabled
+      />,
+    )
+
+    expect(screen.getByText('No favorites yet')).toBeDefined()
+    expect(screen.queryByText('Browse all categories')).toBeNull()
+    expect(screen.queryByRole('button', { name: /No favorites yet/ })).toBeNull()
   })
 
   it('shows the current non-favorite selection as a separate full-width row', () => {
@@ -164,5 +195,23 @@ describe('FavoriteCategoryPicker', () => {
 
     await user.click(screen.getByRole('button', { name: 'Transport' }))
     expect(onSelect).toHaveBeenCalledWith('transport')
+  })
+
+  it('opens the full picker as a bottom sheet on mobile', async () => {
+    isDesktopMock.mockReturnValue(false)
+    const user = userEvent.setup()
+    render(
+      <FavoriteCategoryPicker
+        categories={categories}
+        favoriteCategoryIds={new Set(['food'])}
+        selectedId={null}
+        onSelect={vi.fn()}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Show all' }))
+
+    expect(screen.getByRole('dialog', { name: 'All categories' })).toBeDefined()
+    isDesktopMock.mockReturnValue(true)
   })
 })

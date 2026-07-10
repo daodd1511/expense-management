@@ -7,6 +7,9 @@ their session summary). Delete a line when the item ships or graduates into a
 
 ## Fixes
 
+- [ ] `SubscriptionLogConfirm` (subscriptions) uses the centered `Modal` on mobile same as `FavoriteCategoryPicker` did — likely same top-corner-clipping bug on small viewports; check and switch to `BottomSheet` on mobile if confirmed (2026-07-10)
+- [ ] Category select sheet in income mobile got some layer of glass-like blur on top.
+- [ ] Transaction page filters in mobile to break line instead of horizontal scroll when the screen is too narrow (2026-07-10)
 ## Features
 
 - [ ] Export & backup: CSV export, JSON backup/restore (2026-07-04)
@@ -15,10 +18,7 @@ their session summary). Delete a line when the item ships or graduates into a
 - [ ] Offline write queue for the PWA (2026-07-04)
 - [ ] Small UX batch: account reorder, currency format preference, per-locale number format (2026-07-04)
 - [ ] Better analytics on spendings (2026-07-05)
-- [ ] Add adjustment account feature (2026-07-05)
 - [ ] Add fee feature (2026-07-05)
 - [ ] Better credit card information: view balance, due date, payment status (2026-07-05)
-
+- [ ] Lend and borrow feature (2026-07-05)
 ## Ideas
-
-- [ ] Figure ways to update the PWA app (2026-07-07)
