@@ -6,96 +6,103 @@ tree, and project/spec artifacts for authoritative state.
 ## Current state
 
 - Repository: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
-- Branch: `improvements`
-- Worktree: `docs/BACKLOG.md` has one uncommitted edit (the user added a new
-  Fixes item: "Hide app version in the footer for non-selected accounts",
-  2026-07-04 — not yet investigated or fixed this session). An untracked
-  `.codex/worktrees/` directory exists at repo root; it's from an external
-  tool, not this session — leave it alone.
-- Latest commit: `e76fd94 fix mobile account row: edit button opened
-  transactions, not edit form`.
-- Full commit range for this session: `042dc64..e76fd94` (16 commits) — see
-  `git log --oneline 042dc64..e76fd94` for the complete list with terse
-  one-line summaries; each commit message has the full why/what.
+- Branch: `develop`, clean working tree, up to date with `origin/develop`.
+- Latest commit: `cb56018 replace app version footer with update-only button
+  and /version route`.
+- Spec state: `docs/specs/system-category-translations/EXECUTION.md` STATUS
+  block — both phases `done`/`done-with-debt`, merged into `develop`, phase
+  branches deleted (local + remote). One open verification debt recorded
+  there: `database.types.ts`'s `category_translations` type was hand-added
+  (no local Supabase CLI) and should be regenerated with `supabase gen types`
+  when the CLI is available.
+- An untracked `.codex/worktrees/` directory exists at repo root — not from
+  this session, leave it alone.
 
 ## What changed in this session
 
-Broad mobile-UI polish pass across accounts/budgets/subscriptions/
-transactions/categories, driven by a running `docs/BACKLOG.md` "Fixes" list
-the user filled in from live testing between rounds of work. Notable threads
-(chronological, oldest first):
+1. **`system-category-translations` spec** (see
+   `docs/specs/system-category-translations/PLAN.md` and `EXECUTION.md` for
+   full decisions/checklist) — planned via `/spec-plan`, executed both phases
+   via `/spec-phase`, merged locally into `develop` and pushed (user opted
+   out of PR review this time, chose direct local merge instead).
+   - **Migration bug found after merge**: the `vi` seed's `case name … end`
+     had no `else`, so any system category name in the user's actual database
+     that wasn't enumerated in the migration produced `NULL` and failed the
+     whole migration with a not-null violation. Fixed in
+     `supabase/migrations/20260710120000_category_translations.sql` (commit
+     `57cd59d`) by wrapping the case in a subquery and filtering
+     `where translated is not null` — unmatched names are now silently
+     skipped (translation completeness isn't required per PLAN.md, only
+     uniqueness; the API already falls back to `categories.name`).
+   - **The user still needs to re-run this migration against their database**
+     — it was failing before the fix; not confirmed successful after.
+2. **Bounded fix, not part of the spec**: `AppVersionRow`
+   (`packages/web/src/features/settings/components/AppVersionRow.tsx`) now
+   renders nothing unless a PWA update is waiting, in which case it shows
+   only the Update button — no version string is shown in Settings anymore.
+   Deploy info (version/commit/commit date) moved to a new `/version` route
+   (`packages/web/src/features/version/components/VersionPage.tsx`, wired in
+   `packages/web/src/routing/router.tsx`). Removed the now-unused
+   `settings.version` i18n key (both `VI`/`EN` in `packages/web/src/core/i18n.tsx`)
+   and the corresponding `docs/BACKLOG.md` Fixes item. Commit `cb56018`.
+   - Originally scoped as "hide version when an update is available"; the
+     user clarified mid-session the real ask was per-audience (owner sees
+     version, other users don't) — then simplified further to "no version
+     UI at all, just a separate `/version` route for manual checking."
 
-1. Fixed duplicate section titles on mobile (Settings, Other pages) — the
-   sticky top app bar already showed the section title.
-2. Reworked `ReconcileBalanceForm`'s amount input: digits-only with a
-   separate +/− sign toggle (mobile numeric keypads have no minus key).
-3. Redesigned `FavoriteCategoryPicker`'s "show all" trigger + empty state,
-   and fixed it opening as a centered `Modal` on mobile (clipped by the
-   viewport) — now `BottomSheet` on mobile / `Modal` on desktop.
-4. Fixed sticky form footers sitting short of the true screen bottom
-   (`position: sticky` was anchoring to the scroll container's *padding*
-   edge, not its border edge).
-5. **Bigger piece:** extracted `SheetFormHeader`, `AmountField`,
-   `FormFooterBar` (`packages/web/src/shared/components/`) from
-   `TransactionForm` and applied them to `Budget`/`Subscription`/
-   `CategoryForm` for a consistent header/amount/footer look. Follow-on bug
-   fixes surfaced by this: subscription category now required, budget
-   add/edit now opens in a `Drawer` on desktop (was an inline `Card`),
-   fixed a missing `group` class that permanently hid the desktop budget
-   edit button, mobile budget rows converted to swipe actions, budget add
-   no longer pre-selects the first category.
-5b. Fixed budget row action visibility (delete was always shown, edit was
-   hover-only — now both share one hover-reveal container).
-6. Fixed the category "show all" sheet's height: it opens nested on top of
-   the transaction form's own sheet (two stacked sheets, each with its own
-   dim/blur backdrop). Two `min-height` attempts didn't fully fix it: added
-   an opt-in `fullHeight` prop on the shared `BottomSheet`
-   (`packages/web/src/shared/components/ui/overlay.tsx`) that renders at a
-   fixed `92dvh` instead of shrink-to-fit; the category sheet opts in so it
-   always matches the transaction sheet's height regardless of category
-   count.
-7. Mobile transaction list: filter pills wrap instead of horizontal-scroll;
-   `TransactionRow` right column dropped the `time` line (was stacking up
-   to 3 lines with amount + balance).
-8. Fixed `DatePicker` not closing after selecting a date on mobile (the
-   `Popover` was uncontrolled — selecting fired `onChange` but nothing told
-   it to close).
-9. `AccountForm`'s opening-balance input: added thousands-separator
-   formatting, plus a +/− sign toggle (needed to preserve negative-balance
-   entry for credit-card accounts once the raw `type="number"` input was
-   replaced).
-10. `MobileAccounts`: the swipe-revealed pencil button was labeled "Edit"
-    but wired to `onViewTransactions`, while `onEdit` was on the row-body
-    tap — swapped back so labels match behavior.
+## Incidents worth knowing about (unresolved / not fully explained)
 
-Full per-change rationale is in each commit message (`git log -p` on any
-hash above); this list is intentionally not a duplicate of that detail.
+- **Mass remote branch deletion**: mid-session, `git fetch --prune` revealed
+  ~16 remote branches gone from `origin` in one shot (various
+  `category-redesign/*`, `category-ux/*`, `error-handling/*`, `pwa/*`,
+  `spec-workflow-v2`, `improvements`, etc.) — nothing this session did caused
+  it. Only `develop`, `main`, `slides/ai-workflow-talk` remain on the remote.
+  Flagged to the user; not investigated further. Worth checking GitHub's
+  audit log / branch protection rules if those branches were still needed —
+  local copies may still exist on this machine if no one has pruned them
+  locally.
+- **`gh` authenticated as the wrong account**: `gh auth status` shows
+  `daoduong-saritasa`, which cannot open PRs on `daodd1511/expense-management`.
+  If PR-based workflow is needed later, run `gh auth login`/`gh auth switch`
+  with the account that owns that repo first.
+- **A parallel session/actor** (same git identity `daodd`) committed and
+  merged `docs/specs/multi-user-release-readiness/PLAN.md` directly onto
+  `develop` (commits `f283d80`/`d47e301`) and pushed, all while this session
+  was mid-flight on the same local clone. Not this session's work — read
+  that PLAN.md before touching related areas (auth, per-user data scoping).
+  Note its "Explicitly Out of Scope" section calls out that it is **not**
+  Household sharing, so the `docs/BACKLOG.md` "Household sharing" Features
+  item is still live (briefly, accidentally clobbered by an Edit in this
+  session while isolating an unrelated commit, then restored — see git log
+  around `cb56018` if the history looks odd there).
+- Origin remote URL has a **PAT embedded directly in it**
+  (`https://ghp_...@github.com/...` — value not repeated here). Flagged to
+  the user; recommend rotating the token and switching to `gh`'s credential
+  helper or SSH instead.
 
 ## Verification
 
-- `pnpm --filter @wallet/web exec tsc --noEmit` — clean after every change
-  in this session (checked repeatedly, last checked clean).
-- `pnpm --filter @wallet/web test` — 37 test files / 162 tests passing as
-  of the last full run this session.
-- No end-to-end/browser verification was done — all UI fixes were reasoned
-  from code + the user's own live testing feedback (several rounds of "still
-  broken" → refine → recheck), not from an agent-driven browser session.
-  Worth an actual mobile-viewport pass if picking up further UI work here.
+- `pnpm --filter @wallet/api typecheck` / `test` (33 tests) and
+  `pnpm --filter @wallet/shared test` (31 tests) — clean, for the spec work.
+- `pnpm --filter @wallet/web typecheck` / `test` (37 files / 162 tests) —
+  clean, for both the spec's frontend phase and the AppVersionRow/`/version`
+  change.
+- No browser/manual verification was done for the `/version` route or the
+  Settings change — reasoned from code + component tests only.
+- The category-translation migration's actual re-run against the live
+  database has **not** been confirmed successful since the fix.
 
 ## Suggested skills
 
-- `react-frontend-developer` — for any further work on the shared form
-  components or mobile layouts touched this session.
-- `verify` — if the next task changes runtime behavior in
-  `packages/web/src/features/**` or `packages/web/src/shared/components/**`,
-  drive it end-to-end rather than trusting typecheck/tests alone (this
-  session didn't have browser access; several fixes needed 2-3 iterations
-  based on user screenshots because of that).
-- `capture` — the user has been appending new mobile bugs to
-  `docs/BACKLOG.md` → Fixes directly between sessions; check that file first
-  before assuming backlog is empty.
-- `terse-commit` — before any commit in this repo (mandatory per
-  `CLAUDE.md`); this session split every unrelated change into its own
-  commit, including `git add -p` hunk-splitting of shared files like
-  `i18n.tsx` when a single file had multiple unrelated line additions.
-- `handoff` — refresh this baton at the next session boundary.
+- `verify` — before considering this session's UI change done, drive
+  `/version` and the Settings page in an actual browser; also re-run the
+  fixed migration against the real database and confirm
+  `GET /categories?locale=vi` returns translated names end to end.
+- `spec-phase` — only if resuming `system-category-translations` for real
+  follow-up work; both its phases are already `done`/`done-with-debt` and
+  merged, so this would be starting fresh scope, not continuing it.
+- `terse-commit` — mandatory per `CLAUDE.md` before any commit in this repo.
+- `capture` — if further out-of-scope issues surface (e.g. anything found
+  while re-running the migration), append to `docs/BACKLOG.md` rather than
+  fixing inline.
+- `handoff` — refresh this baton again at the next session boundary.
