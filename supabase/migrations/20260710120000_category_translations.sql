@@ -11,11 +11,16 @@ create table category_translations (
   unique (category_id, locale)
 );
 
--- Vietnamese seed for every existing system category. Names in the seed are
--- globally unique except 'Balance Adjustment' (one expense row, one income
--- row), handled separately below.
+-- Vietnamese seed for every existing system category matched below. Names in
+-- the seed are globally unique except 'Balance Adjustment' (one expense row,
+-- one income row), handled separately below. Per PLAN.md, the database
+-- enforces uniqueness but not language completeness — a system category
+-- whose name isn't recognized here is silently skipped (no `vi` row) rather
+-- than failing the migration; the API falls back to `categories.name` for it.
 insert into category_translations (category_id, locale, name)
-select id, 'vi', case name
+select id, 'vi', translated
+from (
+  select id, case name
   when 'Food & Dining' then 'Ăn uống'
   when 'Transport' then 'Di chuyển'
   when 'Housing' then 'Nhà ở'
@@ -81,9 +86,11 @@ select id, 'vi', case name
   when 'Refund' then 'Hoàn tiền'
   when 'Winnings' then 'Trúng thưởng'
   when 'Gift Received' then 'Quà tặng nhận được'
-end
-from categories
-where owner_id is null and name <> 'Balance Adjustment';
+  end as translated
+  from categories
+  where owner_id is null and name <> 'Balance Adjustment'
+) matched
+where translated is not null;
 
 insert into category_translations (category_id, locale, name)
 select id, 'vi', 'Điều chỉnh số dư'
