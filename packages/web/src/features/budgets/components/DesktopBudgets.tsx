@@ -8,6 +8,7 @@ import { BudgetsSkeleton } from '@/shared/components/Skeleton'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
+import { Drawer } from '@/shared/components/ui/overlay'
 import { Progress } from '@/shared/components/ui/progress'
 import { formatVND, monthLabel } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
@@ -87,28 +88,23 @@ export function DesktopBudgets({
             </CardContent>
           </Card>
         </div>
-
-        {editing !== null && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{editing === 'add' ? t('budget.add') : t('budget.edit')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BudgetForm
-                initial={editing === 'add' ? undefined : editing}
-                onSubmit={handleSubmit}
-                onCancel={() => setEditing(null)}
-              />
-            </CardContent>
-          </Card>
-        )}
       </div>
+
+      <Drawer open={editing !== null} onClose={() => setEditing(null)}>
+        {editing !== null && (
+          <BudgetForm
+            initial={editing === 'add' ? undefined : editing}
+            onSubmit={handleSubmit}
+            onCancel={() => setEditing(null)}
+          />
+        )}
+      </Drawer>
 
       <Card className="lg:col-span-2">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t('budget.byCategory')}</CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setEditing('add')}>
-            <Plus className="size-3.5" />
+          <Button className="h-10 rounded-xl px-4" onClick={() => setEditing('add')}>
+            <Plus className="size-4" />
             {t('budget.add')}
           </Button>
         </CardHeader>
@@ -120,7 +116,7 @@ export function DesktopBudgets({
               const p = Math.round((spent / b.limit) * 100)
               const state = budgetState(p)
               return (
-                <div key={b.categoryId} className="flex flex-col gap-1.5">
+                <div key={b.categoryId} className="group flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2 text-sm font-medium">
                       <span
@@ -137,20 +133,22 @@ export function DesktopBudgets({
                     </span>
                     <div className="flex items-center gap-1">
                       <span className={`text-xs font-medium ${state.tone}`}>{p}%</span>
-                      <button
-                        type="button"
-                        onClick={() => setEditing(b)}
-                        className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
-                      >
-                        <Pencil className="size-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPendingDeleteId(b.categoryId)}
-                        className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-expense"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => setEditing(b)}
+                          className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPendingDeleteId(b.categoryId)}
+                          className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-expense"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <Progress value={p} indicatorClassName={state.bar} />

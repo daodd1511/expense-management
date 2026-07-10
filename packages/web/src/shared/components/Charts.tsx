@@ -49,6 +49,7 @@ export function CategoryDonut({
             outerRadius="100%"
             paddingAngle={2}
             stroke="none"
+            isAnimationActive={false}
             onClick={(_, index) => {
               if (onSelect && typeof index === 'number' && data[index]) onSelect(data[index])
             }}

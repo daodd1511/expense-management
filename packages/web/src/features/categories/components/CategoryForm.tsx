@@ -5,6 +5,7 @@ import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
+import { FormFooterBar } from '@/shared/components/FormFooterBar'
 import { Input, Label } from '@/shared/components/ui/input'
 import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
 import { CATEGORY_ICON_OPTIONS } from '@/shared/icons'
@@ -252,25 +253,27 @@ export function CategoryForm({
         </div>
       )}
 
-      <div className="sticky bottom-0 flex gap-2 bg-card p-4 sm:px-5">
-        <Button variant="outline" size="lg" className="h-11 flex-1" disabled={isSaving} onClick={onCancel}>
-          {t('form.cancel')}
-        </Button>
-        {canDelete && (
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            className="h-11 text-expense hover:bg-expense/10 hover:text-expense"
-            onClick={() => setConfirmDeleteOpen(true)}
-          >
-            <Trash2 className="size-4" />
-          </Button>
-        )}
-        <Button size="lg" className="h-11 flex-[2]" disabled={!canSave} loading={isSaving} onClick={handleSave}>
-          {isEditing ? t('settings.saveCat') : t('settings.createCat')}
-        </Button>
-      </div>
+      <FormFooterBar
+        cancelLabel={t('form.cancel')}
+        onCancel={onCancel}
+        submitLabel={isEditing ? t('settings.saveCat') : t('settings.createCat')}
+        onSubmit={handleSave}
+        canSubmit={canSave}
+        isSubmitting={isSaving}
+        extra={
+          canDelete && (
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="h-11 text-expense hover:bg-expense/10 hover:text-expense"
+              onClick={() => setConfirmDeleteOpen(true)}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          )
+        }
+      />
       <ConfirmDialog
         open={confirmDeleteOpen}
         onCancel={() => setConfirmDeleteOpen(false)}

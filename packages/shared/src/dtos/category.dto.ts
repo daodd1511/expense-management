@@ -8,6 +8,7 @@ export const categoryRowSchema = z.object({
   name: z.string(),
   icon: z.string(),
   color: z.string(),
+  is_hidden: z.boolean(),
   created_at: z.string(),
   type: categoryTypeSchema,
   parent_id: z.string().nullable(),

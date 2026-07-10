@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { formatVND } from '@/shared/lib/format'
 import type { ReportCategoryAggregate } from '@wallet/shared'
+import type { TranslationKey } from '@/core/i18n'
 import { ReportTransactionRow as TransactionRow } from './ReportTransactionRow'
 
 export function ExpenseCategoryBreakdown({
@@ -13,11 +14,17 @@ export function ExpenseCategoryBreakdown({
   getCategory,
   getAccount,
   onTransactionClick,
+  titleKey = 'reports.expenseCategories',
+  emptyTitleKey = 'reports.expenseEmptyTitle',
+  emptyDescriptionKey = 'reports.expenseEmptyDesc',
 }: {
   categories: ReportCategoryAggregate[]
   getCategory: (id: string | null | undefined) => Category | undefined
   getAccount: (id: string | null | undefined) => Account | undefined
   onTransactionClick: (transactionId: string) => void
+  titleKey?: TranslationKey
+  emptyTitleKey?: TranslationKey
+  emptyDescriptionKey?: TranslationKey
 }) {
   const { t } = useLang()
   const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(() => new Set())
@@ -26,8 +33,8 @@ export function ExpenseCategoryBreakdown({
     return (
       <Card className="border-dashed">
         <CardContent className="flex min-h-40 flex-col items-start justify-center gap-2 p-6">
-          <p className="text-sm font-medium">{t('reports.expenseEmptyTitle')}</p>
-          <p className="max-w-xl text-sm text-muted-foreground">{t('reports.expenseEmptyDesc')}</p>
+        <p className="text-sm font-medium">{t(emptyTitleKey)}</p>
+        <p className="max-w-xl text-sm text-muted-foreground">{t(emptyDescriptionKey)}</p>
         </CardContent>
       </Card>
     )
@@ -50,7 +57,7 @@ export function ExpenseCategoryBreakdown({
   return (
     <Card>
       <CardHeader className="gap-1">
-        <CardTitle>{t('reports.expenseCategories')}</CardTitle>
+        <CardTitle>{t(titleKey)}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {sortedCategories.map((category) => {

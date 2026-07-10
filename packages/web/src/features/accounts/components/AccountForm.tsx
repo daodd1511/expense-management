@@ -1,11 +1,12 @@
 
-import { Banknote, CreditCard, Landmark, Wallet } from 'lucide-react'
+import { Banknote, CreditCard, Landmark, Minus, Plus, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
 import { Input, Label } from '@/shared/components/ui/input'
 import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
+import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import type { Account, AccountKind } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
@@ -31,7 +32,8 @@ export function AccountForm({
   const { t } = useLang()
   const [name, setName] = useState(initial?.name ?? '')
   const [kind, setKind] = useState<AccountKind>(initial?.kind ?? 'cash')
-  const [balance, setBalance] = useState(initial ? String(initial.openingBalance) : '0')
+  const [balanceIsNegative, setBalanceIsNegative] = useState(false)
+  const [openingBalanceMagnitude, setOpeningBalanceMagnitude] = useState('0')
 
   const KIND_LABELS: Record<AccountKind, string> = {
     cash: t('accounts.kindCash'),
@@ -46,7 +48,12 @@ export function AccountForm({
 
   const submit = () => {
     if (!canSubmit) return
-    submitForm({ name: name.trim(), kind, openingBalance: Number(balance) || 0 })
+    const magnitude = Number(openingBalanceMagnitude) || 0
+    submitForm({
+      name: name.trim(),
+      kind,
+      openingBalance: initial?.openingBalance ?? (balanceIsNegative ? -magnitude : magnitude),
+    })
   }
 
   return (
@@ -86,16 +93,31 @@ export function AccountForm({
         />
       </div>
 
-      {/* Balance */}
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="acc-balance">{t('accounts.balance')}</Label>
-        <Input
-          id="acc-balance"
-          type="number"
-          value={balance}
-          onChange={(e) => setBalance(e.target.value)}
-        />
-      </div>
+      {!initial && (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="acc-balance">{t('accounts.balance')}</Label>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-lg"
+              className="size-10 shrink-0"
+              aria-label={t('accounts.balanceSign')}
+              aria-pressed={balanceIsNegative}
+              onClick={() => setBalanceIsNegative((value) => !value)}
+            >
+              {balanceIsNegative ? <Minus className="size-4" /> : <Plus className="size-4" />}
+            </Button>
+            <Input
+              id="acc-balance"
+              type="text"
+              inputMode="numeric"
+              value={openingBalanceMagnitude ? formatVND(Number(openingBalanceMagnitude), false) : ''}
+              onChange={(e) => setOpeningBalanceMagnitude(e.target.value.replace(/\D/g, ''))}
+            />
+          </div>
+        </div>
+      )}
 
       {errorMessage && <FormErrorBanner message={errorMessage} />}
 

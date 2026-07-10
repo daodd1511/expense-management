@@ -28,6 +28,19 @@ describe('useFormSubmit', () => {
     await waitFor(() => expect(result.current.errorMessage).toBe('error.badRequest'))
   })
 
+  it('surfaces a field validation message from a 4xx ApiError', async () => {
+    const onSubmit = vi.fn().mockRejectedValue(
+      new ApiError('Invalid request body', 400, {
+        fieldErrors: { date: ['Transaction date cannot be in the future'] },
+      }),
+    )
+    const { result } = renderHook(() => useFormSubmit(onSubmit))
+
+    act(() => result.current.submit({ name: 'test' }))
+
+    await waitFor(() => expect(result.current.errorMessage).toBe('Transaction date cannot be in the future'))
+  })
+
   it('sets errorMessage to the server copy on a 5xx ApiError', async () => {
     const onSubmit = vi.fn().mockRejectedValue(new ApiError('Internal server error', 500))
     const { result } = renderHook(() => useFormSubmit(onSubmit))

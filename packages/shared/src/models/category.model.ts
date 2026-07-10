@@ -9,6 +9,7 @@ export const categorySchema = z.object({
   icon: z.string(),
   color: z.string(),
   isSystem: z.boolean(),
+  isHidden: z.boolean(),
   type: categoryTypeSchema,
   parentId: z.string().nullable(),
 })

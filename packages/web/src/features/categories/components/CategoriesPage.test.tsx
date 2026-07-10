@@ -22,6 +22,7 @@ const systemCategory: Category = {
   icon: 'Utensils',
   color: 'chart-1',
   isSystem: true,
+  isHidden: false,
   type: 'expense',
   parentId: null,
 }
@@ -32,6 +33,7 @@ const customCategory: Category = {
   icon: 'Coffee',
   color: 'chart-2',
   isSystem: false,
+  isHidden: false,
   type: 'expense',
   parentId: null,
 }
@@ -42,6 +44,7 @@ const nestedExpenseCategory: Category = {
   icon: 'Utensils',
   color: 'chart-1',
   isSystem: false,
+  isHidden: false,
   type: 'expense',
   parentId: 'system-food',
 }
@@ -52,6 +55,7 @@ const incomeCategory: Category = {
   icon: 'Briefcase',
   color: 'chart-3',
   isSystem: true,
+  isHidden: false,
   type: 'income',
   parentId: null,
 }
@@ -80,6 +84,7 @@ vi.mock('@/core/i18n', () => ({
         'settings.categories': 'Categories',
         'settings.categoriesActive': `${vars?.n} active categories`,
         'settings.add': 'Add',
+        'settings.addCategory': 'Add category',
         'settings.editCat': 'Edit category',
         'settings.newCat': 'New category',
         'settings.catDesc': 'Change category details',
@@ -112,7 +117,7 @@ describe('CategoriesPage', () => {
 
   it('filters the list by type with the segmented control', async () => {
     const user = userEvent.setup()
-    render(<CategoriesPage variant="desktop" onBack={vi.fn()} />)
+    render(<CategoriesPage variant="desktop" />)
 
     expect(screen.getByRole('button', { name: 'System food' })).toBeDefined()
     expect(screen.queryByRole('button', { name: 'Job income' })).toBeNull()
@@ -125,7 +130,7 @@ describe('CategoriesPage', () => {
 
   it('disables editing for system categories while custom categories remain editable', async () => {
     const user = userEvent.setup()
-    render(<CategoriesPage variant="desktop" onBack={vi.fn()} />)
+    render(<CategoriesPage variant="desktop" />)
 
     const systemButton = screen.getByRole('button', { name: 'System food' })
     expect(systemButton).toHaveProperty('disabled', true)
@@ -139,9 +144,9 @@ describe('CategoriesPage', () => {
 
   it('creates a child category from the add form parent selector', async () => {
     const user = userEvent.setup()
-    render(<CategoriesPage variant="desktop" onBack={vi.fn()} />)
+    render(<CategoriesPage variant="desktop" />)
 
-    await user.click(screen.getByRole('button', { name: 'Add' }))
+    await user.click(screen.getByRole('button', { name: 'Add category' }))
     const incomeParentOptions = screen
       .queryAllByRole('button', { name: 'Job income' })
       .filter((button) => !(button as HTMLButtonElement).disabled)

@@ -2,6 +2,7 @@
 import { format } from 'date-fns'
 import { enUS, vi } from 'date-fns/locale'
 import { CalendarIcon } from 'lucide-react'
+import { useState } from 'react'
 import { Calendar } from '@/shared/components/ui/calendar'
 import {
   Popover,
@@ -34,6 +35,7 @@ function formatLocalIsoDate(date: Date): string {
 
 export function DatePicker({ value, onChange, className, max }: DatePickerProps) {
   const { lang, t } = useLang()
+  const [open, setOpen] = useState(false)
   const locale = lang === 'vi' ? vi : enUS
   const selected = value ? parseLocalIsoDate(value) : undefined
   const maxDate = max ? parseLocalIsoDate(max) : undefined
@@ -41,10 +43,11 @@ export function DatePicker({ value, onChange, className, max }: DatePickerProps)
   const handleSelect = (date: Date | undefined) => {
     if (!date) return
     onChange(formatLocalIsoDate(date))
+    setOpen(false)
   }
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         className={cn(
           'flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 text-left text-sm outline-none transition-colors',
