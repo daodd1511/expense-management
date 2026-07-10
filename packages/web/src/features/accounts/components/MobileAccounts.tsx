@@ -1,6 +1,7 @@
 
 import { Banknote, CreditCard, Landmark, Pencil, Plus, Scale, Trash2, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
 import { ReconcileBalanceForm } from '@/features/accounts/components/ReconcileBalanceForm'
@@ -32,6 +33,7 @@ function AccountRow({
   onEdit,
   onReconcile,
   onDelete,
+  onViewTransactions,
   reconcileLabel,
 }: {
   account: Account
@@ -40,6 +42,7 @@ function AccountRow({
   onEdit: () => void
   onReconcile: () => void
   onDelete: () => void
+  onViewTransactions: () => void
   reconcileLabel: string
 }) {
   const { offset, isDragging, bind } = useSwipeActions(SWIPE_ACTION_WIDTH)
@@ -59,7 +62,7 @@ function AccountRow({
         </button>
         <button
           type="button"
-          onClick={onEdit}
+          onClick={onViewTransactions}
           aria-label="Edit"
           className="flex w-16 items-center justify-center bg-accent text-accent-foreground"
         >
@@ -101,6 +104,7 @@ function AccountRow({
 }
 
 export function MobileAccounts() {
+  const navigate = useNavigate()
   const { data: accounts = [], isPending } = useAccounts()
   const addAcc = useAddAccount()
   const updateAcc = useUpdateAccount()
@@ -176,6 +180,7 @@ export function MobileAccounts() {
               onEdit={() => openEdit(a)}
               onReconcile={() => openReconcile(a)}
               onDelete={() => setPendingDeleteId(a.id)}
+              onViewTransactions={() => navigate({ to: '/transactions', search: { accountId: a.id } })}
               reconcileLabel={t('accounts.reconcile')}
             />
           ))}

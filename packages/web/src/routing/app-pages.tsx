@@ -205,8 +205,16 @@ export function SubscriptionsPage() {
 export function AccountsPage() {
   const isDesktop = useIsDesktop()
   const createIntent = useCreateIntent('/accounts')
+  const navigation = useAppNavigation()
 
-  return isDesktop ? <DesktopAccounts {...createIntent} /> : <MobileAccounts />
+  return isDesktop ? (
+    <DesktopAccounts
+      {...createIntent}
+      onViewTransactions={(accountId) => navigation.goTransactions({ accountId })}
+    />
+  ) : (
+    <MobileAccounts />
+  )
 }
 
 export function ReportsPage() {

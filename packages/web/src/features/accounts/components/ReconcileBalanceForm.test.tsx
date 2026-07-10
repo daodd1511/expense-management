@@ -44,8 +44,9 @@ vi.mock('@/core/i18n', () => ({
       ({
         'accounts.computedBalance': 'Current balance',
         'accounts.actualBalance': 'Actual balance',
-        'accounts.reconcile': 'Reconcile balance',
+        'accounts.reconcile': 'Balance adjustment',
         'accounts.reconcileTransaction': 'Balance adjustment',
+        'accounts.saveAdjustment': 'Save adjustment',
         'form.cancel': 'Cancel',
       })[key] ?? key,
   }),
@@ -73,7 +74,7 @@ describe('ReconcileBalanceForm', () => {
 
     await user.clear(screen.getByLabelText('Actual balance'))
     await user.type(screen.getByLabelText('Actual balance'), '800')
-    await user.click(screen.getByRole('button', { name: 'Reconcile balance' }))
+    await user.click(screen.getByRole('button', { name: 'Save adjustment' }))
 
     await waitFor(() => {
       expect(mutationMocks.mutateAsync).toHaveBeenCalledWith(
@@ -94,7 +95,7 @@ describe('ReconcileBalanceForm', () => {
 
     await user.clear(screen.getByLabelText('Actual balance'))
     await user.type(screen.getByLabelText('Actual balance'), '1200')
-    await user.click(screen.getByRole('button', { name: 'Reconcile balance' }))
+    await user.click(screen.getByRole('button', { name: 'Save adjustment' }))
 
     await waitFor(() => {
       expect(mutationMocks.mutateAsync).toHaveBeenCalledWith(
@@ -113,7 +114,7 @@ describe('ReconcileBalanceForm', () => {
     const onCancel = vi.fn()
     render(<ReconcileBalanceForm account={account} onCancel={onCancel} />)
 
-    await user.click(screen.getByRole('button', { name: 'Reconcile balance' }))
+    await user.click(screen.getByRole('button', { name: 'Save adjustment' }))
 
     expect(onCancel).toHaveBeenCalledOnce()
     expect(mutationMocks.mutateAsync).not.toHaveBeenCalled()

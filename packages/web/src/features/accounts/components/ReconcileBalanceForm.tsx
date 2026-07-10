@@ -83,7 +83,7 @@ export function ReconcileBalanceForm({ account, onCancel }: { account: Account; 
           {t('form.cancel')}
         </Button>
         <Button size="lg" className="h-11 flex-[2]" disabled={!canSubmit} loading={isSubmitting} onClick={handleSubmit}>
-          {t('accounts.reconcile')}
+          {t('accounts.saveAdjustment')}
         </Button>
       </div>
     </div>

@@ -1,5 +1,5 @@
 
-import { Banknote, CreditCard, Landmark, Pencil, Plus, Scale, Trash2, Wallet } from 'lucide-react'
+import { ArrowLeftRight, Banknote, CreditCard, Landmark, MoreHorizontal, Pencil, Plus, Scale, Trash2, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
@@ -8,6 +8,12 @@ import { AccountsSkeleton } from '@/shared/components/Skeleton'
 import { Card } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { Modal } from '@/shared/components/ui/overlay'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu'
 import { formatVND } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { useAccounts, useAddAccount, useDeleteAccount, useUpdateAccount } from '@/features/accounts/queries'
@@ -19,9 +25,11 @@ type AccountInput = Omit<Account, 'id' | 'balance'>
 export function DesktopAccounts({
   createIntentToken,
   onCreateIntentHandled,
+  onViewTransactions,
 }: {
   createIntentToken?: string
   onCreateIntentHandled?: () => void
+  onViewTransactions: (accountId: string) => void
 }) {
   const accountsQuery = useAccounts()
   const { data: accounts = [], isPending } = accountsQuery
@@ -116,31 +124,40 @@ export function DesktopAccounts({
                   <Icon className="size-5" />
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-muted-foreground">{meta.label}</span>
-                  <button
-                    type="button"
-                    onClick={() => openReconcile(a)}
-                    aria-label={t('accounts.reconcile')}
-                    className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100"
+                <span className="text-xs font-medium text-muted-foreground">{meta.label}</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    aria-label={t('accounts.moreActions')}
+                    className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
-                    <Scale className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openEdit(a)}
-                    aria-label={t('accounts.edit')}
-                    className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100"
-                  >
-                    <Pencil className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPendingDeleteId(a.id)}
-                    aria-label={t('confirm.delete')}
-                    className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all hover:bg-expense/10 hover:text-expense group-hover:opacity-100"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
+                    <MoreHorizontal className="size-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent sideOffset={8}>
+                    <DropdownMenuItem onClick={() => onViewTransactions(a.id)}>
+                      <ArrowLeftRight className="size-3.5" />
+                      {t('accounts.viewTransactions')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => openEdit(a)}
+                    >
+                      <Pencil className="size-3.5" />
+                      {t('accounts.edit')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => openReconcile(a)}
+                    >
+                      <Scale className="size-3.5" />
+                      {t('accounts.reconcile')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setPendingDeleteId(a.id)}
+                      className="text-expense data-[highlighted]:bg-expense/10"
+                    >
+                      <Trash2 className="size-3.5" />
+                      {t('confirm.delete')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 </div>
               </div>
               <div>
