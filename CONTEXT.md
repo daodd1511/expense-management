@@ -18,8 +18,7 @@ _Avoid_: initial balance, starting balance
 
 **Computed balance**:
 An account's balance at a point in the ledger, derived from its opening balance
-plus every income, minus every expense, adjusted for transfers. Derived on
-demand, never stored.
+and every transaction applied in ledger order. Derived on demand, never stored.
 _Avoid_: current balance, running balance
 
 **Post-transaction balance**:
@@ -28,7 +27,8 @@ applied.
 _Avoid_: remaining balance, balance after
 
 **Transaction**:
-A single movement of money: an income, an expense, or a transfer.
+A single movement of money: an income, an expense, a transfer, or a
+loan-linked transaction.
 _Avoid_: entry, record, payment
 
 **Ledger order**:
@@ -39,6 +39,113 @@ _Avoid_: display order, row order, sort order
 A transaction that moves money between two of the user's own accounts. It is
 neither income nor expense and is left out of spending and income totals.
 _Avoid_: internal payment, move
+
+**Personal loan**:
+Money transferred directly between the user and another person with an
+expectation of repayment, regardless of which account supplies or receives it.
+It excludes paid-on-behalf IOUs and loans from formal lenders.
+_Avoid_: cash loan, debt, IOU
+
+**Person**:
+An individual with whom the user has one or more personal loans.
+_Avoid_: contact, counterparty
+
+**Loan direction**:
+Whether a personal loan is lending (the person owes the user) or borrowing (the
+user owes the person). A loan keeps one direction for its lifetime; opposite
+directions are separate loans.
+_Avoid_: transaction direction, net direction
+
+**Net position**:
+The difference between what one person owes the user and what the user owes
+that person, shown as a summary without combining the underlying loans.
+_Avoid_: net loan, consolidated loan
+
+**Disbursement**:
+The single initial transfer of money that creates a personal loan. Transferring
+more money later creates another loan rather than enlarging the first.
+_Avoid_: top-up, advance
+
+**Principal**:
+The original Đồng amount of a personal loan established by its disbursement.
+It does not change as repayments are recorded.
+_Avoid_: loan balance, original balance
+
+**Opening loan balance**:
+The outstanding amount of an existing personal loan when the user begins
+tracking it. It establishes the loan without creating a historical account
+transaction.
+_Avoid_: principal, disbursement, repayment
+
+**Repayment**:
+A transfer of money that reduces one personal loan. A loan may have multiple
+partial repayments, each through any account.
+_Avoid_: instalment, settlement
+
+**Loan-linked transaction**:
+An account transaction created by a personal-loan disbursement or repayment.
+It appears in transaction history but is managed through its loan.
+_Avoid_: duplicate transaction, manual transaction
+
+**Outstanding balance**:
+The unpaid portion of one personal loan, derived from its disbursement or
+opening loan balance, repayments, and any closing event.
+_Avoid_: principal, account balance, remaining principal
+
+**Loan due date**:
+The optional local date by which a personal loan is expected to be fully
+repaid.
+_Avoid_: repayment schedule, reminder date
+
+**Overdue loan**:
+A personal loan whose due date has passed while it still has an outstanding
+balance.
+_Avoid_: late payment, expired loan
+
+**Open loan**:
+A personal loan that still has an outstanding balance and has not been written
+off or forgiven.
+_Avoid_: active loan, pending loan
+
+**Repaid loan**:
+A personal loan whose outstanding balance reached zero through repayments.
+_Avoid_: settled loan, completed loan
+
+**Net worth**:
+The user's total account balances plus outstanding personal lending, minus
+outstanding personal borrowing.
+_Avoid_: cash balance, account total, liquidity
+
+**Account total**:
+The sum of all computed account balances. It measures money held in accounts
+and excludes personal-loan receivables and liabilities.
+_Avoid_: net worth, wealth
+
+**Balance adjustment**:
+A correction that makes an account's computed balance match its observed
+balance. It changes account total and net worth without representing income or
+spending.
+_Avoid_: income, expense, reconciliation payment
+
+**Surplus / deficit**:
+The difference between income and expenses over a period. A positive difference
+is a surplus; a negative difference is a deficit.
+_Avoid_: cash flow, net worth change
+
+**Loan cash flow**:
+Money entering or leaving accounts through personal-loan disbursements and
+repayments. It is reported separately from income and expenses.
+_Avoid_: loan income, loan expense
+
+**Write-off**:
+Closing outstanding personal lending as uncollectible without receiving money.
+It is a non-cash loss that reduces net worth.
+_Avoid_: delete loan, repayment
+
+**Forgiveness**:
+Closing outstanding personal borrowing because the lender no longer requires
+repayment. It is a non-cash gain that increases net worth.
+_Avoid_: delete loan, repayment
 
 ## Categorization
 
@@ -77,8 +184,8 @@ How often a subscription recurs (e.g. monthly, yearly).
 _Avoid_: frequency, interval, period
 
 **Due / Due soon**:
-A subscription is _due_ when its next occurrence date has arrived or passed, and
-_due soon_ when that date falls inside the near-term warning window.
+A scheduled obligation is _due_ when its expected date has arrived or passed,
+and _due soon_ when that date falls inside the seven-day warning window.
 _Avoid_: upcoming, pending
 
 **Double-log**:
