@@ -15,6 +15,7 @@ vi.mock('@/core/i18n', () => ({
         'accounts.name': 'Account name',
         'accounts.namePlaceholder': 'e.g. Savings',
         'accounts.balance': 'Opening balance',
+        'accounts.balanceSign': 'Toggle balance sign',
         'accounts.save': 'Save changes',
         'accounts.create': 'Create account',
         'form.cancel': 'Cancel',
@@ -52,6 +53,38 @@ describe('AccountForm', () => {
         name: 'Updated checking',
         kind: 'bank',
         openingBalance: 1_000,
+      })
+    })
+  })
+
+  it('formats the opening balance with thousands separators while typing', async () => {
+    const user = userEvent.setup()
+    render(<AccountForm onSubmit={vi.fn().mockResolvedValue(undefined)} onCancel={vi.fn()} />)
+
+    const input = screen.getByLabelText('Opening balance') as HTMLInputElement
+    await user.clear(input)
+    await user.type(input, '1500000')
+
+    expect(input.value).toBe('1.500.000')
+  })
+
+  it('supports a negative opening balance via the sign toggle', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
+    render(<AccountForm onSubmit={onSubmit} onCancel={vi.fn()} />)
+
+    await user.type(screen.getByLabelText('Account name'), 'Credit card')
+    const input = screen.getByLabelText('Opening balance')
+    await user.clear(input)
+    await user.type(input, '500000')
+    await user.click(screen.getByRole('button', { name: 'Toggle balance sign' }))
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith({
+        name: 'Credit card',
+        kind: 'cash',
+        openingBalance: -500_000,
       })
     })
   })
