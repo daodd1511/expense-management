@@ -311,11 +311,6 @@ export function DesktopSubscriptions({
       )}
 
       <Drawer open={drawerOpen} onClose={close}>
-        <div className="p-5">
-          <h2 className="mb-4 text-lg font-semibold">
-            {editing ? t('sub.editTitle') : t('sub.addTitle')}
-          </h2>
-        </div>
         <SubscriptionForm
           initial={editing}
           onSubmit={handleSubmit}

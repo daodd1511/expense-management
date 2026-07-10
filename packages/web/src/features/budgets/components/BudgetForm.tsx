@@ -1,10 +1,11 @@
 
 import { useState } from 'react'
 import { FavoriteCategoryPicker } from '@/features/categories/components/FavoriteCategoryPicker'
-import { Button } from '@/shared/components/ui/button'
+import { AmountField } from '@/shared/components/AmountField'
 import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
-import { Input, Label } from '@/shared/components/ui/input'
-import { formatVND } from '@/shared/lib/format'
+import { FormFooterBar } from '@/shared/components/FormFooterBar'
+import { SheetFormHeader } from '@/shared/components/SheetFormHeader'
+import { Label } from '@/shared/components/ui/input'
 import { useFormSubmit } from '@/shared/hooks/useFormSubmit'
 import { useLang } from '@/core/i18n'
 import { useCategories } from '@/features/categories/queries'
@@ -46,7 +47,7 @@ export function BudgetForm({ initial, onSubmit, onCancel }: BudgetFormProps) {
     (c) => !c.isHidden && !conflictsWithExistingBudget(c, categories, budgets, initial?.categoryId),
   )
 
-  const [categoryId, setCategoryId] = useState<string | null>(initial?.categoryId ?? availableCategories[0]?.id ?? null)
+  const [categoryId, setCategoryId] = useState<string | null>(initial?.categoryId ?? null)
   const [amount, setAmount] = useState(initial ? String(initial.limit) : '')
 
   const numericAmount = Number(amount) || 0
@@ -54,47 +55,48 @@ export function BudgetForm({ initial, onSubmit, onCancel }: BudgetFormProps) {
 
   const { submit, isSubmitting, errorMessage } = useFormSubmit(onSubmit)
 
+  const handleSubmit = () => {
+    if (!categoryId) return
+    submit({ categoryId, limit: numericAmount })
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <Label>{t('budget.category')}</Label>
-        <FavoriteCategoryPicker
-          categories={availableCategories}
-          favoriteCategoryIds={favoriteCategoryIds}
-          selectedId={categoryId}
-          onSelect={(id) => setCategoryId(id || null)}
-          disabled={!!initial}
-        />
+    <div className="flex flex-col">
+      <SheetFormHeader
+        title={initial ? t('budget.edit') : t('budget.add')}
+        onClose={onCancel}
+        closeLabel={t('form.close')}
+      />
+
+      <AmountField label={t('budget.limit')} value={amount} onChange={setAmount} />
+
+      <div className="flex flex-col gap-4 px-4 sm:px-5">
+        <div className="flex flex-col gap-2">
+          <Label>{t('budget.category')}</Label>
+          <FavoriteCategoryPicker
+            categories={availableCategories}
+            favoriteCategoryIds={favoriteCategoryIds}
+            selectedId={categoryId}
+            onSelect={(id) => setCategoryId(id || null)}
+            disabled={!!initial}
+          />
+        </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="budget-amount">{t('budget.limit')}</Label>
-        <Input
-          id="budget-amount"
-          type="text"
-          inputMode="numeric"
-          value={amount}
-          onChange={(e) => {
-            const v = e.target.value.replace(/\D/g, '')
-            if (v.length <= 12) setAmount(v)
-          }}
-          placeholder="0"
-        />
-        {numericAmount > 0 && (
-          <p className="text-xs text-muted-foreground">{formatVND(numericAmount)}</p>
-        )}
-      </div>
+      {errorMessage && (
+        <div className="px-4 pt-3 sm:px-5">
+          <FormErrorBanner message={errorMessage} />
+        </div>
+      )}
 
-      {errorMessage && <FormErrorBanner message={errorMessage} />}
-
-      <div className="flex gap-2">
-        <Button variant="outline" className="flex-1" disabled={isSubmitting} onClick={onCancel}>
-          {t('form.cancel')}
-        </Button>
-        <Button className="flex-1" disabled={!canSubmit} loading={isSubmitting} onClick={() => categoryId && submit({ categoryId, limit: numericAmount })}>
-          {initial ? t('form.save') : t('budget.add')}
-        </Button>
-      </div>
+      <FormFooterBar
+        cancelLabel={t('form.cancel')}
+        onCancel={onCancel}
+        submitLabel={initial ? t('form.save') : t('budget.add')}
+        onSubmit={handleSubmit}
+        canSubmit={canSubmit}
+        isSubmitting={isSubmitting}
+      />
     </div>
   )
 }

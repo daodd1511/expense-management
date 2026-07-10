@@ -20,6 +20,10 @@ vi.mock('@/features/categories/favorites-queries', () => ({
   useFavoriteCategoryIds: () => new Set(['food', 'salary', 'adjustment']),
 }))
 
+vi.mock('@/shared/hooks/useIsDesktop', () => ({
+  useIsDesktop: () => true,
+}))
+
 vi.mock('@/features/accounts/queries', () => ({
   useAccounts: () => ({
     data: [

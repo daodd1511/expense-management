@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { FavoriteCategoryPicker } from '@/features/categories/components/FavoriteCategoryPicker'
-import { Button } from '@/shared/components/ui/button'
+import { AmountField } from '@/shared/components/AmountField'
 import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
+import { FormFooterBar } from '@/shared/components/FormFooterBar'
+import { SheetFormHeader } from '@/shared/components/SheetFormHeader'
 import { Input, Label } from '@/shared/components/ui/input'
 import {
   Select,
@@ -21,7 +23,6 @@ import { useAccounts } from '@/features/accounts/queries'
 import { AccountSelect } from '@/features/accounts/components/AccountSelect'
 import type { Subscription, SubscriptionCadence } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
-import { formatVND } from '@/shared/lib/format'
 
 const MONTHS_VI = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12']
 const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -56,8 +57,9 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
 
   const MONTHS = lang === 'vi' ? MONTHS_VI : MONTHS_EN
   const amount = parseAmount(amountRaw)
-  const visibleCategories = categories.filter((category) => category.type === type)
-  const canSubmit = name.trim().length > 0 && amount > 0 && accountId
+  const visibleCategories = categories.filter((category) => category.type === type && !category.isHidden)
+  const canSubmit = name.trim().length > 0 && amount > 0 && !!accountId && !!categoryId
+  const amountTone = type === 'income' ? 'income' : 'expense'
 
   const { submit: submitForm, isSubmitting, errorMessage } = useFormSubmit(onSubmit)
 
@@ -80,11 +82,16 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-5 px-5 pb-4 pt-3">
+    <div className="flex flex-col">
+      <SheetFormHeader
+        title={initial ? t('sub.editTitle') : t('sub.addTitle')}
+        onClose={onCancel}
+        closeLabel={t('form.close')}
+      />
+
       {/* Type toggle */}
-      <div className="flex flex-col gap-2">
-        <Label>{t('form.expense') + ' / ' + t('form.income')}</Label>
-        <div className="grid grid-cols-2 gap-2">
+      <div className="px-4 sm:px-5">
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
           {(['expense', 'income'] as const).map((tp) => (
             <button
               key={tp}
@@ -94,12 +101,12 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
                 if (getCategory(categoryId)?.type !== tp) setCategoryId(null)
               }}
               className={cn(
-                'rounded-xl border py-2.5 text-sm font-medium transition-colors',
+                'rounded-lg py-2 text-sm font-medium transition-colors',
                 type === tp
                   ? tp === 'expense'
-                    ? 'border-expense bg-expense-muted text-expense'
-                    : 'border-income bg-income-muted text-income'
-                  : 'border-border text-muted-foreground hover:bg-muted',
+                    ? 'bg-expense text-expense-foreground'
+                    : 'bg-income text-income-foreground'
+                  : 'text-muted-foreground hover:text-foreground',
               )}
             >
               {tp === 'expense' ? t('form.expense') : t('form.income')}
@@ -108,140 +115,128 @@ export function SubscriptionForm({ initial, onSubmit, onCancel }: Props) {
         </div>
       </div>
 
-      {/* Name */}
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="sub-name">{t('sub.name')}</Label>
-        <Input
-          id="sub-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={t('sub.namePlaceholder')}
-        />
-      </div>
+      <AmountField label={t('form.amount')} value={amountRaw} onChange={setAmountRaw} tone={amountTone} />
 
-      {/* Amount */}
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="sub-amount">{t('form.amount')}</Label>
-        <div className="relative">
-          <Input
-            id="sub-amount"
-            inputMode="numeric"
-            value={amountRaw}
-            onChange={(e) => setAmountRaw(e.target.value.replace(/\D/g, ''))}
-            placeholder="0"
-            className="pr-12"
-          />
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₫</span>
-        </div>
-        {amount > 0 && (
-          <p className="text-xs text-muted-foreground">{formatVND(amount)}</p>
-        )}
-      </div>
-
-      {/* Cadence */}
-      <div className="flex flex-col gap-2">
-        <Label>{t('sub.cadence')}</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {(['monthly', 'yearly'] as const).map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setCadence(c)}
-              className={cn(
-                'rounded-xl border py-2.5 text-sm font-medium transition-colors',
-                cadence === c
-                  ? 'border-primary bg-accent text-primary'
-                  : 'border-border text-muted-foreground hover:bg-muted',
-              )}
-            >
-              {c === 'monthly' ? t('sub.monthly') : t('sub.yearly')}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Day of month */}
-      <div className={cn('grid gap-3', cadence === 'yearly' ? 'grid-cols-2' : 'grid-cols-1')}>
+      <div className="flex flex-col gap-4 px-4 sm:px-5">
+        {/* Name */}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="sub-day">{t('sub.dayOfMonth')}</Label>
+          <Label htmlFor="sub-name">{t('sub.name')}</Label>
           <Input
-            id="sub-day"
-            type="number"
-            min={1}
-            max={28}
-            value={dayOfMonth}
-            onChange={(e) => setDayOfMonth(Math.min(28, Math.max(1, Number(e.target.value))))}
+            id="sub-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t('sub.namePlaceholder')}
           />
         </div>
-        {cadence === 'yearly' && (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="sub-month">{t('sub.monthOfYear')}</Label>
-            <Select
-              value={String(monthOfYear)}
-              onValueChange={(nextValue) => nextValue && setMonthOfYear(Number(nextValue))}
-            >
-              <SelectTrigger id="sub-month">
-                <SelectValue>{(selected: string | null) => MONTHS[Number(selected) - 1] ?? MONTHS[0]}</SelectValue>
-              </SelectTrigger>
-              <SelectPortal>
-                <SelectPositioner>
-                  <SelectPopup>
-                    {MONTHS.map((m, i) => (
-                      <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>
-                    ))}
-                  </SelectPopup>
-                </SelectPositioner>
-              </SelectPortal>
-            </Select>
+
+        {/* Cadence */}
+        <div className="flex flex-col gap-2">
+          <Label>{t('sub.cadence')}</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {(['monthly', 'yearly'] as const).map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCadence(c)}
+                className={cn(
+                  'rounded-xl border py-2.5 text-sm font-medium transition-colors',
+                  cadence === c
+                    ? 'border-primary bg-accent text-primary'
+                    : 'border-border text-muted-foreground hover:bg-muted',
+                )}
+              >
+                {c === 'monthly' ? t('sub.monthly') : t('sub.yearly')}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
+
+        {/* Day of month */}
+        <div className={cn('grid gap-3', cadence === 'yearly' ? 'grid-cols-2' : 'grid-cols-1')}>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="sub-day">{t('sub.dayOfMonth')}</Label>
+            <Input
+              id="sub-day"
+              type="number"
+              min={1}
+              max={28}
+              value={dayOfMonth}
+              onChange={(e) => setDayOfMonth(Math.min(28, Math.max(1, Number(e.target.value))))}
+            />
+          </div>
+          {cadence === 'yearly' && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="sub-month">{t('sub.monthOfYear')}</Label>
+              <Select
+                value={String(monthOfYear)}
+                onValueChange={(nextValue) => nextValue && setMonthOfYear(Number(nextValue))}
+              >
+                <SelectTrigger id="sub-month">
+                  <SelectValue>{(selected: string | null) => MONTHS[Number(selected) - 1] ?? MONTHS[0]}</SelectValue>
+                </SelectTrigger>
+                <SelectPortal>
+                  <SelectPositioner>
+                    <SelectPopup>
+                      {MONTHS.map((m, i) => (
+                        <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>
+                      ))}
+                    </SelectPopup>
+                  </SelectPositioner>
+                </SelectPortal>
+              </Select>
+            </div>
+          )}
+        </div>
+
+        {/* Category */}
+        <div className="flex flex-col gap-2">
+          <Label>{t('form.category')}</Label>
+          <FavoriteCategoryPicker
+            categories={visibleCategories}
+            favoriteCategoryIds={favoriteCategoryIds}
+            selectedId={categoryId}
+            onSelect={(id) => setCategoryId(id || null)}
+          />
+        </div>
+
+        {/* Account */}
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="sub-account">{t('form.account')}</Label>
+          <AccountSelect
+            id="sub-account"
+            value={accountId}
+            onChange={setAccountId}
+            accounts={accounts}
+            placeholder={t('form.selectAccount')}
+          />
+        </div>
+
+        {/* Note */}
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="sub-note">{t('form.note')}</Label>
+          <Input
+            id="sub-note"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={t('form.notePlaceholder')}
+          />
+        </div>
       </div>
 
-      {/* Category */}
-      <div className="flex flex-col gap-2">
-        <Label>{t('form.category')}</Label>
-        <FavoriteCategoryPicker
-          categories={visibleCategories}
-          favoriteCategoryIds={favoriteCategoryIds}
-          selectedId={categoryId}
-          onSelect={(id) => setCategoryId(id || null)}
-          allowClear
-        />
-      </div>
+      {errorMessage && (
+        <div className="px-4 pt-3 sm:px-5">
+          <FormErrorBanner message={errorMessage} />
+        </div>
+      )}
 
-      {/* Account */}
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="sub-account">{t('form.account')}</Label>
-        <AccountSelect
-          id="sub-account"
-          value={accountId}
-          onChange={setAccountId}
-          accounts={accounts}
-          placeholder={t('form.selectAccount')}
-        />
-      </div>
-
-      {/* Note */}
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="sub-note">{t('form.note')}</Label>
-        <Input
-          id="sub-note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder={t('form.notePlaceholder')}
-        />
-      </div>
-
-      {errorMessage && <FormErrorBanner message={errorMessage} />}
-
-      <div className="flex gap-2 pt-1">
-        <Button variant="outline" size="lg" className="h-11 flex-1" disabled={isSubmitting} onClick={onCancel}>
-          {t('form.cancel')}
-        </Button>
-        <Button size="lg" className="h-11 flex-[2]" disabled={!canSubmit} loading={isSubmitting} onClick={handleSubmit}>
-          {initial ? t('sub.save') : t('sub.create')}
-        </Button>
-      </div>
+      <FormFooterBar
+        cancelLabel={t('form.cancel')}
+        onCancel={onCancel}
+        submitLabel={initial ? t('sub.save') : t('sub.create')}
+        onSubmit={handleSubmit}
+        canSubmit={canSubmit}
+        isSubmitting={isSubmitting}
+      />
     </div>
   )
 }
