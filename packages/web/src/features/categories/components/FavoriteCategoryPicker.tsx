@@ -153,7 +153,7 @@ export function FavoriteCategoryPicker({
           />
         </Modal>
       ) : (
-        <BottomSheet open={showAllOpen} onClose={handleCloseShowAll} title={t('category.allCategories')}>
+        <BottomSheet open={showAllOpen} onClose={handleCloseShowAll} title={t('category.allCategories')} fullHeight>
           <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <ShowAllContent
               allowClear={allowClear}
