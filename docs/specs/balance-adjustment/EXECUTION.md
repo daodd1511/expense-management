@@ -13,8 +13,8 @@ Reports) is unchanged, only which package implements it.
 
 ## STATUS
 
-- Current phase: 1 — pending
-- Phase 1 — schema, shared types, migration, reports exclusion: pending
+- Current phase: 1 — in-progress
+- Phase 1 — schema, shared types, migration, reports exclusion: in-progress
 - Phase 2 — frontend category pickers: pending
 - Phase 3 — reconcile balance UI: pending
 - Verification debt: none
@@ -27,14 +27,14 @@ Nothing downstream (pickers, reconcile form) can be built until `isHidden`
 exists on the `Category` model and the two hidden system categories exist in
 the database.
 
-- [ ] `packages/shared/src/models/category.model.ts` — add `isHidden: z.boolean()` to `categorySchema`
-- [ ] `packages/shared/src/dtos/category.dto.ts` — add `is_hidden: z.boolean()` to `categoryRowSchema`
-- [ ] `packages/shared/src/mappers/category.mapper.ts` — `toCategory`: map `row.is_hidden` → `isHidden`
-- [ ] New migration `supabase/migrations/<timestamp>_category_balance_adjustment.sql`, pattern per `20260702053135_category_type_hierarchy.sql`:
+- [x] `packages/shared/src/models/category.model.ts` — add `isHidden: z.boolean()` to `categorySchema`
+- [x] `packages/shared/src/dtos/category.dto.ts` — add `is_hidden: z.boolean()` to `categoryRowSchema`
+- [x] `packages/shared/src/mappers/category.mapper.ts` — `toCategory`: map `row.is_hidden` → `isHidden`
+- [x] New migration `supabase/migrations/<timestamp>_category_balance_adjustment.sql`, pattern per `20260702053135_category_type_hierarchy.sql`:
   - `alter table categories add column is_hidden boolean not null default false`
   - seed two system categories (`owner_id null`): `Balance Adjustment` (`type: expense`, `is_hidden: true`), `Balance Adjustment` (`type: income`, `is_hidden: true`) — pick a neutral icon/color per PLAN.md → "Judgment Calls"
-- [ ] `packages/api/src/features/reports/service.ts` `getIncomeExpenseReport` — exclude transactions whose `categoryId` matches either seeded hidden category id from `totals` (income/expense/net/transactionCount), the monthly `series`, and `categoryGroups` (the category breakdown). Resolve the two hidden category ids via `categoryById` (already built from `repository.listReportCategories`, which does `select('*')` so `isHidden` flows through once the migration lands) rather than hardcoding ids.
-- [ ] `packages/api` category routes/controller/service/repository: no code change needed — `listCategories`/`listReportCategories` both `select('*')`, so `isHidden` passes through automatically once the shared mapper is updated. Confirm with the gate below rather than editing.
+- [x] `packages/api/src/features/reports/service.ts` `getIncomeExpenseReport` — exclude transactions whose `categoryId` matches either seeded hidden category id from `totals` (income/expense/net/transactionCount), the monthly `series`, and `categoryGroups` (the category breakdown). Resolve the two hidden category ids via `categoryById` (already built from `repository.listReportCategories`, which does `select('*')` so `isHidden` flows through once the migration lands) rather than hardcoding ids.
+- [x] `packages/api` category routes/controller/service/repository: no code change needed — `listCategories`/`listReportCategories` both `select('*')`, so `isHidden` passes through automatically once the shared mapper is updated. Confirm with the gate below rather than editing.
 
 **Agent gate (hard):**
 - [ ] `pnpm --filter @wallet/shared exec tsc --noEmit` (categorySchema/dto/mapper changes)
