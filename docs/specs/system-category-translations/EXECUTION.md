@@ -8,9 +8,7 @@ Integration branch: `develop`. Branch model: stacked (default).
 - Current phase: 2 — done
 - Phase 1 — schema, shared contract, api: done-with-debt
 - Phase 2 — frontend data layer: done
-- Verification debt: `packages/shared/src/database.types.ts` `category_translations`
-  type was hand-added (no local Supabase CLI); regenerate with `supabase gen types`
-  once available to confirm it matches exactly.
+- Verification debt: `database.types.ts` `category_translations` type hand-added (no local Supabase CLI); regenerate with `supabase gen types` later.
 
 ## Phase 1 — schema, shared contract, api
 
