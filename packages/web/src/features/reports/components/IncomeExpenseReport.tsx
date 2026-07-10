@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ArrowDownLeft, ArrowUpRight, TrendingUp } from 'lucide-react'
 import { useAccountLookup } from '@/features/accounts/queries'
 import { useCategoryLookup } from '@/features/categories/queries'
@@ -19,6 +20,7 @@ export function IncomeExpenseReport({ month }: { month: string }) {
   const categoryLookup = useCategoryLookup()
   const accountLookup = useAccountLookup()
   const { openEdit } = useTransactionOverlay()
+  const [activeCategoryType, setActiveCategoryType] = useState<'expense' | 'income'>('expense')
   const { from, to } = monthRangeFromMonth(month)
   const { data, isPending } = useIncomeExpenseReport({ from, to })
 
@@ -28,8 +30,9 @@ export function IncomeExpenseReport({ month }: { month: string }) {
 
   const report = data.data
   const expenseCategories = report.categories.filter((category) => category.type === 'expense')
-  const hasExpenseCategories = expenseCategories.length > 0
-  const expenseDonutData = expenseCategories.map((category) => {
+  const incomeCategories = report.categories.filter((category) => category.type === 'income')
+
+  const toDonutData = (categories: typeof report.categories) => categories.map((category) => {
     const categoryInfo = categoryLookup(category.categoryId)
     return {
       id: category.categoryId,
@@ -39,6 +42,15 @@ export function IncomeExpenseReport({ month }: { month: string }) {
       color: categoryInfo ? `var(--${categoryInfo.color})` : 'var(--muted-foreground)',
     }
   })
+  const expenseDonutData = toDonutData(expenseCategories)
+  const incomeDonutData = toDonutData(incomeCategories)
+  const activeCategories = activeCategoryType === 'expense' ? expenseCategories : incomeCategories
+  const activeDonutData = activeCategoryType === 'expense' ? expenseDonutData : incomeDonutData
+  const activeTotal = activeCategoryType === 'expense' ? report.totals.expense : report.totals.income
+  const activeTitleKey = activeCategoryType === 'expense' ? 'reports.expenseCategories' : 'reports.incomeCategories'
+  const activeDonutLabelKey = activeCategoryType === 'expense' ? 'reports.expenseDonutCenter' : 'reports.incomeDonutCenter'
+  const activeEmptyTitleKey = activeCategoryType === 'expense' ? 'reports.expenseEmptyTitle' : 'reports.incomeEmptyTitle'
+  const activeEmptyDescriptionKey = activeCategoryType === 'expense' ? 'reports.expenseEmptyDesc' : 'reports.incomeEmptyDesc'
 
   const handleTransactionClick = (transactionId: string) => {
     openEdit(transactionId, month)
@@ -76,57 +88,93 @@ export function IncomeExpenseReport({ month }: { month: string }) {
         </Card>
       )}
 
-      {hasExpenseCategories ? (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
-          <Card>
-            <CardContent className="flex h-full flex-col items-center justify-center gap-4 p-5">
-              <div className="flex flex-col items-center gap-1 text-center">
-                <span className="text-xs text-muted-foreground">{t('reports.expenseDonutCenter')}</span>
-                <span className="tabular text-lg font-bold tracking-tight" title={formatVND(report.totals.expense)}>
-                  {formatVND(report.totals.expense)}
-                </span>
-              </div>
-              <div className="w-full">
-                <CategoryDonut
-                  data={expenseDonutData}
-                  total={report.totals.expense}
-                  centerLabel={t('reports.expenseDonutCenter')}
-                  showCenterTotal={false}
-                />
-              </div>
-              <div className="w-full space-y-2">
-                {expenseDonutData.slice(0, 5).map((datum) => (
-                  <div key={datum.id ?? datum.name} className="flex items-center justify-between gap-3 text-sm">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: datum.color }} />
-                      <span className="truncate">{datum.name}</span>
-                    </div>
-                    <span className="flex shrink-0 items-baseline gap-1.5 tabular-nums">
-                      <span className="text-muted-foreground">{formatVND(datum.value)}</span>
-                      <span className="text-xs text-muted-foreground/70">{Math.round(datum.percentage * 100)}%</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      <div role="tablist" aria-label={t('reports.categoryView')} className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 sm:w-fit">
+        {(['expense', 'income'] as const).map((type) => (
+          <button
+            key={type}
+            type="button"
+            role="tab"
+            aria-selected={activeCategoryType === type}
+            onClick={() => setActiveCategoryType(type)}
+            className={cn(
+              'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+              activeCategoryType === type ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {t(type === 'expense' ? 'dashboard.expense' : 'dashboard.income')}
+          </button>
+        ))}
+      </div>
 
+      {activeCategories.length > 0 ? (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
+          <CategorySummaryCard
+            data={activeDonutData}
+            total={activeTotal}
+            centerLabel={t(activeDonutLabelKey)}
+            categoryLabel={t(activeTitleKey)}
+          />
           <ExpenseCategoryBreakdown
-            categories={expenseCategories}
+            categories={activeCategories}
             getCategory={categoryLookup}
             getAccount={accountLookup}
             onTransactionClick={handleTransactionClick}
+            titleKey={activeTitleKey}
+            emptyTitleKey={activeEmptyTitleKey}
+            emptyDescriptionKey={activeEmptyDescriptionKey}
           />
         </div>
       ) : (
         <Card className="border-dashed">
-          <CardContent className="flex min-h-56 flex-col items-start justify-center gap-2 p-6">
-            <p className="text-sm font-medium">{t('reports.expenseEmptyTitle')}</p>
-            <p className="max-w-xl text-sm text-muted-foreground">{t('reports.expenseEmptyDesc')}</p>
+          <CardContent className="flex min-h-40 flex-col items-start justify-center gap-2 p-6">
+            <p className="text-sm font-medium">{t(activeEmptyTitleKey)}</p>
+            <p className="max-w-xl text-sm text-muted-foreground">{t(activeEmptyDescriptionKey)}</p>
           </CardContent>
         </Card>
       )}
     </div>
+  )
+}
+
+function CategorySummaryCard({
+  data,
+  total,
+  centerLabel,
+  categoryLabel,
+}: {
+  data: { id: string; name: string; value: number; percentage: number; color: string }[]
+  total: number
+  centerLabel: string
+  categoryLabel: string
+}) {
+  return (
+    <Card>
+      <CardContent className="flex h-full flex-col items-center justify-center gap-4 p-5">
+        <div className="flex flex-col items-center gap-1 text-center">
+          <span className="text-xs text-muted-foreground">{centerLabel}</span>
+          <span className="tabular text-lg font-bold tracking-tight" title={formatVND(total)}>
+            {formatVND(total)}
+          </span>
+        </div>
+        <div className="w-full">
+          <CategoryDonut data={data} total={total} centerLabel={centerLabel} showCenterTotal={false} />
+        </div>
+        <div className="w-full space-y-2" aria-label={categoryLabel}>
+          {data.slice(0, 5).map((datum) => (
+            <div key={datum.id} className="flex items-center justify-between gap-3 text-sm">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: datum.color }} />
+                <span className="truncate">{datum.name}</span>
+              </div>
+              <span className="flex shrink-0 items-baseline gap-1.5 tabular-nums">
+                <span className="text-muted-foreground">{formatVND(datum.value)}</span>
+                <span className="text-xs text-muted-foreground/70">{Math.round(datum.percentage * 100)}%</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -157,4 +205,3 @@ function SummaryCard({
     </Card>
   )
 }
-
