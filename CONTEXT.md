@@ -5,6 +5,12 @@ implementation details, no schema, no file references. Define what a term IS,
 not how it is built. Prefer the canonical term; the `_Avoid_` list names the
 synonyms not to use.
 
+## Users & Ownership
+
+**User**:
+A person who signs up for the app and has their own private financial data.
+_Avoid_: app account, login account, profile
+
 ## Money & Accounts
 
 **Account**:
