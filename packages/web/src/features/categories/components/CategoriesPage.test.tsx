@@ -22,6 +22,7 @@ const systemCategory: Category = {
   icon: 'Utensils',
   color: 'chart-1',
   isSystem: true,
+  isHidden: false,
   type: 'expense',
   parentId: null,
 }
@@ -32,6 +33,7 @@ const customCategory: Category = {
   icon: 'Coffee',
   color: 'chart-2',
   isSystem: false,
+  isHidden: false,
   type: 'expense',
   parentId: null,
 }
@@ -42,6 +44,7 @@ const nestedExpenseCategory: Category = {
   icon: 'Utensils',
   color: 'chart-1',
   isSystem: false,
+  isHidden: false,
   type: 'expense',
   parentId: 'system-food',
 }
@@ -52,6 +55,7 @@ const incomeCategory: Category = {
   icon: 'Briefcase',
   color: 'chart-3',
   isSystem: true,
+  isHidden: false,
   type: 'income',
   parentId: null,
 }

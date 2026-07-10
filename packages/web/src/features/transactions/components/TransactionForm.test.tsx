@@ -5,8 +5,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TransactionForm } from './TransactionForm'
 
 const MOCK_CATEGORIES = [
-  { id: 'food', name: 'Food', icon: 'utensils', color: 'blue', type: 'expense', parentId: null },
-  { id: 'salary', name: 'Salary', icon: 'wallet', color: 'green', type: 'income', parentId: null },
+  { id: 'food', name: 'Food', icon: 'utensils', color: 'blue', isHidden: false, type: 'expense', parentId: null },
+  { id: 'salary', name: 'Salary', icon: 'wallet', color: 'green', isHidden: false, type: 'income', parentId: null },
+  { id: 'adjustment', name: 'Balance Adjustment', icon: 'scale', color: 'gray', isHidden: true, type: 'expense', parentId: null },
 ]
 
 vi.mock('@/features/categories/queries', () => ({
@@ -16,7 +17,7 @@ vi.mock('@/features/categories/queries', () => ({
 
 vi.mock('@/features/categories/favorites-queries', () => ({
   // both marked favorite so they appear directly, without needing "Show all"
-  useFavoriteCategoryIds: () => new Set(['food', 'salary']),
+  useFavoriteCategoryIds: () => new Set(['food', 'salary', 'adjustment']),
 }))
 
 vi.mock('@/features/accounts/queries', () => ({
@@ -149,7 +150,7 @@ describe('TransactionForm', () => {
     expect(date.includes('T')).toBe(false)
   })
 
-  it('filters categories by type, replacing the old hardcoded INCOME_CATS list', async () => {
+  it('filters hidden categories as well as categories of another type', async () => {
     const user = userEvent.setup()
 
     render(
@@ -162,11 +163,13 @@ describe('TransactionForm', () => {
 
     expect(screen.getByRole('button', { name: 'Food' })).toBeDefined()
     expect(screen.queryByRole('button', { name: 'Salary' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Balance Adjustment' })).toBeNull()
 
     await user.click(screen.getByRole('button', { name: 'Income' }))
 
     expect(screen.getByRole('button', { name: 'Salary' })).toBeDefined()
     expect(screen.queryByRole('button', { name: 'Food' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Balance Adjustment' })).toBeNull()
   })
 
   it('clears the selected category when switching type away from its type', async () => {
