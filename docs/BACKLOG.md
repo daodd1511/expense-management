@@ -6,11 +6,12 @@ their session summary). Delete a line when the item ships or graduates into a
 `docs/specs/<feature>/` plan — git history is the archive. No done-lists, no status ceremony.
 
 ## Fixes
+- Hide app version in the footer for non-selected accounts (2026-07-04)
 ## Features
 
 - [ ] Export & backup: CSV export, JSON backup/restore (2026-07-04)
 - [ ] Budget rollover + near-limit alerts — deferred until budgets see more actual use (2026-07-07)
-- [ ] Household sharing — deferred until all core functions are present; household/membership schema first, UI later (2026-07-04)
+- [ ] Household sharing — deferred until all core functions are present; household/membership schema first, UI later (2026-07-04) (priority: highest, need this before able to release 1.0)
 - [ ] Offline write queue for the PWA (2026-07-04)
 - [ ] Small UX batch: account reorder, currency format preference, per-locale number format (2026-07-04)
 - [ ] Better analytics on spendings (2026-07-05)
