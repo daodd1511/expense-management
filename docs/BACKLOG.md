@@ -6,7 +6,6 @@ their session summary). Delete a line when the item ships or graduates into a
 `docs/specs/<feature>/` plan — git history is the archive. No done-lists, no status ceremony.
 
 ## Fixes
-- [ ] Transaction page filters in mobile to break line instead of horizontal scroll when the screen is too narrow (2026-07-10)
 ## Features
 
 - [ ] Export & backup: CSV export, JSON backup/restore (2026-07-04)

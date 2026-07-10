@@ -111,7 +111,6 @@ export function TransactionRow({
               {formatVND(tx.balanceAfter)}
             </span>
           )}
-          {tx.time && <span className="text-xs text-muted-foreground">{tx.time}</span>}
         </span>
       </button>
     </div>
