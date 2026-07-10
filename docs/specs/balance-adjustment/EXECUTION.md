@@ -13,9 +13,9 @@ Reports) is unchanged, only which package implements it.
 
 ## STATUS
 
-- Current phase: 2 — in-progress
+- Current phase: 2 — done
 - Phase 1 — schema, shared types, migration, reports exclusion: done
-- Phase 2 — frontend category pickers: in-progress
+- Phase 2 — frontend category pickers: done
 - Phase 3 — reconcile balance UI: pending
 - Verification debt: none
 
@@ -54,13 +54,14 @@ Branch: `balance-adjustment/phase-2-pickers` (off `balance-adjustment/phase-1-sc
 
 Depends on `isHidden` existing on `Category` (Phase 1). Purely additive filtering — no new UI surface, safe to land before the reconcile form exists.
 
-- [ ] `packages/web/src/features/transactions/components/TransactionForm.tsx` — `visibleCats` (currently `categories.filter((c) => c.type === type)`) also filters `!c.isHidden`
-- [ ] `packages/web/src/features/categories/components/CategoryFilterSelect.tsx` — filter incoming `categories` prop to `!isHidden` before rendering chips (single fix point; both `DesktopTransactionsTable.tsx` and `MobileTransactions.tsx` pass `categories` from `useCategories()` into this component)
-- [ ] `packages/web/src/features/budgets/components/BudgetForm.tsx` — `availableCategories` (currently `categories.filter((c) => !conflictsWithExistingBudget(...))`) also filters `!c.isHidden`
+- [x] `packages/web/src/features/transactions/components/TransactionForm.tsx` — `visibleCats` (currently `categories.filter((c) => c.type === type)`) also filters `!c.isHidden`
+- [x] `packages/web/src/features/categories/components/CategoryFilterSelect.tsx` — filter incoming `categories` prop to `!isHidden` before rendering chips (single fix point; both `DesktopTransactionsTable.tsx` and `MobileTransactions.tsx` pass `categories` from `useCategories()` into this component)
+- [x] `packages/web/src/features/budgets/components/BudgetForm.tsx` — `availableCategories` (currently `categories.filter((c) => !conflictsWithExistingBudget(...))`) also filters `!c.isHidden`
+- [x] (amended 2026-07-10) `packages/web/src/core/data.ts`, `packages/web/src/features/budgets/components/BudgetForm.test.ts`, `packages/web/src/features/categories/components/{CategoriesPage,CategoryPicker,FavoriteCategoryPicker}.test.tsx` — add `isHidden: false` to pre-existing typed category fixtures required by the Phase 1 shared contract
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web exec tsc --noEmit`
-- [ ] `pnpm --filter @wallet/web exec vitest run packages/web/src/features/transactions/components/TransactionForm.test.tsx packages/web/src/features/categories/components/CategoryFilterSelect.test.tsx` (extend both with a case asserting a hidden category is absent from the rendered options)
+- [x] `pnpm --filter @wallet/web exec tsc --noEmit`
+- [x] `pnpm --filter @wallet/web exec vitest run src/features/transactions/components/TransactionForm.test.tsx src/features/categories/components/CategoryFilterSelect.test.tsx` (extend both with a case asserting a hidden category is absent from the rendered options)
 
 **Review checklist (user, at PR review):**
 - [ ] Open TransactionForm's category select, `CategoryFilterSelect` (transactions filter), and the budget category picker — confirm neither `Balance Adjustment` category appears in any of them
