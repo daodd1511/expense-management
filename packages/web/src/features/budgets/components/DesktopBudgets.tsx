@@ -133,20 +133,22 @@ export function DesktopBudgets({
                     </span>
                     <div className="flex items-center gap-1">
                       <span className={`text-xs font-medium ${state.tone}`}>{p}%</span>
-                      <button
-                        type="button"
-                        onClick={() => setEditing(b)}
-                        className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
-                      >
-                        <Pencil className="size-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPendingDeleteId(b.categoryId)}
-                        className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-expense"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => setEditing(b)}
+                          className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPendingDeleteId(b.categoryId)}
+                          className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-expense"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <Progress value={p} indicatorClassName={state.bar} />
