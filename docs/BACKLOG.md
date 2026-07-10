@@ -15,7 +15,7 @@ their session summary). Delete a line when the item ships or graduates into a
 - [ ] Offline write queue for the PWA (2026-07-04)
 - [ ] Small UX batch: account reorder, currency format preference, per-locale number format (2026-07-04)
 - [ ] Better analytics on spendings (2026-07-05)
-- [ ] Add fee feature (2026-07-05)
+- [ ] Add fee feature (2026-07-05) (priority: high, need this before able to release 1.0)
 - [ ] Better credit card information: view balance, due date, payment status (2026-07-05)
 - [ ] Lend and borrow feature (2026-07-05)
 ## Ideas
