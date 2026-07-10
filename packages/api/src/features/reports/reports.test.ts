@@ -78,6 +78,7 @@ describe('reportsRouter', () => {
           name: 'Salary',
           icon: 'Briefcase',
           color: 'chart-1',
+          is_hidden: false,
           type: 'income',
           parent_id: null,
           created_at: '2020-01-01T00:00:00.000Z',
@@ -88,6 +89,7 @@ describe('reportsRouter', () => {
           name: 'Food',
           icon: 'Utensils',
           color: 'chart-2',
+          is_hidden: false,
           type: 'expense',
           parent_id: null,
           created_at: '2020-01-01T00:00:00.000Z',
@@ -98,8 +100,20 @@ describe('reportsRouter', () => {
           name: 'Coffee',
           icon: 'Coffee',
           color: 'chart-3',
+          is_hidden: false,
           type: 'expense',
           parent_id: 'cat-food',
+          created_at: '2020-01-01T00:00:00.000Z',
+        },
+        {
+          id: 'cat-adjustment-expense',
+          owner_id: null,
+          name: 'Balance Adjustment',
+          icon: 'Scale',
+          color: 'chart-12',
+          is_hidden: true,
+          type: 'expense',
+          parent_id: null,
           created_at: '2020-01-01T00:00:00.000Z',
         },
       ],
@@ -194,6 +208,21 @@ describe('reportsRouter', () => {
           subscription_id: null,
           created_at: '2026-08-08T08:00:00.000Z',
         },
+        {
+          id: 'tx-7',
+          owner_id: 'user-1',
+          type: 'expense',
+          amount: 125,
+          category_id: 'cat-adjustment-expense',
+          account_id: 'acc-1',
+          to_account_id: null,
+          merchant: 'Balance adjustment',
+          note: null,
+          tx_date: '2026-08-10',
+          receipt_url: null,
+          subscription_id: null,
+          created_at: '2026-08-10T08:00:00.000Z',
+        },
       ],
     })
 
@@ -284,7 +313,7 @@ describe('reportsRouter', () => {
     expect(client.transactionsBuilder.eq).toHaveBeenCalledWith('owner_id', 'user-1')
     expect(client.transactionsBuilder.gte).toHaveBeenCalledWith('tx_date', '2026-07-01')
     expect(client.transactionsBuilder.lte).toHaveBeenCalledWith('tx_date', '2026-08-31')
-    expect(client.categoriesBuilder.in).toHaveBeenCalledWith('id', ['cat-salary', 'cat-food', 'cat-coffee'])
+    expect(client.categoriesBuilder.in).toHaveBeenCalledWith('id', ['cat-salary', 'cat-food', 'cat-coffee', 'cat-adjustment-expense'])
     expect(client.categoriesBuilder.or).toHaveBeenCalledWith('owner_id.eq.user-1,owner_id.is.null')
   })
 

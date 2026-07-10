@@ -8,6 +8,7 @@ export function toCategory(row: CategoryRow): Category {
     icon: row.icon,
     color: row.color,
     isSystem: row.owner_id === null,
+    isHidden: row.is_hidden,
     type: row.type,
     parentId: row.parent_id,
   }

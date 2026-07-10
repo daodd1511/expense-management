@@ -73,6 +73,10 @@ export async function getIncomeExpenseReport(userId: string, from: string, to: s
   const categoryGroups = new Map<string, CategoryDraft>()
 
   for (const transaction of reportableTransactions) {
+    if (transaction.categoryId && categoryById.get(transaction.categoryId)?.isHidden) {
+      continue
+    }
+
     totals.transactionCount += 1
 
     if (transaction.type === 'income') {

@@ -1,8 +1,9 @@
 
-import { Banknote, CreditCard, Landmark, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
+import { Banknote, CreditCard, Landmark, Pencil, Plus, Scale, Trash2, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
+import { ReconcileBalanceForm } from '@/features/accounts/components/ReconcileBalanceForm'
 import { AccountsSkeleton } from '@/shared/components/Skeleton'
 import { useSwipeActions } from '@/shared/hooks/useSwipeActions'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -22,20 +23,24 @@ const KIND_ICONS: Record<AccountKind, LucideIcon> = {
   ewallet: Wallet,
 }
 
-const SWIPE_ACTION_WIDTH = 132
+const SWIPE_ACTION_WIDTH = 196
 
 function AccountRow({
   account,
   balance,
   kindLabel,
   onEdit,
+  onReconcile,
   onDelete,
+  reconcileLabel,
 }: {
   account: Account
   balance: number
   kindLabel: string
   onEdit: () => void
+  onReconcile: () => void
   onDelete: () => void
+  reconcileLabel: string
 }) {
   const { offset, isDragging, bind } = useSwipeActions(SWIPE_ACTION_WIDTH)
   const Icon = KIND_ICONS[account.kind]
@@ -44,6 +49,14 @@ function AccountRow({
   return (
     <div className="relative overflow-hidden">
       <div className="absolute inset-y-0 right-0 flex">
+        <button
+          type="button"
+          onClick={onReconcile}
+          aria-label={reconcileLabel}
+          className="flex w-16 items-center justify-center bg-muted text-foreground"
+        >
+          <Scale className="size-4" />
+        </button>
         <button
           type="button"
           onClick={onEdit}
@@ -95,6 +108,7 @@ export function MobileAccounts() {
   const { t } = useLang()
   const net = accounts.reduce((sum, account) => sum + (account.balance ?? account.openingBalance), 0)
   const [editing, setEditing] = useState<Account | null>(null)
+  const [reconciling, setReconciling] = useState<Account | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
@@ -112,12 +126,20 @@ export function MobileAccounts() {
 
   const openEdit = (account: Account) => {
     setEditing(account)
+    setReconciling(null)
+    setSheetOpen(true)
+  }
+
+  const openReconcile = (account: Account) => {
+    setEditing(null)
+    setReconciling(account)
     setSheetOpen(true)
   }
 
   const close = () => {
     setSheetOpen(false)
     setEditing(null)
+    setReconciling(null)
   }
 
   const handleSubmit = async (data: Omit<Account, 'id' | 'balance'>) => {
@@ -152,7 +174,9 @@ export function MobileAccounts() {
               balance={a.balance ?? a.openingBalance}
               kindLabel={KIND_LABELS[a.kind]}
               onEdit={() => openEdit(a)}
+              onReconcile={() => openReconcile(a)}
               onDelete={() => setPendingDeleteId(a.id)}
+              reconcileLabel={t('accounts.reconcile')}
             />
           ))}
         </div>
@@ -170,9 +194,13 @@ export function MobileAccounts() {
       <BottomSheet
         open={sheetOpen}
         onClose={close}
-        title={editing ? t('accounts.editTitle') : t('accounts.addTitle')}
+        title={reconciling ? t('accounts.reconcileTitle') : editing ? t('accounts.editTitle') : t('accounts.addTitle')}
       >
-        <AccountForm initial={editing ?? undefined} onSubmit={handleSubmit} onCancel={close} />
+        {reconciling ? (
+          <ReconcileBalanceForm account={reconciling} onCancel={close} />
+        ) : (
+          <AccountForm initial={editing ?? undefined} onSubmit={handleSubmit} onCancel={close} />
+        )}
       </BottomSheet>
       <ConfirmDialog
         open={pendingDeleteId !== null}

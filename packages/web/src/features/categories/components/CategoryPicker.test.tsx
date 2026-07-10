@@ -4,10 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Category } from '@/core/types'
 import { CategoryPicker } from './CategoryPicker'
 
-const food: Category = { id: 'food', name: 'Food', icon: 'Utensils', color: 'chart-1', isSystem: true, type: 'expense', parentId: null }
-const restaurant: Category = { id: 'restaurant', name: 'Restaurant', icon: 'Utensils', color: 'chart-1', isSystem: true, type: 'expense', parentId: 'food' }
-const coffee: Category = { id: 'coffee', name: 'Coffee', icon: 'Utensils', color: 'chart-1', isSystem: true, type: 'expense', parentId: 'food' }
-const other: Category = { id: 'other', name: 'Other', icon: 'Ellipsis', color: 'chart-12', isSystem: true, type: 'expense', parentId: null }
+const food: Category = { id: 'food', name: 'Food', icon: 'Utensils', color: 'chart-1', isSystem: true, isHidden: false, type: 'expense', parentId: null }
+const restaurant: Category = { id: 'restaurant', name: 'Restaurant', icon: 'Utensils', color: 'chart-1', isSystem: true, isHidden: false, type: 'expense', parentId: 'food' }
+const coffee: Category = { id: 'coffee', name: 'Coffee', icon: 'Utensils', color: 'chart-1', isSystem: true, isHidden: false, type: 'expense', parentId: 'food' }
+const other: Category = { id: 'other', name: 'Other', icon: 'Ellipsis', color: 'chart-12', isSystem: true, isHidden: false, type: 'expense', parentId: null }
 const categories = [food, restaurant, coffee, other]
 
 describe('CategoryPicker', () => {

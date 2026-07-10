@@ -43,7 +43,7 @@ export function BudgetForm({ initial, onSubmit, onCancel }: BudgetFormProps) {
   const { t } = useLang()
 
   const availableCategories = categories.filter(
-    (c) => !conflictsWithExistingBudget(c, categories, budgets, initial?.categoryId),
+    (c) => !c.isHidden && !conflictsWithExistingBudget(c, categories, budgets, initial?.categoryId),
   )
 
   const [categoryId, setCategoryId] = useState<string | null>(initial?.categoryId ?? availableCategories[0]?.id ?? null)

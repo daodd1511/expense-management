@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import type { Category } from '@/core/types'
 import { conflictsWithExistingBudget } from './BudgetForm'
 
-const food: Category = { id: 'food', name: 'Food', icon: 'x', color: 'chart-1', isSystem: true, type: 'expense', parentId: null }
-const restaurant: Category = { id: 'restaurant', name: 'Restaurant', icon: 'x', color: 'chart-1', isSystem: true, type: 'expense', parentId: 'food' }
-const coffee: Category = { id: 'coffee', name: 'Coffee', icon: 'x', color: 'chart-1', isSystem: true, type: 'expense', parentId: 'food' }
+const food: Category = { id: 'food', name: 'Food', icon: 'x', color: 'chart-1', isSystem: true, isHidden: false, type: 'expense', parentId: null }
+const restaurant: Category = { id: 'restaurant', name: 'Restaurant', icon: 'x', color: 'chart-1', isSystem: true, isHidden: false, type: 'expense', parentId: 'food' }
+const coffee: Category = { id: 'coffee', name: 'Coffee', icon: 'x', color: 'chart-1', isSystem: true, isHidden: false, type: 'expense', parentId: 'food' }
 const categories = [food, restaurant, coffee]
 
 describe('conflictsWithExistingBudget', () => {
