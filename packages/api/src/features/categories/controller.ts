@@ -1,4 +1,5 @@
 import type { Context } from 'hono'
+import type { Lang } from '@wallet/shared'
 import { jsonError, parseRawJsonBody } from '../../lib/response'
 import type { AuthEnv } from '../../middleware/auth'
 import * as service from './service'
@@ -12,9 +13,8 @@ function requireId(id: string | undefined) {
   return id
 }
 
-export async function listCategories(c: Context<AuthEnv>) {
-  const data = await service.listCategories(c.get('userId'))
-  return c.json({ data })
+export async function listCategories(userId: string, locale?: Lang) {
+  return service.listCategories(userId, locale)
 }
 
 export async function createCategory(userId: string, input: Parameters<typeof service.createCategory>[1]) {

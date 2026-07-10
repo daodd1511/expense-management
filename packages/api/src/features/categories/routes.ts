@@ -4,11 +4,22 @@ import { z } from 'zod'
 import type { AuthEnv } from '../../middleware/auth'
 import { jsonError } from '../../lib/response'
 import * as controller from './controller'
-import { categoryCreateSchema } from './schema'
+import { categoryCreateSchema, categoryListQuerySchema } from './schema'
 
 export const categoriesRouter = new Hono<AuthEnv>()
 
-categoriesRouter.get('/', controller.listCategories)
+categoriesRouter.get(
+  '/',
+  zValidator('query', categoryListQuerySchema, (result, c) => {
+    if (!result.success) {
+      return jsonError(c, 400, 'Invalid locale query parameter', z.flattenError(result.error))
+    }
+  }),
+  async (c) => {
+    const data = await controller.listCategories(c.get('userId'), c.req.valid('query').locale)
+    return c.json({ data })
+  },
+)
 categoriesRouter.post(
   '/',
   zValidator('json', categoryCreateSchema, (result, c) => {
