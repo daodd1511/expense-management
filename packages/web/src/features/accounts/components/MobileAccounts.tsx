@@ -62,7 +62,7 @@ function AccountRow({
         </button>
         <button
           type="button"
-          onClick={onViewTransactions}
+          onClick={onEdit}
           aria-label="Edit"
           className="flex w-16 items-center justify-center bg-accent text-accent-foreground"
         >
@@ -87,7 +87,7 @@ function AccountRow({
         </span>
         <button
           type="button"
-          onClick={onEdit}
+          onClick={onViewTransactions}
           className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
         >
           <span className="flex flex-col">
