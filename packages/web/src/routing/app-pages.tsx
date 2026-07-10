@@ -271,11 +271,6 @@ export function OtherPage() {
 
   return (
     <MobilePageContainer className="gap-6 lg:p-0">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">{t('other.title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('other.subtitle')}</p>
-      </div>
-
       <div className="grid gap-4 sm:grid-cols-2">
         {items.map((item) => {
           const Icon = item.icon
