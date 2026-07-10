@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/auth'
+import { useLang } from '@/core/i18n'
 import { invalidateCategoryDependentQueries } from '@/core/query-invalidation'
 import {
   deleteCategory,
@@ -12,9 +13,10 @@ import type { Category } from '@/core/types'
 
 export function useCategories() {
   const { user } = useAuth()
+  const { lang } = useLang()
   return useQuery({
-    queryKey: ['categories', user?.id],
-    queryFn: fetchCategories,
+    queryKey: ['categories', user?.id, lang],
+    queryFn: () => fetchCategories(lang),
     enabled: !!user,
   })
 }

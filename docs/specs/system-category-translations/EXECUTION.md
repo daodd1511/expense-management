@@ -5,12 +5,10 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 1 — done-with-debt
+- Current phase: 2 — done
 - Phase 1 — schema, shared contract, api: done-with-debt
-- Phase 2 — frontend data layer: pending
-- Verification debt: `packages/shared/src/database.types.ts` `category_translations`
-  type was hand-added (no local Supabase CLI); regenerate with `supabase gen types`
-  once available to confirm it matches exactly.
+- Phase 2 — frontend data layer: done
+- Verification debt: `database.types.ts` `category_translations` type hand-added (no local Supabase CLI); regenerate with `supabase gen types` later.
 
 ## Phase 1 — schema, shared contract, api
 
@@ -90,18 +88,15 @@ category cache to request and key on the app's current language, per PLAN.md
 → "Scope of Work" #4. No UI changes — existing consumers already render
 `category.name`.
 
-- [ ] `packages/web/src/features/categories/db.ts` (`fetchCategories`) — accept
-      a `locale` param and request `/categories?locale=<locale>`.
-- [ ] `packages/web/src/features/categories/queries.ts` (`useCategories`) —
-      read `lang` from `useLang()` (`packages/web/src/core/i18n.tsx`), include
-      it in the query key (currently `['categories', user?.id]` →
-      `['categories', user?.id, lang]`), and pass it to `fetchCategories`.
+- [x] `packages/web/src/features/categories/db.ts` (`fetchCategories`) — now
+      takes `locale: Lang` and requests `/categories?locale=<locale>`.
+- [x] `packages/web/src/features/categories/queries.ts` (`useCategories`) —
+      reads `lang` from `useLang()`, query key is now
+      `['categories', user?.id, lang]`, passes `lang` to `fetchCategories`.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test` (or scope further to
-      `packages/web/src/features/categories/**/*.test.ts*` if such tests
-      exist)
+- [x] `pnpm --filter @wallet/web typecheck` — passed, no errors
+- [x] `pnpm --filter @wallet/web test` — 162 passed (37 files)
 
 **Review checklist (user, at PR review):**
 - [ ] Switching language in Settings refetches categories and updates
