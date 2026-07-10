@@ -5,7 +5,6 @@ import { BudgetForm } from '@/features/budgets/components/BudgetForm'
 import { budgetState } from '@/features/budgets/components/BudgetBars'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { BudgetsSkeleton } from '@/shared/components/Skeleton'
-import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { BottomSheet } from '@/shared/components/ui/overlay'
@@ -58,12 +57,8 @@ export function MobileBudgets() {
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center">
         <h2 className="text-sm font-semibold">{t('budget.perCategory')}</h2>
-        <Button size="sm" variant="outline" onClick={() => setSheet('add')}>
-          <Plus className="size-3.5" />
-          {t('budget.add')}
-        </Button>
       </div>
 
       <div className="flex flex-col gap-3">
@@ -113,6 +108,14 @@ export function MobileBudgets() {
           )
         })}
       </div>
+
+      <button
+        type="button"
+        onClick={() => setSheet('add')}
+        className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-sm font-medium text-muted-foreground hover:bg-muted"
+      >
+        <Plus className="size-4" /> {t('budget.add')}
+      </button>
 
       <BottomSheet
         open={sheet !== null}

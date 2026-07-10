@@ -216,7 +216,7 @@ export function DesktopSubscriptions({
           <h1 className="text-2xl font-semibold tracking-tight">{t('sub.title')}</h1>
           <p className="text-sm text-muted-foreground">{t('sub.subtitle')}</p>
         </div>
-        <Button onClick={openAdd}>
+        <Button className="h-10 rounded-xl px-4" onClick={openAdd}>
           <Plus className="size-4" />
           {t('sub.addTitle')}
         </Button>

@@ -221,14 +221,8 @@ export function SettingsPage() {
 
 export function SettingsCategoriesPage() {
   const isDesktop = useIsDesktop()
-  const navigation = useAppNavigation()
 
-  return (
-    <CategoriesPage
-      variant={isDesktop ? 'desktop' : 'mobile'}
-      onBack={navigation.goOther}
-    />
-  )
+  return <CategoriesPage variant={isDesktop ? 'desktop' : 'mobile'} />
 }
 
 export function OtherPage() {

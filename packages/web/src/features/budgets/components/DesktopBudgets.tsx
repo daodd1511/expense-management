@@ -107,8 +107,8 @@ export function DesktopBudgets({
       <Card className="lg:col-span-2">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t('budget.byCategory')}</CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setEditing('add')}>
-            <Plus className="size-3.5" />
+          <Button className="h-10 rounded-xl px-4" onClick={() => setEditing('add')}>
+            <Plus className="size-4" />
             {t('budget.add')}
           </Button>
         </CardHeader>

@@ -1,5 +1,5 @@
 
-import { ArrowLeft, Plus, Star } from 'lucide-react'
+import { Plus, Star } from 'lucide-react'
 import { useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
@@ -24,10 +24,8 @@ import { cn } from '@/shared/lib/utils'
 
 export function CategoriesPage({
   variant,
-  onBack,
 }: {
   variant: 'mobile' | 'desktop'
-  onBack: () => void
 }) {
   const isMobile = variant === 'mobile'
   const { data: categories = [], isPending } = useCategories()
@@ -99,16 +97,6 @@ export function CategoriesPage({
       <div className={cn('flex flex-col', isMobile ? 'gap-2' : 'gap-3')}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
-            {isMobile && (
-              <button
-                type="button"
-                onClick={onBack}
-                className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <ArrowLeft className="size-4" />
-                {t('other.title')}
-              </button>
-            )}
             {!isMobile && (
               <>
                 <h1 className="text-2xl font-semibold tracking-tight">{t('settings.categories')}</h1>
@@ -116,10 +104,12 @@ export function CategoriesPage({
               </>
             )}
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={handleNewCategory}>
-            <Plus className="size-3.5" />
-            {t('settings.add')}
-          </Button>
+          {!isMobile && (
+            <Button type="button" className="h-10 rounded-xl px-4" onClick={handleNewCategory}>
+              <Plus className="size-4" />
+              {t('settings.addCategory')}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -150,12 +140,23 @@ export function CategoriesPage({
             key={parent.id}
             parent={parent}
             childCategories={childCategories}
+            variant={variant}
             editingId={editingId}
             favoriteCategoryIds={favoriteCategoryIds}
             onSelect={handleSelectCategory}
             onToggleFavorite={handleToggleFavorite}
           />
         ))}
+
+        {isMobile && (
+          <button
+            type="button"
+            onClick={handleNewCategory}
+            className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-sm font-medium text-muted-foreground hover:bg-muted"
+          >
+            <Plus className="size-4" /> {t('settings.addCategory')}
+          </button>
+        )}
       </div>
 
       {variant === 'mobile' ? (
@@ -174,6 +175,7 @@ export function CategoriesPage({
 function CategoryGroupBox({
   parent,
   childCategories,
+  variant,
   editingId,
   favoriteCategoryIds,
   onSelect,
@@ -181,14 +183,17 @@ function CategoryGroupBox({
 }: {
   parent: Category
   childCategories: Category[]
+  variant: 'mobile' | 'desktop'
   editingId: string | null
   favoriteCategoryIds: Set<string>
   onSelect: (category: Category) => void
   onToggleFavorite: (categoryId: string) => void
 }) {
+  const isDesktop = variant === 'desktop'
+
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
+    <div className={cn('flex flex-col gap-2', isDesktop && 'rounded-2xl border border-border bg-card p-3')}>
+      <div className={cn('flex items-center gap-2', isDesktop && 'px-1 pb-2')}>
         <button
           type="button"
           disabled={parent.isSystem}
@@ -214,15 +219,16 @@ function CategoryGroupBox({
       </div>
 
       {childCategories.length > 0 && (
-        <div className="flex flex-col gap-1">
+        <div className={cn(isDesktop ? 'grid grid-cols-2 gap-2 xl:grid-cols-3' : 'flex flex-col gap-1')}>
           {childCategories.map((child) => (
             <div key={child.id} className="relative">
               <button
                 type="button"
                 disabled={child.isSystem}
                 onClick={() => onSelect(child)}
-                className={cn(
+              className={cn(
                   'flex w-full items-center gap-3 rounded-xl px-3 py-3 pr-12 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-70',
+                  isDesktop && 'border border-border bg-muted/35 hover:bg-muted',
                   editingId === child.id ? 'bg-accent' : !child.isSystem && 'hover:bg-muted',
                 )}
               >
@@ -271,7 +277,7 @@ function FavoriteToggle({
         className,
       )}
     >
-      <Star className={cn('size-3.5', isFavorite && 'fill-primary text-primary')} />
+      <Star className={cn('size-5', isFavorite && 'fill-primary text-primary')} />
     </button>
   )
 }
