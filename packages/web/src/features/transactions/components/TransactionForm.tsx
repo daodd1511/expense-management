@@ -8,6 +8,7 @@ import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
 import { FormFooterBar } from '@/shared/components/FormFooterBar'
 import { SheetFormHeader } from '@/shared/components/SheetFormHeader'
 import { Input, Label, Textarea } from '@/shared/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import {
   Popover,
   PopoverPortal,
@@ -22,6 +23,7 @@ import { useFavoriteCategoryIds } from '@/features/categories/favorites-queries'
 import { useAccounts } from '@/features/accounts/queries'
 import { AccountSelect } from '@/features/accounts/components/AccountSelect'
 import type { Transaction, TxType } from '@/core/types'
+import type { TransactionCreate } from '@wallet/shared'
 import { cn } from '@/shared/lib/utils'
 
 function todayIsoDate() {
@@ -271,7 +273,7 @@ export function TransactionForm({
 }: {
   variant: 'mobile' | 'desktop'
   initial?: Transaction
-  onSubmit: (tx: Omit<Transaction, 'id'>) => Promise<void>
+  onSubmit: (tx: TransactionCreate) => Promise<void>
   onCancel: () => void
 }) {
   const { data: categories = [] } = useCategories()
@@ -281,6 +283,8 @@ export function TransactionForm({
   const { t } = useLang()
   const [type, setType] = useState<TxType>(initial?.type ?? 'expense')
   const [amount, setAmount] = useState<string>(initial ? String(initial.amount) : '')
+  const [fee, setFee] = useState<string>(initial?.fee ? String(initial.fee) : '')
+  const [hasFee, setHasFee] = useState(Boolean(initial?.fee))
   const [categoryId, setCategoryId] = useState<string | null>(initial?.categoryId ?? null)
   const [accountId, setAccountId] = useState<string>(initial?.accountId ?? accounts[0].id)
   const [toAccountId, setToAccountId] = useState<string>(
@@ -298,6 +302,7 @@ export function TransactionForm({
   ]
 
   const numericAmount = Number(amount) || 0
+  const numericFee = Number(fee) || 0
   const visibleCats = categories.filter((c) => c.type === type && !c.isHidden)
 
   const canSubmit =
@@ -337,7 +342,13 @@ export function TransactionForm({
       date,
       time: time || undefined,
       receipt: null,
+      ...(type === 'transfer' && { fee: hasFee ? numericFee : 0 }),
     })
+  }
+
+  const handleFeeEnabledChange = (enabled: boolean) => {
+    setHasFee(enabled)
+    if (!enabled) setFee('')
   }
 
   const amountTone = type === 'income' ? 'income' : type === 'expense' ? 'expense' : 'neutral'
@@ -381,6 +392,16 @@ export function TransactionForm({
       </div>
 
       <AmountField label={t('form.amount')} value={amount} onChange={setAmount} tone={amountTone} inputRef={amountInputRef} />
+
+      {type === 'transfer' && (
+        <div className="px-4 py-3 sm:px-5">
+          <div className="flex items-center gap-2">
+            <Switch id="transfer-fee" checked={hasFee} onCheckedChange={handleFeeEnabledChange} />
+            <Label htmlFor="transfer-fee">{t('form.fee')}</Label>
+          </div>
+          {hasFee && <AmountField label={t('form.fee')} value={fee} onChange={setFee} tone="expense" />}
+        </div>
+      )}
 
       <div className="flex flex-col gap-4 px-4 sm:px-5">
         {/* Categories */}

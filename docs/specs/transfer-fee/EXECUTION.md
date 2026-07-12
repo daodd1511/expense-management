@@ -5,9 +5,9 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 1 — done
+- Current phase: All phases complete
 - Phase 1 — Persistence and transaction API: done
-- Phase 2 — Transfer form: pending
+- Phase 2 — Transfer form: done
 - Verification debt: none
 
 Mode: goal.
@@ -42,12 +42,13 @@ Branch: `transfer-fee/phase-2-transfer-form` (off `transfer-fee/phase-1-persiste
 
 Expose the already-supported fee payload only in the transfer form.
 
-- [ ] Add a transfer-only Fee `AmountField` and submit its optional positive value from `packages/web/src/features/transactions/components/TransactionForm.tsx`; use the existing hidden-category filter unchanged.
-- [ ] Add `form.fee` translations in `packages/web/src/core/i18n.tsx` and transfer-fee create/edit assertions in `packages/web/src/features/transactions/components/TransactionForm.test.tsx`.
+- [x] Add a transfer-only Fee `AmountField` and submit its optional positive value from `packages/web/src/features/transactions/components/TransactionForm.tsx`; use the existing hidden-category filter unchanged.
+- [x] Add `form.fee` translations in `packages/web/src/core/i18n.tsx` and transfer-fee create/edit assertions in `packages/web/src/features/transactions/components/TransactionForm.test.tsx`.
+- [x] (amended 2026-07-12) Add the shadcn `Switch` at `packages/web/src/components/ui/switch.tsx` and gate the Fee input behind it in `packages/web/src/features/transactions/components/TransactionForm.tsx`.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test -- src/features/transactions/components/TransactionForm.test.tsx`
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] (amended 2026-07-12) `pnpm --filter @wallet/web exec vitest run src/features/transactions/components/TransactionForm.test.tsx` (the package script ignores file filters).
 
 **Review checklist (user, at PR review):**
 - [ ] Verify Fee appears only for transfers, blank/zero preserves a normal transfer, and Transfer Fee is absent from manual category pickers while present in the report breakdown.
