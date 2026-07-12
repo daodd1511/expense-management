@@ -73,7 +73,8 @@ export async function getIncomeExpenseReport(userId: string, from: string, to: s
   const categoryGroups = new Map<string, CategoryDraft>()
 
   for (const transaction of reportableTransactions) {
-    if (transaction.categoryId && categoryById.get(transaction.categoryId)?.isHidden) {
+    const hiddenCategory = transaction.categoryId ? categoryById.get(transaction.categoryId) : undefined
+    if (hiddenCategory?.isHidden && hiddenCategory.name === 'Balance Adjustment') {
       continue
     }
 

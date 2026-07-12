@@ -15,6 +15,8 @@ export const transactionSchema = z.object({
   balanceAfter: z.number().optional(),
   receipt: z.string().nullable().optional(),
   subscriptionId: z.string().nullable().optional(),
+  linkedTransferId: z.string().nullable().optional(),
+  fee: z.number().nonnegative().optional(),
 })
 
 export type Transaction = Readonly<z.infer<typeof transactionSchema>>
