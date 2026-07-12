@@ -77,7 +77,7 @@ export function MobileTransactions({
     const filtered = transactions.filter((tx) => {
       if (type !== 'all' && tx.type !== type) return false
       if (categoryId && tx.categoryId !== categoryId) return false
-      if (accountId && tx.accountId !== accountId) return false
+      if (accountId && tx.accountId !== accountId && tx.toAccountId !== accountId) return false
       if (query) {
         const searchValue = query.toLowerCase()
         const haystack = [
@@ -85,6 +85,7 @@ export function MobileTransactions({
           tx.note,
           getCategory(tx.categoryId)?.name,
           getAccount(tx.accountId)?.name,
+          getAccount(tx.toAccountId)?.name,
         ]
           .filter(Boolean)
           .join(' ')
@@ -202,7 +203,7 @@ export function MobileTransactions({
               <div className="overflow-hidden rounded-2xl border border-border bg-card">
                 <div className="divide-y divide-border px-2">
                   {items.map((tx) => (
-                    <TransactionRow key={tx.id} tx={tx} onClick={() => onEdit(tx)} swipe />
+                    <TransactionRow key={tx.id} tx={tx} balanceAccountId={accountId || undefined} onClick={() => onEdit(tx)} swipe />
                   ))}
                 </div>
               </div>

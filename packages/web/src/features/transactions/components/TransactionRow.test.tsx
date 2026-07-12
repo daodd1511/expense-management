@@ -101,7 +101,7 @@ describe('TransactionRow', () => {
     expect(screen.getByText('Cash → Bank')).toBeDefined()
   })
 
-  it('shows the balance subline for expense, income, and transfer rows', () => {
+  it('shows the balance subline for expense and income rows', () => {
     const { rerender } = render(<TransactionRow tx={makeTransaction({ balanceAfter: 125000 })} />)
 
     expect(screen.getByText('125.000 ₫')).toBeDefined()
@@ -120,18 +120,39 @@ describe('TransactionRow', () => {
     )
     expect(screen.getByText('6.125.000 ₫')).toBeDefined()
 
-    rerender(
+  })
+
+  it('shows post-transfer balances for both accounts', () => {
+    const { rerender } = render(
       <TransactionRow
         tx={makeTransaction({
-          id: 'tx-3',
           type: 'transfer',
           categoryId: null,
           toAccountId: 'bank',
           amount: 300000,
           balanceAfter: 825000,
+          toAccountBalanceAfter: 955000,
         })}
       />,
     )
-    expect(screen.getByText('825.000 ₫')).toBeDefined()
+
+    expect(screen.getByText('Cash: 825.000 ₫')).toBeDefined()
+    expect(screen.getByText('Bank: 955.000 ₫')).toBeDefined()
+
+    rerender(
+      <TransactionRow
+        balanceAccountId="bank"
+        tx={makeTransaction({
+          type: 'transfer',
+          categoryId: null,
+          toAccountId: 'bank',
+          amount: 300000,
+          balanceAfter: 825000,
+          toAccountBalanceAfter: 955000,
+        })}
+      />,
+    )
+    expect(screen.getByText('955.000 ₫')).toBeDefined()
+    expect(screen.queryByText('Cash: 825.000 ₫')).toBeNull()
   })
 })

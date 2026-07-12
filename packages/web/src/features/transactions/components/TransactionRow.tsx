@@ -4,11 +4,12 @@ import { useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { useSwipeActions } from '@/shared/hooks/useSwipeActions'
-import { amountColorClass, formatSigned, formatVND } from '@/shared/lib/format'
+import { amountColorClass, formatSigned } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { useCategoryLookup } from '@/features/categories/queries'
 import { useAccountLookup } from '@/features/accounts/queries'
 import { useDeleteTransaction } from '@/features/transactions/queries'
+import { getTransactionBalanceLines } from '@/features/transactions/balance-lines'
 import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
@@ -52,10 +53,12 @@ function Leading({ tx }: { tx: Transaction }) {
 
 export function TransactionRow({
   tx,
+  balanceAccountId,
   onClick,
   swipe = false,
 }: {
   tx: Transaction
+  balanceAccountId?: string
   onClick?: () => void
   swipe?: boolean
 }) {
@@ -79,6 +82,7 @@ export function TransactionRow({
     tx.type === 'transfer'
       ? `${acc?.name} → ${getAccount(tx.toAccountId)?.name}`
       : acc?.name
+  const balanceLines = getTransactionBalanceLines(tx, balanceAccountId, (accountId) => getAccount(accountId)?.name)
 
   const content = (
     <div
@@ -106,11 +110,9 @@ export function TransactionRow({
           <span className={cn('tabular text-sm font-semibold', amountColorClass(tx.type))}>
             {formatSigned(tx.amount, tx.type)}
           </span>
-          {typeof tx.balanceAfter === 'number' && (
-            <span className="text-xs tabular text-muted-foreground">
-              {formatVND(tx.balanceAfter)}
-            </span>
-          )}
+          {balanceLines.map((balance) => (
+            <span key={balance} className="text-xs tabular text-muted-foreground">{balance}</span>
+          ))}
         </span>
       </button>
     </div>

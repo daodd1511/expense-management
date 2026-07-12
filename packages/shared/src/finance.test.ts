@@ -82,7 +82,7 @@ describe('computeRunningBalances', () => {
     ])
   })
 
-  it('updates both source and destination balances for transfers but exposes the source account balanceAfter', () => {
+  it('exposes post-transfer balances for both source and destination accounts', () => {
     const balances = computeRunningBalances(
       [
         makeTx({ id: 'transfer', type: 'transfer', amount: 250, accountId: 'cash', toAccountId: 'bank' }),
@@ -91,9 +91,9 @@ describe('computeRunningBalances', () => {
       { cash: 1000, bank: 200 },
     )
 
-    expect(balances.map((tx) => ({ id: tx.id, balanceAfter: tx.balanceAfter }))).toEqual([
-      { id: 'transfer', balanceAfter: 750 },
-      { id: 'bank-expense', balanceAfter: 400 },
+    expect(balances.map((tx) => ({ id: tx.id, balanceAfter: tx.balanceAfter, toAccountBalanceAfter: tx.toAccountBalanceAfter }))).toEqual([
+      { id: 'transfer', balanceAfter: 750, toAccountBalanceAfter: 450 },
+      { id: 'bank-expense', balanceAfter: 400, toAccountBalanceAfter: undefined },
     ])
   })
 })

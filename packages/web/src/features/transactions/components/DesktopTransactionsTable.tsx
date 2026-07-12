@@ -16,6 +16,7 @@ import { useCategories, useCategoryLookup } from '@/features/categories/queries'
 import { CategoryFilterSelect } from '@/features/categories/components/CategoryFilterSelect'
 import { TransactionsMonthSwitcher } from '@/features/transactions/components/TransactionsMonthSwitcher'
 import { useDeleteTransactions, useTransactions } from '@/features/transactions/queries'
+import { getTransactionBalanceLines } from '@/features/transactions/balance-lines'
 import type { TransactionFilterType } from '@/features/transactions/view-state'
 import { useLang } from '@/core/i18n'
 import type { Transaction } from '@/core/types'
@@ -26,7 +27,7 @@ import { Input } from '@/shared/components/ui/input'
 import { TransactionsSkeleton } from '@/shared/components/Skeleton'
 import { Select, SelectItem, SelectPopup, SelectPortal, SelectPositioner, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
-import { amountColorClass, formatShortDate, formatSigned, formatVND } from '@/shared/lib/format'
+import { amountColorClass, formatShortDate, formatSigned } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/utils'
 
 const PAGE_SIZE = 9
@@ -109,7 +110,7 @@ export function DesktopTransactionsTable({
       .filter((tx) => {
       if (type !== 'all' && tx.type !== type) return false
       if (categoryId && tx.categoryId !== categoryId) return false
-      if (accountId && tx.accountId !== accountId) return false
+      if (accountId && tx.accountId !== accountId && tx.toAccountId !== accountId) return false
       if (query) {
         const searchValue = query.toLowerCase()
         const haystack = [
@@ -117,6 +118,7 @@ export function DesktopTransactionsTable({
           tx.note,
           getCategory(tx.categoryId)?.name,
           getAccount(tx.accountId)?.name,
+          getAccount(tx.toAccountId)?.name,
         ]
           .filter(Boolean)
           .join(' ')
@@ -272,11 +274,8 @@ export function DesktopTransactionsTable({
             <span className={cn('block tabular font-semibold', amountColorClass(row.original.transaction.type))}>
               {formatSigned(row.original.transaction.amount, row.original.transaction.type)}
             </span>
-            {typeof row.original.transaction.balanceAfter === 'number' && (
-              <span className="text-xs tabular text-muted-foreground">
-                {formatVND(row.original.transaction.balanceAfter)}
-              </span>
-            )}
+            {getTransactionBalanceLines(row.original.transaction, accountId, (accountId) => getAccount(accountId)?.name)
+              .map((balance) => <span key={balance} className="text-xs tabular text-muted-foreground">{balance}</span>)}
           </span>
         ),
       },
@@ -306,7 +305,7 @@ export function DesktopTransactionsTable({
         ),
       },
     ],
-    [onEdit, t],
+    [accountId, getAccount, onEdit, t],
   )
 
   const table = useReactTable({
