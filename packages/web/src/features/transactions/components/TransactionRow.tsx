@@ -4,27 +4,17 @@ import { useState } from 'react'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
 import { useSwipeActions } from '@/shared/hooks/useSwipeActions'
-import { amountColorClass, formatSigned, formatVND } from '@/shared/lib/format'
+import { amountColorClass, formatSigned } from '@/shared/lib/format'
 import { useLang } from '@/core/i18n'
 import { useCategoryLookup } from '@/features/categories/queries'
+import { CategoryBreadcrumb } from '@/features/categories/components/CategoryBreadcrumb'
 import { useAccountLookup } from '@/features/accounts/queries'
 import { useDeleteTransaction } from '@/features/transactions/queries'
+import { getTransactionBalanceLines } from '@/features/transactions/balance-lines'
 import type { Transaction } from '@/core/types'
 import { cn } from '@/shared/lib/utils'
 
 const SWIPE_ACTION_WIDTH = 132
-
-function formatCategoryLabel({
-  categoryName,
-  parentCategoryName,
-}: {
-  categoryName?: string
-  parentCategoryName?: string
-}) {
-  return parentCategoryName
-    ? `${parentCategoryName} › ${categoryName}`
-    : categoryName
-}
 
 function Leading({ tx }: { tx: Transaction }) {
   const getCategory = useCategoryLookup()
@@ -52,10 +42,12 @@ function Leading({ tx }: { tx: Transaction }) {
 
 export function TransactionRow({
   tx,
+  balanceAccountId,
   onClick,
   swipe = false,
 }: {
   tx: Transaction
+  balanceAccountId?: string
   onClick?: () => void
   swipe?: boolean
 }) {
@@ -68,17 +60,13 @@ export function TransactionRow({
   const cat = getCategory(tx.categoryId)
   const parentCat = cat?.parentId ? getCategory(cat.parentId) : undefined
   const acc = getAccount(tx.accountId)
-  const title =
-    tx.type === 'transfer'
-      ? t('tx.transfer')
-      : formatCategoryLabel({
-          categoryName: cat?.name,
-          parentCategoryName: parentCat?.name,
-        })
-  const subtitle =
+  const note = tx.note?.trim() || undefined
+  const accountLine =
     tx.type === 'transfer'
       ? `${acc?.name} → ${getAccount(tx.toAccountId)?.name}`
       : acc?.name
+  const subtitle = [accountLine, note].filter(Boolean).join(' · ') || undefined
+  const balanceLines = getTransactionBalanceLines(tx, balanceAccountId, (accountId) => getAccount(accountId)?.name)
 
   const content = (
     <div
@@ -96,21 +84,27 @@ export function TransactionRow({
         className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
       >
         <span className="flex min-w-0 flex-col">
-          <span className="flex items-center gap-1.5 truncate text-sm font-medium">
-            {title}
-            {tx.receipt && <Paperclip className="size-3 text-muted-foreground" />}
-          </span>
+          {tx.type === 'transfer' ? (
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate text-sm font-semibold text-foreground">{t('tx.transfer')}</span>
+              {tx.receipt && <Paperclip className="size-3 shrink-0 text-muted-foreground" />}
+            </span>
+          ) : (
+            <CategoryBreadcrumb
+              category={cat}
+              parentCategory={parentCat}
+              trailing={tx.receipt && <Paperclip className="size-3 shrink-0 text-muted-foreground" />}
+            />
+          )}
           {subtitle && <span className="truncate text-xs text-muted-foreground">{subtitle}</span>}
         </span>
         <span className="flex shrink-0 flex-col items-end">
           <span className={cn('tabular text-sm font-semibold', amountColorClass(tx.type))}>
             {formatSigned(tx.amount, tx.type)}
           </span>
-          {typeof tx.balanceAfter === 'number' && (
-            <span className="text-xs tabular text-muted-foreground">
-              {formatVND(tx.balanceAfter)}
-            </span>
-          )}
+          {balanceLines.map((balance) => (
+            <span key={balance} className="text-xs tabular text-muted-foreground">{balance}</span>
+          ))}
         </span>
       </button>
     </div>

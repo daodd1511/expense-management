@@ -3,7 +3,7 @@ import { Banknote, CreditCard, Landmark, Pencil, Plus, Scale, Trash2, Wallet } f
 import type { LucideIcon } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { AccountForm } from '@/features/accounts/components/AccountForm'
+import { AccountForm, accountDialogTitle } from '@/features/accounts/components/AccountForm'
 import { ReconcileBalanceForm } from '@/features/accounts/components/ReconcileBalanceForm'
 import { AccountsSkeleton } from '@/shared/components/Skeleton'
 import { useSwipeActions } from '@/shared/hooks/useSwipeActions'
@@ -199,7 +199,7 @@ export function MobileAccounts() {
       <BottomSheet
         open={sheetOpen}
         onClose={close}
-        title={reconciling ? t('accounts.reconcileTitle') : editing ? t('accounts.editTitle') : t('accounts.addTitle')}
+        title={accountDialogTitle({ reconciling: Boolean(reconciling), editing: Boolean(editing), t })}
       >
         <div className="pb-[max(1rem,env(safe-area-inset-bottom))]">
           {reconciling ? (

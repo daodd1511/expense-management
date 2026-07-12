@@ -317,6 +317,16 @@ describe('reportsRouter', () => {
     expect(client.categoriesBuilder.or).toHaveBeenCalledWith('owner_id.eq.user-1,owner_id.is.null')
   })
 
+  it('includes hidden Transfer Fee expenses in report totals', async () => {
+    getSupabase.mockReturnValue(buildClient({
+      categories: [{ id: 'fee', owner_id: null, name: 'Transfer Fee', icon: 'ArrowRightLeft', color: 'chart-12', is_hidden: true, type: 'expense', parent_id: null, created_at: '2026-01-01T00:00:00.000Z' }],
+      transactions: [{ id: 'fee-tx', owner_id: 'user-1', type: 'expense', amount: 10, category_id: 'fee', account_id: 'cash', to_account_id: null, merchant: 'Transfer Fee', note: null, tx_date: '2026-07-01', receipt_url: null, subscription_id: null, created_at: '2026-07-01T00:00:00.000Z' }],
+    }))
+
+    const response = await makeApp().request('/reports/income-expense?from=2026-07-01&to=2026-07-31')
+    await expect(response.json()).resolves.toMatchObject({ data: { totals: { expense: 10, transactionCount: 1 }, categories: [{ categoryId: 'fee', amount: 10 }] } })
+  })
+
   it('rejects an inverted date range', async () => {
     getSupabase.mockReturnValue(buildClient({ categories: [], transactions: [] }))
 

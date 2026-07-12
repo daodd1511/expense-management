@@ -3,6 +3,7 @@ import { formatVND } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/utils'
 
 const MAX_DIGITS = 12
+const TONE_CLASS = { income: 'text-income', expense: 'text-expense', neutral: 'text-foreground' } as const
 
 /** Large centered VND amount entry shared by every form that captures a money amount. */
 export function AmountField({
@@ -20,7 +21,7 @@ export function AmountField({
   inputRef?: RefObject<HTMLInputElement | null>
   maxDigits?: number
 }) {
-  const toneClass = tone === 'income' ? 'text-income' : tone === 'expense' ? 'text-expense' : 'text-foreground'
+  const toneClass = TONE_CLASS[tone]
 
   return (
     <div className="flex flex-col items-center gap-1 px-4 py-5 sm:px-5">

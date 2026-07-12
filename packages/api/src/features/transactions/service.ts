@@ -49,6 +49,9 @@ export async function listTransactions(userId: string, month?: string) {
 }
 
 export async function createTransaction(userId: string, transaction: TransactionCreate) {
+  if (transaction.type === 'transfer' && (transaction.fee ?? 0) > 0) {
+    return repository.createTransferWithFee(userId, transaction, transaction.fee!)
+  }
   return repository.createTransaction(userId, transaction)
 }
 
@@ -56,6 +59,27 @@ export async function updateTransaction(userId: string, id: string, patch: Trans
   const transaction = await repository.updateTransaction(userId, id, patch)
   if (!transaction) {
     throw new ApiError(404, 'Transaction not found')
+  }
+
+  if (transaction.type !== 'transfer') return transaction
+
+  const linkedFee = await repository.findLinkedTransferFee(userId, id)
+  const fee = patch.fee
+  if (fee === 0 && linkedFee) {
+    await repository.deleteTransaction(userId, linkedFee.id)
+  } else if (linkedFee) {
+    await repository.updateTransaction(userId, linkedFee.id, {
+      ...(fee !== undefined && { amount: fee }),
+      accountId: transaction.accountId,
+      date: transaction.date,
+    })
+  } else if (fee !== undefined && fee > 0) {
+    const categoryId = await repository.findTransferFeeCategoryId()
+    await repository.createLinkedTransferFee(userId, {
+      type: 'expense', amount: fee, categoryId, accountId: transaction.accountId,
+      toAccountId: null, merchant: 'Transfer Fee', date: transaction.date,
+      time: transaction.time, receipt: null, subscriptionId: null, linkedTransferId: id,
+    })
   }
 
   return transaction

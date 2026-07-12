@@ -13,6 +13,20 @@ import { cn } from '@/shared/lib/utils'
 
 type AccountInput = Omit<Account, 'id' | 'balance'>
 
+export function accountDialogTitle({
+  reconciling,
+  editing,
+  t,
+}: {
+  reconciling: boolean
+  editing: boolean
+  t: (key: 'accounts.reconcileTitle' | 'accounts.editTitle' | 'accounts.addTitle') => string
+}) {
+  if (reconciling) return t('accounts.reconcileTitle')
+  if (editing) return t('accounts.editTitle')
+  return t('accounts.addTitle')
+}
+
 const KINDS: { value: AccountKind; icon: LucideIcon }[] = [
   { value: 'cash', icon: Banknote },
   { value: 'bank', icon: Landmark },

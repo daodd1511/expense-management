@@ -385,3 +385,21 @@ describe('transactionsRouter', () => {
     expect(client.transactionsBuilder.order).toHaveBeenNthCalledWith(4, 'id', { ascending: true })
   })
 })
+
+describe('transfer fees', () => {
+  it('creates a positive transfer fee through the atomic repository operation', async () => {
+    const created = {
+      id: 'transfer-1', type: 'transfer' as const, amount: 100, categoryId: null,
+      accountId: 'cash', toAccountId: 'bank', merchant: 'Transfer', note: undefined,
+      date: '2026-07-05', time: undefined, receipt: undefined, subscriptionId: null, linkedTransferId: null,
+    }
+    const atomicCreate = vi.spyOn(repository, 'createTransferWithFee').mockResolvedValue(created)
+
+    await expect(service.createTransaction('user-1', {
+      type: 'transfer', amount: 100, fee: 10, categoryId: null, accountId: 'cash', toAccountId: 'bank',
+      merchant: 'Transfer', date: '2026-07-05', receipt: null,
+    })).resolves.toEqual(created)
+
+    expect(atomicCreate).toHaveBeenCalledWith('user-1', expect.objectContaining({ type: 'transfer' }), 10)
+  })
+})

@@ -101,9 +101,19 @@ describe('transactionCreateSchema', () => {
 
     expect(result.success).toBe(false)
   })
+
+  it('accepts an optional nonnegative transfer fee', () => {
+    expect(transactionCreateSchema.parse({
+      type: 'transfer', amount: 100, categoryId: null, accountId: 'acc-1', toAccountId: 'acc-2',
+      merchant: 'Transfer', date: '2026-07-01', receipt: null, fee: 10,
+    }).fee).toBe(10)
+  })
 })
 
 describe('transactionPatchSchema', () => {
+  it('accepts a zero fee to remove a linked fee expense', () => {
+    expect(transactionPatchSchema.parse({ fee: 0 })).toEqual({ fee: 0 })
+  })
   it('rejects response-only balanceAfter in patch payloads', () => {
     const result = transactionPatchSchema.safeParse({
       balanceAfter: 999,

@@ -49,6 +49,7 @@ vi.mock('@/core/i18n', () => ({
         'form.selectAccount': 'Select account',
         'form.category': 'Category',
         'form.amount': 'Amount',
+        'form.fee': 'Fee',
         'form.date': 'Date',
         'form.time': 'Time',
         'form.timeHour': 'Hour',
@@ -79,6 +80,12 @@ vi.mock('@/shared/components/ui/select', () => ({
 
 vi.mock('@/shared/components/ui/date-picker', () => ({
   DatePicker: ({ value }: { value: string }) => <input aria-label="Date" readOnly value={value} />,
+}))
+
+vi.mock('@/components/ui/switch', () => ({
+  Switch: ({ checked, onCheckedChange, ...props }: { checked: boolean; onCheckedChange: (checked: boolean) => void; id: string }) => (
+    <button role="switch" aria-checked={checked} onClick={() => onCheckedChange(!checked)} {...props} />
+  ),
 }))
 
 describe('TransactionForm', () => {
@@ -174,6 +181,21 @@ describe('TransactionForm', () => {
     expect(screen.getByRole('button', { name: 'Salary' })).toBeDefined()
     expect(screen.queryByRole('button', { name: 'Food' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Balance Adjustment' })).toBeNull()
+  })
+
+  it('submits an optional fee only for transfers', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
+    render(<TransactionForm variant="desktop" onSubmit={onSubmit} onCancel={() => undefined} />)
+
+    await user.click(screen.getByRole('button', { name: 'Transfer' }))
+    await user.click(screen.getByRole('switch', { name: 'Fee' }))
+    const amountInputs = screen.getAllByPlaceholderText('0')
+    await user.type(amountInputs[0]!, '100')
+    await user.type(amountInputs[1]!, '10')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ type: 'transfer', amount: 100, fee: 10 }))
   })
 
   it('clears the selected category when switching type away from its type', async () => {

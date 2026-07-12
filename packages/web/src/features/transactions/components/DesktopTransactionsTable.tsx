@@ -16,9 +16,11 @@ import { useCategories, useCategoryLookup } from '@/features/categories/queries'
 import { CategoryFilterSelect } from '@/features/categories/components/CategoryFilterSelect'
 import { TransactionsMonthSwitcher } from '@/features/transactions/components/TransactionsMonthSwitcher'
 import { useDeleteTransactions, useTransactions } from '@/features/transactions/queries'
+import { getTransactionBalanceLines } from '@/features/transactions/balance-lines'
 import type { TransactionFilterType } from '@/features/transactions/view-state'
 import { useLang } from '@/core/i18n'
-import type { Transaction } from '@/core/types'
+import type { Category, Transaction } from '@/core/types'
+import { CategoryBreadcrumb } from '@/features/categories/components/CategoryBreadcrumb'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
@@ -26,7 +28,7 @@ import { Input } from '@/shared/components/ui/input'
 import { TransactionsSkeleton } from '@/shared/components/Skeleton'
 import { Select, SelectItem, SelectPopup, SelectPortal, SelectPositioner, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
-import { amountColorClass, formatShortDate, formatSigned, formatVND } from '@/shared/lib/format'
+import { amountColorClass, formatShortDate, formatSigned } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/utils'
 
 const PAGE_SIZE = 9
@@ -37,6 +39,8 @@ type TransactionRow = {
   dateLabel: string
   timeLabel?: string
   categoryLabel: string
+  category?: Category
+  parentCategory?: Category
   noteLabel?: string
   categoryIcon?: string
   categoryColor: string
@@ -109,7 +113,7 @@ export function DesktopTransactionsTable({
       .filter((tx) => {
       if (type !== 'all' && tx.type !== type) return false
       if (categoryId && tx.categoryId !== categoryId) return false
-      if (accountId && tx.accountId !== accountId) return false
+      if (accountId && tx.accountId !== accountId && tx.toAccountId !== accountId) return false
       if (query) {
         const searchValue = query.toLowerCase()
         const haystack = [
@@ -117,6 +121,7 @@ export function DesktopTransactionsTable({
           tx.note,
           getCategory(tx.categoryId)?.name,
           getAccount(tx.accountId)?.name,
+          getAccount(tx.toAccountId)?.name,
         ]
           .filter(Boolean)
           .join(' ')
@@ -127,6 +132,7 @@ export function DesktopTransactionsTable({
     })
       .map<TransactionRow>((tx) => {
         const category = getCategory(tx.categoryId)
+        const parentCategory = category?.parentId ? getCategory(category.parentId) : undefined
 
         return {
           id: tx.id,
@@ -138,6 +144,8 @@ export function DesktopTransactionsTable({
             categoryName: category?.name,
             transferLabel: t('tx.transfer'),
           }),
+          category,
+          parentCategory,
           noteLabel: tx.note?.trim() || undefined,
           categoryIcon: category?.icon,
           categoryColor: category?.color ?? 'chart-1',
@@ -211,16 +219,17 @@ export function DesktopTransactionsTable({
           }
 
           return (
-            <span className="inline-flex items-center gap-1.5">
+            <span className="flex max-w-[14rem] min-w-0 items-start gap-1.5">
               <CategoryIcon
                 name={row.original.categoryIcon}
-                className="size-3.5"
+                className="mt-0.5 size-3.5 shrink-0"
                 style={{ color: colorVar(row.original.categoryColor) }}
               />
-              <span className="flex items-center gap-1.5">
-                {row.original.categoryLabel}
-                {tx.receipt && <Paperclip className="size-3 text-muted-foreground" />}
-              </span>
+              <CategoryBreadcrumb
+                category={row.original.category}
+                parentCategory={row.original.parentCategory}
+                trailing={tx.receipt && <Paperclip className="size-3 shrink-0 text-muted-foreground" />}
+              />
             </span>
           )
         },
@@ -272,11 +281,8 @@ export function DesktopTransactionsTable({
             <span className={cn('block tabular font-semibold', amountColorClass(row.original.transaction.type))}>
               {formatSigned(row.original.transaction.amount, row.original.transaction.type)}
             </span>
-            {typeof row.original.transaction.balanceAfter === 'number' && (
-              <span className="text-xs tabular text-muted-foreground">
-                {formatVND(row.original.transaction.balanceAfter)}
-              </span>
-            )}
+            {getTransactionBalanceLines(row.original.transaction, accountId, (accountId) => getAccount(accountId)?.name)
+              .map((balance) => <span key={balance} className="text-xs tabular text-muted-foreground">{balance}</span>)}
           </span>
         ),
       },
@@ -306,7 +312,7 @@ export function DesktopTransactionsTable({
         ),
       },
     ],
-    [onEdit, t],
+    [accountId, getAccount, onEdit, t],
   )
 
   const table = useReactTable({

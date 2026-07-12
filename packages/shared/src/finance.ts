@@ -52,10 +52,16 @@ export function computeRunningBalances(
       : Object.entries(openingBalanceByAccountId)
   const balanceByAccountId = new Map<string, number>(initialEntries)
 
-  return transactions.map((transaction) => ({
-    ...transaction,
-    balanceAfter: applyTransaction(balanceByAccountId, transaction),
-  }))
+  return transactions.map((transaction) => {
+    const balanceAfter = applyTransaction(balanceByAccountId, transaction)
+    return {
+      ...transaction,
+      balanceAfter,
+      ...(transaction.type === 'transfer' && transaction.toAccountId
+        ? { toAccountBalanceAfter: getBalance(balanceByAccountId, transaction.toAccountId) }
+        : {}),
+    }
+  })
 }
 
 function shiftMonth(monthIso: string, delta: number): string {

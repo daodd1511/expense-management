@@ -88,6 +88,63 @@ export async function createTransaction(userId: string, transaction: Transaction
   return parseTransactionRow(data, 'Inserted transaction failed validation')
 }
 
+export async function createTransferWithFee(userId: string, transaction: TransactionCreate, fee: number) {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .rpc('create_transfer_with_fee', {
+      p_owner_id: userId,
+      p_amount: transaction.amount,
+      p_account_id: transaction.accountId,
+      p_to_account_id: transaction.toAccountId ?? null,
+      p_merchant: transaction.merchant,
+      p_note: transaction.note ?? null,
+      p_tx_date: transaction.date,
+      p_tx_time: transaction.time ?? null,
+      p_receipt_url: transaction.receipt ?? null,
+      p_fee: fee,
+    })
+    .single()
+
+  if (error) throw error
+  return parseTransactionRow(data, 'Inserted transfer failed validation')
+}
+
+export async function findLinkedTransferFee(userId: string, transferId: string) {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('owner_id', userId)
+    .eq('linked_transfer_id', transferId)
+    .maybeSingle()
+  if (error) throw error
+  return data ? parseTransactionRow(data, 'Linked fee failed validation') : null
+}
+
+export async function findTransferFeeCategoryId() {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('categories')
+    .select('id')
+    .is('owner_id', null)
+    .eq('name', 'Transfer Fee')
+    .eq('type', 'expense')
+    .single()
+  if (error) throw error
+  return data.id as string
+}
+
+export async function createLinkedTransferFee(userId: string, transaction: Omit<Transaction, 'id'>) {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('transactions')
+    .insert(fromTransaction({ transaction, ownerId: userId }))
+    .select('*')
+    .single()
+  if (error) throw error
+  return parseTransactionRow(data, 'Inserted transfer fee failed validation')
+}
+
 export async function updateTransaction(userId: string, id: string, patch: TransactionPatch) {
   const supabase = getSupabase()
   const { data, error } = await supabase

@@ -6,6 +6,9 @@ their session summary). Delete a line when the item ships or graduates into a
 `docs/specs/<feature>/` plan — git history is the archive. No done-lists, no status ceremony.
 
 ## Fixes
+- Update category display in transaction list (2026-07-11)
+- Allow to select multiple categories and accounts in the transaction list (2026-07-11)
+- Remove the scroll down to refresh (2026-07-11)
 ## Features
 
 - [ ] Export & backup: CSV export, JSON backup/restore (2026-07-04)

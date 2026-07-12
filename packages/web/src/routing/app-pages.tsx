@@ -1,10 +1,8 @@
 import { startTransition } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import { ArrowLeftRight, CalendarClock, Settings, Tags, Target } from 'lucide-react'
 import { SubscriptionDueBanner } from '@/features/subscriptions/components/SubscriptionDueBanner'
 import { useTransactionOverlay } from '@/features/transactions/transaction-overlay'
-import { useAuth } from '@/features/auth/auth'
 import { MobileAccounts } from '@/features/accounts/components/MobileAccounts'
 import { DesktopAccounts } from '@/features/accounts/components/DesktopAccounts'
 import { DesktopBudgets } from '@/features/budgets/components/DesktopBudgets'
@@ -19,12 +17,10 @@ import { MobileSubscriptions } from '@/features/subscriptions/components/MobileS
 import { ReportsPage as ReportsShell } from '@/features/reports/components/ReportsPage'
 import { DesktopTransactionsTable } from '@/features/transactions/components/DesktopTransactionsTable'
 import { MobileTransactions } from '@/features/transactions/components/MobileTransactions'
-import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicator'
 import { MobilePageContainer } from '@/shared/components/MobilePageContainer'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { useLang } from '@/core/i18n'
 import { useIsDesktop } from '@/shared/hooks/useIsDesktop'
-import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
 import type { Transaction } from '@/core/types'
 import { buildTransactionsSearch, parseTransactionsViewState, type TransactionsViewState } from '@/features/transactions/view-state'
 import { sectionFromPath } from './app-route-state'
@@ -56,22 +52,6 @@ export function DashboardPage() {
   const isDesktop = useIsDesktop()
   const { openEdit } = useTransactionNavigation()
   const navigation = useAppNavigation()
-  const { user } = useAuth()
-  const queryClient = useQueryClient()
-
-  const pullToRefresh = usePullToRefresh({
-    enabled: isDesktop === false,
-    onRefresh: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['transactions', user?.id] }),
-        queryClient.invalidateQueries({ queryKey: ['accounts', user?.id] }),
-        queryClient.invalidateQueries({ queryKey: ['budgets', user?.id] }),
-        queryClient.invalidateQueries({ queryKey: ['subscriptions', user?.id] }),
-        queryClient.invalidateQueries({ queryKey: ['categories', user?.id] }),
-        queryClient.invalidateQueries({ queryKey: ['favorites', user?.id] }),
-      ])
-    },
-  })
 
   if (isDesktop) {
     return (
@@ -88,29 +68,17 @@ export function DashboardPage() {
   }
 
   return (
-    <div {...pullToRefresh.bind} className="h-full overflow-y-auto overscroll-contain">
-      <PullToRefreshIndicator
-        pullDistance={pullToRefresh.pullDistance}
-        isArmed={pullToRefresh.isArmed}
-        isRefreshing={pullToRefresh.isRefreshing}
-      />
-      <div
-        style={{
-          transform: `translateY(${pullToRefresh.pullDistance}px)`,
-          transition: 'transform var(--duration-base) var(--ease-out)',
+    <div className="h-full overflow-y-auto overscroll-contain">
+      <SubscriptionDueBanner confirmVariant="sheet" />
+      <MobileHome
+        onNavigate={(section, search) => {
+          if (section === 'budgets') navigation.goBudgets()
+          else if (section === 'subscriptions') navigation.goSubscriptions()
+          else if (section === 'accounts') navigation.goAccounts()
+          else if (section === 'transactions') navigation.goTransactions(search)
         }}
-      >
-        <SubscriptionDueBanner confirmVariant="sheet" />
-        <MobileHome
-          onNavigate={(section, search) => {
-            if (section === 'budgets') navigation.goBudgets()
-            else if (section === 'subscriptions') navigation.goSubscriptions()
-            else if (section === 'accounts') navigation.goAccounts()
-            else if (section === 'transactions') navigation.goTransactions(search)
-          }}
-          onEdit={openEdit}
-        />
-      </div>
+        onEdit={openEdit}
+      />
     </div>
   )
 }

@@ -14,6 +14,12 @@ export function budgetState(pct: number) {
   return { tone: 'text-income', bar: 'bg-income' }
 }
 
+function budgetStateLabelKey(pct: number) {
+  if (pct >= 100) return 'budget.stateOver' as const
+  if (pct >= 80) return 'budget.stateNear' as const
+  return 'budget.stateOk' as const
+}
+
 export function BudgetBars({ limit }: { limit?: number }) {
   const { data: budgets = [] } = useBudgets()
   const { data: transactions = [] } = useTransactions()
@@ -29,7 +35,7 @@ export function BudgetBars({ limit }: { limit?: number }) {
         const pct = Math.round((spent / b.limit) * 100)
         const state = budgetState(pct)
         const remaining = b.limit - spent
-        const stateLabel = pct >= 100 ? t('budget.stateOver') : pct >= 80 ? t('budget.stateNear') : t('budget.stateOk')
+        const stateLabel = t(budgetStateLabelKey(pct))
         const remainingLabel = remaining >= 0
           ? t('budget.remaining', { amount: formatVND(remaining) })
           : t('budget.overAmount', { amount: formatVND(-remaining) })
