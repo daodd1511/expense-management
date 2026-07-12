@@ -19,7 +19,8 @@ import { useDeleteTransactions, useTransactions } from '@/features/transactions/
 import { getTransactionBalanceLines } from '@/features/transactions/balance-lines'
 import type { TransactionFilterType } from '@/features/transactions/view-state'
 import { useLang } from '@/core/i18n'
-import type { Transaction } from '@/core/types'
+import type { Category, Transaction } from '@/core/types'
+import { CategoryBreadcrumb } from '@/features/categories/components/CategoryBreadcrumb'
 import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
 import { Button } from '@/shared/components/ui/button'
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
@@ -38,6 +39,8 @@ type TransactionRow = {
   dateLabel: string
   timeLabel?: string
   categoryLabel: string
+  category?: Category
+  parentCategory?: Category
   noteLabel?: string
   categoryIcon?: string
   categoryColor: string
@@ -129,6 +132,7 @@ export function DesktopTransactionsTable({
     })
       .map<TransactionRow>((tx) => {
         const category = getCategory(tx.categoryId)
+        const parentCategory = category?.parentId ? getCategory(category.parentId) : undefined
 
         return {
           id: tx.id,
@@ -140,6 +144,8 @@ export function DesktopTransactionsTable({
             categoryName: category?.name,
             transferLabel: t('tx.transfer'),
           }),
+          category,
+          parentCategory,
           noteLabel: tx.note?.trim() || undefined,
           categoryIcon: category?.icon,
           categoryColor: category?.color ?? 'chart-1',
@@ -213,16 +219,17 @@ export function DesktopTransactionsTable({
           }
 
           return (
-            <span className="inline-flex items-center gap-1.5">
+            <span className="flex max-w-[14rem] min-w-0 items-start gap-1.5">
               <CategoryIcon
                 name={row.original.categoryIcon}
-                className="size-3.5"
+                className="mt-0.5 size-3.5 shrink-0"
                 style={{ color: colorVar(row.original.categoryColor) }}
               />
-              <span className="flex items-center gap-1.5">
-                {row.original.categoryLabel}
-                {tx.receipt && <Paperclip className="size-3 text-muted-foreground" />}
-              </span>
+              <CategoryBreadcrumb
+                category={row.original.category}
+                parentCategory={row.original.parentCategory}
+                trailing={tx.receipt && <Paperclip className="size-3 shrink-0 text-muted-foreground" />}
+              />
             </span>
           )
         },

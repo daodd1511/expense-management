@@ -61,7 +61,8 @@ describe('TransactionRow', () => {
       />,
     )
 
-    expect(screen.getByText('Food › Dating')).toBeDefined()
+    expect(screen.getByText('Food')).toBeDefined()
+    expect(screen.getByText('Dating')).toBeDefined()
     expect(screen.getByText('Cash')).toBeDefined()
   })
 
@@ -81,6 +82,16 @@ describe('TransactionRow', () => {
 
     expect(screen.getByText('Salary')).toBeDefined()
     expect(screen.getByText('Bank')).toBeDefined()
+  })
+
+  it('appends the note to the account subtitle when present', () => {
+    render(
+      <TransactionRow
+        tx={makeTransaction({ note: 'Split with roommate' })}
+      />,
+    )
+
+    expect(screen.getByText('Cash · Split with roommate')).toBeDefined()
   })
 
   it('leaves transfer subtitles unchanged', () => {
