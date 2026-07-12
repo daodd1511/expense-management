@@ -23,6 +23,8 @@ function isDbError(error: unknown): error is DbError {
   return typeof error === 'object' && error !== null && 'code' in error && 'message' in error
 }
 
+const isDev = process.env.NODE_ENV !== 'production'
+
 function mapDbError(c: Context, error: DbError) {
   if (error.code === '23505') {
     logger.error({ error }, 'database unique constraint violation')
@@ -35,7 +37,7 @@ function mapDbError(c: Context, error: DbError) {
   }
 
   logger.error({ error }, 'database unexpected error')
-  return jsonError(c, 500, 'Internal server error')
+  return jsonError(c, 500, isDev ? error.message : 'Internal server error', isDev ? { code: error.code } : undefined)
 }
 
 /** Centralized error middleware for typed service errors and raw Postgres failures. */
@@ -53,7 +55,8 @@ export function handleError(error: unknown, c: Context) {
   }
 
   logger.error({ error }, 'uncaught application error')
-  return jsonError(c, 500, 'Internal server error')
+  const message = isDev && error instanceof Error ? error.message : 'Internal server error'
+  return jsonError(c, 500, message)
 }
 
 export const errorMiddleware = createMiddleware(async (_c, next) => {
