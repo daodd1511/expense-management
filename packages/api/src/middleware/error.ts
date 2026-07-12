@@ -23,7 +23,7 @@ function isDbError(error: unknown): error is DbError {
   return typeof error === 'object' && error !== null && 'code' in error && 'message' in error
 }
 
-const isDev = process.env.NODE_ENV !== 'production'
+const isDev = process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test'
 
 function mapDbError(c: Context, error: DbError) {
   if (error.code === '23505') {
