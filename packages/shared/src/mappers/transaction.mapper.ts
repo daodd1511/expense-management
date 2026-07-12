@@ -15,6 +15,7 @@ export function toTransaction(row: TransactionRow): Transaction {
     time: row.tx_time?.slice(0, 5) ?? undefined,
     receipt: row.receipt_url ?? undefined,
     subscriptionId: row.subscription_id,
+    linkedTransferId: row.linked_transfer_id,
   }
 }
 
@@ -36,6 +37,7 @@ export function fromTransaction(params: {
     tx_time: transaction.time ?? null,
     receipt_url: transaction.receipt ?? null,
     subscription_id: transaction.subscriptionId ?? null,
+    linked_transfer_id: transaction.linkedTransferId ?? null,
   }
 }
 

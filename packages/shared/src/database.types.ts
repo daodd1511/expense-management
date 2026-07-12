@@ -248,6 +248,7 @@ export type Database = {
           category_id: string | null
           created_at: string
           id: string
+          linked_transfer_id: string | null
           merchant: string
           note: string | null
           owner_id: string
@@ -264,6 +265,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           id?: string
+          linked_transfer_id?: string | null
           merchant?: string
           note?: string | null
           owner_id: string
@@ -280,6 +282,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           id?: string
+          linked_transfer_id?: string | null
           merchant?: string
           note?: string | null
           owner_id?: string
@@ -306,6 +309,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_linked_transfer_id_fkey"
+            columns: ["linked_transfer_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_subscription_id_fkey"
             columns: ["subscription_id"]
             isOneToOne: false
@@ -326,6 +336,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_transfer_with_fee: {
+        Args: {
+          p_owner_id: string
+          p_amount: number
+          p_account_id: string
+          p_to_account_id: string | null
+          p_merchant: string
+          p_note: string | null
+          p_tx_date: string
+          p_tx_time: string | null
+          p_receipt_url: string | null
+          p_fee: number
+        }
+        Returns: Database["public"]["Tables"]["transactions"]["Row"][]
+      }
       log_subscription: {
         Args: {
           p_owner_id: string

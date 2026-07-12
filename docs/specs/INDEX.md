@@ -5,7 +5,7 @@ _git and `EXECUTION.md` STATUS blocks win._
 
 | Spec | Status | Phases | Debt | Description |
 |------|--------|--------|------|-------------|
-| [transfer-fee](transfer-fee/PLAN.md) | In progress | 0/2 | — | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
+| [transfer-fee](transfer-fee/PLAN.md) | In progress | 1/2 | — | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
 | [multi-user-release-readiness](multi-user-release-readiness/PLAN.md) | Not started | — | — | Produced via /grill-with-docs. This is a small friends-and-family readiness check for an… |
 | [personal-loans](personal-loans/PLAN.md) | Not started | — | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed; do not… |
 | [api-restructure](api-restructure/PLAN.md) | Done | 4/4 | — | Fourth and final spec of the batch. A behavior-preserving migration of packages/api from flat… |

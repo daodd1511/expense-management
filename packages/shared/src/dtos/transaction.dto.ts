@@ -28,6 +28,7 @@ export const transactionRowSchema = z.object({
   tx_time: z.string().nullable().optional(),
   receipt_url: z.string().nullable(),
   subscription_id: z.string().nullable(),
+  linked_transfer_id: z.string().nullable().optional(),
   created_at: z.string(),
 })
 
@@ -43,6 +44,7 @@ export const transactionCreateSchema = z.object({
   time: localTimeSchema.optional(),
   receipt: z.string().trim().nullable().optional(),
   subscriptionId: z.string().min(1).nullable().optional(),
+  fee: z.number().nonnegative().optional(),
 }).strict()
 
 const transactionPatchObjectSchema = z.object({
@@ -56,6 +58,7 @@ const transactionPatchObjectSchema = z.object({
   date: transactionDateSchema,
   time: localTimeSchema.nullable(),
   receipt: z.string().trim().nullable(),
+  fee: z.number().nonnegative(),
 }).partial().strict()
 
 export const transactionPatchSchema = transactionPatchObjectSchema.refine((value) => Object.keys(value).length > 0, {

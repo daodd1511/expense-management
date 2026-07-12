@@ -5,8 +5,8 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 1 — in-progress
-- Phase 1 — Persistence and transaction API: in-progress
+- Current phase: 1 — done
+- Phase 1 — Persistence and transaction API: done
 - Phase 2 — Transfer form: pending
 - Verification debt: none
 
@@ -18,15 +18,17 @@ Branch: `transfer-fee/phase-1-persistence-api` (off `develop`, stacked)
 
 Persist the linked expense and make the API create, synchronize, and report it before a client can submit a fee.
 
-- [ ] Add `linkedTransferId` row/model mapping and create/patch `fee` validation in `packages/shared/src/models/transaction.model.ts`, `packages/shared/src/dtos/transaction.dto.ts`, `packages/shared/src/mappers/transaction.mapper.ts`, and `packages/shared/src/dtos/transaction.dto.test.ts`.
+- [x] Add `linkedTransferId` row/model mapping and create/patch `fee` validation in `packages/shared/src/models/transaction.model.ts`, `packages/shared/src/dtos/transaction.dto.ts`, `packages/shared/src/mappers/transaction.mapper.ts`, and `packages/shared/src/dtos/transaction.dto.test.ts`.
 - [x] (amended 2026-07-12) Update `AGENTS.md` to pre-authorize commits only during user-authorized `spec-phase` runs.
-- [ ] Add `supabase/migrations/<timestamp>_transfer_fee.sql` with `transactions.linked_transfer_id` FK `ON DELETE CASCADE` and the hidden expense `Transfer Fee` system category; rely on this DB cascade rather than an API-side cascade delete.
-- [ ] Implement transfer-fee create/update synchronization in `packages/api/src/features/transactions/service.ts` and `packages/api/src/features/transactions/repository.ts`, including fee removal when zero/blank, with coverage in `packages/api/src/features/transactions/transactions.test.ts`.
-- [ ] Change `packages/api/src/features/reports/service.ts` and `packages/api/src/features/reports/reports.test.ts` to exclude Balance Adjustment, but include hidden Transfer Fee, in expense totals and category aggregates.
+- [x] Add `supabase/migrations/<timestamp>_transfer_fee.sql` with `transactions.linked_transfer_id` FK `ON DELETE CASCADE` and the hidden expense `Transfer Fee` system category; rely on this DB cascade rather than an API-side cascade delete.
+- [x] (amended 2026-07-12) Add `create_transfer_with_fee` in `supabase/migrations/<timestamp>_transfer_fee.sql` so transfer and fee insertion is atomic.
+- [x] (amended 2026-07-12) Update generated `packages/shared/src/database.types.ts` for the migration's column, relationship, and RPC.
+- [x] Implement transfer-fee create/update synchronization in `packages/api/src/features/transactions/service.ts` and `packages/api/src/features/transactions/repository.ts`, including fee removal when zero/blank, with coverage in `packages/api/src/features/transactions/transactions.test.ts`.
+- [x] Change `packages/api/src/features/reports/service.ts` and `packages/api/src/features/reports/reports.test.ts` to exclude Balance Adjustment, but include hidden Transfer Fee, in expense totals and category aggregates.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/shared exec tsc --noEmit && pnpm --filter @wallet/api typecheck`
-- [ ] `pnpm --filter @wallet/shared exec vitest run src/dtos/transaction.dto.test.ts && pnpm --filter @wallet/api test -- src/features/transactions/transactions.test.ts src/features/reports/reports.test.ts`
+- [x] `pnpm --filter @wallet/shared exec tsc --noEmit && pnpm --filter @wallet/api typecheck`
+- [x] (amended 2026-07-12) `pnpm --filter @wallet/shared exec vitest run src/dtos/transaction.dto.test.ts && pnpm --filter @wallet/api exec vitest run src/features/transactions/transactions.test.ts src/features/reports/reports.test.ts` (the package script ignores file filters).
 
 **Review checklist (user, at PR review):**
 - [ ] Create a transfer with a fee and confirm source debits `amount + fee`, destination receives `amount`, reports include the fee, and deleting the transfer reverses both rows.
