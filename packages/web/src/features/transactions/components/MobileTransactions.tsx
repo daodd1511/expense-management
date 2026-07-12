@@ -1,8 +1,6 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useAccounts, useAccountLookup } from '@/features/accounts/queries'
-import { useAuth } from '@/features/auth/auth'
 import { useCategories, useCategoryLookup } from '@/features/categories/queries'
 import { CategoryFilterSelect } from '@/features/categories/components/CategoryFilterSelect'
 import { TransactionsMonthSwitcher } from '@/features/transactions/components/TransactionsMonthSwitcher'
@@ -11,9 +9,7 @@ import { useTransactions } from '@/features/transactions/queries'
 import type { TransactionFilterType } from '@/features/transactions/view-state'
 import { useLang } from '@/core/i18n'
 import type { Transaction } from '@/core/types'
-import { PullToRefreshIndicator } from '@/shared/components/PullToRefreshIndicator'
 import { MobilePageContainer } from '@/shared/components/MobilePageContainer'
-import { usePullToRefresh } from '@/shared/hooks/usePullToRefresh'
 import { Input } from '@/shared/components/ui/input'
 import { TransactionsSkeleton } from '@/shared/components/Skeleton'
 import { Select, SelectItem, SelectPopup, SelectPortal, SelectPositioner, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
@@ -51,20 +47,13 @@ export function MobileTransactions({
   onCategoryChange: (categoryId: string) => void
   onAccountChange: (accountId: string) => void
 }) {
-  const { user } = useAuth()
   const { data: transactions = [], isPending: transactionsPending } = useTransactions(month)
   const { data: categories = [], isPending: categoriesPending } = useCategories()
   const { data: accounts = [], isPending: accountsPending } = useAccounts()
   const getCategory = useCategoryLookup()
   const getAccount = useAccountLookup()
   const { t, lang } = useLang()
-  const queryClient = useQueryClient()
   const [showMoreFilters, setShowMoreFilters] = useState(false)
-  const pullToRefresh = usePullToRefresh({
-    onRefresh: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['transactions', user?.id, month] })
-    },
-  })
 
   const typeFilters: { value: TransactionFilterType; label: string }[] = [
     { value: 'all', label: t('tx.filterAll') },
@@ -110,19 +99,8 @@ export function MobileTransactions({
   }
 
   return (
-    <div {...pullToRefresh.bind} className="h-full overflow-y-auto overscroll-contain">
-      <PullToRefreshIndicator
-        pullDistance={pullToRefresh.pullDistance}
-        isArmed={pullToRefresh.isArmed}
-        isRefreshing={pullToRefresh.isRefreshing}
-      />
-      <MobilePageContainer
-        className="gap-3"
-        style={{
-          transform: `translateY(${pullToRefresh.pullDistance}px)`,
-          transition: 'transform var(--duration-base) var(--ease-out)',
-        }}
-      >
+    <div className="h-full overflow-y-auto overscroll-contain">
+      <MobilePageContainer className="gap-3">
         <TransactionsMonthSwitcher month={month} onChange={onMonthChange} className="justify-between" />
 
         <div className="relative">
