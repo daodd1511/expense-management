@@ -82,6 +82,12 @@ vi.mock('@/shared/components/ui/date-picker', () => ({
   DatePicker: ({ value }: { value: string }) => <input aria-label="Date" readOnly value={value} />,
 }))
 
+vi.mock('@/components/ui/switch', () => ({
+  Switch: ({ checked, onCheckedChange, ...props }: { checked: boolean; onCheckedChange: (checked: boolean) => void; id: string }) => (
+    <button role="switch" aria-checked={checked} onClick={() => onCheckedChange(!checked)} {...props} />
+  ),
+}))
+
 describe('TransactionForm', () => {
   afterEach(() => {
     vi.useRealTimers()
@@ -183,6 +189,7 @@ describe('TransactionForm', () => {
     render(<TransactionForm variant="desktop" onSubmit={onSubmit} onCancel={() => undefined} />)
 
     await user.click(screen.getByRole('button', { name: 'Transfer' }))
+    await user.click(screen.getByRole('switch', { name: 'Fee' }))
     const amountInputs = screen.getAllByPlaceholderText('0')
     await user.type(amountInputs[0]!, '100')
     await user.type(amountInputs[1]!, '10')

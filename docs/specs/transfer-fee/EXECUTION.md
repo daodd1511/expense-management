@@ -44,6 +44,7 @@ Expose the already-supported fee payload only in the transfer form.
 
 - [x] Add a transfer-only Fee `AmountField` and submit its optional positive value from `packages/web/src/features/transactions/components/TransactionForm.tsx`; use the existing hidden-category filter unchanged.
 - [x] Add `form.fee` translations in `packages/web/src/core/i18n.tsx` and transfer-fee create/edit assertions in `packages/web/src/features/transactions/components/TransactionForm.test.tsx`.
+- [x] (amended 2026-07-12) Add the shadcn `Switch` at `packages/web/src/components/ui/switch.tsx` and gate the Fee input behind it in `packages/web/src/features/transactions/components/TransactionForm.tsx`.
 
 **Agent gate (hard):**
 - [x] `pnpm --filter @wallet/web typecheck`

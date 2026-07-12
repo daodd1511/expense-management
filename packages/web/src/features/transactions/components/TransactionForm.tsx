@@ -8,6 +8,7 @@ import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
 import { FormFooterBar } from '@/shared/components/FormFooterBar'
 import { SheetFormHeader } from '@/shared/components/SheetFormHeader'
 import { Input, Label, Textarea } from '@/shared/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import {
   Popover,
   PopoverPortal,
@@ -283,6 +284,7 @@ export function TransactionForm({
   const [type, setType] = useState<TxType>(initial?.type ?? 'expense')
   const [amount, setAmount] = useState<string>(initial ? String(initial.amount) : '')
   const [fee, setFee] = useState<string>(initial?.fee ? String(initial.fee) : '')
+  const [hasFee, setHasFee] = useState(Boolean(initial?.fee))
   const [categoryId, setCategoryId] = useState<string | null>(initial?.categoryId ?? null)
   const [accountId, setAccountId] = useState<string>(initial?.accountId ?? accounts[0].id)
   const [toAccountId, setToAccountId] = useState<string>(
@@ -340,8 +342,13 @@ export function TransactionForm({
       date,
       time: time || undefined,
       receipt: null,
-      ...(type === 'transfer' && fee !== '' && { fee: numericFee }),
+      ...(type === 'transfer' && { fee: hasFee ? numericFee : 0 }),
     })
+  }
+
+  const handleFeeEnabledChange = (enabled: boolean) => {
+    setHasFee(enabled)
+    if (!enabled) setFee('')
   }
 
   const amountTone = type === 'income' ? 'income' : type === 'expense' ? 'expense' : 'neutral'
@@ -387,7 +394,13 @@ export function TransactionForm({
       <AmountField label={t('form.amount')} value={amount} onChange={setAmount} tone={amountTone} inputRef={amountInputRef} />
 
       {type === 'transfer' && (
-        <AmountField label={t('form.fee')} value={fee} onChange={setFee} tone="expense" />
+        <div className="px-4 py-3 sm:px-5">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="transfer-fee">{t('form.fee')}</Label>
+            <Switch id="transfer-fee" checked={hasFee} onCheckedChange={handleFeeEnabledChange} />
+          </div>
+          {hasFee && <AmountField label={t('form.fee')} value={fee} onChange={setFee} tone="expense" />}
+        </div>
       )}
 
       <div className="flex flex-col gap-4 px-4 sm:px-5">
