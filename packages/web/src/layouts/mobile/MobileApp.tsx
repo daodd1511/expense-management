@@ -7,12 +7,20 @@ import {
 import { monthFromHref } from "@/features/transactions/view-state";
 import { LoadingScreen } from "@/shared/components/LoadingScreen";
 import { useLang } from "@/core/i18n";
+import type { TranslationKey } from "@/core/i18n";
 import { useAppDataLoading } from "@/shared/hooks/useAppDataLoading";
 import { cn } from "@/shared/lib/utils";
 import {
   isSettingsSection,
   sectionFromPath,
 } from "@/routing/app-route-state";
+import type { AppSection } from "@/routing/app-route-state";
+
+const TITLE_KEY_BY_SECTION: Record<AppSection, TranslationKey> = {
+  dashboard: "nav.dashboard", reports: "nav.reports", transactions: "nav.transactions",
+  budgets: "nav.budgets", subscriptions: "nav.subscriptions", accounts: "nav.accounts",
+  other: "nav.other", settings: "nav.settings", "settings-categories": "settings.categories",
+};
 
 export function MobileApp() {
   const loading = useAppDataLoading();
@@ -22,24 +30,7 @@ export function MobileApp() {
   const { openCreate } = useTransactionOverlay();
   const section = sectionFromPath(location.pathname);
 
-  const title =
-    section === "reports"
-      ? t("nav.reports")
-      : section === "other"
-        ? t("nav.other")
-        : section === "transactions"
-          ? t("nav.transactions")
-          : section === "accounts"
-            ? t("nav.accounts")
-            : section === "budgets"
-              ? t("nav.budgets")
-              : section === "subscriptions"
-                ? t("nav.subscriptions")
-                : section === "settings"
-                  ? t("nav.settings")
-                  : section === "settings-categories"
-                    ? t("settings.categories")
-                    : t("nav.dashboard");
+  const title = t(TITLE_KEY_BY_SECTION[section]);
 
   const NAV: {
     href: "/" | "/accounts" | "/reports" | "/other";

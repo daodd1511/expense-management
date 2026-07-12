@@ -54,6 +54,7 @@ function clampTimePart(value: string, max: number) {
 
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'))
 const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
+const AMOUNT_TONE_BY_TYPE = { income: 'income', expense: 'expense', transfer: 'neutral' } as const
 
 function TimeWheelColumn({
   label,
@@ -351,7 +352,7 @@ export function TransactionForm({
     if (!enabled) setFee('')
   }
 
-  const amountTone = type === 'income' ? 'income' : type === 'expense' ? 'expense' : 'neutral'
+  const amountTone = AMOUNT_TONE_BY_TYPE[type]
 
   return (
     <div className="flex flex-col">

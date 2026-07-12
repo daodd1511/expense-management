@@ -20,6 +20,12 @@ import { Select, SelectItem, SelectPopup, SelectPortal, SelectPositioner, Select
 import { formatDayLabel, formatVND } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/utils'
 
+function signedAmount(transaction: Transaction) {
+  if (transaction.type === 'income') return transaction.amount
+  if (transaction.type === 'expense') return -transaction.amount
+  return 0
+}
+
 export function MobileTransactions({
   onEdit,
   month,
@@ -179,7 +185,7 @@ export function MobileTransactions({
 
         {groups.map(([day, items]) => {
           const dayNet = items.reduce(
-            (sum, tx) => sum + (tx.type === 'income' ? tx.amount : tx.type === 'expense' ? -tx.amount : 0),
+            (sum, tx) => sum + signedAmount(tx),
             0,
           )
           return (

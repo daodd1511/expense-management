@@ -2,7 +2,7 @@
 import { ArrowLeftRight, Banknote, CreditCard, Landmark, MoreHorizontal, Pencil, Plus, Scale, Trash2, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { AccountForm } from '@/features/accounts/components/AccountForm'
+import { AccountForm, accountDialogTitle } from '@/features/accounts/components/AccountForm'
 import { ReconcileBalanceForm } from '@/features/accounts/components/ReconcileBalanceForm'
 import { AccountsSkeleton } from '@/shared/components/Skeleton'
 import { Card } from '@/shared/components/ui/card'
@@ -175,7 +175,7 @@ export function DesktopAccounts({
       <Modal open={modalOpen} onClose={close}>
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="text-base font-semibold">
-            {reconciling ? t('accounts.reconcileTitle') : editing ? t('accounts.editTitle') : t('accounts.addTitle')}
+            {accountDialogTitle({ reconciling: Boolean(reconciling), editing: Boolean(editing), t })}
           </h2>
         </div>
         {reconciling ? (

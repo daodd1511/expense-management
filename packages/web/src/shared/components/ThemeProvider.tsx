@@ -14,15 +14,17 @@ const ThemeCtx = createContext<ThemeContextValue>({
   setTheme: () => {},
 })
 
+function resolveTheme(theme: Theme): 'light' | 'dark' {
+  if (theme !== 'system') return theme
+  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(
     () => (localStorage.getItem('theme') as Theme) ?? 'system'
   )
 
-  const resolvedTheme: 'light' | 'dark' =
-    theme === 'system'
-      ? matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-      : theme
+  const resolvedTheme = resolveTheme(theme)
 
   useEffect(() => {
     const root = document.documentElement
