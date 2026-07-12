@@ -395,9 +395,9 @@ export function TransactionForm({
 
       {type === 'transfer' && (
         <div className="px-4 py-3 sm:px-5">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="transfer-fee">{t('form.fee')}</Label>
+          <div className="flex items-center gap-2">
             <Switch id="transfer-fee" checked={hasFee} onCheckedChange={handleFeeEnabledChange} />
+            <Label htmlFor="transfer-fee">{t('form.fee')}</Label>
           </div>
           {hasFee && <AmountField label={t('form.fee')} value={fee} onChange={setFee} tone="expense" />}
         </div>
