@@ -20,7 +20,7 @@ shared locale schema, and `GET /categories?locale=` contract exist.
 - [x] `supabase/migrations/20260710120000_category_translations.sql` — create
       `category_translations` (`category_id`, `locale`, `name`), unique on
       `(category_id, locale)`, `category_id references categories(id) on delete
-      cascade`; seed `vi` rows for every existing system category name (all 65
+    cascade`; seed `vi` rows for every existing system category name (all 65
       non-"Balance Adjustment" system categories via a `case name` match, plus
       the two `Balance Adjustment` rows handled separately since that name
       isn't unique).
@@ -30,15 +30,15 @@ shared locale schema, and `GET /categories?locale=` contract exist.
       `@wallet/shared`. Reuse it directly in the api locale validation instead
       (amended 2026-07-10).
 - [~] `packages/shared/src/database.types.ts` — add the `category_translations`
-      table type. `supabase` CLI is not installed in this environment (`which
-      supabase` → not found), so the type was hand-added matching the
-      migration's columns (`id`, `category_id`, `locale`, `name`) rather than
-      generated. Substitute evidence: hand-added shape mirrors the migration
-      1:1; regenerate via `supabase gen types` once the CLI is available to
-      confirm exact match.
+  table type. `supabase` CLI is not installed in this environment (`which
+    supabase` → not found), so the type was hand-added matching the
+  migration's columns (`id`, `category_id`, `locale`, `name`) rather than
+  generated. Substitute evidence: hand-added shape mirrors the migration
+  1:1; regenerate via `supabase gen types` once the CLI is available to
+  confirm exact match.
 - [x] ~~extend `category.dto.ts`/`category.mapper.ts` for localized name~~ —
       not needed; the repository resolves `name = translation.name ??
-      categories.name` into the plain row object *before* it's validated by
+    categories.name` into the plain row object _before_ it's validated by
       `categoryRowSchema`/`toCategory`, so `Category.name` flows through
       unmodified with no `canonicalName` field (amended 2026-07-10).
 - [x] `packages/api/src/features/categories/schema.ts` — added
@@ -57,16 +57,18 @@ shared locale schema, and `GET /categories?locale=` contract exist.
       threads `locale?: Lang` through to the repository.
 - [x] `packages/api/src/features/categories/repository.ts` (`listCategories`)
       — added `DEFAULT_LOCALE = 'vi'`; for system categories (`owner_id is
-      null`), embeds `category_translations(name, locale)` filtered to the
+    null`), embeds `category_translations(name, locale)` filtered to the
       requested locale and returns `name = translation.name ?? categories.name`;
       custom categories always return the stored `categories.name` unchanged.
 
 **Agent gate (hard):**
+
 - [x] `pnpm --filter @wallet/api typecheck` — passed, no errors
 - [x] `pnpm --filter @wallet/api test` (33 passed) and
       `pnpm --filter @wallet/shared test` (31 passed)
 
 **Review checklist (user, at PR review):**
+
 - [ ] `GET /categories?locale=vi` returns Vietnamese names for system
       categories, unchanged names for custom categories
 - [ ] `GET /categories?locale=en` returns canonical English names
@@ -95,10 +97,12 @@ category cache to request and key on the app's current language, per PLAN.md
       `['categories', user?.id, lang]`, passes `lang` to `fetchCategories`.
 
 **Agent gate (hard):**
+
 - [x] `pnpm --filter @wallet/web typecheck` — passed, no errors
 - [x] `pnpm --filter @wallet/web test` — 162 passed (37 files)
 
 **Review checklist (user, at PR review):**
+
 - [ ] Switching language in Settings refetches categories and updates
       displayed names without a manual reload
 - [ ] Category pickers, transaction forms, subscription forms, budgets,

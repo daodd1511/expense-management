@@ -43,16 +43,16 @@ packages/api/src/
 
 ## Decisions
 
-| Topic | Choice |
-|-------|--------|
-| Layer split | `controller.ts` = thin HTTP handlers; `service.ts` = business logic (hierarchy rules, RPC calls, balance reduction); `repository.ts` = Supabase access via **shared mappers**; `routes.ts` = route wiring. |
+| Topic          | Choice                                                                                                                                                                                                                                                |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Layer split    | `controller.ts` = thin HTTP handlers; `service.ts` = business logic (hierarchy rules, RPC calls, balance reduction); `repository.ts` = Supabase access via **shared mappers**; `routes.ts` = route wiring.                                            |
 | Schemas / DTOs | `packages/shared` row/model schemas + mappers stay the **single source of truth** (web imports them). Per-feature `schema.ts` holds only **route request/response validation** (or re-exports from shared). DTOs do **not** move into `packages/api`. |
-| DB types | **No** `database.types.ts` — keep hand-written shared DTOs authoritative (no codegen step, one type authority). |
-| Validation | Adopt **`@hono/zod-validator`** in controllers, replacing the manual `parseJsonBody`/`safeParse` in `lib/http.ts`. |
-| Logging | Add **`pino`** via `middleware/logger.ts`. |
-| Errors | Centralized `middleware/error.ts`: services throw typed errors, the middleware maps them (absorbing today's `mapDbError` code-inspection: `23505`/`23503` → 409, default → 500 + server log). |
-| JWT | Extract verification into `lib/jwt.ts`; `middleware/auth.ts` consumes it (still `jose`). |
-| Behavior | Preserving. HTTP contract, status codes, and response shapes unchanged; existing route tests move to `features/<domain>/` and keep asserting the same behavior. |
+| DB types       | **No** `database.types.ts` — keep hand-written shared DTOs authoritative (no codegen step, one type authority).                                                                                                                                       |
+| Validation     | Adopt **`@hono/zod-validator`** in controllers, replacing the manual `parseJsonBody`/`safeParse` in `lib/http.ts`.                                                                                                                                    |
+| Logging        | Add **`pino`** via `middleware/logger.ts`.                                                                                                                                                                                                            |
+| Errors         | Centralized `middleware/error.ts`: services throw typed errors, the middleware maps them (absorbing today's `mapDbError` code-inspection: `23505`/`23503` → 409, default → 500 + server log).                                                         |
+| JWT            | Extract verification into `lib/jwt.ts`; `middleware/auth.ts` consumes it (still `jose`).                                                                                                                                                              |
+| Behavior       | Preserving. HTTP contract, status codes, and response shapes unchanged; existing route tests move to `features/<domain>/` and keep asserting the same behavior.                                                                                       |
 
 ## New dependencies
 

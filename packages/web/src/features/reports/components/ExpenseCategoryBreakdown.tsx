@@ -1,58 +1,62 @@
-import { useState } from 'react'
-import type { Category, Account } from '@/core/types'
-import { useLang } from '@/core/i18n'
-import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
-import { formatVND } from '@/shared/lib/format'
-import type { ReportCategoryAggregate } from '@wallet/shared'
-import type { TranslationKey } from '@/core/i18n'
-import { ReportTransactionRow as TransactionRow } from './ReportTransactionRow'
+import { useState } from "react";
+import type { Category, Account } from "@/core/types";
+import { useLang } from "@/core/i18n";
+import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "@/shared/components/ui/collapsible";
+import { formatVND } from "@/shared/lib/format";
+import type { ReportCategoryAggregate } from "@wallet/shared";
+import type { TranslationKey } from "@/core/i18n";
+import { ReportTransactionRow as TransactionRow } from "./ReportTransactionRow";
 
 export function ExpenseCategoryBreakdown({
   categories,
   getCategory,
   getAccount,
   onTransactionClick,
-  titleKey = 'reports.expenseCategories',
-  emptyTitleKey = 'reports.expenseEmptyTitle',
-  emptyDescriptionKey = 'reports.expenseEmptyDesc',
+  titleKey = "reports.expenseCategories",
+  emptyTitleKey = "reports.expenseEmptyTitle",
+  emptyDescriptionKey = "reports.expenseEmptyDesc",
 }: {
-  categories: ReportCategoryAggregate[]
-  getCategory: (id: string | null | undefined) => Category | undefined
-  getAccount: (id: string | null | undefined) => Account | undefined
-  onTransactionClick: (transactionId: string) => void
-  titleKey?: TranslationKey
-  emptyTitleKey?: TranslationKey
-  emptyDescriptionKey?: TranslationKey
+  categories: ReportCategoryAggregate[];
+  getCategory: (id: string | null | undefined) => Category | undefined;
+  getAccount: (id: string | null | undefined) => Account | undefined;
+  onTransactionClick: (transactionId: string) => void;
+  titleKey?: TranslationKey;
+  emptyTitleKey?: TranslationKey;
+  emptyDescriptionKey?: TranslationKey;
 }) {
-  const { t } = useLang()
-  const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(() => new Set())
+  const { t } = useLang();
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(() => new Set());
 
   if (categories.length === 0) {
     return (
       <Card className="border-dashed">
         <CardContent className="flex min-h-40 flex-col items-start justify-center gap-2 p-6">
-        <p className="text-sm font-medium">{t(emptyTitleKey)}</p>
-        <p className="max-w-xl text-sm text-muted-foreground">{t(emptyDescriptionKey)}</p>
+          <p className="text-sm font-medium">{t(emptyTitleKey)}</p>
+          <p className="max-w-xl text-sm text-muted-foreground">{t(emptyDescriptionKey)}</p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   const sortedCategories = [...categories].sort((left, right) => {
-    if (right.amount !== left.amount) return right.amount - left.amount
-    return left.categoryId.localeCompare(right.categoryId)
-  })
+    if (right.amount !== left.amount) return right.amount - left.amount;
+    return left.categoryId.localeCompare(right.categoryId);
+  });
 
   const toggleCategory = (categoryId: string, open: boolean) => {
     setExpandedCategoryIds((current) => {
-      const next = new Set(current)
-      if (open) next.add(categoryId)
-      else next.delete(categoryId)
-      return next
-    })
-  }
+      const next = new Set(current);
+      if (open) next.add(categoryId);
+      else next.delete(categoryId);
+      return next;
+    });
+  };
 
   return (
     <Card>
@@ -61,10 +65,10 @@ export function ExpenseCategoryBreakdown({
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {sortedCategories.map((category) => {
-          const categoryInfo = getCategory(category.categoryId)
-          const icon = categoryInfo?.icon
-          const color = categoryInfo ? colorVar(categoryInfo.color) : 'var(--muted-foreground)'
-          const isOpen = expandedCategoryIds.has(category.categoryId)
+          const categoryInfo = getCategory(category.categoryId);
+          const icon = categoryInfo?.icon;
+          const color = categoryInfo ? colorVar(categoryInfo.color) : "var(--muted-foreground)";
+          const isOpen = expandedCategoryIds.has(category.categoryId);
 
           return (
             <Collapsible
@@ -85,12 +89,16 @@ export function ExpenseCategoryBreakdown({
                       {categoryInfo?.name ?? category.categoryId}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {t('reports.categoryTransactions', { n: category.transactionCount })}
+                      {t("reports.categoryTransactions", { n: category.transactionCount })}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="tabular-nums text-sm font-semibold">{formatVND(category.amount)}</p>
-                    <p className="text-xs text-muted-foreground">{Math.round(category.percentage * 100)}%</p>
+                    <p className="tabular-nums text-sm font-semibold">
+                      {formatVND(category.amount)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {Math.round(category.percentage * 100)}%
+                    </p>
                   </div>
                 </div>
               </CollapsibleTrigger>
@@ -107,9 +115,9 @@ export function ExpenseCategoryBreakdown({
                 </div>
               </CollapsiblePanel>
             </Collapsible>
-          )
+          );
         })}
       </CardContent>
     </Card>
-  )
+  );
 }

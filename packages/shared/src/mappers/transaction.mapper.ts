@@ -1,5 +1,5 @@
-import type { Transaction } from '../models'
-import type { TransactionPatch, TransactionRow } from '../dtos'
+import type { Transaction } from "../models";
+import type { TransactionPatch, TransactionRow } from "../dtos";
 
 export function toTransaction(row: TransactionRow): Transaction {
   return {
@@ -16,14 +16,11 @@ export function toTransaction(row: TransactionRow): Transaction {
     receipt: row.receipt_url ?? undefined,
     subscriptionId: row.subscription_id,
     linkedTransferId: row.linked_transfer_id,
-  }
+  };
 }
 
-export function fromTransaction(params: {
-  transaction: Omit<Transaction, 'id'>
-  ownerId: string
-}) {
-  const { transaction, ownerId } = params
+export function fromTransaction(params: { transaction: Omit<Transaction, "id">; ownerId: string }) {
+  const { transaction, ownerId } = params;
   return {
     owner_id: ownerId,
     type: transaction.type,
@@ -38,7 +35,7 @@ export function fromTransaction(params: {
     receipt_url: transaction.receipt ?? null,
     subscription_id: transaction.subscriptionId ?? null,
     linked_transfer_id: transaction.linkedTransferId ?? null,
-  }
+  };
 }
 
 export function transactionPatchToRow(patch: TransactionPatch) {
@@ -53,5 +50,5 @@ export function transactionPatchToRow(patch: TransactionPatch) {
     ...(patch.date !== undefined && { tx_date: patch.date }),
     ...(patch.time !== undefined && { tx_time: patch.time }),
     ...(patch.receipt !== undefined && { receipt_url: patch.receipt }),
-  }
+  };
 }

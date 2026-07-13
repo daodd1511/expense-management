@@ -1,15 +1,15 @@
-import { amountColorClass, formatSigned, formatShortDate } from '@/shared/lib/format'
-import { cn } from '@/shared/lib/utils'
-import type { ReportTransactionRow as ReportTransactionRowData } from '@wallet/shared'
+import { amountColorClass, formatSigned, formatShortDate } from "@/shared/lib/format";
+import { cn } from "@/shared/lib/utils";
+import type { ReportTransactionRow as ReportTransactionRowData } from "@wallet/shared";
 
 export function ReportTransactionRow({
   transaction,
   accountName,
   onClick,
 }: {
-  transaction: ReportTransactionRowData
-  accountName?: string
-  onClick: () => void
+  transaction: ReportTransactionRowData;
+  accountName?: string;
+  onClick: () => void;
 }) {
   return (
     <button
@@ -27,9 +27,11 @@ export function ReportTransactionRow({
           {accountName && <span>{accountName}</span>}
         </div>
       </div>
-      <span className={cn('shrink-0 text-sm font-semibold tabular-nums', amountColorClass('expense'))}>
-        {formatSigned(transaction.amount, 'expense')}
+      <span
+        className={cn("shrink-0 text-sm font-semibold tabular-nums", amountColorClass("expense"))}
+      >
+        {formatSigned(transaction.amount, "expense")}
       </span>
     </button>
-  )
+  );
 }

@@ -1,5 +1,5 @@
-import { z } from 'zod'
-import { txTypeSchema } from './common.model'
+import { z } from "zod";
+import { txTypeSchema } from "./common.model";
 
 export const transactionSchema = z.object({
   id: z.string(),
@@ -18,6 +18,6 @@ export const transactionSchema = z.object({
   subscriptionId: z.string().nullable().optional(),
   linkedTransferId: z.string().nullable().optional(),
   fee: z.number().nonnegative().optional(),
-})
+});
 
-export type Transaction = Readonly<z.infer<typeof transactionSchema>>
+export type Transaction = Readonly<z.infer<typeof transactionSchema>>;

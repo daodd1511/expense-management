@@ -103,6 +103,7 @@ Two failure modes are explicitly rejected. The generic SaaS dashboard (blue-cent
 The dual-surface layout — mobile app with bottom navigation and drawer forms, desktop with sidebar navigation and inline tables — is not a responsive adaptation. Both are designed as first-class surfaces. The same data, the same features, the same visual contract across screen sizes.
 
 **Key Characteristics:**
+
 - Warm neutral surfaces with a single gold accent used strictly for action and state
 - Semantic color contract: green = income, red = expense, gold = action; never decorative
 - Single system sans-serif family at tight scale — numbers provide the personality, not the font
@@ -114,11 +115,13 @@ The dual-surface layout — mobile app with bottom navigation and drawer forms, 
 A restrained palette where color carries meaning, not mood. Three functional layers: neutral surfaces, one gold action accent, two semantic financial colors.
 
 ### Primary
+
 - **Register Gold** (`oklch(0.60 0.15 78)`): The sole action color. Primary buttons, active navigation states, sidebar accents, healthy budget progress bars. In dark mode, brightens to `oklch(0.74 0.15 78)` to maintain ≥3:1 contrast against the dark surface. Warm amber-gold, reminiscent of an ink stamp.
 - **Gold Wash** (`oklch(0.94 0.03 78)`): Low-saturation gold tint for accent backgrounds — sidebar active row fill, selected category chip hover, form type tab selected state. Never used as foreground text color on a white surface; contrast is insufficient.
 - **Dark Gold Ink** (`oklch(0.28 0.06 78)`): Deep gold for text on Gold Wash backgrounds. Provides the required 4.5:1 contrast against Gold Wash.
 
 ### Neutral
+
 - **Warm Paper** (`oklch(0.985 0.004 90)`): App background. Near-white with chroma 0.004 at hue 90 — a barely perceptible warmth that prevents optical coldness. Not cream, not sand; the tint is from the brand hue, not from warmth by default.
 - **White Surface** (`oklch(1 0 0)`): Card surfaces and form sheet backgrounds. Pure white, visually distinct from Warm Paper so cards read as a lifted layer.
 - **Deep Ink** (`oklch(0.18 0.012 80)`): Primary text, headings, amounts in neutral contexts. Near-black with a faint warm undertone.
@@ -129,6 +132,7 @@ A restrained palette where color carries meaning, not mood. Three functional lay
 - **Raised Night** (`oklch(0.21 0.012 80)`): Dark mode card surface. 0.05L delta above Night Vault — sufficient for cards to read as raised without harsh contrast.
 
 ### Semantic
+
 - **Ledger Green** (`oklch(0.55 0.14 155)`): Income amounts, positive account balances, budget OK state progress bars. Used on white surfaces; clears 4.5:1.
 - **Ledger Green Wash** (`oklch(0.94 0.04 155)`): Income chip background, budget OK tint.
 - **Ledger Red** (`oklch(0.55 0.2 25)`): Expense amounts, negative balances, budget exceeded state, destructive action backgrounds at 10% opacity.
@@ -136,6 +140,7 @@ A restrained palette where color carries meaning, not mood. Three functional lay
 - **Budget Amber** (`oklch(0.70 0.15 75)`): Budget near-limit state (80–99%). Warmer and brighter than Register Gold to signal caution without alarm.
 
 ### Named Rules
+
 **The One Voice Rule.** Register Gold appears on ≤15% of any given screen. Its restraint is the point — when everything is gold, nothing is urgent. Nav items, most form labels, and all secondary text stay in Muted Ink.
 
 **The Semantic Color Rule.** Ledger Green means money in. Ledger Red means money out. These colors appear in exactly those roles and no others. A success state that isn't financial income uses a neutral treatment (icon + muted text). Never import a secondary meaning into a color that already carries a financial contract.
@@ -155,6 +160,7 @@ A restrained palette where color carries meaning, not mood. Three functional lay
 - **Label** (500, 0.75rem/12px, line-height 1.4): Form labels, timestamps, account type chips, filter badges, chart legends, nav labels on mobile. Never the primary text on a surface — always paired with Body or Title above it.
 
 ### Named Rules
+
 **The Tabular Numbers Rule.** Every financial figure in a list, table, or comparative context uses `font-variant-numeric: tabular-nums` (the `.tabular` utility). Misaligned digits destroy the scannability of a ledger column and break the design's core promise.
 
 **The Weight Tells Rule.** Weight communicates hierarchy; color communicates meaning. An amount is semibold (600) because it's important, and Ledger Green because it's income — these are independent signals. Never substitute one for the other.
@@ -171,6 +177,7 @@ Flat by default. No `box-shadow` or `drop-shadow` anywhere in the system. Depth 
 The tonal delta between layers is intentionally small — this is a ledger, not an interactive game. Depth exists to separate surfaces, not to create drama.
 
 ### Named Rules
+
 **The No-Shadow Rule.** Shadows are prohibited. Not even `filter: drop-shadow()`. If you are reaching for a shadow, ask whether a surface color step communicates the same separation. It does. Shadows import a visual grammar — depth through blur and spread — that conflicts with this system's tonal discipline.
 
 **The Flat-At-Rest Rule.** No element gains depth at rest. Hover states may shift background fill (Ghost → Warm Fill); they do not gain shadows. Shadows, if ever introduced, belong only to floating UI: dropdowns, tooltips, command palettes — contexts where the element is literally above the layout.
@@ -229,6 +236,7 @@ The primary data visualization component. Appears in budget views across both mo
 ### Navigation
 
 **Desktop sidebar (240px):**
+
 - Layer 2 surface (`--sidebar` token, `oklch(0.99 0.004 90)`).
 - Nav items: 36px height, Body (14px / 500), ghost at rest — transparent background, Deep Ink text.
 - Active state: Gold Wash fill + Register Gold text + Register Gold left-edge indicator (2px, inset).
@@ -236,6 +244,7 @@ The primary data visualization component. Appears in budget views across both mo
 - Section dividers: `--sidebar-border` (10% white opacity in dark).
 
 **Mobile bottom bar (60px):**
+
 - Five equal-width items. Active: Register Gold icon + label. Inactive: Muted Ink icon + label.
 - Label: Label scale (12px / 500). Icon: 20px.
 - Respects `env(safe-area-inset-bottom)` for notch devices.
@@ -255,6 +264,7 @@ The primary repeating unit — appears hundreds of times in a session. Precision
 ## 6. Do's and Don'ts
 
 ### Do:
+
 - **Do** use Register Gold exclusively for primary interactive elements (buttons, active states, selected indicators). Its rarity is its authority — the moment it stops meaning "action" it means nothing.
 - **Do** apply Ledger Green to income and Ledger Red to expenses on every surface, every time. The color contract is the trust signal; breaking it once breaks it everywhere.
 - **Do** apply `font-variant-numeric: tabular-nums` (`.tabular` utility class) to every financial figure that appears in a list, table, or column. Misaligned digits in a ledger are a design failure, not a cosmetic issue.
@@ -265,6 +275,7 @@ The primary repeating unit — appears hundreds of times in a session. Precision
 - **Do** respect `prefers-reduced-motion`: remove translate animations from swipe reveals, remove fill transitions from progress bars, remove all entrance choreography.
 
 ### Don't:
+
 - **Don't** add `box-shadow` or `drop-shadow` anywhere. The system is tonal; shadows import a foreign visual grammar.
 - **Don't** use Register Gold decoratively — no gold borders on inactive cards, no gold section dividers, no gold wash on non-interactive panels. Gold that doesn't mean "action" means nothing.
 - **Don't** use Ledger Green or Ledger Red outside their income/expense semantic roles. A non-financial "success" state uses muted text + a checkmark, not green color. The semantic contract must be unbroken.

@@ -1,4 +1,3 @@
-
 import {
   Area,
   AreaChart,
@@ -9,15 +8,15 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts'
-import { formatVND } from '@/shared/lib/format'
-import { cn } from '@/shared/lib/utils'
+} from "recharts";
+import { formatVND } from "@/shared/lib/format";
+import { cn } from "@/shared/lib/utils";
 
 export interface DonutDatum {
-  id?: string
-  name: string
-  value: number
-  color: string
+  id?: string;
+  name: string;
+  value: number;
+  color: string;
 }
 
 export function CategoryDonut({
@@ -28,14 +27,14 @@ export function CategoryDonut({
   showCenterTotal = true,
   onSelect,
 }: {
-  data: DonutDatum[]
-  total: number
-  size?: number
-  centerLabel: string
-  showCenterTotal?: boolean
-  onSelect?: (datum: DonutDatum) => void
+  data: DonutDatum[];
+  total: number;
+  size?: number;
+  centerLabel: string;
+  showCenterTotal?: boolean;
+  onSelect?: (datum: DonutDatum) => void;
 }) {
-  const compact = size < 170
+  const compact = size < 170;
 
   return (
     <div className="relative mx-auto max-w-full" style={{ height: size, width: size }}>
@@ -51,7 +50,7 @@ export function CategoryDonut({
             stroke="none"
             isAnimationActive={false}
             onClick={(_, index) => {
-              if (onSelect && typeof index === 'number' && data[index]) onSelect(data[index])
+              if (onSelect && typeof index === "number" && data[index]) onSelect(data[index]);
             }}
           >
             {data.map((d) => (
@@ -60,10 +59,10 @@ export function CategoryDonut({
           </Pie>
           <Tooltip
             content={({ active, payload }) => {
-              if (!active || !payload?.length) return null
-              const p = payload[0]
-              const value = Number(p.value)
-              const percent = total > 0 ? Math.round((value / total) * 100) : 0
+              if (!active || !payload?.length) return null;
+              const p = payload[0];
+              const value = Number(p.value);
+              const percent = total > 0 ? Math.round((value / total) * 100) : 0;
               return (
                 <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-sm">
                   <div className="font-medium text-popover-foreground">{p.name}</div>
@@ -71,20 +70,20 @@ export function CategoryDonut({
                     {formatVND(value)} · {percent}%
                   </div>
                 </div>
-              )
+              );
             }}
           />
         </PieChart>
       </ResponsiveContainer>
       {showCenterTotal && (
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className={cn('text-muted-foreground', compact ? 'text-[0.65rem]' : 'text-xs')}>
+          <span className={cn("text-muted-foreground", compact ? "text-[0.65rem]" : "text-xs")}>
             {centerLabel}
           </span>
           <span
             className={cn(
-              'tabular block max-w-[58%] truncate text-center font-bold tracking-tight',
-              compact ? 'text-xs' : 'text-lg',
+              "tabular block max-w-[58%] truncate text-center font-bold tracking-tight",
+              compact ? "text-xs" : "text-lg",
             )}
             title={formatVND(total)}
           >
@@ -93,7 +92,7 @@ export function CategoryDonut({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 export function BalanceTrendChart({
@@ -101,16 +100,16 @@ export function BalanceTrendChart({
   height = 200,
   balanceLabel,
 }: {
-  data: { month: string; balance: number }[]
-  height?: number
-  balanceLabel: string
+  data: { month: string; balance: number }[];
+  height?: number;
+  balanceLabel: string;
 }) {
-  const balances = data.map((d) => d.balance)
-  const min = balances.length ? Math.min(...balances) : 0
-  const max = balances.length ? Math.max(...balances) : 0
+  const balances = data.map((d) => d.balance);
+  const min = balances.length ? Math.min(...balances) : 0;
+  const max = balances.length ? Math.max(...balances) : 0;
   // A flat or near-flat series (e.g. all zeros) would otherwise render as a barely-visible
   // sliver against an auto-scaled axis; pad the domain so it's always readable.
-  const padding = Math.max((max - min) * 0.15, 1)
+  const padding = Math.max((max - min) * 0.15, 1);
 
   return (
     <div style={{ height }}>
@@ -126,24 +125,27 @@ export function BalanceTrendChart({
             dataKey="month"
             tickLine={false}
             axisLine={false}
-            tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
+            tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
           />
           <YAxis hide domain={[min - padding, max + padding]} />
           <Tooltip
             content={({ active, payload, label }) => {
-              if (!active || !payload?.length) return null
+              if (!active || !payload?.length) return null;
               return (
                 <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-sm">
                   <div className="mb-1 font-medium text-popover-foreground">{label}</div>
                   <div className="flex items-center gap-2 tabular">
-                    <span className="size-2 rounded-full" style={{ backgroundColor: 'var(--color-primary)' }} />
+                    <span
+                      className="size-2 rounded-full"
+                      style={{ backgroundColor: "var(--color-primary)" }}
+                    />
                     <span className="text-muted-foreground">{balanceLabel}:</span>
                     <span className="font-medium text-popover-foreground">
                       {formatVND(Number(payload[0].value))}
                     </span>
                   </div>
                 </div>
-              )
+              );
             }}
           />
           <Area
@@ -156,5 +158,5 @@ export function BalanceTrendChart({
         </AreaChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }

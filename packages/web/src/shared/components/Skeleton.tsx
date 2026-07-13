@@ -1,11 +1,7 @@
-import { cn } from '@/shared/lib/utils'
+import { cn } from "@/shared/lib/utils";
 
-export function Skeleton({
-  className,
-}: {
-  className?: string
-}) {
-  return <div aria-hidden="true" className={cn('animate-pulse rounded-xl bg-muted', className)} />
+export function Skeleton({ className }: { className?: string }) {
+  return <div aria-hidden="true" className={cn("animate-pulse rounded-xl bg-muted", className)} />;
 }
 
 export function DashboardSkeleton({ mobile = false }: { mobile?: boolean }) {
@@ -34,7 +30,7 @@ export function DashboardSkeleton({ mobile = false }: { mobile?: boolean }) {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 export function AccountsSkeleton({ mobile = false }: { mobile?: boolean }) {
@@ -60,7 +56,7 @@ export function AccountsSkeleton({ mobile = false }: { mobile?: boolean }) {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 export function BudgetsSkeleton({ mobile = false }: { mobile?: boolean }) {
@@ -87,7 +83,7 @@ export function BudgetsSkeleton({ mobile = false }: { mobile?: boolean }) {
       </div>
       <Skeleton className="h-[34rem] lg:col-span-2" />
     </div>
-  )
+  );
 }
 
 export function TransactionsSkeleton({ mobile = false }: { mobile?: boolean }) {
@@ -115,7 +111,7 @@ export function TransactionsSkeleton({ mobile = false }: { mobile?: boolean }) {
       </div>
       <Skeleton className="h-[33rem]" />
     </div>
-  )
+  );
 }
 
 export function SubscriptionsSkeleton({ mobile = false }: { mobile?: boolean }) {
@@ -146,12 +142,15 @@ export function SubscriptionsSkeleton({ mobile = false }: { mobile?: boolean }) 
         <Skeleton key={index} className="h-28" />
       ))}
     </div>
-  )
+  );
 }
 
 export function CategoriesSkeleton({ mobile = false }: { mobile?: boolean }) {
   return (
-    <div className={cn('flex flex-col gap-4', mobile ? 'p-4 pt-3' : 'gap-6')} data-testid="categories-skeleton">
+    <div
+      className={cn("flex flex-col gap-4", mobile ? "p-4 pt-3" : "gap-6")}
+      data-testid="categories-skeleton"
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-2">
           <Skeleton className="h-5 w-28" />
@@ -169,7 +168,7 @@ export function CategoriesSkeleton({ mobile = false }: { mobile?: boolean }) {
         <Skeleton key={index} className="h-16" />
       ))}
     </div>
-  )
+  );
 }
 
 export function ReportsSkeleton({ mobile = false }: { mobile?: boolean }) {
@@ -192,5 +191,5 @@ export function ReportsSkeleton({ mobile = false }: { mobile?: boolean }) {
         <Skeleton className="h-[28rem]" />
       </div>
     </div>
-  )
+  );
 }

@@ -30,12 +30,14 @@ This phase established deterministic same-day ordering data before backend balan
 - [x] `packages/web/src/core/i18n.tsx` adds `form.time`, `form.timeHour`, and `form.timeMinute` in vi/en.
 
 **Agent gate (hard):**
+
 - [x] `pnpm --filter @wallet/shared test -- transaction.dto`
 - [x] `pnpm --filter @wallet/web test -- TransactionForm TransactionRow`
 - [x] `pnpm --filter @wallet/api test -- transactions subscriptions`
 - [x] `pnpm typecheck`
 
 **Review checklist (user, at PR review):**
+
 - [ ] Create a transaction with a time; reload the month; the row still shows the selected time.
 - [ ] Confirm legacy/subscription rows without time still render without empty punctuation or layout gaps.
 
@@ -61,12 +63,14 @@ This phase owns the backend and shared response contract so every returned trans
 - [x] `packages/api/src/features/transactions/transactions.test.ts` covers unfiltered list balances, month-filtered balances that include prior history, edit/delete recalculation via list refetch, same-day time ordering, null-time deterministic fallback, and transfer source/destination effects.
 
 **Agent gate (hard):**
+
 - [x] `pnpm --filter @wallet/shared test -- finance transaction.dto`
 - [x] `pnpm --filter @wallet/api test -- transactions`
 - [x] `pnpm --filter @wallet/api typecheck`
 - [x] `pnpm typecheck`
 
 **Review checklist (user, at PR review):**
+
 - [ ] Inspect API response examples for `GET /transactions` and `GET /transactions?month=YYYY-MM`; each returned transaction includes account-specific `balanceAfter`.
 - [ ] Confirm active category/search/type/account filters do not change the `balanceAfter` value for the same transaction row after refetch.
 
@@ -86,11 +90,13 @@ This phase is display-only and depends on Phase 2 exposing `balanceAfter` in the
 - [x] Add or extend the closest desktop transaction table test for `DesktopTransactionsTable.tsx`; if no harness exists, create a focused component test that verifies the amount cell shows the balance subline without changing column count.
 
 **Agent gate (hard):**
+
 - [x] `pnpm --filter @wallet/web test -- TransactionRow DesktopTransactionsTable`
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm typecheck`
 
 **Review checklist (user, at PR review):**
+
 - [ ] Desktop shows remaining balance below the amount with no extra table column.
 - [ ] Mobile shows remaining balance below the amount and preserves the existing task-management visual density.
 - [ ] Deleting or editing an older transaction causes later visible row balances to update after the transaction query refetches.

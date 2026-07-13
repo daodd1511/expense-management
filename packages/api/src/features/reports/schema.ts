@@ -1,5 +1,5 @@
-import { isoDateSchema } from '@wallet/shared'
-import { z } from 'zod'
+import { isoDateSchema } from "@wallet/shared";
+import { z } from "zod";
 
 export const reportQuerySchema = z
   .object({
@@ -10,10 +10,10 @@ export const reportQuerySchema = z
     if (value.from > value.to) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['to'],
-        message: 'Range end must be on or after range start',
-      })
+        path: ["to"],
+        message: "Range end must be on or after range start",
+      });
     }
-  })
+  });
 
-export type ReportQuery = z.infer<typeof reportQuerySchema>
+export type ReportQuery = z.infer<typeof reportQuerySchema>;

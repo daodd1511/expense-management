@@ -1,4 +1,14 @@
-import { ArrowLeftRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Paperclip, Pencil, Search, Trash2 } from 'lucide-react'
+import {
+  ArrowLeftRight,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Paperclip,
+  Pencil,
+  Search,
+  Trash2,
+} from "lucide-react";
 import {
   type ColumnDef,
   type PaginationState,
@@ -9,54 +19,69 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from '@tanstack/react-table'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useAccounts, useAccountLookup } from '@/features/accounts/queries'
-import { useCategories, useCategoryLookup } from '@/features/categories/queries'
-import { CategoryFilterSelect } from '@/features/categories/components/CategoryFilterSelect'
-import { TransactionsMonthSwitcher } from '@/features/transactions/components/TransactionsMonthSwitcher'
-import { useDeleteTransactions, useTransactions } from '@/features/transactions/queries'
-import { getTransactionBalanceLines } from '@/features/transactions/balance-lines'
-import type { TransactionFilterType } from '@/features/transactions/view-state'
-import { useLang } from '@/core/i18n'
-import type { Category, Transaction } from '@/core/types'
-import { CategoryBreadcrumb } from '@/features/categories/components/CategoryBreadcrumb'
-import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
-import { Button } from '@/shared/components/ui/button'
-import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog'
-import { Input } from '@/shared/components/ui/input'
-import { TransactionsSkeleton } from '@/shared/components/Skeleton'
-import { Select, SelectItem, SelectPopup, SelectPortal, SelectPositioner, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
-import { amountColorClass, formatShortDate, formatSigned } from '@/shared/lib/format'
-import { cn } from '@/shared/lib/utils'
+} from "@tanstack/react-table";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAccounts, useAccountLookup } from "@/features/accounts/queries";
+import { useCategories, useCategoryLookup } from "@/features/categories/queries";
+import { CategoryFilterSelect } from "@/features/categories/components/CategoryFilterSelect";
+import { TransactionsMonthSwitcher } from "@/features/transactions/components/TransactionsMonthSwitcher";
+import { useDeleteTransactions, useTransactions } from "@/features/transactions/queries";
+import { getTransactionBalanceLines } from "@/features/transactions/balance-lines";
+import type { TransactionFilterType } from "@/features/transactions/view-state";
+import { useLang } from "@/core/i18n";
+import type { Category, Transaction } from "@/core/types";
+import { CategoryBreadcrumb } from "@/features/categories/components/CategoryBreadcrumb";
+import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
+import { Button } from "@/shared/components/ui/button";
+import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
+import { Input } from "@/shared/components/ui/input";
+import { TransactionsSkeleton } from "@/shared/components/Skeleton";
+import {
+  Select,
+  SelectItem,
+  SelectPopup,
+  SelectPortal,
+  SelectPositioner,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/shared/components/ui/table";
+import { amountColorClass, formatShortDate, formatSigned } from "@/shared/lib/format";
+import { cn } from "@/shared/lib/utils";
 
-const PAGE_SIZE = 9
+const PAGE_SIZE = 9;
 
 type TransactionRow = {
-  id: string
-  transaction: Transaction
-  dateLabel: string
-  timeLabel?: string
-  categoryLabel: string
-  category?: Category
-  parentCategory?: Category
-  noteLabel?: string
-  categoryIcon?: string
-  categoryColor: string
-  accountLabel: string
-}
+  id: string;
+  transaction: Transaction;
+  dateLabel: string;
+  timeLabel?: string;
+  categoryLabel: string;
+  category?: Category;
+  parentCategory?: Category;
+  noteLabel?: string;
+  categoryIcon?: string;
+  categoryColor: string;
+  accountLabel: string;
+};
 
 function getTransactionCategoryLabel({
   transaction,
   categoryName,
   transferLabel,
 }: {
-  transaction: Transaction
-  categoryName?: string
-  transferLabel: string
+  transaction: Transaction;
+  categoryName?: string;
+  transferLabel: string;
 }) {
-  return transaction.type === 'transfer' ? transferLabel : categoryName ?? ''
+  return transaction.type === "transfer" ? transferLabel : (categoryName ?? "");
 }
 
 export function DesktopTransactionsTable({
@@ -74,65 +99,68 @@ export function DesktopTransactionsTable({
   shouldFocusSearch = false,
   onSearchFocusHandled,
 }: {
-  onEdit: (tx: Transaction) => void
-  month: string
-  query: string
-  type: TransactionFilterType
-  categoryId: string
-  accountId: string
-  onMonthChange: (month: string) => void
-  onQueryChange: (query: string) => void
-  onTypeChange: (type: TransactionFilterType) => void
-  onCategoryChange: (categoryId: string) => void
-  onAccountChange: (accountId: string) => void
-  shouldFocusSearch?: boolean
-  onSearchFocusHandled?: () => void
+  onEdit: (tx: Transaction) => void;
+  month: string;
+  query: string;
+  type: TransactionFilterType;
+  categoryId: string;
+  accountId: string;
+  onMonthChange: (month: string) => void;
+  onQueryChange: (query: string) => void;
+  onTypeChange: (type: TransactionFilterType) => void;
+  onCategoryChange: (categoryId: string) => void;
+  onAccountChange: (accountId: string) => void;
+  shouldFocusSearch?: boolean;
+  onSearchFocusHandled?: () => void;
 }) {
-  const { data: transactions = [], isPending: transactionsPending } = useTransactions(month)
-  const { data: categories = [], isPending: categoriesPending } = useCategories()
-  const { data: accounts = [], isPending: accountsPending } = useAccounts()
-  const getCategory = useCategoryLookup()
-  const getAccount = useAccountLookup()
-  const deleteTxs = useDeleteTransactions()
-  const { t } = useLang()
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }])
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
-  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: PAGE_SIZE })
-  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([])
-  const searchRef = useRef<HTMLInputElement | null>(null)
+  const { data: transactions = [], isPending: transactionsPending } = useTransactions(month);
+  const { data: categories = [], isPending: categoriesPending } = useCategories();
+  const { data: accounts = [], isPending: accountsPending } = useAccounts();
+  const getCategory = useCategoryLookup();
+  const getAccount = useAccountLookup();
+  const deleteTxs = useDeleteTransactions();
+  const { t } = useLang();
+  const [sorting, setSorting] = useState<SortingState>([{ id: "date", desc: true }]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: PAGE_SIZE,
+  });
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
+  const searchRef = useRef<HTMLInputElement | null>(null);
 
   const typeFilters: { value: TransactionFilterType; label: string }[] = [
-    { value: 'all', label: t('tx.filterAll') },
-    { value: 'expense', label: t('tx.filterExpense') },
-    { value: 'income', label: t('tx.filterIncome') },
-    { value: 'transfer', label: t('tx.filterTransfer') },
-  ]
+    { value: "all", label: t("tx.filterAll") },
+    { value: "expense", label: t("tx.filterExpense") },
+    { value: "income", label: t("tx.filterIncome") },
+    { value: "transfer", label: t("tx.filterTransfer") },
+  ];
 
   const filtered = useMemo(() => {
     return transactions
       .filter((tx) => {
-      if (type !== 'all' && tx.type !== type) return false
-      if (categoryId && tx.categoryId !== categoryId) return false
-      if (accountId && tx.accountId !== accountId && tx.toAccountId !== accountId) return false
-      if (query) {
-        const searchValue = query.toLowerCase()
-        const haystack = [
-          tx.merchant,
-          tx.note,
-          getCategory(tx.categoryId)?.name,
-          getAccount(tx.accountId)?.name,
-          getAccount(tx.toAccountId)?.name,
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
-        if (!haystack.includes(searchValue)) return false
-      }
-      return true
-    })
+        if (type !== "all" && tx.type !== type) return false;
+        if (categoryId && tx.categoryId !== categoryId) return false;
+        if (accountId && tx.accountId !== accountId && tx.toAccountId !== accountId) return false;
+        if (query) {
+          const searchValue = query.toLowerCase();
+          const haystack = [
+            tx.merchant,
+            tx.note,
+            getCategory(tx.categoryId)?.name,
+            getAccount(tx.accountId)?.name,
+            getAccount(tx.toAccountId)?.name,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          if (!haystack.includes(searchValue)) return false;
+        }
+        return true;
+      })
       .map<TransactionRow>((tx) => {
-        const category = getCategory(tx.categoryId)
-        const parentCategory = category?.parentId ? getCategory(category.parentId) : undefined
+        const category = getCategory(tx.categoryId);
+        const parentCategory = category?.parentId ? getCategory(category.parentId) : undefined;
 
         return {
           id: tx.id,
@@ -142,29 +170,29 @@ export function DesktopTransactionsTable({
           categoryLabel: getTransactionCategoryLabel({
             transaction: tx,
             categoryName: category?.name,
-            transferLabel: t('tx.transfer'),
+            transferLabel: t("tx.transfer"),
           }),
           category,
           parentCategory,
           noteLabel: tx.note?.trim() || undefined,
           categoryIcon: category?.icon,
-          categoryColor: category?.color ?? 'chart-1',
-          accountLabel: getAccount(tx.accountId)?.name ?? '',
-        }
-      })
-  }, [transactions, type, categoryId, accountId, query, getCategory, getAccount, t])
+          categoryColor: category?.color ?? "chart-1",
+          accountLabel: getAccount(tx.accountId)?.name ?? "",
+        };
+      });
+  }, [transactions, type, categoryId, accountId, query, getCategory, getAccount, t]);
 
   const columns = useMemo<ColumnDef<TransactionRow>[]>(
     () => [
       {
-        id: 'select',
+        id: "select",
         enableSorting: false,
         header: ({ table }) => (
           <input
             type="checkbox"
             checked={table.getIsAllPageRowsSelected()}
             onChange={table.getToggleAllPageRowsSelectedHandler()}
-            aria-label={t('tx.selectAll')}
+            aria-label={t("tx.selectAll")}
             className="size-4 accent-primary"
           />
         ),
@@ -173,20 +201,20 @@ export function DesktopTransactionsTable({
             type="checkbox"
             checked={row.getIsSelected()}
             onChange={row.getToggleSelectedHandler()}
-            aria-label={t('tx.selectItem', { name: row.original.categoryLabel })}
+            aria-label={t("tx.selectItem", { name: row.original.categoryLabel })}
             className="size-4 accent-primary"
           />
         ),
       },
       {
-        accessorKey: 'dateLabel',
-        id: 'date',
+        accessorKey: "dateLabel",
+        id: "date",
         sortingFn: (a, b) => a.original.transaction.date.localeCompare(b.original.transaction.date),
         header: ({ column }) => (
           <SortHeader
-            label={t('tx.colDate')}
+            label={t("tx.colDate")}
             sorted={column.getIsSorted()}
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           />
         ),
         cell: ({ row }) => (
@@ -197,25 +225,25 @@ export function DesktopTransactionsTable({
         ),
       },
       {
-        accessorKey: 'categoryLabel',
-        id: 'category',
-        sortingFn: 'alphanumeric',
+        accessorKey: "categoryLabel",
+        id: "category",
+        sortingFn: "alphanumeric",
         header: ({ column }) => (
           <SortHeader
-            label={t('tx.colCategory')}
+            label={t("tx.colCategory")}
             sorted={column.getIsSorted()}
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           />
         ),
         cell: ({ row }) => {
-          const tx = row.original.transaction
+          const tx = row.original.transaction;
 
-          if (tx.type === 'transfer') {
+          if (tx.type === "transfer") {
             return (
               <span className="inline-flex items-center gap-1.5 text-transfer">
-                <ArrowLeftRight className="size-3.5" /> {t('tx.transfer')}
+                <ArrowLeftRight className="size-3.5" /> {t("tx.transfer")}
               </span>
-            )
+            );
           }
 
           return (
@@ -228,66 +256,82 @@ export function DesktopTransactionsTable({
               <CategoryBreadcrumb
                 category={row.original.category}
                 parentCategory={row.original.parentCategory}
-                trailing={tx.receipt && <Paperclip className="size-3 shrink-0 text-muted-foreground" />}
+                trailing={
+                  tx.receipt && <Paperclip className="size-3 shrink-0 text-muted-foreground" />
+                }
               />
             </span>
-          )
+          );
         },
       },
       {
-        accessorKey: 'noteLabel',
-        id: 'description',
-        sortingFn: 'alphanumeric',
+        accessorKey: "noteLabel",
+        id: "description",
+        sortingFn: "alphanumeric",
         header: ({ column }) => (
           <SortHeader
-            label={t('tx.colDescription')}
+            label={t("tx.colDescription")}
             sorted={column.getIsSorted()}
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           />
         ),
         cell: ({ row }) => (
           <span className="block max-w-[20rem] truncate text-muted-foreground">
-            {row.original.noteLabel ?? '—'}
+            {row.original.noteLabel ?? "—"}
           </span>
         ),
       },
       {
-        accessorKey: 'accountLabel',
-        id: 'account',
-        sortingFn: 'alphanumeric',
+        accessorKey: "accountLabel",
+        id: "account",
+        sortingFn: "alphanumeric",
         header: ({ column }) => (
           <SortHeader
-            label={t('tx.colAccount')}
+            label={t("tx.colAccount")}
             sorted={column.getIsSorted()}
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           />
         ),
-        cell: ({ row }) => <span className="text-muted-foreground">{row.original.accountLabel}</span>,
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">{row.original.accountLabel}</span>
+        ),
       },
       {
-        accessorKey: 'amount',
-        id: 'amount',
+        accessorKey: "amount",
+        id: "amount",
         sortingFn: (a, b) => a.original.transaction.amount - b.original.transaction.amount,
         header: ({ column }) => (
           <SortHeader
-            label={t('tx.colAmount')}
+            label={t("tx.colAmount")}
             sorted={column.getIsSorted()}
             align="right"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           />
         ),
         cell: ({ row }) => (
           <span className="flex flex-col items-end text-right">
-            <span className={cn('block tabular font-semibold', amountColorClass(row.original.transaction.type))}>
+            <span
+              className={cn(
+                "block tabular font-semibold",
+                amountColorClass(row.original.transaction.type),
+              )}
+            >
               {formatSigned(row.original.transaction.amount, row.original.transaction.type)}
             </span>
-            {getTransactionBalanceLines(row.original.transaction, accountId, (accountId) => getAccount(accountId)?.name)
-              .map((balance) => <span key={balance} className="text-xs tabular text-muted-foreground">{balance}</span>)}
+            {getTransactionBalanceLines(
+              row.original.transaction,
+              accountId,
+              (accountId) => getAccount(accountId)?.name,
+            ).map((balance) => (
+              <span key={balance} className="text-xs tabular text-muted-foreground">
+                {balance}
+              </span>
+            ))}
           </span>
         ),
       },
       {
-        id: 'actions',
+        id: "actions",
         enableSorting: false,
         header: () => null,
         cell: ({ row }) => (
@@ -295,7 +339,7 @@ export function DesktopTransactionsTable({
             <button
               type="button"
               onClick={() => onEdit(row.original.transaction)}
-              aria-label={t('tx.edit')}
+              aria-label={t("tx.edit")}
               className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <Pencil className="size-3.5" />
@@ -303,7 +347,7 @@ export function DesktopTransactionsTable({
             <button
               type="button"
               onClick={() => setPendingDeleteIds([row.original.transaction.id])}
-              aria-label={t('tx.deleteOne')}
+              aria-label={t("tx.deleteOne")}
               className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-expense-muted hover:text-expense"
             >
               <Trash2 className="size-3.5" />
@@ -313,7 +357,7 @@ export function DesktopTransactionsTable({
       },
     ],
     [accountId, getAccount, onEdit, t],
-  )
+  );
 
   const table = useReactTable({
     data: filtered,
@@ -326,32 +370,32 @@ export function DesktopTransactionsTable({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-  })
+  });
 
   const handleConfirmDelete = async () => {
-    await deleteTxs.mutateAsync(pendingDeleteIds)
-    setRowSelection({})
-    setPendingDeleteIds([])
-  }
+    await deleteTxs.mutateAsync(pendingDeleteIds);
+    setRowSelection({});
+    setPendingDeleteIds([]);
+  };
 
   useEffect(() => {
-    if (!shouldFocusSearch) return
-    searchRef.current?.focus()
-    searchRef.current?.select()
-    onSearchFocusHandled?.()
-  }, [shouldFocusSearch, onSearchFocusHandled])
+    if (!shouldFocusSearch) return;
+    searchRef.current?.focus();
+    searchRef.current?.select();
+    onSearchFocusHandled?.();
+  }, [shouldFocusSearch, onSearchFocusHandled]);
 
   useEffect(() => {
-    setPagination((current) => ({ ...current, pageIndex: 0 }))
-  }, [month, query, type, categoryId, accountId])
+    setPagination((current) => ({ ...current, pageIndex: 0 }));
+  }, [month, query, type, categoryId, accountId]);
 
   if (transactionsPending || categoriesPending || accountsPending) {
-    return <TransactionsSkeleton />
+    return <TransactionsSkeleton />;
   }
 
-  const selectedCount = table.getFilteredSelectedRowModel().rows.length
-  const pageCount = Math.max(1, table.getPageCount())
-  const currentPage = table.getState().pagination.pageIndex + 1
+  const selectedCount = table.getFilteredSelectedRowModel().rows.length;
+  const pageCount = Math.max(1, table.getPageCount());
+  const currentPage = table.getState().pagination.pageIndex + 1;
 
   return (
     <div className="flex flex-col gap-4">
@@ -364,9 +408,9 @@ export function DesktopTransactionsTable({
             data-global-search="transactions"
             value={query}
             onChange={(event) => {
-              onQueryChange(event.target.value)
+              onQueryChange(event.target.value);
             }}
-            placeholder={t('tx.search')}
+            placeholder={t("tx.search")}
             className="pl-9"
           />
         </div>
@@ -374,21 +418,21 @@ export function DesktopTransactionsTable({
           <CategoryFilterSelect
             categories={categories}
             value={categoryId}
-            ariaLabel={t('tx.filterCategory')}
-            emptyLabel={t('tx.filterCategoryAll')}
+            ariaLabel={t("tx.filterCategory")}
+            emptyLabel={t("tx.filterCategoryAll")}
             onChange={(value) => {
-              onCategoryChange(value)
+              onCategoryChange(value);
             }}
           />
         </div>
         <div className="w-44">
           <FilterSelect
             value={accountId}
-            ariaLabel={t('tx.filterAccount')}
-            emptyLabel={t('tx.filterAccountAll')}
+            ariaLabel={t("tx.filterAccount")}
+            emptyLabel={t("tx.filterAccountAll")}
             options={accounts.map((account) => ({ value: account.id, label: account.name }))}
             onChange={(value) => {
-              onAccountChange(value)
+              onAccountChange(value);
             }}
           />
         </div>
@@ -398,35 +442,45 @@ export function DesktopTransactionsTable({
               key={filterOption.value}
               type="button"
               onClick={() => {
-                onTypeChange(filterOption.value)
+                onTypeChange(filterOption.value);
               }}
               className={cn(
-                'rounded-md px-3 py-1 text-sm font-medium transition-colors',
+                "rounded-md px-3 py-1 text-sm font-medium transition-colors",
                 type === filterOption.value
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground',
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               {filterOption.label}
             </button>
           ))}
         </div>
-        <span className="ml-auto text-sm text-muted-foreground">{t('tx.count', { n: filtered.length })}</span>
+        <span className="ml-auto text-sm text-muted-foreground">
+          {t("tx.count", { n: filtered.length })}
+        </span>
       </div>
 
       {selectedCount > 0 && (
         <div className="flex items-center justify-between rounded-lg border border-border bg-accent px-4 py-2 text-sm">
-          <span className="font-medium text-accent-foreground">{t('tx.selected', { n: selectedCount })}</span>
+          <span className="font-medium text-accent-foreground">
+            {t("tx.selected", { n: selectedCount })}
+          </span>
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={() => setRowSelection({})}>
-              {t('tx.deselect')}
+              {t("tx.deselect")}
             </Button>
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => setPendingDeleteIds(table.getFilteredSelectedRowModel().rows.map((row) => row.original.transaction.id))}
+              onClick={() =>
+                setPendingDeleteIds(
+                  table
+                    .getFilteredSelectedRowModel()
+                    .rows.map((row) => row.original.transaction.id),
+                )
+              }
             >
-              <Trash2 className="size-3.5" /> {t('tx.delete')}
+              <Trash2 className="size-3.5" /> {t("tx.delete")}
             </Button>
           </div>
         </div>
@@ -441,8 +495,8 @@ export function DesktopTransactionsTable({
                   <TableHead
                     key={header.id}
                     className={cn(
-                      header.id === 'select' && 'w-10',
-                      header.id === 'actions' && 'w-20',
+                      header.id === "select" && "w-10",
+                      header.id === "actions" && "w-20",
                     )}
                   >
                     {header.isPlaceholder
@@ -459,7 +513,7 @@ export function DesktopTransactionsTable({
                 <TableRow
                   key={row.id}
                   className="group"
-                  data-state={row.getIsSelected() ? 'selected' : undefined}
+                  data-state={row.getIsSelected() ? "selected" : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -470,8 +524,11 @@ export function DesktopTransactionsTable({
               ))
             ) : (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={columns.length} className="py-12 text-center text-sm text-muted-foreground">
-                  {t('tx.notFound')}
+                <TableCell
+                  colSpan={columns.length}
+                  className="py-12 text-center text-sm text-muted-foreground"
+                >
+                  {t("tx.notFound")}
                 </TableCell>
               </TableRow>
             )}
@@ -480,7 +537,7 @@ export function DesktopTransactionsTable({
       </div>
 
       <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>{t('tx.page', { n: currentPage, total: pageCount })}</span>
+        <span>{t("tx.page", { n: currentPage, total: pageCount })}</span>
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -488,7 +545,7 @@ export function DesktopTransactionsTable({
             disabled={!table.getCanPreviousPage()}
             onClick={() => table.previousPage()}
           >
-            <ChevronLeft className="size-3.5" /> {t('tx.pagePrev')}
+            <ChevronLeft className="size-3.5" /> {t("tx.pagePrev")}
           </Button>
           <Button
             variant="outline"
@@ -496,7 +553,7 @@ export function DesktopTransactionsTable({
             disabled={!table.getCanNextPage()}
             onClick={() => table.nextPage()}
           >
-            {t('tx.pageNext')} <ChevronRight className="size-3.5" />
+            {t("tx.pageNext")} <ChevronRight className="size-3.5" />
           </Button>
         </div>
       </div>
@@ -507,7 +564,7 @@ export function DesktopTransactionsTable({
         onConfirm={handleConfirmDelete}
       />
     </div>
-  )
+  );
 }
 
 function FilterSelect({
@@ -517,16 +574,18 @@ function FilterSelect({
   options,
   onChange,
 }: {
-  value: string
-  ariaLabel: string
-  emptyLabel: string
-  options: { value: string; label: string }[]
-  onChange: (value: string) => void
+  value: string;
+  ariaLabel: string;
+  emptyLabel: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
 }) {
   return (
-    <Select value={value} onValueChange={(nextValue) => onChange(nextValue ?? '')}>
+    <Select value={value} onValueChange={(nextValue) => onChange(nextValue ?? "")}>
       <SelectTrigger aria-label={ariaLabel}>
-        <SelectValue>{options.find((option) => option.value === value)?.label ?? emptyLabel}</SelectValue>
+        <SelectValue>
+          {options.find((option) => option.value === value)?.label ?? emptyLabel}
+        </SelectValue>
       </SelectTrigger>
       <SelectPortal>
         <SelectPositioner>
@@ -541,37 +600,41 @@ function FilterSelect({
         </SelectPositioner>
       </SelectPortal>
     </Select>
-  )
+  );
 }
 
 function SortHeader({
   label,
   sorted,
   onClick,
-  align = 'left',
+  align = "left",
 }: {
-  label: string
-  sorted: false | 'asc' | 'desc'
-  onClick: () => void
-  align?: 'left' | 'right'
+  label: string;
+  sorted: false | "asc" | "desc";
+  onClick: () => void;
+  align?: "left" | "right";
 }) {
   return (
-    <div className={cn(align === 'right' && 'text-right')}>
+    <div className={cn(align === "right" && "text-right")}>
       <button
         type="button"
         onClick={onClick}
         className={cn(
-          'inline-flex items-center gap-1 transition-colors hover:text-foreground',
-          align === 'right' && 'ml-auto',
+          "inline-flex items-center gap-1 transition-colors hover:text-foreground",
+          align === "right" && "ml-auto",
         )}
       >
         {label}
         {sorted ? (
-          sorted === 'asc' ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />
+          sorted === "asc" ? (
+            <ChevronUp className="size-3.5" />
+          ) : (
+            <ChevronDown className="size-3.5" />
+          )
         ) : (
           <ChevronDown className="size-3.5 opacity-40" />
         )}
       </button>
     </div>
-  )
+  );
 }

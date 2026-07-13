@@ -1,4 +1,4 @@
-import { APP_COMMIT, APP_COMMIT_DATE, APP_VERSION } from '@/core/appVersion'
+import { APP_COMMIT, APP_COMMIT_DATE, APP_VERSION } from "@/core/appVersion";
 
 export function VersionPage() {
   return (
@@ -12,5 +12,5 @@ export function VersionPage() {
         <dd>{APP_COMMIT_DATE}</dd>
       </dl>
     </div>
-  )
+  );
 }

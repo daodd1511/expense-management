@@ -20,25 +20,25 @@ Two problems in the current model (`packages/shared/src/models/category.model.ts
 
 ## Decisions
 
-| Decision | Choice | Reason |
-|---|---|---|
-| `type` values | `'expense' \| 'income'` only, no `transfer` | Transfers never carry a category today (`TransactionForm.tsx:80` hardcodes `categoryId: null` for transfers) |
-| `type` per category | Exactly one, not a set | Matches the motivating case (Wage ≠ expense); avoids reopening the ambiguity being fixed |
-| `type` mutability | Immutable after creation | Flipping type would instantly orphan existing transactions against the new type-match constraint |
-| Hierarchy depth | Exactly 2 levels (parent + leaf) | Real taxonomies don't need deeper nesting; keeps rollup queries non-recursive |
-| Child type | Inherited from parent, enforced, not independently settable | Mixed-type branches break rollups and are confusing UX |
-| Structural cap under mutation | A row with `parent_id != null` can never itself be a `parent_id` target; a row with children can never gain a `parent_id` | Keeps the 2-level cap true after re-parenting, not just at creation |
-| Re-parenting | Allowed, target parent must have same `type` | User explicitly wants rename/re-parent without losing transaction history (already FK'd, not denormalized) |
-| Transaction/budget/subscription → category | May reference parent OR leaf | Forcing leaf-only requires a synthetic "Other" leaf under every parent |
-| Budgets across levels | Settable at leaf OR parent-direct only — never independently at both in the same branch | Avoids an undefined "what does over-budget mean" when both levels have separate limits |
-| System category edit/delete | Blocked with `403`, not `404` | Bug fix folded into this migration since the router is already being touched |
-| Delete parent with children | Blocked with `409` | Avoids silent cascade data loss or surprise auto-promotion of children to top-level |
-| Ownership across tree | Unrelated to position — system parent + user-owned child is valid | This is the intended personalization path instead of copy-on-write |
-| Existing seed data | Hard delete + reseed, no old→new mapping | Confirmed: no real user data exists yet, test data only |
-| Child icon | Always inherits parent's icon, not independently settable | Fewer icons to pick/maintain |
-| Child color | Inherits parent's color by default, may be overridden per child | User wants ability to visually distinguish children when needed |
-| Chart colors | Add `chart-6`...`chart-12` to `globals.css` (`:root` + `.dark`) | Only 5 tokens exist today; 12 expense parents in one donut chart would collide in color, a real legibility bug in `lib/derive.ts` buildDonutData |
-| Category picker UI | Grouped-collapsible: parent header + indented children, parent itself directly selectable | Same pattern mobile (bottom sheet accordion) and desktop (drawer/dropdown grouped list) |
+| Decision                                   | Choice                                                                                                                    | Reason                                                                                                                                           |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `type` values                              | `'expense' \| 'income'` only, no `transfer`                                                                               | Transfers never carry a category today (`TransactionForm.tsx:80` hardcodes `categoryId: null` for transfers)                                     |
+| `type` per category                        | Exactly one, not a set                                                                                                    | Matches the motivating case (Wage ≠ expense); avoids reopening the ambiguity being fixed                                                         |
+| `type` mutability                          | Immutable after creation                                                                                                  | Flipping type would instantly orphan existing transactions against the new type-match constraint                                                 |
+| Hierarchy depth                            | Exactly 2 levels (parent + leaf)                                                                                          | Real taxonomies don't need deeper nesting; keeps rollup queries non-recursive                                                                    |
+| Child type                                 | Inherited from parent, enforced, not independently settable                                                               | Mixed-type branches break rollups and are confusing UX                                                                                           |
+| Structural cap under mutation              | A row with `parent_id != null` can never itself be a `parent_id` target; a row with children can never gain a `parent_id` | Keeps the 2-level cap true after re-parenting, not just at creation                                                                              |
+| Re-parenting                               | Allowed, target parent must have same `type`                                                                              | User explicitly wants rename/re-parent without losing transaction history (already FK'd, not denormalized)                                       |
+| Transaction/budget/subscription → category | May reference parent OR leaf                                                                                              | Forcing leaf-only requires a synthetic "Other" leaf under every parent                                                                           |
+| Budgets across levels                      | Settable at leaf OR parent-direct only — never independently at both in the same branch                                   | Avoids an undefined "what does over-budget mean" when both levels have separate limits                                                           |
+| System category edit/delete                | Blocked with `403`, not `404`                                                                                             | Bug fix folded into this migration since the router is already being touched                                                                     |
+| Delete parent with children                | Blocked with `409`                                                                                                        | Avoids silent cascade data loss or surprise auto-promotion of children to top-level                                                              |
+| Ownership across tree                      | Unrelated to position — system parent + user-owned child is valid                                                         | This is the intended personalization path instead of copy-on-write                                                                               |
+| Existing seed data                         | Hard delete + reseed, no old→new mapping                                                                                  | Confirmed: no real user data exists yet, test data only                                                                                          |
+| Child icon                                 | Always inherits parent's icon, not independently settable                                                                 | Fewer icons to pick/maintain                                                                                                                     |
+| Child color                                | Inherits parent's color by default, may be overridden per child                                                           | User wants ability to visually distinguish children when needed                                                                                  |
+| Chart colors                               | Add `chart-6`...`chart-12` to `globals.css` (`:root` + `.dark`)                                                           | Only 5 tokens exist today; 12 expense parents in one donut chart would collide in color, a real legibility bug in `lib/derive.ts` buildDonutData |
+| Category picker UI                         | Grouped-collapsible: parent header + indented children, parent itself directly selectable                                 | Same pattern mobile (bottom sheet accordion) and desktop (drawer/dropdown grouped list)                                                          |
 
 ---
 
@@ -103,32 +103,33 @@ needs `type: txTypeSchema` narrowed to `expense|income` and `parentId: z.string(
 ---
 
 ## Seed Data (replaces current 9 categories in `packages/web/src/core/data.ts` and whatever
+
 seeds the real Supabase `categories` table)
 
 ### Expense
 
-| Parent | Icon | Children |
-|---|---|---|
-| Food & Dining | `Utensils` | Restaurant, Coffee, Groceries, Food Delivery, C-Store |
-| Transport | `Bus` | Gas, Grab/Taxi, Parking, Car Maintenance, Public Transit |
-| Housing | `House` | Rent, Repairs, Furniture |
-| Bills & Utilities | `ReceiptText` | Electricity, Water, Internet, Phone, Streaming |
-| Entertainment | `Gamepad2` | Travel, Movies, Games, Books/Music |
-| Dating | `HeartHandshake` | Food |
-| Health | `HeartPulse` | Doctor, Medicine, Health Insurance, Gym, Sports |
-| Shopping | `ShoppingBag` | Clothing, Electronics, Cosmetics, Household Items |
-| Education | `GraduationCap` | Tuition, Books/Supplies, Courses |
-| Pet | `Dog` | Pet Food, Vet, Grooming |
-| Gifts & Charity | `Gift` | Gifts, Charity |
-| Other | `Ellipsis` | *(none)* |
+| Parent            | Icon             | Children                                                 |
+| ----------------- | ---------------- | -------------------------------------------------------- |
+| Food & Dining     | `Utensils`       | Restaurant, Coffee, Groceries, Food Delivery, C-Store    |
+| Transport         | `Bus`            | Gas, Grab/Taxi, Parking, Car Maintenance, Public Transit |
+| Housing           | `House`          | Rent, Repairs, Furniture                                 |
+| Bills & Utilities | `ReceiptText`    | Electricity, Water, Internet, Phone, Streaming           |
+| Entertainment     | `Gamepad2`       | Travel, Movies, Games, Books/Music                       |
+| Dating            | `HeartHandshake` | Food                                                     |
+| Health            | `HeartPulse`     | Doctor, Medicine, Health Insurance, Gym, Sports          |
+| Shopping          | `ShoppingBag`    | Clothing, Electronics, Cosmetics, Household Items        |
+| Education         | `GraduationCap`  | Tuition, Books/Supplies, Courses                         |
+| Pet               | `Dog`            | Pet Food, Vet, Grooming                                  |
+| Gifts & Charity   | `Gift`           | Gifts, Charity                                           |
+| Other             | `Ellipsis`       | _(none)_                                                 |
 
 ### Income
 
-| Parent | Icon | Children |
-|---|---|---|
-| Salary | `Briefcase` | Base Salary, Bonus |
-| Investment | `TrendingUp` | Savings Interest, Dividends |
-| Business | `Store` | Sales Revenue, Freelance |
+| Parent       | Icon             | Children                        |
+| ------------ | ---------------- | ------------------------------- |
+| Salary       | `Briefcase`      | Base Salary, Bonus              |
+| Investment   | `TrendingUp`     | Savings Interest, Dividends     |
+| Business     | `Store`          | Sales Revenue, Freelance        |
 | Other Income | `CircleEllipsis` | Refund, Winnings, Gift Received |
 
 All icon names verified to exist in installed `lucide-react ^1.16.0`

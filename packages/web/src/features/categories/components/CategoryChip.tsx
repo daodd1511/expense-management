@@ -1,6 +1,6 @@
-import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
-import type { Category } from '@/core/types'
-import { cn } from '@/shared/lib/utils'
+import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
+import type { Category } from "@/core/types";
+import { cn } from "@/shared/lib/utils";
 
 /**
  * The "Chip / Filter Pill" documented in docs/design/DESIGN.md for category selection: fully
@@ -14,10 +14,10 @@ export function CategoryChip({
   onSelect,
   disabled = false,
 }: {
-  category: Category
-  active: boolean
-  onSelect: (id: string) => void
-  disabled?: boolean
+  category: Category;
+  active: boolean;
+  onSelect: (id: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <button
@@ -26,11 +26,11 @@ export function CategoryChip({
       aria-pressed={active}
       disabled={disabled}
       className={cn(
-        'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
         active
-          ? 'border-transparent text-white'
-          : 'border-border bg-background text-foreground hover:bg-muted',
-        disabled && 'cursor-not-allowed opacity-50',
+          ? "border-transparent text-white"
+          : "border-border bg-background text-foreground hover:bg-muted",
+        disabled && "cursor-not-allowed opacity-50",
       )}
       style={active ? { backgroundColor: colorVar(category.color) } : undefined}
     >
@@ -41,5 +41,5 @@ export function CategoryChip({
       />
       {category.name}
     </button>
-  )
+  );
 }

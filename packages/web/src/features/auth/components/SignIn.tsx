@@ -1,74 +1,74 @@
-import { useEffect, useState } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { AppAuthError } from '@/features/auth/auth-errors'
-import { useAuth } from '@/features/auth/auth'
-import { useLang } from '@/core/i18n'
-import { FormErrorBanner } from '@/shared/components/FormErrorBanner'
-import { Button } from '@/shared/components/ui/button'
-import { Input, Label } from '@/shared/components/ui/input'
-import { AuthCardLayout } from './AuthCardLayout'
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { AppAuthError } from "@/features/auth/auth-errors";
+import { useAuth } from "@/features/auth/auth";
+import { useLang } from "@/core/i18n";
+import { FormErrorBanner } from "@/shared/components/FormErrorBanner";
+import { Button } from "@/shared/components/ui/button";
+import { Input, Label } from "@/shared/components/ui/input";
+import { AuthCardLayout } from "./AuthCardLayout";
 
 export function SignIn({ redirectTo }: { redirectTo: string }) {
-  const { signInWithGoogle, signInWithPassword, user, loading } = useAuth()
-  const { t } = useLang()
-  const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [isPasswordSigningIn, setIsPasswordSigningIn] = useState(false)
-  const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false)
+  const { signInWithGoogle, signInWithPassword, user, loading } = useAuth();
+  const { t } = useLang();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isPasswordSigningIn, setIsPasswordSigningIn] = useState(false);
+  const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
-      void navigate({ href: redirectTo, replace: true })
+      void navigate({ href: redirectTo, replace: true });
     }
-  }, [loading, navigate, redirectTo, user])
+  }, [loading, navigate, redirectTo, user]);
 
   const handlePasswordSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setErrorMessage(null)
-    setIsPasswordSigningIn(true)
+    event.preventDefault();
+    setErrorMessage(null);
+    setIsPasswordSigningIn(true);
 
     try {
-      await signInWithPassword({ email, password })
+      await signInWithPassword({ email, password });
     } catch (error) {
-      const authError = error instanceof AppAuthError ? error : new AppAuthError('auth.errorGeneric')
-      setErrorMessage(t(authError.translationKey))
+      const authError =
+        error instanceof AppAuthError ? error : new AppAuthError("auth.errorGeneric");
+      setErrorMessage(t(authError.translationKey));
     } finally {
-      setIsPasswordSigningIn(false)
+      setIsPasswordSigningIn(false);
     }
-  }
+  };
 
   const handleGoogleSignIn = async () => {
-    setErrorMessage(null)
-    setIsGoogleSigningIn(true)
+    setErrorMessage(null);
+    setIsGoogleSigningIn(true);
 
     try {
-      await signInWithGoogle()
+      await signInWithGoogle();
     } catch (error) {
-      const authError = error instanceof AppAuthError ? error : new AppAuthError('auth.errorGeneric')
-      setErrorMessage(t(authError.translationKey))
-      setIsGoogleSigningIn(false)
+      const authError =
+        error instanceof AppAuthError ? error : new AppAuthError("auth.errorGeneric");
+      setErrorMessage(t(authError.translationKey));
+      setIsGoogleSigningIn(false);
     }
-  }
+  };
 
   return (
     <AuthCardLayout
-      title={t('auth.signInTitle')}
-      subtitle={t('auth.signInSubtitle')}
-      footerLinks={[
-        { to: '/auth/sign-up', label: t('auth.noAccount') },
-      ]}
+      title={t("auth.signInTitle")}
+      subtitle={t("auth.signInSubtitle")}
+      footerLinks={[{ to: "/auth/sign-up", label: t("auth.noAccount") }]}
     >
       <form className="space-y-4" onSubmit={handlePasswordSignIn}>
         <div className="space-y-1.5">
-          <Label htmlFor="sign-in-email">{t('auth.email')}</Label>
+          <Label htmlFor="sign-in-email">{t("auth.email")}</Label>
           <Input
             id="sign-in-email"
             type="email"
             value={email}
             autoComplete="email"
-            placeholder={t('auth.emailPlaceholder')}
+            placeholder={t("auth.emailPlaceholder")}
             onChange={(event) => setEmail(event.target.value)}
             required
           />
@@ -76,9 +76,12 @@ export function SignIn({ redirectTo }: { redirectTo: string }) {
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between gap-3">
-            <Label htmlFor="sign-in-password">{t('auth.password')}</Label>
-            <Link to="/auth/forgot-password" className="text-xs font-medium text-primary hover:underline">
-              {t('auth.forgotPassword')}
+            <Label htmlFor="sign-in-password">{t("auth.password")}</Label>
+            <Link
+              to="/auth/forgot-password"
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              {t("auth.forgotPassword")}
             </Link>
           </div>
           <Input
@@ -86,7 +89,7 @@ export function SignIn({ redirectTo }: { redirectTo: string }) {
             type="password"
             value={password}
             autoComplete="current-password"
-            placeholder={t('auth.passwordPlaceholder')}
+            placeholder={t("auth.passwordPlaceholder")}
             onChange={(event) => setPassword(event.target.value)}
             required
             minLength={6}
@@ -100,15 +103,15 @@ export function SignIn({ redirectTo }: { redirectTo: string }) {
           size="lg"
           className="w-full"
           loading={isPasswordSigningIn}
-          loadingLabel={t('auth.signingIn')}
+          loadingLabel={t("auth.signingIn")}
         >
-          {t('auth.signIn')}
+          {t("auth.signIn")}
         </Button>
       </form>
 
       <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
         <span className="h-px flex-1 bg-border" />
-        {t('auth.orContinueWith')}
+        {t("auth.orContinueWith")}
         <span className="h-px flex-1 bg-border" />
       </div>
 
@@ -117,7 +120,7 @@ export function SignIn({ redirectTo }: { redirectTo: string }) {
         variant="outline"
         size="lg"
         loading={isGoogleSigningIn}
-        loadingLabel={t('auth.signingIn')}
+        loadingLabel={t("auth.signingIn")}
         onClick={handleGoogleSignIn}
         className="h-auto w-full rounded-xl bg-card px-6 py-3.5 hover:bg-muted"
       >
@@ -140,8 +143,8 @@ export function SignIn({ redirectTo }: { redirectTo: string }) {
             fill="#EA4335"
           />
         </svg>
-        {t('auth.signInWithGoogle')}
+        {t("auth.signInWithGoogle")}
       </Button>
     </AuthCardLayout>
-  )
+  );
 }

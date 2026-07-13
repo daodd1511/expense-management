@@ -8,4 +8,4 @@ export type {
   SubscriptionCadence,
   Transaction,
   TxType,
-} from '@wallet/shared'
+} from "@wallet/shared";

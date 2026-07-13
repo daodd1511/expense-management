@@ -1,6 +1,6 @@
-import { toast } from 'sonner'
-import { getFieldErrorMessage, isClientError } from '@/core/api'
-import { translate } from '@/core/i18n'
+import { toast } from "sonner";
+import { getFieldErrorMessage, isClientError } from "@/core/api";
+import { translate } from "@/core/i18n";
 
 /**
  * `MutationCache.onError` handler — shows a generic toast for every failed mutation,
@@ -9,6 +9,7 @@ import { translate } from '@/core/i18n'
  */
 export function handleMutationError(error: unknown) {
   toast.error(
-    getFieldErrorMessage(error) ?? translate(isClientError(error) ? 'error.badRequest' : 'error.server'),
-  )
+    getFieldErrorMessage(error) ??
+      translate(isClientError(error) ? "error.badRequest" : "error.server"),
+  );
 }

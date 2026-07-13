@@ -16,7 +16,7 @@ installs. Two consequences drove this spec:
   came up, the only recourse was `curl -sI …/sw.js` and eyeballing bundle hashes.
 
 The original PWA spec (`docs/specs/pwa/PLAN.md` → Decisions → "Update UX") deliberately deferred
-this: *"Keep silent `autoUpdate` … can revisit once `sonner` lands."* `sonner` has landed
+this: _"Keep silent `autoUpdate` … can revisit once `sonner` lands."_ `sonner` has landed
 (`main.tsx` renders `<Toaster>`), so this spec is that revisit and **supersedes** that decision.
 
 ## Goals
@@ -59,16 +59,16 @@ running the **old** in-memory code until a reload activates the waiting worker
 
 ## Product Decisions
 
-| Decision | Choice | Reason |
-|---|---|---|
-| Update mode | Switch `registerType: 'autoUpdate'` → **`'prompt'`** | Stops the silent auto-reload that eats form data; puts reload timing under user control. Reversible config flag, so not ADR-worthy. |
-| Apply affordance | **"Update" control in Settings**, bound to reactive `needRefresh`; tap → `updateServiceWorker(true)` | Non-disruptive: sits idle until the user navigates to Settings. Works whether the update was detected at open or mid-session. |
-| Toast trigger | **Waiting-at-startup only** — on launch, if `registration.waiting` already exists (update downloaded in a prior session, never applied), show one toast. Updates that become ready *during* a live session → **no toast**, only the Settings control lights up. | Deterministic, no magic timeout. Matches "you just opened it and there's a pending update" while never interrupting active work. |
-| Toast behavior | Sticky (no auto-dismiss), single "Update" action → `updateServiceWorker(true)`; dismissible. Dismissing leaves the Settings control as the fallback. | The toast is a convenience nudge, not the source of truth; the Settings control always remains. |
-| Version display | Always-visible Settings row: **`0.1.0 · <shortSHA> · <commit-date>`**. Update affordance appears inline next to it only when `needRefresh` is true. | The version row is the standing "which build am I on"; the Update control is contextual. Decoupled from semver so future real versioning drops in cleanly. |
-| Version source | Static semver from `package.json`; short SHA + commit date injected at build via Vite `define`, `dev` fallback when git/env absent | No auto-increment, no commit-back. SHA+date change every deploy → the real "did it update" signal. `git rev-parse --short HEAD` / `git log -1 --format=%cd` work under CI's shallow clone (need only HEAD). |
-| Offline-ready notice | None | Non-actionable, once-only, against the quiet feel. |
-| Manual check button | None | Redundant with foreground + 24h auto checks for a single user. |
+| Decision             | Choice                                                                                                                                                                                                                                                          | Reason                                                                                                                                                                                                      |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Update mode          | Switch `registerType: 'autoUpdate'` → **`'prompt'`**                                                                                                                                                                                                            | Stops the silent auto-reload that eats form data; puts reload timing under user control. Reversible config flag, so not ADR-worthy.                                                                         |
+| Apply affordance     | **"Update" control in Settings**, bound to reactive `needRefresh`; tap → `updateServiceWorker(true)`                                                                                                                                                            | Non-disruptive: sits idle until the user navigates to Settings. Works whether the update was detected at open or mid-session.                                                                               |
+| Toast trigger        | **Waiting-at-startup only** — on launch, if `registration.waiting` already exists (update downloaded in a prior session, never applied), show one toast. Updates that become ready _during_ a live session → **no toast**, only the Settings control lights up. | Deterministic, no magic timeout. Matches "you just opened it and there's a pending update" while never interrupting active work.                                                                            |
+| Toast behavior       | Sticky (no auto-dismiss), single "Update" action → `updateServiceWorker(true)`; dismissible. Dismissing leaves the Settings control as the fallback.                                                                                                            | The toast is a convenience nudge, not the source of truth; the Settings control always remains.                                                                                                             |
+| Version display      | Always-visible Settings row: **`0.1.0 · <shortSHA> · <commit-date>`**. Update affordance appears inline next to it only when `needRefresh` is true.                                                                                                             | The version row is the standing "which build am I on"; the Update control is contextual. Decoupled from semver so future real versioning drops in cleanly.                                                  |
+| Version source       | Static semver from `package.json`; short SHA + commit date injected at build via Vite `define`, `dev` fallback when git/env absent                                                                                                                              | No auto-increment, no commit-back. SHA+date change every deploy → the real "did it update" signal. `git rev-parse --short HEAD` / `git log -1 --format=%cd` work under CI's shallow clone (need only HEAD). |
+| Offline-ready notice | None                                                                                                                                                                                                                                                            | Non-actionable, once-only, against the quiet feel.                                                                                                                                                          |
+| Manual check button  | None                                                                                                                                                                                                                                                            | Redundant with foreground + 24h auto checks for a single user.                                                                                                                                              |
 
 ## Judgment Calls (not asked, noted here)
 
@@ -79,7 +79,7 @@ running the **old** in-memory code until a reload activates the waiting worker
   logic in `onRegisteredSW`, and exposes `{ needRefresh, updateServiceWorker }` via context for
   Settings to consume.
 - **Registration ownership.** Using `useRegisterSW` means the app owns registration; ensure
-  `vite-plugin-pwa`'s auto-injected `registerSW.js` doesn't *also* register (set `injectRegister`
+  `vite-plugin-pwa`'s auto-injected `registerSW.js` doesn't _also_ register (set `injectRegister`
   accordingly) so the worker registers exactly once.
 - **Keep `swUpdate.ts` foreground check.** `registerForegroundSWUpdateCheck()` still drives
   detection on foreground; unchanged. It feeds `needRefresh`, which now surfaces via the Settings

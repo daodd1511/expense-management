@@ -1,13 +1,13 @@
-import { cn } from '@/shared/lib/utils'
+import { cn } from "@/shared/lib/utils";
 
-export function Badge({ className, ...props }: React.ComponentProps<'span'>) {
+export function Badge({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
         className,
       )}
       {...props}
     />
-  )
+  );
 }

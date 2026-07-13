@@ -50,6 +50,7 @@ Pure frontend restructuring — no schema or API changes.
 - [x] Wired navigation in `MobileApp.tsx` / `DesktopApp.tsx`
 
 **Verification gate (hard):**
+
 - [x] `tsc --noEmit -p packages/web/tsconfig.json` passes
 - [x] FE test suite passes (17/17: `CategoryPicker.test.tsx`, `BudgetForm.test.ts`,
       `TransactionForm.test.tsx` unaffected, as expected)
@@ -89,6 +90,7 @@ Branch: `category-ux/phase-2-favorites-schema-api` (off `phase-1`)
 - [x] Backend tests: `packages/api/src/routes/favorites.test.ts`, 5 cases
 
 **Verification gate (hard):**
+
 - [x] `tsc --noEmit -p packages/shared/tsconfig.json` passes
 - [x] `tsc --noEmit -p packages/api/tsconfig.json` passes
 - [x] Backend test suite passes (25/25, direct vitest run)
@@ -124,6 +126,7 @@ surfaced as a real error, because inferring a generic from an `any` argument res
 out of scope here.
 
 **Verification gate (hard):**
+
 - [x] `tsc --noEmit -p packages/web/tsconfig.json` passes
 - [x] FE test suite passes (17/17, unaffected — no UI consumes this layer yet)
 - [x] Manual check: not applicable — no UI consumes this layer until Phase 4, skipped
@@ -138,8 +141,7 @@ push/PR.
 
 Branch: `category-ux/phase-4-favorites-ui` (off `phase-3`)
 
-- [x] `CategoriesPage.tsx`: added a star toggle per category row/tile (parent box header
-      + each child tile), calling `addFavorite`/`removeFavorite` from `useStore()`. Had to
+- [x] `CategoriesPage.tsx`: added a star toggle per category row/tile (parent box header + each child tile), calling `addFavorite`/`removeFavorite` from `useStore()`. Had to
       restructure the parent/child rows from single wrapping `<button>`s into sibling-button
       layouts (select button + separate star button) since a `<button>` can't nest inside a
       `<button>`
@@ -159,6 +161,7 @@ Branch: `category-ux/phase-4-favorites-ui` (off `phase-3`)
       tests keep exercising the same selection flow without needing to open "Show all"
 
 **Verification gate (hard):**
+
 - [x] `tsc --noEmit -p packages/web/tsconfig.json` passes
 - [x] FE test suite passes (23/23)
 - [ ] Manual check in browser: star a category on the management page → confirm it shows

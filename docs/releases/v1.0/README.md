@@ -60,6 +60,7 @@ and keyboard shortcuts.
 ## Blocking v1.0
 
 Per `docs/BACKLOG.md` (source of truth — check there for the current list):
+
 - **Fee feature** (priority: high)
 
 ## Explicitly out of scope for v1.0

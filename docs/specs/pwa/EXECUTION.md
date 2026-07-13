@@ -46,13 +46,13 @@ real tab icon. Frontend-only, `packages/web`.
       direct `sharp` rendering before committing. `public/icon.svg` (the adaptive
       light/dark favicon) got the same `$` glyph for consistency, keeping its
       `prefers-color-scheme` media-query swap structure, now stroke-based (`.foreground {
-      stroke: ... }`) instead of fill-based to match the new geometry. Also removed
+    stroke: ... }`) instead of fill-based to match the new geometry. Also removed
       several unreferenced legacy/placeholder assets from `public/` while touching this
       area (`apple-icon.png`, `icon-dark-32x32.png`, `icon-light-32x32.png`,
       `placeholder-*` starter-template leftovers) — confirmed zero references anywhere in
       source before deleting
 - [x] `packages/web/vite.config.ts`: `VitePWA({ ..., pwaAssets: { image: 'public/app-icon.svg',
-      includeHtmlHeadLinks: false, injectThemeColor: false } })` using the generator's
+    includeHtmlHeadLinks: false, injectThemeColor: false } })` using the generator's
       default `minimal-2023` preset (192/512/maskable/apple-touch/favicon.ico — matches
       PLAN.md's Open Items note to use the documented default). `includeHtmlHeadLinks`/
       `injectThemeColor` disabled because the plugin's auto-injected favicon `<link>` points
@@ -62,14 +62,15 @@ real tab icon. Frontend-only, `packages/web`.
       `oklch(0.985 0.004 90)` to `#fbfaf7` (computed hex equivalent)
 - [x] `packages/web/index.html`: added `<meta name="theme-color" content="#fbfaf7">`,
       `<link rel="icon" href="/favicon.ico" sizes="48x48">`, `<link rel="icon"
-      href="/icon.svg" sizes="any" type="image/svg+xml">` (existing adaptive favicon,
+    href="/icon.svg" sizes="any" type="image/svg+xml">` (existing adaptive favicon,
       light/dark media-query behavior preserved), `<link rel="apple-touch-icon"
-      href="/apple-touch-icon-180x180.png">`
+    href="/apple-touch-icon-180x180.png">`
 - [x] Confirmed `dist/manifest.webmanifest`'s `icons` array is non-empty: `pwa-64x64.png`,
       `pwa-192x192.png`, `pwa-512x512.png`, and `maskable-icon-512x512.png` with
       `"purpose":"maskable"` — verified by building and reading the file directly
 
 **Verification gate (hard):**
+
 - [x] `pnpm --filter @wallet/web typecheck` passes
 - [x] `pnpm --filter @wallet/web test` passes — 26/26, unaffected (no PWA-plugin build-time
       change touches app code)
@@ -108,7 +109,7 @@ explicit scope limit.
       execution time — a proactive connectivity hook stands alone with no dependency on
       that spec, resolving the soft-coupling PLAN.md flagged
 - [x] Distinct "you're offline" messaging: `packages/web/src/shared/components/
-      OfflineBanner.tsx` — a fixed, non-dismissible top-of-viewport banner (`role="status"`,
+    OfflineBanner.tsx` — a fixed, non-dismissible top-of-viewport banner (`role="status"`,
       `bg-expense`) shown whenever `useOnlineStatus()` reports offline, mounted at the app
       root in `main.tsx` (inside `LangProvider`, above `AuthGate`, so it shows regardless of
       auth state). New i18n key `offline.banner`, VI + EN. This is a single global
@@ -123,6 +124,7 @@ explicit scope limit.
       was added anywhere in this phase
 
 **Verification gate (hard):**
+
 - [x] `pnpm --filter @wallet/web typecheck` passes
 - [x] `pnpm --filter @wallet/web test` passes — 29/29 (26 prior + 3 new in
       `OfflineBanner.test.tsx`: hidden while online, shown on `offline` event, hidden again

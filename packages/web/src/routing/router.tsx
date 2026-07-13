@@ -6,7 +6,7 @@ import {
   createRoute,
   createRouter,
   redirect,
-} from '@tanstack/react-router'
+} from "@tanstack/react-router";
 import {
   AccountsPage,
   BudgetsPage,
@@ -17,216 +17,209 @@ import {
   SettingsPage,
   SubscriptionsPage,
   TransactionsPage,
-} from '@/routing/app-pages'
-import { LoadingScreen } from '@/shared/components/LoadingScreen'
-import { ResponsiveApp } from '@/layouts/ResponsiveApp'
-import { VersionPage } from '@/features/version/components/VersionPage'
-import { useAuth, type AuthContextValue } from '@/features/auth/auth'
-import { ForgotPasswordPage } from '@/features/auth/components/ForgotPassword'
-import { ResetPasswordPage } from '@/features/auth/components/ResetPassword'
-import { SignIn } from '@/features/auth/components/SignIn'
-import { SignUpPage } from '@/features/auth/components/SignUp'
-import { currentRedirectPath, normalizeRedirectPath, validateAuthSearch } from './auth-redirect'
-import { validateCreateIntentSearch } from './create-intent'
-import { validateReportsSearch } from './reports-search'
+} from "@/routing/app-pages";
+import { LoadingScreen } from "@/shared/components/LoadingScreen";
+import { ResponsiveApp } from "@/layouts/ResponsiveApp";
+import { VersionPage } from "@/features/version/components/VersionPage";
+import { useAuth, type AuthContextValue } from "@/features/auth/auth";
+import { ForgotPasswordPage } from "@/features/auth/components/ForgotPassword";
+import { ResetPasswordPage } from "@/features/auth/components/ResetPassword";
+import { SignIn } from "@/features/auth/components/SignIn";
+import { SignUpPage } from "@/features/auth/components/SignUp";
+import { currentRedirectPath, normalizeRedirectPath, validateAuthSearch } from "./auth-redirect";
+import { validateCreateIntentSearch } from "./create-intent";
+import { validateReportsSearch } from "./reports-search";
 
 type RouterContext = {
-  auth: AuthContextValue
-}
+  auth: AuthContextValue;
+};
 
 function RootRouteComponent() {
-  return <Outlet />
+  return <Outlet />;
 }
 
 function AuthRouteComponent() {
-  return <Outlet />
+  return <Outlet />;
 }
 
 function ProtectedAppRouteComponent() {
-  const auth = useAuth()
+  const auth = useAuth();
 
-  if (auth.loading) return <LoadingScreen />
+  if (auth.loading) return <LoadingScreen />;
 
   if (!auth.user) {
-    return (
-      <Navigate
-        to="/auth/sign-in"
-        search={{ redirect: currentRedirectPath() }}
-        replace
-      />
-    )
+    return <Navigate to="/auth/sign-in" search={{ redirect: currentRedirectPath() }} replace />;
   }
 
-  return <ResponsiveApp />
+  return <ResponsiveApp />;
 }
 
 function EmptyRouteComponent() {
-  return null
+  return null;
 }
 
 const rootRoute = createRootRouteWithContext<RouterContext>()({
   component: RootRouteComponent,
-})
+});
 
 const authRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/auth',
+  path: "/auth",
   component: AuthRouteComponent,
-})
+});
 
 const signInRoute = createRoute({
   getParentRoute: () => authRoute,
-  path: 'sign-in',
+  path: "sign-in",
   validateSearch: validateAuthSearch,
   beforeLoad: ({ context, search }) => {
     if (!context.auth.loading && context.auth.user) {
       throw redirect({
         href: normalizeRedirectPath(search.redirect),
         replace: true,
-      })
+      });
     }
   },
   component: () => <SignIn redirectTo={normalizeRedirectPath(signInRoute.useSearch().redirect)} />,
-})
+});
 
 const signUpRoute = createRoute({
   getParentRoute: () => authRoute,
-  path: 'sign-up',
+  path: "sign-up",
   validateSearch: validateAuthSearch,
   beforeLoad: ({ context, search }) => {
     if (!context.auth.loading && context.auth.user) {
       throw redirect({
         href: normalizeRedirectPath(search.redirect),
         replace: true,
-      })
+      });
     }
   },
-  component: () => <SignUpPage redirectTo={normalizeRedirectPath(signUpRoute.useSearch().redirect)} />,
-})
+  component: () => (
+    <SignUpPage redirectTo={normalizeRedirectPath(signUpRoute.useSearch().redirect)} />
+  ),
+});
 
 const forgotPasswordRoute = createRoute({
   getParentRoute: () => authRoute,
-  path: 'forgot-password',
+  path: "forgot-password",
   validateSearch: validateAuthSearch,
   beforeLoad: ({ context, search }) => {
     if (!context.auth.loading && context.auth.user) {
       throw redirect({
         href: normalizeRedirectPath(search.redirect),
         replace: true,
-      })
+      });
     }
   },
   component: ForgotPasswordPage,
-})
+});
 
 const resetPasswordRoute = createRoute({
   getParentRoute: () => authRoute,
-  path: 'reset-password',
+  path: "reset-password",
   validateSearch: validateAuthSearch,
   component: () => (
-    <ResetPasswordPage redirectTo={normalizeRedirectPath(resetPasswordRoute.useSearch().redirect)} />
+    <ResetPasswordPage
+      redirectTo={normalizeRedirectPath(resetPasswordRoute.useSearch().redirect)}
+    />
   ),
-})
+});
 
 const versionRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/version',
+  path: "/version",
   component: VersionPage,
-})
+});
 
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
-  id: 'app',
+  id: "app",
   beforeLoad: ({ context, location }) => {
     if (!context.auth.loading && !context.auth.user) {
       throw redirect({
-        to: '/auth/sign-in',
+        to: "/auth/sign-in",
         search: { redirect: normalizeRedirectPath(location.href) },
         replace: true,
-      })
+      });
     }
   },
   component: ProtectedAppRouteComponent,
-})
+});
 
 const dashboardRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: '/',
+  path: "/",
   component: DashboardPage,
-})
+});
 
 const transactionsRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: 'transactions',
+  path: "transactions",
   component: TransactionsPage,
-})
+});
 
 const reportsRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: 'reports',
+  path: "reports",
   validateSearch: validateReportsSearch,
   component: ReportsPage,
-})
+});
 
 const budgetsRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: 'budgets',
+  path: "budgets",
   validateSearch: validateCreateIntentSearch,
   component: BudgetsPage,
-})
+});
 
 const subscriptionsRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: 'subscriptions',
+  path: "subscriptions",
   validateSearch: validateCreateIntentSearch,
   component: SubscriptionsPage,
-})
+});
 
 const accountsRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: 'accounts',
+  path: "accounts",
   validateSearch: validateCreateIntentSearch,
   component: AccountsPage,
-})
+});
 
 const otherRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: 'other',
+  path: "other",
   component: OtherPage,
-})
+});
 
 const settingsRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: 'settings',
+  path: "settings",
   component: SettingsPage,
-})
+});
 
 const settingsCategoriesRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: 'settings/categories',
+  path: "settings/categories",
   component: SettingsCategoriesPage,
-})
+});
 
 const planningRedirectRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: 'planning',
+  path: "planning",
   beforeLoad: () => {
     throw redirect({
-      to: '/budgets',
+      to: "/budgets",
       replace: true,
-    })
+    });
   },
   component: EmptyRouteComponent,
-})
+});
 
 const routeTree = rootRoute.addChildren([
   versionRoute,
-  authRoute.addChildren([
-    signInRoute,
-    signUpRoute,
-    forgotPasswordRoute,
-    resetPasswordRoute,
-  ]),
+  authRoute.addChildren([signInRoute, signUpRoute, forgotPasswordRoute, resetPasswordRoute]),
   appRoute.addChildren([
     dashboardRoute,
     transactionsRoute,
@@ -239,23 +232,23 @@ const routeTree = rootRoute.addChildren([
     settingsCategoriesRoute,
     planningRedirectRoute,
   ]),
-])
+]);
 
 export const router = createRouter({
   routeTree,
   context: {
     auth: undefined as never,
   },
-})
+});
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface Register {
-    router: typeof router
+    router: typeof router;
   }
 }
 
 export function AppRouter() {
-  const auth = useAuth()
+  const auth = useAuth();
 
-  return <RouterProvider router={router} context={{ auth }} />
+  return <RouterProvider router={router} context={{ auth }} />;
 }

@@ -1,5 +1,5 @@
-import type { Account } from '../models'
-import type { AccountPatch, AccountRow } from '../dtos'
+import type { Account } from "../models";
+import type { AccountPatch, AccountRow } from "../dtos";
 
 export function toAccount(row: AccountRow): Account {
   return {
@@ -7,17 +7,17 @@ export function toAccount(row: AccountRow): Account {
     name: row.name,
     kind: row.kind,
     openingBalance: row.opening_balance,
-  }
+  };
 }
 
-export function fromAccount(params: { account: Omit<Account, 'id'>; ownerId: string }) {
-  const { account, ownerId } = params
+export function fromAccount(params: { account: Omit<Account, "id">; ownerId: string }) {
+  const { account, ownerId } = params;
   return {
     owner_id: ownerId,
     name: account.name,
     kind: account.kind,
     opening_balance: account.openingBalance,
-  }
+  };
 }
 
 export function accountPatchToRow(patch: AccountPatch) {
@@ -25,5 +25,5 @@ export function accountPatchToRow(patch: AccountPatch) {
     ...(patch.name !== undefined && { name: patch.name }),
     ...(patch.kind !== undefined && { kind: patch.kind }),
     ...(patch.openingBalance !== undefined && { opening_balance: patch.openingBalance }),
-  }
+  };
 }

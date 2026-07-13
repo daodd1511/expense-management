@@ -132,40 +132,40 @@ Response shape:
 type IncomeExpenseReportResponse = {
   data: {
     range: {
-      from: string
-      to: string
-      granularity: 'month'
-    }
+      from: string;
+      to: string;
+      granularity: "month";
+    };
     totals: {
-      income: number
-      expense: number
-      net: number
-      transactionCount: number
-    }
+      income: number;
+      expense: number;
+      net: number;
+      transactionCount: number;
+    };
     series: Array<{
-      period: string
-      income: number
-      expense: number
-      net: number
-    }>
+      period: string;
+      income: number;
+      expense: number;
+      net: number;
+    }>;
     categories: Array<{
-      categoryId: string
-      parentCategoryId: string | null
-      type: 'income' | 'expense'
-      amount: number
-      transactionCount: number
-      percentage: number
+      categoryId: string;
+      parentCategoryId: string | null;
+      type: "income" | "expense";
+      amount: number;
+      transactionCount: number;
+      percentage: number;
       transactions: Array<{
-        id: string
-        date: string
-        merchant: string
-        note?: string
-        amount: number
-        accountId: string
-      }>
-    }>
-  }
-}
+        id: string;
+        date: string;
+        merchant: string;
+        note?: string;
+        amount: number;
+        accountId: string;
+      }>;
+    }>;
+  };
+};
 ```
 
 ## Web Data Layer Changes

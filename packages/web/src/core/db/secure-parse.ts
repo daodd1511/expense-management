@@ -1,1 +1,1 @@
-export { secureParse } from '@wallet/shared'
+export { secureParse } from "@wallet/shared";

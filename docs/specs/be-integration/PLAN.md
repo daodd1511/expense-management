@@ -4,16 +4,16 @@ status: done
 
 ## Decisions
 
-| Decision | Choice | Reason |
-|---|---|---|
-| Motivation | Third-party integrations + future-proofing | Server-side secrets (bank APIs, OCR, notifications), extensibility |
-| Runtime | Hono on Bun | Already pinned in package.json, native TS, fast, VPS-deployable |
-| API style | REST | Standard, universal, no client lock-in |
-| Auth | JWT passthrough + secret key | FE keeps Google OAuth via Supabase Auth; BE verifies JWT via Supabase JWKS and uses a server-side secret key for DB |
-| Scope | Full proxy | All data through BE; anon key leaves browser entirely |
-| Structure | pnpm monorepo | `packages/web` + `packages/api` + `packages/shared`; shared types flow automatically |
-| Deployment | Same VPS, Caddy proxy | `/api/*` → Bun process (port 3000); static FE on same domain; no CORS |
-| Migration | 3-phase | Each phase independently shippable |
+| Decision   | Choice                                     | Reason                                                                                                              |
+| ---------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Motivation | Third-party integrations + future-proofing | Server-side secrets (bank APIs, OCR, notifications), extensibility                                                  |
+| Runtime    | Hono on Bun                                | Already pinned in package.json, native TS, fast, VPS-deployable                                                     |
+| API style  | REST                                       | Standard, universal, no client lock-in                                                                              |
+| Auth       | JWT passthrough + secret key               | FE keeps Google OAuth via Supabase Auth; BE verifies JWT via Supabase JWKS and uses a server-side secret key for DB |
+| Scope      | Full proxy                                 | All data through BE; anon key leaves browser entirely                                                               |
+| Structure  | pnpm monorepo                              | `packages/web` + `packages/api` + `packages/shared`; shared types flow automatically                                |
+| Deployment | Same VPS, Caddy proxy                      | `/api/*` → Bun process (port 3000); static FE on same domain; no CORS                                               |
+| Migration  | 3-phase                                    | Each phase independently shippable                                                                                  |
 
 ---
 
@@ -88,6 +88,7 @@ package.json                ← root scripts: dev, build, typecheck all packages
 All routes are prefixed `/api` and require `Authorization: Bearer <token>`.
 
 ### Transactions
+
 ```
 GET    /api/transactions          ?month=YYYY-MM (optional filter)
 POST   /api/transactions
@@ -97,6 +98,7 @@ DELETE /api/transactions          body: { ids: string[] }  (bulk delete)
 ```
 
 ### Accounts
+
 ```
 GET    /api/accounts
 POST   /api/accounts
@@ -105,6 +107,7 @@ DELETE /api/accounts/:id
 ```
 
 ### Categories
+
 ```
 GET    /api/categories            returns system (owner_id=null) + user-owned
 POST   /api/categories
@@ -113,6 +116,7 @@ DELETE /api/categories/:id        user-owned only; nullifies refs in transaction
 ```
 
 ### Budgets
+
 ```
 GET    /api/budgets
 POST   /api/budgets
@@ -121,6 +125,7 @@ DELETE /api/budgets/:categoryId
 ```
 
 ### Subscriptions
+
 ```
 GET    /api/subscriptions
 POST   /api/subscriptions
@@ -134,6 +139,7 @@ POST   /api/subscriptions/:id/log  creates transaction + advances next_due_date 
 ## packages/api internals
 
 ### Auth middleware (`middleware/auth.ts`)
+
 ```ts
 // Verifies Supabase JWT, injects userId into Hono context
 // Uses Supabase JWKS / signing keys to verify signature
@@ -141,21 +147,24 @@ POST   /api/subscriptions/:id/log  creates transaction + advances next_due_date 
 ```
 
 ### Route pattern
+
 Each route file:
+
 1. Receives `userId` from context (set by auth middleware)
 2. Validates request body with Zod (`packages/shared` schemas)
 3. Queries Supabase via service role client, filtered by `owner_id = userId`
 4. Returns JSON — same shape as current `features/*/db.ts` mappers
 
 ### Service role client (`db/supabase.ts`)
+
 ```ts
-import { createClient } from '@supabase/supabase-js'
-import type { Database } from '@shared/database.types'
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@shared/database.types";
 
 export const supabase = createClient<Database>(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SECRET_KEY!,
-)
+);
 ```
 
 ---
@@ -163,28 +172,33 @@ export const supabase = createClient<Database>(
 ## FE Changes (packages/web)
 
 ### What changes
+
 - `features/*/db.ts` — replace Supabase calls with `fetch('/api/...')` + `Authorization` header
 - `core/supabase.ts` — kept only for Auth (session management); data client removed
 - `core/store.tsx` — unchanged (still composes TanStack Query hooks)
 - `features/*/queries.ts` — unchanged (useQuery/useMutation stay identical)
 
 ### Auth helper
+
 ```ts
 // shared fetch wrapper that injects the current session token
 async function apiFetch(path: string, init?: RequestInit) {
-  const { data: { session } } = await supabase.auth.getSession()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   return fetch(`/api${path}`, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${session?.access_token}`,
       ...init?.headers,
     },
-  })
+  });
 }
 ```
 
 ### What stays the same
+
 - `features/auth/` — Google OAuth flow unchanged
 - `features/*/queries.ts` — TanStack Query hooks unchanged
 - `core/store.tsx` — StoreValue interface unchanged; all consumers unchanged
@@ -215,6 +229,7 @@ app.yourdomain.com {
 ## Migration Phases
 
 ### Phase 1 — Restructure (no behaviour change)
+
 - Move `src/` → `packages/web/src/`
 - Move `index.html`, `vite.config.ts`, `tsconfig.json` → `packages/web/`
 - Create `packages/shared/` — extract `core/types.ts` + Zod schemas + `secure-parse.ts`
@@ -224,6 +239,7 @@ app.yourdomain.com {
 - **Exit criteria:** `pnpm build` passes, app works identically, TypeScript clean
 
 ### Phase 2 — Build API
+
 - Implement all route handlers in `packages/api/`
 - Wire JWT middleware
 - Reuse Zod schemas from `packages/shared`
@@ -233,6 +249,7 @@ app.yourdomain.com {
 - **Exit criteria:** all endpoints return correct data for authenticated requests; FE still calls Supabase directly (unchanged)
 
 ### Phase 3 — Switch FE
+
 - Replace `features/*/db.ts` — Supabase calls → `apiFetch` calls
 - Remove `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` from data path (keep for auth only)
 - Remove service role / data concerns from `packages/web`
@@ -244,6 +261,7 @@ app.yourdomain.com {
 ## Environment Variables
 
 ### packages/api (.env)
+
 ```
 SUPABASE_URL=
 SUPABASE_SECRET_KEY=          ← never in browser
@@ -251,6 +269,7 @@ PORT=3000
 ```
 
 ### packages/web (.env)
+
 ```
 VITE_SUPABASE_URL=            ← kept for Auth only
 VITE_SUPABASE_PUBLISHABLE_KEY=← kept for Auth only

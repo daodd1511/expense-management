@@ -26,11 +26,13 @@ Backend and shared-contract work lands first so the frontend can consume stable 
 - [x] Add or extend route coverage in `packages/api/src/routes/accounts.test.ts` and new `packages/api/src/routes/analytics.test.ts` for computed balances and month aggregation.
 
 **Agent gate (hard):**
+
 - [x] `pnpm --filter @wallet/api typecheck`
 - [x] `pnpm --filter @wallet/api test`
 - [x] `pnpm --filter @wallet/api build`
 
 **Review checklist (user, at PR review):**
+
 - [ ] Accounts payload now includes both `openingBalance` and computed `balance`, and the numbers match the current transaction history.
 - [ ] `GET /api/analytics/monthly-totals` returns the expected month buckets for a user with mixed income and expense history.
 - [ ] No account or analytics data leaks across users.
@@ -50,11 +52,13 @@ This phase rewires the web data layer to the new backend contracts before changi
 - [x] Update `packages/web/src/features/transactions/queries.test.tsx` to lock month-scoped fetching and month-keyed optimistic cache behavior.
 
 **Agent gate (hard):**
+
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 - [x] `pnpm --filter @wallet/web build`
 
 **Review checklist (user, at PR review):**
+
 - [ ] Accounts screens still render the same balances after the source of truth moves from client reduction to the API payload.
 - [ ] Refreshing or revisiting the transactions screen only fetches the current month by default.
 - [ ] Existing non-transaction screens still load without regressions after the query-key changes.
@@ -74,11 +78,13 @@ The transactions screen becomes the owner of selected-month and filter state onc
 - [x] Maintain automated coverage via the updated month-scoped transaction query tests and the existing transaction route/form/component suite, which passed after the screen rewiring.
 
 **Agent gate (hard):**
+
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 - [x] `pnpm --filter @wallet/web build`
 
 **Review checklist (user, at PR review):**
+
 - [ ] Desktop transactions toolbar can move backward and forward by month and the list refetches accordingly.
 - [ ] Mobile transactions exposes the same month, type, text, category, and account filtering capabilities without breaking pull-to-refresh.
 - [ ] Moving to a prior month no longer requires loading the full transaction history.
@@ -98,11 +104,13 @@ Once month scoping and transaction filters exist, the dashboard can switch from 
 - [x] Cover the dashboard rewrite with the existing web test/build gate after the chart, routing, and shared-data changes.
 
 **Agent gate (hard):**
+
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 - [x] `pnpm --filter @wallet/web build`
 
 **Review checklist (user, at PR review):**
+
 - [ ] Dashboard trend charts reflect live server totals rather than static seed values.
 - [ ] Tapping or clicking a category on the donut takes you to the transactions view with the matching month and category filter already active.
 - [ ] Mobile and desktop dashboards stay visually intact after the chart and navigation changes.
@@ -122,11 +130,13 @@ This last phase is UI-only polish on category selection and customization, indep
 - [x] Add or update tests for favorite-category selection, icon registry usage, and color/icon picker rendering in `FavoriteCategoryPicker.test.tsx` and new `CategoryForm.test.tsx`.
 
 **Agent gate (hard):**
+
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 - [x] `pnpm --filter @wallet/web build`
 
 **Review checklist (user, at PR review):**
+
 - [ ] Favorite categories render as compact tiles, selected favorites highlight clearly, and a non-favorite selection still appears as a full-width selected row.
 - [ ] Category creation/editing exposes the expanded icon set and all 12 chart colors in both light and dark themes.
 - [ ] Existing category picker grouping and modal behavior remain intact.

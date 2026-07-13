@@ -1,6 +1,6 @@
 export type CreateIntentSearch = {
-  create?: string
-}
+  create?: string;
+};
 
 /**
  * A `create` token in the URL is a one-shot signal for the destination page to open its
@@ -10,6 +10,6 @@ export type CreateIntentSearch = {
  */
 export function validateCreateIntentSearch(search: Record<string, unknown>): CreateIntentSearch {
   return {
-    create: typeof search.create === 'string' ? search.create : undefined,
-  }
+    create: typeof search.create === "string" ? search.create : undefined,
+  };
 }

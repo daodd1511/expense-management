@@ -1,4 +1,4 @@
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle } from "lucide-react";
 
 /** Inline failure banner for forms — rendered when a submit attempt fails. */
 export function FormErrorBanner({ message }: { message: string }) {
@@ -10,5 +10,5 @@ export function FormErrorBanner({ message }: { message: string }) {
       <AlertCircle className="size-4 shrink-0" />
       {message}
     </div>
-  )
+  );
 }

@@ -3,4 +3,4 @@ export {
   transactionBulkDeleteSchema,
   transactionCreateSchema,
   transactionPatchSchema,
-} from '@wallet/shared'
+} from "@wallet/shared";

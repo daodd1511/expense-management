@@ -1,10 +1,9 @@
+import { Select as SelectPrimitive } from "@base-ui/react/select";
+import { Check, ChevronDown } from "lucide-react";
+import { cn } from "@/shared/lib/utils";
 
-import { Select as SelectPrimitive } from '@base-ui/react/select'
-import { Check, ChevronDown } from 'lucide-react'
-import { cn } from '@/shared/lib/utils'
-
-const SelectRoot = SelectPrimitive.Root
-const SelectPortal = SelectPrimitive.Portal
+const SelectRoot = SelectPrimitive.Root;
+const SelectPortal = SelectPrimitive.Portal;
 
 function SelectTrigger({
   className,
@@ -14,7 +13,7 @@ function SelectTrigger({
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        'flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 text-left text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50',
+        "flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 text-left text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
       {...props}
@@ -24,11 +23,11 @@ function SelectTrigger({
         <ChevronDown className="size-4" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
-  )
+  );
 }
 
 function SelectValue(props: React.ComponentProps<typeof SelectPrimitive.Value>) {
-  return <SelectPrimitive.Value {...props} />
+  return <SelectPrimitive.Value {...props} />;
 }
 
 function SelectPositioner({
@@ -37,27 +36,24 @@ function SelectPositioner({
 }: React.ComponentProps<typeof SelectPrimitive.Positioner>) {
   return (
     <SelectPrimitive.Positioner
-      className={cn('z-50 min-w-[var(--anchor-width)]', className)}
+      className={cn("z-50 min-w-[var(--anchor-width)]", className)}
       sideOffset={6}
       {...props}
     />
-  )
+  );
 }
 
-function SelectPopup({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Popup>) {
+function SelectPopup({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.Popup>) {
   return (
     <SelectPrimitive.Popup
       className={cn(
-        'max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-sm outline-none',
-        'origin-[var(--transform-origin)] data-[starting-style]:scale-95 data-[ending-style]:scale-95 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 transition-[transform,opacity] duration-150',
+        "max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-sm outline-none",
+        "origin-[var(--transform-origin)] data-[starting-style]:scale-95 data-[ending-style]:scale-95 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 transition-[transform,opacity] duration-150",
         className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function SelectItem({
@@ -68,7 +64,7 @@ function SelectItem({
   return (
     <SelectPrimitive.Item
       className={cn(
-        'relative flex min-h-9 cursor-default select-none items-center gap-2 rounded-md py-2 pl-8 pr-3 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        "relative flex min-h-9 cursor-default select-none items-center gap-2 rounded-md py-2 pl-8 pr-3 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className,
       )}
       {...props}
@@ -80,11 +76,11 @@ function SelectItem({
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
     </SelectPrimitive.Item>
-  )
+  );
 }
 
 function SelectGroup(props: React.ComponentProps<typeof SelectPrimitive.Group>) {
-  return <SelectPrimitive.Group {...props} />
+  return <SelectPrimitive.Group {...props} />;
 }
 
 function SelectGroupLabel({
@@ -93,10 +89,13 @@ function SelectGroupLabel({
 }: React.ComponentProps<typeof SelectPrimitive.GroupLabel>) {
   return (
     <SelectPrimitive.GroupLabel
-      className={cn('flex items-center gap-2 px-3 pb-1 pt-2 text-xs font-medium text-muted-foreground', className)}
+      className={cn(
+        "flex items-center gap-2 px-3 pb-1 pt-2 text-xs font-medium text-muted-foreground",
+        className,
+      )}
       {...props}
     />
-  )
+  );
 }
 
 export {
@@ -109,4 +108,4 @@ export {
   SelectItem,
   SelectGroup,
   SelectGroupLabel,
-}
+};

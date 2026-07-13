@@ -1,6 +1,6 @@
-import { WifiOff } from 'lucide-react'
-import { useLang } from '@/core/i18n'
-import { useOnlineStatus } from '@/core/useOnlineStatus'
+import { WifiOff } from "lucide-react";
+import { useLang } from "@/core/i18n";
+import { useOnlineStatus } from "@/core/useOnlineStatus";
 
 /**
  * Fixed top-of-viewport strip shown whenever the browser reports no connectivity.
@@ -9,10 +9,10 @@ import { useOnlineStatus } from '@/core/useOnlineStatus'
  * instead of silent.
  */
 export function OfflineBanner() {
-  const isOnline = useOnlineStatus()
-  const { t } = useLang()
+  const isOnline = useOnlineStatus();
+  const { t } = useLang();
 
-  if (isOnline) return null
+  if (isOnline) return null;
 
   return (
     <div
@@ -20,7 +20,7 @@ export function OfflineBanner() {
       className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-2 bg-expense px-4 py-2 text-sm font-medium text-expense-foreground"
     >
       <WifiOff className="size-4 shrink-0" />
-      {t('offline.banner')}
+      {t("offline.banner")}
     </div>
-  )
+  );
 }
