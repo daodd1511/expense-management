@@ -5,8 +5,11 @@ import {
   computeFinancialPosition,
   computeLoanOriginAmount,
   computeLoanOutstandingBalance,
+  computeLoansSummary,
   computeLoanState,
   computeLoanStatus,
+  computeNetWorthSnapshot,
+  computeNetWorthTrend,
   computeRunningBalances,
 } from "./finance";
 import type { Loan, LoanEvent, Transaction } from "./models";
@@ -356,6 +359,151 @@ describe("computeLoanState", () => {
       outstandingBalance: 60_000,
       status: "due-soon",
     });
+  });
+});
+
+describe("computeLoansSummary", () => {
+  it("sums lending/borrowing outstanding separately and derives net position", () => {
+    const loans = [
+      {
+        loan: makeLoan({ id: "loan-lend", direction: "lending" as const }),
+        events: [makeEvent({ loanId: "loan-lend", kind: "disbursement", amount: 100_000 })],
+      },
+      {
+        loan: makeLoan({ id: "loan-borrow", direction: "borrowing" as const }),
+        events: [makeEvent({ loanId: "loan-borrow", kind: "disbursement", amount: 30_000 })],
+      },
+    ];
+
+    expect(computeLoansSummary(loans, "2026-07-13")).toEqual({
+      owedToUser: 100_000,
+      userOwes: 30_000,
+      netPosition: 70_000,
+      overdueCount: 0,
+    });
+  });
+
+  it("counts only loans whose derived status is overdue", () => {
+    const loans = [
+      {
+        loan: makeLoan({ id: "loan-overdue", direction: "lending" as const, dueDate: "2026-07-01" }),
+        events: [makeEvent({ loanId: "loan-overdue", kind: "disbursement", amount: 50_000 })],
+      },
+      {
+        loan: makeLoan({ id: "loan-open", direction: "lending" as const, dueDate: "2026-12-01" }),
+        events: [makeEvent({ loanId: "loan-open", kind: "disbursement", amount: 50_000 })],
+      },
+      {
+        loan: makeLoan({ id: "loan-repaid", direction: "borrowing" as const }),
+        events: [
+          makeEvent({ loanId: "loan-repaid", kind: "disbursement", amount: 20_000 }),
+          makeEvent({ id: "e2", loanId: "loan-repaid", kind: "repayment", amount: 20_000 }),
+        ],
+      },
+    ];
+
+    expect(computeLoansSummary(loans, "2026-07-13").overdueCount).toBe(1);
+  });
+});
+
+describe("computeNetWorthSnapshot", () => {
+  it("combines account total with lending/borrowing outstanding", () => {
+    const accounts = [{ id: "cash", openingBalance: 1_000_000 }];
+    const transactions = [
+      makeTx({ type: "expense", amount: 100_000, accountId: "cash", date: "2026-07-01" }),
+    ];
+    const loans = [
+      {
+        direction: "lending" as const,
+        events: [makeEvent({ kind: "disbursement", amount: 200_000, date: "2026-07-01" })],
+      },
+      {
+        direction: "borrowing" as const,
+        events: [makeEvent({ kind: "disbursement", amount: 50_000, date: "2026-07-01" })],
+      },
+    ];
+
+    expect(computeNetWorthSnapshot(accounts, transactions, loans)).toEqual({
+      accountTotal: 900_000,
+      lendingOutstanding: 200_000,
+      borrowingOutstanding: 50_000,
+      netWorth: 1_050_000,
+    });
+  });
+});
+
+describe("computeNetWorthTrend", () => {
+  it("zero-fills months with no activity across the full window", () => {
+    const accounts = [{ id: "cash", openingBalance: 1000 }];
+    const points = computeNetWorthTrend(accounts, [], [], "2026-07", 3);
+    expect(points).toEqual([
+      { month: "2026-05", netWorth: 1000, accountTotal: 1000, lendingOutstanding: 0, borrowingOutstanding: 0 },
+      { month: "2026-06", netWorth: 1000, accountTotal: 1000, lendingOutstanding: 0, borrowingOutstanding: 0 },
+      { month: "2026-07", netWorth: 1000, accountTotal: 1000, lendingOutstanding: 0, borrowingOutstanding: 0 },
+    ]);
+  });
+
+  it("folds a loan event into net worth from its event date's month-end onward", () => {
+    const accounts = [{ id: "cash", openingBalance: 1_000_000 }];
+    const transactions = [
+      makeTx({
+        id: "lend-tx",
+        type: "loan",
+        amount: 200_000,
+        accountId: "cash",
+        cashFlowDirection: "outflow",
+        loanEventId: "lend-event",
+        date: "2026-06-10",
+      }),
+    ];
+    const loans = [
+      {
+        direction: "lending" as const,
+        events: [
+          makeEvent({ id: "lend-event", kind: "disbursement", amount: 200_000, date: "2026-06-10" }),
+        ],
+      },
+    ];
+
+    const points = computeNetWorthTrend(accounts, transactions, loans, "2026-07", 3);
+    expect(points[0]).toEqual({
+      month: "2026-05",
+      netWorth: 1_000_000,
+      accountTotal: 1_000_000,
+      lendingOutstanding: 0,
+      borrowingOutstanding: 0,
+    });
+    expect(points[1]).toEqual({
+      month: "2026-06",
+      netWorth: 1_000_000,
+      accountTotal: 800_000,
+      lendingOutstanding: 200_000,
+      borrowingOutstanding: 0,
+    });
+    expect(points[2]).toEqual({
+      month: "2026-07",
+      netWorth: 1_000_000,
+      accountTotal: 800_000,
+      lendingOutstanding: 200_000,
+      borrowingOutstanding: 0,
+    });
+  });
+
+  it("zeroes a written-off loan's outstanding balance from its close date onward", () => {
+    const accounts = [{ id: "cash", openingBalance: 1_000_000 }];
+    const loans = [
+      {
+        direction: "borrowing" as const,
+        events: [
+          makeEvent({ kind: "disbursement", amount: 100_000, date: "2026-06-01" }),
+          makeEvent({ id: "e2", kind: "write_off", amount: 100_000, date: "2026-07-01" }),
+        ],
+      },
+    ];
+
+    const points = computeNetWorthTrend(accounts, [], loans, "2026-07", 2);
+    expect(points[0].borrowingOutstanding).toBe(100_000);
+    expect(points[1].borrowingOutstanding).toBe(0);
   });
 });
 
