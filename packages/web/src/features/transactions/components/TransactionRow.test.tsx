@@ -138,8 +138,10 @@ describe("TransactionRow", () => {
       />,
     );
 
-    expect(screen.getByText("Cash: 825.000 ₫")).toBeDefined();
-    expect(screen.getByText("Bank: 955.000 ₫")).toBeDefined();
+    expect(screen.getByText("Cash")).toBeDefined();
+    expect(screen.getByText("Bank")).toBeDefined();
+    expect(screen.getByText("825.000 ₫")).toBeDefined();
+    expect(screen.getByText("955.000 ₫")).toBeDefined();
 
     rerender(
       <TransactionRow
@@ -155,6 +157,6 @@ describe("TransactionRow", () => {
       />,
     );
     expect(screen.getByText("955.000 ₫")).toBeDefined();
-    expect(screen.queryByText("Cash: 825.000 ₫")).toBeNull();
+    expect(screen.queryByText("825.000 ₫")).toBeNull();
   });
 });

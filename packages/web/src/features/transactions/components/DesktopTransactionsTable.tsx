@@ -33,7 +33,6 @@ import {
 } from "@/features/transactions/view-state";
 import { useLang } from "@/core/i18n";
 import type { Category, Transaction } from "@/core/types";
-import { CategoryBreadcrumb } from "@/features/categories/components/CategoryBreadcrumb";
 import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
 import { Button } from "@/shared/components/ui/button";
 import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
@@ -58,7 +57,6 @@ type TransactionRow = {
   dateLabel: string;
   timeLabel?: string;
   categoryLabel: string;
-  category?: Category;
   parentCategory?: Category;
   noteLabel?: string;
   categoryIcon?: string;
@@ -76,6 +74,48 @@ function getTransactionCategoryLabel({
   transferLabel: string;
 }) {
   return transaction.type === "transfer" ? transferLabel : (categoryName ?? "");
+}
+
+function DesktopCategoryCell({ row }: { row: TransactionRow }) {
+  const isTransfer = row.transaction.type === "transfer";
+
+  return (
+    <span className="flex max-w-[15rem] min-w-0 items-center gap-2.5">
+      <span
+        className={cn(
+          "inline-flex size-8 shrink-0 items-center justify-center rounded-xl",
+          isTransfer && "bg-muted text-transfer",
+        )}
+        style={
+          isTransfer
+            ? undefined
+            : {
+                color: colorVar(row.categoryColor),
+                backgroundColor: `color-mix(in oklab, ${colorVar(row.categoryColor)} 16%, transparent)`,
+              }
+        }
+      >
+        {isTransfer ? (
+          <ArrowLeftRight className="size-4" />
+        ) : (
+          <CategoryIcon name={row.categoryIcon} className="size-4" />
+        )}
+      </span>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-sm font-semibold text-foreground">
+            {row.categoryLabel}
+          </span>
+          {row.transaction.receipt && (
+            <Paperclip className="size-3 shrink-0 text-muted-foreground" />
+          )}
+        </span>
+        {row.parentCategory && (
+          <span className="truncate text-xs text-muted-foreground">{row.parentCategory.name}</span>
+        )}
+      </span>
+    </span>
+  );
 }
 
 export function DesktopTransactionsTable({
@@ -165,7 +205,6 @@ export function DesktopTransactionsTable({
             categoryName: category?.name,
             transferLabel: t("tx.transfer"),
           }),
-          category,
           parentCategory,
           noteLabel: tx.note?.trim() || undefined,
           categoryIcon: category?.icon,
@@ -206,34 +245,7 @@ export function DesktopTransactionsTable({
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           />
         ),
-        cell: ({ row }) => {
-          const tx = row.original.transaction;
-
-          if (tx.type === "transfer") {
-            return (
-              <span className="inline-flex items-center gap-1.5 text-transfer">
-                <ArrowLeftRight className="size-3.5" /> {t("tx.transfer")}
-              </span>
-            );
-          }
-
-          return (
-            <span className="flex max-w-[14rem] min-w-0 items-start gap-1.5">
-              <CategoryIcon
-                name={row.original.categoryIcon}
-                className="mt-0.5 size-3.5 shrink-0"
-                style={{ color: colorVar(row.original.categoryColor) }}
-              />
-              <CategoryBreadcrumb
-                category={row.original.category}
-                parentCategory={row.original.parentCategory}
-                trailing={
-                  tx.receipt && <Paperclip className="size-3 shrink-0 text-muted-foreground" />
-                }
-              />
-            </span>
-          );
-        },
+        cell: ({ row }) => <DesktopCategoryCell row={row.original} />,
       },
       {
         accessorKey: "noteLabel",

@@ -9,11 +9,46 @@ import { useCategoryLookup } from "@/features/categories/queries";
 import { CategoryBreadcrumb } from "@/features/categories/components/CategoryBreadcrumb";
 import { useAccountLookup } from "@/features/accounts/queries";
 import { useDeleteTransaction } from "@/features/transactions/queries";
-import { getTransactionBalanceLines } from "@/features/transactions/balance-lines";
+import {
+  getTransactionBalanceEntries,
+  type TransactionBalanceEntry,
+} from "@/features/transactions/balance-lines";
 import type { Transaction } from "@/core/types";
 import { cn } from "@/shared/lib/utils";
 
 const SWIPE_ACTION_WIDTH = 132;
+
+type TransactionBalancePair = [TransactionBalanceEntry, TransactionBalanceEntry];
+
+function isBalancePair(entries: TransactionBalanceEntry[]): entries is TransactionBalancePair {
+  return entries.length === 2;
+}
+
+function TransferBalanceStrip({ entries }: { entries: TransactionBalancePair }) {
+  const [source, destination] = entries;
+
+  return (
+    <span className="col-span-2 mt-1.5 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 rounded-lg bg-muted/50 px-2.5 py-1.5">
+      <span className="flex min-w-0 flex-col">
+        <span className="truncate text-[10px] leading-tight text-muted-foreground">
+          {source.accountName}
+        </span>
+        <span className="whitespace-nowrap text-xs font-medium tabular text-foreground">
+          {source.formattedAmount}
+        </span>
+      </span>
+      <ArrowLeftRight className="size-3 shrink-0 text-transfer" />
+      <span className="flex min-w-0 flex-col items-end text-right">
+        <span className="max-w-full truncate text-[10px] leading-tight text-muted-foreground">
+          {destination.accountName}
+        </span>
+        <span className="whitespace-nowrap text-xs font-medium tabular text-foreground">
+          {destination.formattedAmount}
+        </span>
+      </span>
+    </span>
+  );
+}
 
 function Leading({ tx }: { tx: Transaction }) {
   const getCategory = useCategoryLookup();
@@ -62,14 +97,17 @@ export function TransactionRow({
   const parentCat = cat?.parentId ? getCategory(cat.parentId) : undefined;
   const acc = getAccount(tx.accountId);
   const note = tx.note?.trim() || undefined;
-  const accountLine =
-    tx.type === "transfer" ? `${acc?.name} → ${getAccount(tx.toAccountId)?.name}` : acc?.name;
-  const subtitle = [accountLine, note].filter(Boolean).join(" · ") || undefined;
-  const balanceLines = getTransactionBalanceLines(
+  const balanceEntries = getTransactionBalanceEntries(
     tx,
     balanceAccountId,
     (accountId) => getAccount(accountId)?.name,
   );
+  const transferBalancePair =
+    tx.type === "transfer" && isBalancePair(balanceEntries) ? balanceEntries : undefined;
+  const accountLine =
+    tx.type === "transfer" ? `${acc?.name} → ${getAccount(tx.toAccountId)?.name}` : acc?.name;
+  const subtitle =
+    [transferBalancePair ? undefined : accountLine, note].filter(Boolean).join(" · ") || undefined;
 
   const content = (
     <div
@@ -91,7 +129,7 @@ export function TransactionRow({
       <button
         type="button"
         onClick={onClick}
-        className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
+        className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 text-left"
       >
         <span className="flex min-w-0 flex-col">
           {tx.type === "transfer" ? (
@@ -112,16 +150,18 @@ export function TransactionRow({
           )}
           {subtitle && <span className="truncate text-xs text-muted-foreground">{subtitle}</span>}
         </span>
-        <span className="flex shrink-0 flex-col items-end">
+        <span className="flex shrink-0 flex-col items-end self-start">
           <span className={cn("tabular text-sm font-semibold", amountColorClass(tx.type))}>
             {formatSigned(tx.amount, tx.type)}
           </span>
-          {balanceLines.map((balance) => (
-            <span key={balance} className="text-xs tabular text-muted-foreground">
-              {balance}
-            </span>
-          ))}
+          {!transferBalancePair &&
+            balanceEntries.map((balance) => (
+              <span key={balance.accountId} className="text-xs tabular text-muted-foreground">
+                {balance.formattedAmount}
+              </span>
+            ))}
         </span>
+        {transferBalancePair && <TransferBalanceStrip entries={transferBalancePair} />}
       </button>
     </div>
   );
