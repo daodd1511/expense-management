@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { computeBalance, computeBalanceTrend, computeRunningBalances } from "./finance";
-import type { Transaction } from "./models";
+import {
+  computeBalance,
+  computeBalanceTrend,
+  computeLoanOriginAmount,
+  computeLoanOutstandingBalance,
+  computeLoanState,
+  computeLoanStatus,
+  computeRunningBalances,
+} from "./finance";
+import type { Loan, LoanEvent, Transaction } from "./models";
 
 function makeTx(overrides: Partial<Transaction> = {}): Transaction {
   return {
@@ -11,6 +19,26 @@ function makeTx(overrides: Partial<Transaction> = {}): Transaction {
     accountId: "acc-1",
     merchant: "Merchant",
     date: "2026-07-05",
+    ...overrides,
+  };
+}
+
+function makeLoan(overrides: Partial<Loan> = {}): Loan {
+  return {
+    id: "loan-1",
+    personId: "person-1",
+    direction: "lending",
+    ...overrides,
+  };
+}
+
+function makeEvent(overrides: Partial<LoanEvent> = {}): LoanEvent {
+  return {
+    id: "event-1",
+    loanId: "loan-1",
+    kind: "disbursement",
+    amount: 100_000,
+    date: "2026-07-01",
     ...overrides,
   };
 }
@@ -173,5 +201,123 @@ describe("computeBalanceTrend", () => {
     }
     const points = computeBalanceTrend(manyMonths, 0, "2026-07", 6);
     expect(points).toHaveLength(6);
+  });
+});
+
+describe("computeLoanOriginAmount", () => {
+  it("reads the disbursement event's amount", () => {
+    expect(computeLoanOriginAmount([makeEvent({ kind: "disbursement", amount: 100_000 })])).toBe(
+      100_000,
+    );
+  });
+
+  it("reads the opening event's amount when there's no disbursement", () => {
+    expect(computeLoanOriginAmount([makeEvent({ kind: "opening", amount: 50_000 })])).toBe(50_000);
+  });
+
+  it("returns 0 when no origin event exists", () => {
+    expect(computeLoanOriginAmount([])).toBe(0);
+  });
+});
+
+describe("computeLoanOutstandingBalance", () => {
+  it("is the origin amount when there are no repayments", () => {
+    expect(
+      computeLoanOutstandingBalance([makeEvent({ kind: "disbursement", amount: 100_000 })]),
+    ).toBe(100_000);
+  });
+
+  it("subtracts repayments from the origin amount", () => {
+    const events = [
+      makeEvent({ kind: "disbursement", amount: 100_000 }),
+      makeEvent({ id: "e2", kind: "repayment", amount: 30_000 }),
+      makeEvent({ id: "e3", kind: "repayment", amount: 20_000 }),
+    ];
+    expect(computeLoanOutstandingBalance(events)).toBe(50_000);
+  });
+
+  it("is 0 once a write-off closes the loan, regardless of the closing event's own amount", () => {
+    const events = [
+      makeEvent({ kind: "disbursement", amount: 100_000 }),
+      makeEvent({ id: "e2", kind: "repayment", amount: 30_000 }),
+      makeEvent({ id: "e3", kind: "write_off", amount: 70_000 }),
+    ];
+    expect(computeLoanOutstandingBalance(events)).toBe(0);
+  });
+
+  it("is 0 once forgiveness closes the loan", () => {
+    const events = [
+      makeEvent({ kind: "opening", amount: 20_000 }),
+      makeEvent({ id: "e2", kind: "forgiveness", amount: 20_000 }),
+    ];
+    expect(computeLoanOutstandingBalance(events)).toBe(0);
+  });
+});
+
+describe("computeLoanStatus", () => {
+  it("is written-off when a write_off event exists", () => {
+    const events = [
+      makeEvent({ kind: "disbursement", amount: 100_000 }),
+      makeEvent({ id: "e2", kind: "write_off", amount: 100_000 }),
+    ];
+    expect(computeLoanStatus(makeLoan({ direction: "lending" }), events, "2026-07-13")).toBe(
+      "written-off",
+    );
+  });
+
+  it("is forgiven when a forgiveness event exists", () => {
+    const events = [
+      makeEvent({ kind: "opening", amount: 100_000 }),
+      makeEvent({ id: "e2", kind: "forgiveness", amount: 100_000 }),
+    ];
+    expect(computeLoanStatus(makeLoan({ direction: "borrowing" }), events, "2026-07-13")).toBe(
+      "forgiven",
+    );
+  });
+
+  it("is repaid once outstanding balance reaches 0 through repayments", () => {
+    const events = [
+      makeEvent({ kind: "disbursement", amount: 100_000 }),
+      makeEvent({ id: "e2", kind: "repayment", amount: 100_000 }),
+    ];
+    expect(computeLoanStatus(makeLoan(), events, "2026-07-13")).toBe("repaid");
+  });
+
+  it("is open when there's no due date", () => {
+    const events = [makeEvent({ kind: "disbursement", amount: 100_000 })];
+    expect(computeLoanStatus(makeLoan({ dueDate: undefined }), events, "2026-07-13")).toBe("open");
+  });
+
+  it("is open when the due date is more than 7 days out", () => {
+    const events = [makeEvent({ kind: "disbursement", amount: 100_000 })];
+    const loan = makeLoan({ dueDate: "2026-07-21" });
+    expect(computeLoanStatus(loan, events, "2026-07-13")).toBe("open");
+  });
+
+  it("is due-soon within the 7-day window, inclusive of the boundary", () => {
+    const events = [makeEvent({ kind: "disbursement", amount: 100_000 })];
+    const loan = makeLoan({ dueDate: "2026-07-20" });
+    expect(computeLoanStatus(loan, events, "2026-07-13")).toBe("due-soon");
+  });
+
+  it("is overdue when the due date has passed", () => {
+    const events = [makeEvent({ kind: "disbursement", amount: 100_000 })];
+    const loan = makeLoan({ dueDate: "2026-07-01" });
+    expect(computeLoanStatus(loan, events, "2026-07-13")).toBe("overdue");
+  });
+});
+
+describe("computeLoanState", () => {
+  it("bundles origin amount, outstanding balance, and status together", () => {
+    const events = [
+      makeEvent({ kind: "disbursement", amount: 100_000 }),
+      makeEvent({ id: "e2", kind: "repayment", amount: 40_000 }),
+    ];
+    const loan = makeLoan({ dueDate: "2026-07-15" });
+    expect(computeLoanState(loan, events, "2026-07-13")).toEqual({
+      originAmount: 100_000,
+      outstandingBalance: 60_000,
+      status: "due-soon",
+    });
   });
 });
