@@ -29,10 +29,14 @@ export {
   type CategoryRow,
 } from "./category.dto";
 export {
+  financialPositionResponseSchema,
+  financialPositionSchema,
   incomeExpenseReportResponseSchema,
   reportCategoryAggregateSchema,
   reportSeriesPointSchema,
   reportTransactionRowSchema,
+  type FinancialPosition,
+  type FinancialPositionResponse,
   type IncomeExpenseReport,
   type IncomeExpenseReportResponse,
   type ReportCategoryAggregate,

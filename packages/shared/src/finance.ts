@@ -1,5 +1,5 @@
 import type { BalanceTrendPoint } from "./dtos";
-import type { Loan, LoanEvent, LoanStatus, Transaction } from "./models";
+import type { Loan, LoanDirection, LoanEvent, LoanStatus, Transaction } from "./models";
 
 function getBalance(balanceByAccountId: Map<string, number>, accountId: string) {
   return balanceByAccountId.get(accountId) ?? 0;
@@ -25,6 +25,16 @@ function applyTransaction(
 
   if (transaction.type === "expense") {
     const nextBalance = getBalance(balanceByAccountId, transaction.accountId) - transaction.amount;
+    setBalance(balanceByAccountId, transaction.accountId, nextBalance);
+    return nextBalance;
+  }
+
+  if (transaction.type === "loan") {
+    // Loan rows have no toAccountId — cashFlowDirection alone decides which way the single
+    // linked account moves (see PLAN.md's Loan event -> cash direction table).
+    const delta =
+      transaction.cashFlowDirection === "inflow" ? transaction.amount : -transaction.amount;
+    const nextBalance = getBalance(balanceByAccountId, transaction.accountId) + delta;
     setBalance(balanceByAccountId, transaction.accountId, nextBalance);
     return nextBalance;
   }
@@ -194,5 +204,208 @@ export function computeLoanState(
     originAmount: computeLoanOriginAmount(events),
     outstandingBalance: computeLoanOutstandingBalance(events),
     status: computeLoanStatus(loan, events, todayIso),
+  };
+}
+
+export type FinancialPositionAccountState = {
+  accountTotal: number;
+  lendingOutstanding: number;
+  borrowingOutstanding: number;
+  netWorth: number;
+};
+
+/** Account total + lending/borrowing outstanding + net worth as of a single instant,
+ * from a snapshot of transactions/loan events already filtered to that instant. */
+function computeFinancialPositionBoundary(
+  accounts: { id: string; openingBalance: number }[],
+  transactionsThroughBoundary: Transaction[],
+  loansThroughBoundary: { direction: LoanDirection; events: LoanEvent[] }[],
+): FinancialPositionAccountState {
+  const accountTotal = accounts.reduce(
+    (sum, account) =>
+      sum + computeBalance(account.id, transactionsThroughBoundary, account.openingBalance),
+    0,
+  );
+
+  let lendingOutstanding = 0;
+  let borrowingOutstanding = 0;
+  for (const loan of loansThroughBoundary) {
+    const outstanding = computeLoanOutstandingBalance(loan.events);
+    if (loan.direction === "lending") lendingOutstanding += outstanding;
+    else borrowingOutstanding += outstanding;
+  }
+
+  return {
+    accountTotal,
+    lendingOutstanding,
+    borrowingOutstanding,
+    netWorth: accountTotal + lendingOutstanding - borrowingOutstanding,
+  };
+}
+
+export type FinancialPositionReport = {
+  from: string;
+  to: string;
+  opening: FinancialPositionAccountState;
+  closing: FinancialPositionAccountState;
+  income: number;
+  expense: number;
+  surplus: number;
+  loanCashFlow: {
+    lent: number;
+    borrowed: number;
+    lendingRepaymentsReceived: number;
+    borrowingRepaymentsPaid: number;
+    net: number;
+  };
+  balanceAdjustments: number;
+  writeOffs: number;
+  forgiveness: number;
+  openingLoanAdjustments: {
+    lending: number;
+    borrowing: number;
+  };
+  reconciliation: {
+    accountTotal: { expected: number; actual: number; matches: boolean };
+    netWorth: { expected: number; actual: number; matches: boolean };
+  };
+};
+
+const RECONCILIATION_TOLERANCE = 1;
+
+/**
+ * Financial Position report for the (from, to] window — `from` exclusive/opening,
+ * `to` inclusive/closing, per PLAN.md → "Accounting and Reports". Proves both
+ * reconciliation equations by computing the closing boundary two independent ways
+ * (a direct snapshot, and starting boundary + period flows) and comparing them.
+ *
+ * Callers must pass every transaction/loan event dated on or before `to` — this
+ * function derives the `from`-boundary and period-only subsets internally by date,
+ * so it never needs "today" or the caller's own date-filtered queries to agree.
+ */
+export function computeFinancialPosition(input: {
+  accounts: { id: string; openingBalance: number }[];
+  transactionsThroughTo: Transaction[];
+  loans: { direction: LoanDirection; events: LoanEvent[] }[];
+  from: string;
+  to: string;
+  balanceAdjustmentTransactionIds: ReadonlySet<string>;
+}): FinancialPositionReport {
+  const { accounts, transactionsThroughTo, loans, from, to, balanceAdjustmentTransactionIds } =
+    input;
+
+  const transactionsThroughFrom = transactionsThroughTo.filter((tx) => tx.date <= from);
+  const periodTransactions = transactionsThroughTo.filter((tx) => tx.date > from && tx.date <= to);
+
+  const loansThroughFrom = loans.map((loan) => ({
+    direction: loan.direction,
+    events: loan.events.filter((event) => event.date <= from),
+  }));
+  const loansThroughTo = loans.map((loan) => ({
+    direction: loan.direction,
+    events: loan.events.filter((event) => event.date <= to),
+  }));
+
+  const opening = computeFinancialPositionBoundary(
+    accounts,
+    transactionsThroughFrom,
+    loansThroughFrom,
+  );
+  const closing = computeFinancialPositionBoundary(accounts, transactionsThroughTo, loansThroughTo);
+
+  let income = 0;
+  let expense = 0;
+  let balanceAdjustments = 0;
+  for (const tx of periodTransactions) {
+    const isAdjustment = balanceAdjustmentTransactionIds.has(tx.id);
+    if (tx.type === "income") {
+      if (isAdjustment) balanceAdjustments += tx.amount;
+      else income += tx.amount;
+    } else if (tx.type === "expense") {
+      if (isAdjustment) balanceAdjustments -= tx.amount;
+      else expense += tx.amount;
+    }
+  }
+  const surplus = income - expense;
+
+  let lent = 0;
+  let borrowed = 0;
+  let lendingRepaymentsReceived = 0;
+  let borrowingRepaymentsPaid = 0;
+  let writeOffs = 0;
+  let forgiveness = 0;
+  let openingLoanLending = 0;
+  let openingLoanBorrowing = 0;
+
+  for (const loan of loans) {
+    for (const event of loan.events) {
+      if (event.date <= from || event.date > to) continue;
+
+      if (event.kind === "disbursement") {
+        if (loan.direction === "lending") lent += event.amount;
+        else borrowed += event.amount;
+      } else if (event.kind === "repayment") {
+        if (loan.direction === "lending") lendingRepaymentsReceived += event.amount;
+        else borrowingRepaymentsPaid += event.amount;
+      } else if (event.kind === "write_off") {
+        writeOffs += event.amount;
+      } else if (event.kind === "forgiveness") {
+        forgiveness += event.amount;
+      } else if (event.kind === "opening") {
+        if (loan.direction === "lending") openingLoanLending += event.amount;
+        else openingLoanBorrowing += event.amount;
+      }
+    }
+  }
+
+  // Lending disbursement/borrowing repayment move cash out; borrowing disbursement/lending
+  // repayment move cash in (see PLAN.md's cash-direction table).
+  const netLoanCashFlow = -lent + borrowed + lendingRepaymentsReceived - borrowingRepaymentsPaid;
+
+  const expectedAccountTotal =
+    opening.accountTotal + surplus + netLoanCashFlow + balanceAdjustments;
+  const expectedNetWorth =
+    opening.netWorth +
+    surplus +
+    balanceAdjustments +
+    openingLoanLending -
+    openingLoanBorrowing -
+    writeOffs +
+    forgiveness;
+
+  return {
+    from,
+    to,
+    opening,
+    closing,
+    income,
+    expense,
+    surplus,
+    loanCashFlow: {
+      lent,
+      borrowed,
+      lendingRepaymentsReceived,
+      borrowingRepaymentsPaid,
+      net: netLoanCashFlow,
+    },
+    balanceAdjustments,
+    writeOffs,
+    forgiveness,
+    openingLoanAdjustments: {
+      lending: openingLoanLending,
+      borrowing: openingLoanBorrowing,
+    },
+    reconciliation: {
+      accountTotal: {
+        expected: expectedAccountTotal,
+        actual: closing.accountTotal,
+        matches: Math.abs(expectedAccountTotal - closing.accountTotal) < RECONCILIATION_TOLERANCE,
+      },
+      netWorth: {
+        expected: expectedNetWorth,
+        actual: closing.netWorth,
+        matches: Math.abs(expectedNetWorth - closing.netWorth) < RECONCILIATION_TOLERANCE,
+      },
+    },
   };
 }

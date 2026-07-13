@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { incomeExpenseReportResponseSchema } from "./report.dto";
+import { financialPositionResponseSchema, incomeExpenseReportResponseSchema } from "./report.dto";
 
 describe("incomeExpenseReportResponseSchema", () => {
   it("accepts a valid report payload", () => {
@@ -56,5 +56,44 @@ describe("incomeExpenseReportResponseSchema", () => {
         },
       },
     });
+  });
+});
+
+describe("financialPositionResponseSchema", () => {
+  it("accepts a valid financial position payload", () => {
+    const boundary = {
+      accountTotal: 1_000_000,
+      lendingOutstanding: 100_000,
+      borrowingOutstanding: 0,
+      netWorth: 1_100_000,
+    };
+
+    const result = financialPositionResponseSchema.parse({
+      data: {
+        range: { from: "2026-07-01", to: "2026-07-31" },
+        opening: boundary,
+        closing: boundary,
+        income: 300_000,
+        expense: 100_000,
+        surplus: 200_000,
+        loanCashFlow: {
+          lent: 0,
+          borrowed: 0,
+          lendingRepaymentsReceived: 0,
+          borrowingRepaymentsPaid: 0,
+          net: 0,
+        },
+        balanceAdjustments: 0,
+        writeOffs: 0,
+        forgiveness: 0,
+        openingLoanAdjustments: { lending: 0, borrowing: 0 },
+        reconciliation: {
+          accountTotal: { expected: 1_000_000, actual: 1_000_000, matches: true },
+          netWorth: { expected: 1_100_000, actual: 1_100_000, matches: true },
+        },
+      },
+    });
+
+    expect(result.data.reconciliation.accountTotal.matches).toBe(true);
   });
 });

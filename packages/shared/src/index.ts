@@ -3,11 +3,14 @@ export { secureParse } from "./secure-parse";
 export {
   computeBalance,
   computeBalanceTrend,
+  computeFinancialPosition,
   computeLoanOriginAmount,
   computeLoanOutstandingBalance,
   computeLoanState,
   computeLoanStatus,
   computeRunningBalances,
+  type FinancialPositionAccountState,
+  type FinancialPositionReport,
   type LoanComputedState,
 } from "./finance";
 export {
@@ -63,6 +66,8 @@ export {
   disbursedLoanCreateSchema,
   favoriteCreateSchema,
   favoriteRowSchema,
+  financialPositionResponseSchema,
+  financialPositionSchema,
   incomeExpenseReportResponseSchema,
   isoDateSchema,
   loanDetailSchema,
@@ -104,6 +109,8 @@ export {
   type DisbursedLoanCreate,
   type FavoriteCreate,
   type FavoriteRow,
+  type FinancialPosition,
+  type FinancialPositionResponse,
   type IncomeExpenseReport,
   type IncomeExpenseReportResponse,
   type LoanDetail,
