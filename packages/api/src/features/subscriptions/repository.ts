@@ -97,10 +97,13 @@ export async function logSubscription(params: {
       p_subscription_id: params.subscription.id,
       p_type: params.subscription.type,
       p_amount: params.subscription.amount,
-      p_category_id: params.subscription.categoryId,
+      // Postgres accepts NULL for these plain (non-NOT-NULL, no-DEFAULT) function params;
+      // supabase gen types only marks an RPC arg optional/nullable when the SQL has a
+      // DEFAULT, so it types them as required non-null strings here regardless.
+      p_category_id: params.subscription.categoryId as string,
       p_account_id: params.subscription.accountId,
       p_merchant: params.subscription.name,
-      p_note: params.subscription.note ?? null,
+      p_note: (params.subscription.note ?? null) as string,
       p_tx_date: params.today,
       p_next_due_date: params.nextDueDate,
     })

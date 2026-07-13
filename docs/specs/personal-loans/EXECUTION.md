@@ -21,7 +21,7 @@ Branch: `personal-loans/phase-1-persistence-lifecycle` (off `develop`, stacked)
 
 Establish the authoritative loan/event ledger, shared contracts, and atomic lifecycle operations before clients consume them.
 
-- [ ] Add `supabase/migrations/<timestamp>_personal_loans.sql` for `loan_people`, `loans`, `loan_events`, transaction loan fields, RLS, constraints/indexes, cascades, and ownership-validating RPCs per PLAN.md → "Persistence Model" and "Mutation Ownership and Atomicity".
+- [x] Add `supabase/migrations/20260713000000_personal_loans.sql` for `loan_people`, `loans`, `loan_events`, transaction loan fields, constraints/indexes, cascades, and ownership-validating RPCs per PLAN.md → "Persistence Model" and "Mutation Ownership and Atomicity". No RLS: this project enforces ownership entirely at the API layer for every table (the API always connects with the service-role key, which bypasses RLS regardless), confirmed with the user during execution rather than adding an inert policy layer.
 - [ ] Add Person, Loan, LoanEvent, derived summary/detail contracts and discriminated loan transaction contracts in `packages/shared/src/models/`, `dtos/`, `mappers/`, `database.types.ts`, and exports; add event/state calculations in `finance.ts`.
 - [ ] Add `packages/api/src/features/loans/{routes,controller,service,repository,schema}.ts`, wire it in `packages/api/src/app.ts`, and implement person, loan, origin, repayment, closure, reopen, and deletion operations through the RPCs.
 - [ ] Guard generic loan transaction creation and linked-row patch/delete/bulk-delete in `packages/api/src/features/transactions/{schema,service,repository}.ts`.
