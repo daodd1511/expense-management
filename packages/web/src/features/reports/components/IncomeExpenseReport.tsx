@@ -1,60 +1,66 @@
-import { useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, TrendingUp } from 'lucide-react'
-import { useAccountLookup } from '@/features/accounts/queries'
-import { useCategoryLookup } from '@/features/categories/queries'
-import { useTransactionOverlay } from '@/features/transactions/transaction-overlay'
-import { useLang } from '@/core/i18n'
-import { CategoryDonut } from '@/shared/components/Charts'
-import { Card, CardContent } from '@/shared/components/ui/card'
-import { ReportsSkeleton } from '@/shared/components/Skeleton'
-import { useIsDesktop } from '@/shared/hooks/useIsDesktop'
-import { amountColorClass, formatSigned, formatVND } from '@/shared/lib/format'
-import { cn } from '@/shared/lib/utils'
-import { useIncomeExpenseReport } from '../queries'
-import { monthRangeFromMonth } from '../report-date'
-import { ExpenseCategoryBreakdown } from './ExpenseCategoryBreakdown'
+import { useState } from "react";
+import { ArrowDownLeft, ArrowUpRight, TrendingUp } from "lucide-react";
+import { useAccountLookup } from "@/features/accounts/queries";
+import { useCategoryLookup } from "@/features/categories/queries";
+import { useTransactionOverlay } from "@/features/transactions/transaction-overlay";
+import { useLang } from "@/core/i18n";
+import { CategoryDonut } from "@/shared/components/Charts";
+import { Card, CardContent } from "@/shared/components/ui/card";
+import { ReportsSkeleton } from "@/shared/components/Skeleton";
+import { useIsDesktop } from "@/shared/hooks/useIsDesktop";
+import { amountColorClass, formatSigned, formatVND } from "@/shared/lib/format";
+import { cn } from "@/shared/lib/utils";
+import { useIncomeExpenseReport } from "../queries";
+import { monthRangeFromMonth } from "../report-date";
+import { ExpenseCategoryBreakdown } from "./ExpenseCategoryBreakdown";
 
 export function IncomeExpenseReport({ month }: { month: string }) {
-  const { t } = useLang()
-  const isDesktop = useIsDesktop()
-  const categoryLookup = useCategoryLookup()
-  const accountLookup = useAccountLookup()
-  const { openEdit } = useTransactionOverlay()
-  const [activeCategoryType, setActiveCategoryType] = useState<'expense' | 'income'>('expense')
-  const { from, to } = monthRangeFromMonth(month)
-  const { data, isPending } = useIncomeExpenseReport({ from, to })
+  const { t } = useLang();
+  const isDesktop = useIsDesktop();
+  const categoryLookup = useCategoryLookup();
+  const accountLookup = useAccountLookup();
+  const { openEdit } = useTransactionOverlay();
+  const [activeCategoryType, setActiveCategoryType] = useState<"expense" | "income">("expense");
+  const { from, to } = monthRangeFromMonth(month);
+  const { data, isPending } = useIncomeExpenseReport({ from, to });
 
   if (isPending || !data) {
-    return <ReportsSkeleton mobile={!isDesktop} />
+    return <ReportsSkeleton mobile={!isDesktop} />;
   }
 
-  const report = data.data
-  const expenseCategories = report.categories.filter((category) => category.type === 'expense')
-  const incomeCategories = report.categories.filter((category) => category.type === 'income')
+  const report = data.data;
+  const expenseCategories = report.categories.filter((category) => category.type === "expense");
+  const incomeCategories = report.categories.filter((category) => category.type === "income");
 
-  const toDonutData = (categories: typeof report.categories) => categories.map((category) => {
-    const categoryInfo = categoryLookup(category.categoryId)
-    return {
-      id: category.categoryId,
-      name: categoryInfo?.name ?? category.categoryId,
-      value: category.amount,
-      percentage: category.percentage,
-      color: categoryInfo ? `var(--${categoryInfo.color})` : 'var(--muted-foreground)',
-    }
-  })
-  const expenseDonutData = toDonutData(expenseCategories)
-  const incomeDonutData = toDonutData(incomeCategories)
-  const activeCategories = activeCategoryType === 'expense' ? expenseCategories : incomeCategories
-  const activeDonutData = activeCategoryType === 'expense' ? expenseDonutData : incomeDonutData
-  const activeTotal = activeCategoryType === 'expense' ? report.totals.expense : report.totals.income
-  const activeTitleKey = activeCategoryType === 'expense' ? 'reports.expenseCategories' : 'reports.incomeCategories'
-  const activeDonutLabelKey = activeCategoryType === 'expense' ? 'reports.expenseDonutCenter' : 'reports.incomeDonutCenter'
-  const activeEmptyTitleKey = activeCategoryType === 'expense' ? 'reports.expenseEmptyTitle' : 'reports.incomeEmptyTitle'
-  const activeEmptyDescriptionKey = activeCategoryType === 'expense' ? 'reports.expenseEmptyDesc' : 'reports.incomeEmptyDesc'
+  const toDonutData = (categories: typeof report.categories) =>
+    categories.map((category) => {
+      const categoryInfo = categoryLookup(category.categoryId);
+      return {
+        id: category.categoryId,
+        name: categoryInfo?.name ?? category.categoryId,
+        value: category.amount,
+        percentage: category.percentage,
+        color: categoryInfo ? `var(--${categoryInfo.color})` : "var(--muted-foreground)",
+      };
+    });
+  const expenseDonutData = toDonutData(expenseCategories);
+  const incomeDonutData = toDonutData(incomeCategories);
+  const activeCategories = activeCategoryType === "expense" ? expenseCategories : incomeCategories;
+  const activeDonutData = activeCategoryType === "expense" ? expenseDonutData : incomeDonutData;
+  const activeTotal =
+    activeCategoryType === "expense" ? report.totals.expense : report.totals.income;
+  const activeTitleKey =
+    activeCategoryType === "expense" ? "reports.expenseCategories" : "reports.incomeCategories";
+  const activeDonutLabelKey =
+    activeCategoryType === "expense" ? "reports.expenseDonutCenter" : "reports.incomeDonutCenter";
+  const activeEmptyTitleKey =
+    activeCategoryType === "expense" ? "reports.expenseEmptyTitle" : "reports.incomeEmptyTitle";
+  const activeEmptyDescriptionKey =
+    activeCategoryType === "expense" ? "reports.expenseEmptyDesc" : "reports.incomeEmptyDesc";
 
   const handleTransactionClick = (transactionId: string) => {
-    openEdit(transactionId, month)
-  }
+    openEdit(transactionId, month);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -62,34 +68,38 @@ export function IncomeExpenseReport({ month }: { month: string }) {
         <Card>
           <CardContent className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
             <SummaryCard
-              label={t('reports.totalIncome')}
+              label={t("reports.totalIncome")}
               value={formatVND(report.totals.income)}
               icon={ArrowDownLeft}
               tone="income"
             />
             <SummaryCard
-              label={t('reports.totalExpense')}
+              label={t("reports.totalExpense")}
               value={formatVND(report.totals.expense)}
               icon={ArrowUpRight}
               tone="expense"
             />
             <SummaryCard
-              label={t('reports.totalNet')}
-              value={formatSigned(report.totals.net, report.totals.net >= 0 ? 'income' : 'expense')}
+              label={t("reports.totalNet")}
+              value={formatSigned(report.totals.net, report.totals.net >= 0 ? "income" : "expense")}
               icon={TrendingUp}
-              tone={report.totals.net >= 0 ? 'income' : 'expense'}
+              tone={report.totals.net >= 0 ? "income" : "expense"}
             />
             <SummaryCard
-              label={t('reports.transactionCount')}
-              value={t('reports.transactionCountValue', { n: report.totals.transactionCount })}
+              label={t("reports.transactionCount")}
+              value={t("reports.transactionCountValue", { n: report.totals.transactionCount })}
               icon={TrendingUp}
             />
           </CardContent>
         </Card>
       )}
 
-      <div role="tablist" aria-label={t('reports.categoryView')} className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 sm:w-fit">
-        {(['expense', 'income'] as const).map((type) => (
+      <div
+        role="tablist"
+        aria-label={t("reports.categoryView")}
+        className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 sm:w-fit"
+      >
+        {(["expense", "income"] as const).map((type) => (
           <button
             key={type}
             type="button"
@@ -97,11 +107,13 @@ export function IncomeExpenseReport({ month }: { month: string }) {
             aria-selected={activeCategoryType === type}
             onClick={() => setActiveCategoryType(type)}
             className={cn(
-              'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-              activeCategoryType === type ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+              "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+              activeCategoryType === type
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {t(type === 'expense' ? 'dashboard.expense' : 'dashboard.income')}
+            {t(type === "expense" ? "dashboard.expense" : "dashboard.income")}
           </button>
         ))}
       </div>
@@ -133,7 +145,7 @@ export function IncomeExpenseReport({ month }: { month: string }) {
         </Card>
       )}
     </div>
-  )
+  );
 }
 
 function CategorySummaryCard({
@@ -142,10 +154,10 @@ function CategorySummaryCard({
   centerLabel,
   categoryLabel,
 }: {
-  data: { id: string; name: string; value: number; percentage: number; color: string }[]
-  total: number
-  centerLabel: string
-  categoryLabel: string
+  data: { id: string; name: string; value: number; percentage: number; color: string }[];
+  total: number;
+  centerLabel: string;
+  categoryLabel: string;
 }) {
   return (
     <Card>
@@ -157,25 +169,35 @@ function CategorySummaryCard({
           </span>
         </div>
         <div className="w-full">
-          <CategoryDonut data={data} total={total} centerLabel={centerLabel} showCenterTotal={false} />
+          <CategoryDonut
+            data={data}
+            total={total}
+            centerLabel={centerLabel}
+            showCenterTotal={false}
+          />
         </div>
         <div className="w-full space-y-2" aria-label={categoryLabel}>
           {data.slice(0, 5).map((datum) => (
             <div key={datum.id} className="flex items-center justify-between gap-3 text-sm">
               <div className="flex min-w-0 items-center gap-2">
-                <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: datum.color }} />
+                <span
+                  className="size-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: datum.color }}
+                />
                 <span className="truncate">{datum.name}</span>
               </div>
               <span className="flex shrink-0 items-baseline gap-1.5 tabular-nums">
                 <span className="text-muted-foreground">{formatVND(datum.value)}</span>
-                <span className="text-xs text-muted-foreground/70">{Math.round(datum.percentage * 100)}%</span>
+                <span className="text-xs text-muted-foreground/70">
+                  {Math.round(datum.percentage * 100)}%
+                </span>
               </span>
             </div>
           ))}
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function SummaryCard({
@@ -184,17 +206,22 @@ function SummaryCard({
   icon: Icon,
   tone,
 }: {
-  label: string
-  value: string
-  icon: typeof TrendingUp
-  tone?: 'income' | 'expense'
+  label: string;
+  value: string;
+  icon: typeof TrendingUp;
+  tone?: "income" | "expense";
 }) {
   return (
     <Card>
       <CardContent className="flex items-center justify-between gap-3 p-4">
         <div className="min-w-0">
           <p className="text-xs text-muted-foreground">{label}</p>
-          <p className={cn('tabular-nums mt-1 text-lg font-semibold', tone && amountColorClass(tone))}>
+          <p
+            className={cn(
+              "tabular-nums mt-1 text-lg font-semibold",
+              tone && amountColorClass(tone),
+            )}
+          >
             {value}
           </p>
         </div>
@@ -203,5 +230,5 @@ function SummaryCard({
         </span>
       </CardContent>
     </Card>
-  )
+  );
 }

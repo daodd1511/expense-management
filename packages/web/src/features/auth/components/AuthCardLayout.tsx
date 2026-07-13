@@ -1,13 +1,13 @@
-import { CreditCard } from 'lucide-react'
-import type { ReactNode } from 'react'
-import { Link } from '@tanstack/react-router'
-import { useLang } from '@/core/i18n'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { CreditCard } from "lucide-react";
+import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
+import { useLang } from "@/core/i18n";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 
 type AuthLink = {
-  label: string
-  to: '/auth/sign-in' | '/auth/sign-up' | '/auth/forgot-password'
-}
+  label: string;
+  to: "/auth/sign-in" | "/auth/sign-up" | "/auth/forgot-password";
+};
 
 export function AuthCardLayout({
   title,
@@ -15,12 +15,12 @@ export function AuthCardLayout({
   children,
   footerLinks = [],
 }: {
-  title: string
-  subtitle: string
-  children: ReactNode
-  footerLinks?: AuthLink[]
+  title: string;
+  subtitle: string;
+  children: ReactNode;
+  footerLinks?: AuthLink[];
 }) {
-  const { t } = useLang()
+  const { t } = useLang();
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-background px-4 py-10 text-foreground">
@@ -29,8 +29,8 @@ export function AuthCardLayout({
           <CreditCard className="size-8" />
         </span>
         <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight">{t('app.name')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('app.tagline')}</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("app.name")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("app.tagline")}</p>
         </div>
       </div>
 
@@ -44,7 +44,11 @@ export function AuthCardLayout({
           {footerLinks.length > 0 && (
             <div className="flex flex-col gap-2 text-center text-sm">
               {footerLinks.map((link) => (
-                <Link key={`${link.to}-${link.label}`} to={link.to} className="font-medium text-primary hover:underline">
+                <Link
+                  key={`${link.to}-${link.label}`}
+                  to={link.to}
+                  className="font-medium text-primary hover:underline"
+                >
                   {link.label}
                 </Link>
               ))}
@@ -53,5 +57,5 @@ export function AuthCardLayout({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

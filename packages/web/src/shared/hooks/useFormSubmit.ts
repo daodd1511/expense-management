@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react'
-import { getFieldErrorMessage, isClientError } from '@/core/api'
-import { translate } from '@/core/i18n'
+import { useCallback, useState } from "react";
+import { getFieldErrorMessage, isClientError } from "@/core/api";
+import { translate } from "@/core/i18n";
 
 /**
  * Wraps an async form submit handler with local pending/error state. On failure the
@@ -9,23 +9,24 @@ import { translate } from '@/core/i18n'
  * fires independently of this hook.
  */
 export function useFormSubmit<T>(onSubmit: (data: T) => Promise<void>) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const submit = useCallback(
     (data: T) => {
-      setErrorMessage(null)
-      setIsSubmitting(true)
+      setErrorMessage(null);
+      setIsSubmitting(true);
       onSubmit(data)
         .catch((error: unknown) => {
           setErrorMessage(
-            getFieldErrorMessage(error) ?? translate(isClientError(error) ? 'error.badRequest' : 'error.server'),
-          )
+            getFieldErrorMessage(error) ??
+              translate(isClientError(error) ? "error.badRequest" : "error.server"),
+          );
         })
-        .finally(() => setIsSubmitting(false))
+        .finally(() => setIsSubmitting(false));
     },
     [onSubmit],
-  )
+  );
 
-  return { submit, isSubmitting, errorMessage }
+  return { submit, isSubmitting, errorMessage };
 }

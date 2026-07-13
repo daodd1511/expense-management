@@ -1,5 +1,5 @@
-import type { Subscription, SubscriptionCadence } from '../models'
-import type { SubscriptionPatch, SubscriptionRow } from '../dtos'
+import type { Subscription, SubscriptionCadence } from "../models";
+import type { SubscriptionPatch, SubscriptionRow } from "../dtos";
 
 export function toSubscription(row: SubscriptionRow): Subscription {
   return {
@@ -15,14 +15,14 @@ export function toSubscription(row: SubscriptionRow): Subscription {
     nextDueDate: row.next_due_date,
     note: row.note ?? undefined,
     active: row.active,
-  }
+  };
 }
 
 export function fromSubscription(params: {
-  subscription: Omit<Subscription, 'id'>
-  ownerId: string
+  subscription: Omit<Subscription, "id">;
+  ownerId: string;
 }) {
-  const { subscription, ownerId } = params
+  const { subscription, ownerId } = params;
   return {
     owner_id: ownerId,
     name: subscription.name,
@@ -36,7 +36,7 @@ export function fromSubscription(params: {
     next_due_date: subscription.nextDueDate,
     note: subscription.note ?? null,
     active: subscription.active,
-  }
+  };
 }
 
 export function subscriptionPatchToRow(patch: SubscriptionPatch) {
@@ -51,7 +51,7 @@ export function subscriptionPatchToRow(patch: SubscriptionPatch) {
     ...(patch.monthOfYear !== undefined && { month_of_year: patch.monthOfYear }),
     ...(patch.note !== undefined && { note: patch.note }),
     ...(patch.active !== undefined && { active: patch.active }),
-  }
+  };
 }
 
 /**
@@ -62,26 +62,26 @@ export function subscriptionPatchToRow(patch: SubscriptionPatch) {
  * timezone. These helpers stay entirely in the local-calendar-date frame instead.
  */
 function parseLocalDate(iso: string): Date {
-  const [year, month, day] = iso.split('-').map(Number)
-  return new Date(year, month - 1, day)
+  const [year, month, day] = iso.split("-").map(Number);
+  return new Date(year, month - 1, day);
 }
 
 function toLocalIso(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 /** Advances a subscription's existing `nextDueDate` by one cadence period. */
 export function advanceNextDueDate(subscription: Subscription): string {
-  const nextDate = parseLocalDate(subscription.nextDueDate)
-  if (subscription.cadence === 'monthly') {
-    nextDate.setMonth(nextDate.getMonth() + 1)
+  const nextDate = parseLocalDate(subscription.nextDueDate);
+  if (subscription.cadence === "monthly") {
+    nextDate.setMonth(nextDate.getMonth() + 1);
   } else {
-    nextDate.setFullYear(nextDate.getFullYear() + 1)
+    nextDate.setFullYear(nextDate.getFullYear() + 1);
   }
-  return toLocalIso(nextDate)
+  return toLocalIso(nextDate);
 }
 
 /**
@@ -96,13 +96,13 @@ export function buildNextDueDate(
   cadence: SubscriptionCadence,
   todayIso: string,
 ): string {
-  const today = parseLocalDate(todayIso)
-  if (cadence === 'monthly') {
-    const candidate = new Date(today.getFullYear(), today.getMonth(), dayOfMonth)
-    if (candidate <= today) candidate.setMonth(candidate.getMonth() + 1)
-    return toLocalIso(candidate)
+  const today = parseLocalDate(todayIso);
+  if (cadence === "monthly") {
+    const candidate = new Date(today.getFullYear(), today.getMonth(), dayOfMonth);
+    if (candidate <= today) candidate.setMonth(candidate.getMonth() + 1);
+    return toLocalIso(candidate);
   }
-  const candidate = new Date(today.getFullYear(), monthOfYear - 1, dayOfMonth)
-  if (candidate <= today) candidate.setFullYear(candidate.getFullYear() + 1)
-  return toLocalIso(candidate)
+  const candidate = new Date(today.getFullYear(), monthOfYear - 1, dayOfMonth);
+  if (candidate <= today) candidate.setFullYear(candidate.getFullYear() + 1);
+  return toLocalIso(candidate);
 }

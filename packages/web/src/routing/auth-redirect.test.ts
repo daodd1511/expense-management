@@ -1,37 +1,37 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { currentRedirectPath, normalizeRedirectPath, validateAuthSearch } from './auth-redirect'
+import { beforeEach, describe, expect, it } from "vitest";
+import { currentRedirectPath, normalizeRedirectPath, validateAuthSearch } from "./auth-redirect";
 
-describe('auth redirect helpers', () => {
+describe("auth redirect helpers", () => {
   beforeEach(() => {
-    window.history.replaceState({}, '', '/')
-  })
+    window.history.replaceState({}, "", "/");
+  });
 
-  it('keeps same-origin relative redirects', () => {
-    expect(normalizeRedirectPath('/transactions?view=all#top')).toBe('/transactions?view=all#top')
-  })
+  it("keeps same-origin relative redirects", () => {
+    expect(normalizeRedirectPath("/transactions?view=all#top")).toBe("/transactions?view=all#top");
+  });
 
-  it('drops cross-origin redirects to root', () => {
-    expect(normalizeRedirectPath('https://evil.example/phish')).toBe('/')
-  })
+  it("drops cross-origin redirects to root", () => {
+    expect(normalizeRedirectPath("https://evil.example/phish")).toBe("/");
+  });
 
-  it('validates redirect search into a normalized shape', () => {
-    expect(validateAuthSearch({ redirect: '/settings/categories' })).toEqual({
-      redirect: '/settings/categories',
-    })
-  })
+  it("validates redirect search into a normalized shape", () => {
+    expect(validateAuthSearch({ redirect: "/settings/categories" })).toEqual({
+      redirect: "/settings/categories",
+    });
+  });
 
-  it('reads the current location into a redirect path', () => {
-    window.history.replaceState({}, '', '/auth/sign-in?redirect=%2Faccounts#section')
+  it("reads the current location into a redirect path", () => {
+    window.history.replaceState({}, "", "/auth/sign-in?redirect=%2Faccounts#section");
 
-    expect(currentRedirectPath()).toBe('/auth/sign-in?redirect=%2Faccounts#section')
-  })
+    expect(currentRedirectPath()).toBe("/auth/sign-in?redirect=%2Faccounts#section");
+  });
 
-  it('preserves protected transaction overlay URLs end-to-end', () => {
-    const overlayHref = '/transactions/new?returnTo=%2Faccounts'
+  it("preserves protected transaction overlay URLs end-to-end", () => {
+    const overlayHref = "/transactions/new?returnTo=%2Faccounts";
 
-    expect(normalizeRedirectPath(overlayHref)).toBe(overlayHref)
+    expect(normalizeRedirectPath(overlayHref)).toBe(overlayHref);
 
-    window.history.replaceState({}, '', overlayHref)
-    expect(currentRedirectPath()).toBe(overlayHref)
-  })
-})
+    window.history.replaceState({}, "", overlayHref);
+    expect(currentRedirectPath()).toBe(overlayHref);
+  });
+});

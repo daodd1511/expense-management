@@ -1,5 +1,5 @@
-import type { Category } from '../models'
-import type { CategoryCreate, CategoryPatch, CategoryRow } from '../dtos'
+import type { Category } from "../models";
+import type { CategoryCreate, CategoryPatch, CategoryRow } from "../dtos";
 
 export function toCategory(row: CategoryRow): Category {
   return {
@@ -11,14 +11,11 @@ export function toCategory(row: CategoryRow): Category {
     isHidden: row.is_hidden,
     type: row.type,
     parentId: row.parent_id,
-  }
+  };
 }
 
-export function fromCategory(params: {
-  category: CategoryCreate
-  ownerId: string
-}) {
-  const { category, ownerId } = params
+export function fromCategory(params: { category: CategoryCreate; ownerId: string }) {
+  const { category, ownerId } = params;
   return {
     owner_id: ownerId,
     name: category.name,
@@ -26,7 +23,7 @@ export function fromCategory(params: {
     color: category.color,
     type: category.type,
     parent_id: category.parentId ?? null,
-  }
+  };
 }
 
 export function categoryPatchToRow(patch: CategoryPatch) {
@@ -35,5 +32,5 @@ export function categoryPatchToRow(patch: CategoryPatch) {
     ...(patch.icon !== undefined && { icon: patch.icon }),
     ...(patch.color !== undefined && { color: patch.color }),
     ...(patch.parentId !== undefined && { parent_id: patch.parentId }),
-  }
+  };
 }

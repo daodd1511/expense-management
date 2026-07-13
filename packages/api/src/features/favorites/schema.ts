@@ -1,1 +1,1 @@
-export { favoriteCreateSchema } from '@wallet/shared'
+export { favoriteCreateSchema } from "@wallet/shared";

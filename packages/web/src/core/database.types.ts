@@ -1,1 +1,1 @@
-export type { Database, Json } from '@wallet/shared'
+export type { Database, Json } from "@wallet/shared";

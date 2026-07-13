@@ -6,10 +6,10 @@
  * Forcing `registration.update()` on every foreground transition closes that gap.
  */
 export function registerForegroundSWUpdateCheck() {
-  if (!('serviceWorker' in navigator)) return
+  if (!("serviceWorker" in navigator)) return;
 
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') return
-    navigator.serviceWorker.getRegistration().then((registration) => registration?.update())
-  })
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    navigator.serviceWorker.getRegistration().then((registration) => registration?.update());
+  });
 }

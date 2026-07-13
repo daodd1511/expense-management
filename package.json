@@ -10,11 +10,17 @@
     "dev:api": "pnpm --filter @wallet/api dev",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
     "specs:index": "node scripts/spec-index.mjs",
     "docs:dashboard": "node scripts/docs-dashboard.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.10.4",
+    "oxfmt": "0.58.0",
+    "oxlint": "1.73.0",
     "shadcn": "^4.13.0",
     "supabase": "^2.108.0",
     "vitest": "^3.2.4"

@@ -1,1 +1,1 @@
-export { budgetCreateSchema, budgetPatchSchema } from '@wallet/shared'
+export { budgetCreateSchema, budgetPatchSchema } from "@wallet/shared";

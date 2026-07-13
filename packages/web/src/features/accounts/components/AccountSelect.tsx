@@ -6,11 +6,11 @@ import {
   SelectPortal,
   SelectTrigger,
   SelectValue,
-} from '@/shared/components/ui/select'
+} from "@/shared/components/ui/select";
 
 interface AccountOption {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 /** Account dropdown built on the shared `Select` component. Shared by the
@@ -23,18 +23,20 @@ export function AccountSelect({
   placeholder,
   id,
 }: {
-  value: string
-  onChange: (accountId: string) => void
-  accounts: AccountOption[]
-  placeholder: string
-  id?: string
+  value: string;
+  onChange: (accountId: string) => void;
+  accounts: AccountOption[];
+  placeholder: string;
+  id?: string;
 }) {
-  const labels = Object.fromEntries(accounts.map((account) => [account.id, account.name]))
+  const labels = Object.fromEntries(accounts.map((account) => [account.id, account.name]));
 
   return (
     <Select value={value} onValueChange={(nextValue) => nextValue && onChange(nextValue)}>
       <SelectTrigger id={id}>
-        <SelectValue>{(selected: string | null) => labels[selected ?? ''] ?? placeholder}</SelectValue>
+        <SelectValue>
+          {(selected: string | null) => labels[selected ?? ""] ?? placeholder}
+        </SelectValue>
       </SelectTrigger>
       <SelectPortal>
         <SelectPositioner>
@@ -48,5 +50,5 @@ export function AccountSelect({
         </SelectPositioner>
       </SelectPortal>
     </Select>
-  )
+  );
 }

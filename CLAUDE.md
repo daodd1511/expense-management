@@ -14,12 +14,22 @@ pnpm build                   # web build → packages/web/dist/
 pnpm preview                 # serve web build locally
 pnpm typecheck               # recursive: tsc --noEmit across all packages
 pnpm test                    # recursive: vitest run across all packages (non-watch, safe for agents)
+pnpm lint                    # oxlint across the whole workspace
+pnpm lint:fix                # oxlint --fix
+pnpm format                  # oxfmt --write across the whole workspace
+pnpm format:check            # oxfmt --check (non-mutating, safe for agents/CI)
 pnpm docs:dashboard          # generate docs/dashboard.html and open it locally
 ```
 
 Scoped equivalents: `pnpm --filter @wallet/web <script>`, `--filter @wallet/api`, `--filter @wallet/shared`.
 
-Tests exist (vitest, colocated `*.test.ts(x)`) but coverage is partial. No linter configured beyond TypeScript strict mode. Never run `vite`/`vitest` in watch mode or `pnpm preview` as a long-lived process in an agent — they hang the session.
+Linting is [oxlint](https://oxc.rs), formatting is [oxfmt](https://oxc.rs) (same
+Oxidation Compiler project) — config at `.oxlintrc.json` / `.oxfmtrc.json` at the repo
+root. No existing source was reformatted when this was wired up; the codebase does not
+yet conform to oxfmt's style. TypeScript strict mode remains the primary type-safety
+gate; oxlint/oxfmt run separately.
+
+Tests exist (vitest, colocated `*.test.ts(x)`) but coverage is partial. Never run `vite`/`vitest` in watch mode or `pnpm preview` as a long-lived process in an agent — they hang the session.
 
 ## Stack
 

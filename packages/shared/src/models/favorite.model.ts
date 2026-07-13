@@ -1,7 +1,7 @@
-import { z } from 'zod'
+import { z } from "zod";
 
 export const favoriteSchema = z.object({
   categoryId: z.string(),
-})
+});
 
-export type Favorite = Readonly<z.infer<typeof favoriteSchema>>
+export type Favorite = Readonly<z.infer<typeof favoriteSchema>>;

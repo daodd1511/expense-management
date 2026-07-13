@@ -1,20 +1,19 @@
-
-import { useEffect } from 'react'
-import { cn } from '@/shared/lib/utils'
+import { useEffect } from "react";
+import { cn } from "@/shared/lib/utils";
 
 function useDismiss(open: boolean, onClose: () => void) {
   useEffect(() => {
-    if (!open) return
+    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    document.body.style.overflow = 'hidden'
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = ''
-    }
-  }, [open, onClose])
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open, onClose]);
 }
 
 function Backdrop({ onClose }: { onClose: () => void }) {
@@ -24,7 +23,7 @@ function Backdrop({ onClose }: { onClose: () => void }) {
       onClick={onClose}
       aria-hidden="true"
     />
-  )
+  );
 }
 
 export function BottomSheet({
@@ -34,16 +33,16 @@ export function BottomSheet({
   children,
   fullHeight = false,
 }: {
-  open: boolean
-  onClose: () => void
-  title?: string
-  children: React.ReactNode
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  children: React.ReactNode;
   /** Fixed 92dvh instead of shrink-to-fit — for a sheet stacked on top of another sheet, so it
    * consistently covers the sheet underneath instead of leaving a content-dependent gap. */
-  fullHeight?: boolean
+  fullHeight?: boolean;
 }) {
-  useDismiss(open, onClose)
-  if (!open) return null
+  useDismiss(open, onClose);
+  if (!open) return null;
   return (
     <>
       <Backdrop onClose={onClose} />
@@ -52,8 +51,8 @@ export function BottomSheet({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'fixed inset-x-0 bottom-0 z-50 overflow-y-auto rounded-t-3xl border-t border-border bg-card shadow-sm animate-in slide-in-from-bottom duration-300',
-          fullHeight ? 'h-[92dvh]' : 'max-h-[92dvh]',
+          "fixed inset-x-0 bottom-0 z-50 overflow-y-auto rounded-t-3xl border-t border-border bg-card shadow-sm animate-in slide-in-from-bottom duration-300",
+          fullHeight ? "h-[92dvh]" : "max-h-[92dvh]",
         )}
       >
         <div className="sticky top-0 z-10 flex justify-center bg-card pt-3 pb-1">
@@ -62,7 +61,7 @@ export function BottomSheet({
         {children}
       </div>
     </>
-  )
+  );
 }
 
 export function Drawer({
@@ -70,12 +69,12 @@ export function Drawer({
   onClose,
   children,
 }: {
-  open: boolean
-  onClose: () => void
-  children: React.ReactNode
+  open: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
 }) {
-  useDismiss(open, onClose)
-  if (!open) return null
+  useDismiss(open, onClose);
+  if (!open) return null;
   return (
     <>
       <Backdrop onClose={onClose} />
@@ -87,7 +86,7 @@ export function Drawer({
         {children}
       </div>
     </>
-  )
+  );
 }
 
 export function Modal({
@@ -96,13 +95,13 @@ export function Modal({
   children,
   className,
 }: {
-  open: boolean
-  onClose: () => void
-  children: React.ReactNode
-  className?: string
+  open: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  className?: string;
 }) {
-  useDismiss(open, onClose)
-  if (!open) return null
+  useDismiss(open, onClose);
+  if (!open) return null;
   return (
     <>
       <Backdrop onClose={onClose} />
@@ -111,7 +110,7 @@ export function Modal({
           role="dialog"
           aria-modal="true"
           className={cn(
-            'max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-card shadow-sm animate-in fade-in zoom-in-95 duration-200',
+            "max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-card shadow-sm animate-in fade-in zoom-in-95 duration-200",
             className,
           )}
         >
@@ -119,5 +118,5 @@ export function Modal({
         </div>
       </div>
     </>
-  )
+  );
 }

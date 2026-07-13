@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { X } from "lucide-react";
 
 /** Title row + close button shared by every full-screen sheet/drawer form (transaction, budget, subscription). */
 export function SheetFormHeader({
@@ -6,9 +6,9 @@ export function SheetFormHeader({
   onClose,
   closeLabel,
 }: {
-  title: string
-  onClose: () => void
-  closeLabel: string
+  title: string;
+  onClose: () => void;
+  closeLabel: string;
 }) {
   return (
     <div className="flex items-center justify-between px-4 pt-2 pb-3 sm:px-5">
@@ -22,5 +22,5 @@ export function SheetFormHeader({
         <X className="size-4" />
       </button>
     </div>
-  )
+  );
 }

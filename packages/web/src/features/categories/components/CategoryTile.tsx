@@ -1,6 +1,6 @@
-import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
-import type { Category } from '@/core/types'
-import { cn } from '@/shared/lib/utils'
+import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
+import type { Category } from "@/core/types";
+import { cn } from "@/shared/lib/utils";
 
 export function CategoryTile({
   category,
@@ -8,10 +8,10 @@ export function CategoryTile({
   onSelect,
   disabled = false,
 }: {
-  category: Category
-  active: boolean
-  onSelect: (id: string) => void
-  disabled?: boolean
+  category: Category;
+  active: boolean;
+  onSelect: (id: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <button
@@ -20,9 +20,9 @@ export function CategoryTile({
       aria-pressed={active}
       disabled={disabled}
       className={cn(
-        'flex min-w-0 flex-col items-center gap-2 rounded-xl border px-2 py-3 text-center transition-colors',
-        active ? 'border-primary bg-accent ring-1 ring-primary/25' : 'border-border hover:bg-muted',
-        disabled && 'cursor-not-allowed opacity-60',
+        "flex min-w-0 flex-col items-center gap-2 rounded-xl border px-2 py-3 text-center transition-colors",
+        active ? "border-primary bg-accent ring-1 ring-primary/25" : "border-border hover:bg-muted",
+        disabled && "cursor-not-allowed opacity-60",
       )}
     >
       <span
@@ -33,5 +33,5 @@ export function CategoryTile({
       </span>
       <span className="line-clamp-2 text-xs font-medium text-foreground">{category.name}</span>
     </button>
-  )
+  );
 }

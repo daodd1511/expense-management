@@ -61,7 +61,7 @@ import {
   Wifi,
   Wrench,
   Zap,
-} from 'lucide-react'
+} from "lucide-react";
 
 export const CATEGORY_ICON_REGISTRY: Record<string, LucideIcon> = {
   Tag,
@@ -125,6 +125,6 @@ export const CATEGORY_ICON_REGISTRY: Record<string, LucideIcon> = {
   Repeat,
   Ellipsis,
   CircleEllipsis,
-}
+};
 
-export const CATEGORY_ICON_OPTIONS = Object.keys(CATEGORY_ICON_REGISTRY)
+export const CATEGORY_ICON_OPTIONS = Object.keys(CATEGORY_ICON_REGISTRY);

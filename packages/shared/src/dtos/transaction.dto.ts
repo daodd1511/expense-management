@@ -1,18 +1,18 @@
-import { z } from 'zod'
-import { txTypeSchema } from '../models'
-import { isoDateSchema, localTimeSchema } from './common.dto'
+import { z } from "zod";
+import { txTypeSchema } from "../models";
+import { isoDateSchema, localTimeSchema } from "./common.dto";
 
 function todayIsoDate() {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = String(today.getMonth() + 1).padStart(2, '0')
-  const day = String(today.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 const transactionDateSchema = isoDateSchema.refine((value) => value <= todayIsoDate(), {
-  message: 'Transaction date cannot be in the future',
-})
+  message: "Transaction date cannot be in the future",
+});
 
 export const transactionRowSchema = z.object({
   id: z.string(),
@@ -30,46 +30,54 @@ export const transactionRowSchema = z.object({
   subscription_id: z.string().nullable(),
   linked_transfer_id: z.string().nullable().optional(),
   created_at: z.string(),
-})
+});
 
-export const transactionCreateSchema = z.object({
-  type: txTypeSchema,
-  amount: z.number(),
-  categoryId: z.string().min(1).nullable(),
-  accountId: z.string().min(1),
-  toAccountId: z.string().min(1).nullable().optional(),
-  merchant: z.string().trim().min(1),
-  note: z.string().trim().optional(),
-  date: transactionDateSchema,
-  time: localTimeSchema.optional(),
-  receipt: z.string().trim().nullable().optional(),
-  subscriptionId: z.string().min(1).nullable().optional(),
-  fee: z.number().nonnegative().optional(),
-}).strict()
+export const transactionCreateSchema = z
+  .object({
+    type: txTypeSchema,
+    amount: z.number(),
+    categoryId: z.string().min(1).nullable(),
+    accountId: z.string().min(1),
+    toAccountId: z.string().min(1).nullable().optional(),
+    merchant: z.string().trim().min(1),
+    note: z.string().trim().optional(),
+    date: transactionDateSchema,
+    time: localTimeSchema.optional(),
+    receipt: z.string().trim().nullable().optional(),
+    subscriptionId: z.string().min(1).nullable().optional(),
+    fee: z.number().nonnegative().optional(),
+  })
+  .strict();
 
-const transactionPatchObjectSchema = z.object({
-  type: txTypeSchema,
-  amount: z.number(),
-  categoryId: z.string().min(1).nullable(),
-  accountId: z.string().min(1),
-  toAccountId: z.string().min(1).nullable(),
-  merchant: z.string().trim().min(1),
-  note: z.string().trim().nullable(),
-  date: transactionDateSchema,
-  time: localTimeSchema.nullable(),
-  receipt: z.string().trim().nullable(),
-  fee: z.number().nonnegative(),
-}).partial().strict()
+const transactionPatchObjectSchema = z
+  .object({
+    type: txTypeSchema,
+    amount: z.number(),
+    categoryId: z.string().min(1).nullable(),
+    accountId: z.string().min(1),
+    toAccountId: z.string().min(1).nullable(),
+    merchant: z.string().trim().min(1),
+    note: z.string().trim().nullable(),
+    date: transactionDateSchema,
+    time: localTimeSchema.nullable(),
+    receipt: z.string().trim().nullable(),
+    fee: z.number().nonnegative(),
+  })
+  .partial()
+  .strict();
 
-export const transactionPatchSchema = transactionPatchObjectSchema.refine((value) => Object.keys(value).length > 0, {
-  message: 'At least one field is required',
-})
+export const transactionPatchSchema = transactionPatchObjectSchema.refine(
+  (value) => Object.keys(value).length > 0,
+  {
+    message: "At least one field is required",
+  },
+);
 
 export const transactionBulkDeleteSchema = z.object({
   ids: z.array(z.string().min(1)).min(1),
-})
+});
 
-export type TransactionRow = z.infer<typeof transactionRowSchema>
-export type TransactionCreate = z.infer<typeof transactionCreateSchema>
-export type TransactionPatch = z.infer<typeof transactionPatchSchema>
-export type TransactionBulkDelete = z.infer<typeof transactionBulkDeleteSchema>
+export type TransactionRow = z.infer<typeof transactionRowSchema>;
+export type TransactionCreate = z.infer<typeof transactionCreateSchema>;
+export type TransactionPatch = z.infer<typeof transactionPatchSchema>;
+export type TransactionBulkDelete = z.infer<typeof transactionBulkDeleteSchema>;

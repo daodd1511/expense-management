@@ -2,107 +2,107 @@
 //
 // Usage: node scripts/docs-dashboard.mjs   (or: pnpm docs:dashboard)
 
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
-import { dirname, join, relative } from 'node:path'
-import { spawnSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
-import { collectSpecRecords, SpecStatusError } from './spec-status.mjs'
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { collectSpecRecords, SpecStatusError } from "./spec-status.mjs";
 
-const ROOT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..')
-const DOCS_DIR = join(ROOT_DIR, 'docs')
-const SPECS_DIR = join(DOCS_DIR, 'specs')
-const OUTPUT_PATH = join(DOCS_DIR, 'dashboard.html')
+const ROOT_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
+const DOCS_DIR = join(ROOT_DIR, "docs");
+const SPECS_DIR = join(DOCS_DIR, "specs");
+const OUTPUT_PATH = join(DOCS_DIR, "dashboard.html");
 
-const htmlIds = new Set()
+const htmlIds = new Set();
 
 function escapeHtml(value) {
   return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function escapeAttr(value) {
-  return escapeHtml(value).replaceAll('`', '&#96;')
+  return escapeHtml(value).replaceAll("`", "&#96;");
 }
 
 function colorValue(value) {
-  const clean = value.trim().replace(/^["']|["']$/g, '')
+  const clean = value.trim().replace(/^["']|["']$/g, "");
   return /^(#[0-9a-fA-F]{3,8}|oklch\(\s*[\d.]+\s+[\d.]+\s+[\d.]+[^)]*\)|rgb(a)?\(\s*\d+[^)]*\)|hsl(a)?\(\s*\d+[^)]*\))$/.test(
     clean,
   )
     ? clean
-    : null
+    : null;
 }
 
 function renderInlineCode(code) {
-  const color = colorValue(code)
-  if (!color) return `<code>${escapeHtml(code)}</code>`
+  const color = colorValue(code);
+  if (!color) return `<code>${escapeHtml(code)}</code>`;
 
   return `<code class="color-code"><span class="color-swatch" style="background: ${escapeAttr(
     color,
-  )}"></span>${escapeHtml(code)}</code>`
+  )}"></span>${escapeHtml(code)}</code>`;
 }
 
 function slugify(value) {
   const base = value
     .toLowerCase()
-    .replace(/<[^>]+>/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/<[^>]+>/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
-  return base || 'section'
+  return base || "section";
 }
 
 function uniqueId(value) {
-  const base = slugify(value)
-  let id = base
-  let i = 2
-  while (htmlIds.has(id)) id = `${base}-${i++}`
-  htmlIds.add(id)
-  return id
+  const base = slugify(value);
+  let id = base;
+  let i = 2;
+  while (htmlIds.has(id)) id = `${base}-${i++}`;
+  htmlIds.add(id);
+  return id;
 }
 
 function renderInline(value) {
-  const codeTokens = []
+  const codeTokens = [];
   const tokenized = value.replace(/`([^`]+)`/g, (_, code) => {
-    const token = `@@CODE${codeTokens.length}@@`
-    codeTokens.push(renderInlineCode(code))
-    return token
-  })
+    const token = `@@CODE${codeTokens.length}@@`;
+    codeTokens.push(renderInlineCode(code));
+    return token;
+  });
 
-  let out = escapeHtml(tokenized)
+  let out = escapeHtml(tokenized);
   out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => {
-    return `<a href="${escapeAttr(href)}">${label}</a>`
-  })
-  out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-  out = out.replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    return `<a href="${escapeAttr(href)}">${label}</a>`;
+  });
+  out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  out = out.replace(/\*([^*]+)\*/g, "<em>$1</em>");
 
-  for (let i = 0; i < codeTokens.length; i++) out = out.replace(`@@CODE${i}@@`, codeTokens[i])
-  return out
+  for (let i = 0; i < codeTokens.length; i++) out = out.replace(`@@CODE${i}@@`, codeTokens[i]);
+  return out;
 }
 
 function renderFrontmatter(raw) {
-  const lines = raw.split('\n')
-  const summary = []
-  const colors = []
-  let section = null
+  const lines = raw.split("\n");
+  const summary = [];
+  const colors = [];
+  let section = null;
 
   for (const line of lines) {
-    const top = line.match(/^([a-zA-Z0-9_-]+):\s*(.*)$/)
+    const top = line.match(/^([a-zA-Z0-9_-]+):\s*(.*)$/);
     if (top) {
-      section = top[1]
-      if (top[2]) summary.push({ key: top[1], value: top[2].replace(/^["']|["']$/g, '') })
-      continue
+      section = top[1];
+      if (top[2]) summary.push({ key: top[1], value: top[2].replace(/^["']|["']$/g, "") });
+      continue;
     }
 
-    if (section === 'colors') {
-      const color = line.match(/^\s{2}([a-zA-Z0-9_-]+):\s*(.+)$/)
+    if (section === "colors") {
+      const color = line.match(/^\s{2}([a-zA-Z0-9_-]+):\s*(.+)$/);
       if (color) {
-        const value = colorValue(color[2])
-        if (value) colors.push({ name: color[1], value })
+        const value = colorValue(color[2]);
+        if (value) colors.push({ name: color[1], value });
       }
     }
   }
@@ -111,9 +111,10 @@ function renderFrontmatter(raw) {
     <div class="frontmatter-summary">
       ${summary
         .map(
-          (item) => `<div><span>${escapeHtml(item.key)}</span><strong>${renderInline(item.value)}</strong></div>`,
+          (item) =>
+            `<div><span>${escapeHtml(item.key)}</span><strong>${renderInline(item.value)}</strong></div>`,
         )
-        .join('')}
+        .join("")}
     </div>
     ${
       colors.length
@@ -124,198 +125,202 @@ function renderFrontmatter(raw) {
                 <span><strong>${escapeHtml(item.name)}</strong><code>${escapeHtml(item.value)}</code></span>
               </div>`,
             )
-            .join('')}</div>`
-        : ''
+            .join("")}</div>`
+        : ""
     }
-  </section>`
+  </section>`;
 }
 
 function splitTableRow(line) {
   return line
     .trim()
-    .replace(/^\|/, '')
-    .replace(/\|$/, '')
-    .split('|')
-    .map((cell) => cell.trim())
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((cell) => cell.trim());
 }
 
 function isTableStart(lines, index) {
   return (
-    lines[index]?.includes('|') &&
-    /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[index + 1] ?? '')
-  )
+    lines[index]?.includes("|") &&
+    /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[index + 1] ?? "")
+  );
 }
 
 function renderTable(lines) {
-  const [headLine, , ...bodyLines] = lines
-  const head = splitTableRow(headLine)
-  const body = bodyLines.map(splitTableRow)
+  const [headLine, , ...bodyLines] = lines;
+  const head = splitTableRow(headLine);
+  const body = bodyLines.map(splitTableRow);
   return `<div class="md-table-wrap"><table><thead><tr>${head
     .map((cell) => `<th>${renderInline(cell)}</th>`)
-    .join('')}</tr></thead><tbody>${body
-    .map((row) => `<tr>${row.map((cell) => `<td>${renderInline(cell)}</td>`).join('')}</tr>`)
-    .join('')}</tbody></table></div>`
+    .join("")}</tr></thead><tbody>${body
+    .map((row) => `<tr>${row.map((cell) => `<td>${renderInline(cell)}</td>`).join("")}</tr>`)
+    .join("")}</tbody></table></div>`;
 }
 
-function startsBlock(line, nextLine = '') {
+function startsBlock(line, nextLine = "") {
   return (
-    line.trim() === '' ||
-    /^```/.test(line) ||
+    line.trim() === "" ||
+    line.startsWith("```") ||
     /^#{1,6}\s+/.test(line) ||
     /^-{3,}\s*$/.test(line.trim()) ||
     /^>\s?/.test(line) ||
     /^\s*- \[[ xX]\]\s+/.test(line) ||
     /^\s*-\s+/.test(line) ||
     /^\s*\d+\.\s+/.test(line) ||
-    (line.includes('|') && /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(nextLine))
-  )
+    (line.includes("|") && /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(nextLine))
+  );
 }
 
 function collectListItems(lines, start, kind) {
-  const items = []
+  const items = [];
   const patterns = {
     checklist: /^\s*- \[([ xX])\]\s+(.*)$/,
     unordered: /^\s*-\s+(.*)$/,
     ordered: /^\s*\d+\.\s+(.*)$/,
-  }
-  const pattern = patterns[kind]
-  let i = start
+  };
+  const pattern = patterns[kind];
+  let i = start;
 
   while (i < lines.length) {
-    const match = lines[i].match(pattern)
-    if (!match) break
+    const match = lines[i].match(pattern);
+    if (!match) break;
 
     const item = {
-      checked: kind === 'checklist' ? match[1].toLowerCase() === 'x' : false,
-      text: kind === 'checklist' ? match[2] : match[1],
-    }
-    i++
+      checked: kind === "checklist" ? match[1].toLowerCase() === "x" : false,
+      text: kind === "checklist" ? match[2] : match[1],
+    };
+    i++;
 
     while (
       i < lines.length &&
       /^\s{2,}\S/.test(lines[i]) &&
       !/^\s*(- \[[ xX]\]|- |\d+\.)\s+/.test(lines[i])
     ) {
-      item.text += ` ${lines[i].trim()}`
-      i++
+      item.text += ` ${lines[i].trim()}`;
+      i++;
     }
 
-    items.push(item)
+    items.push(item);
   }
 
-  return { items, next: i }
+  return { items, next: i };
 }
 
 function renderList(items, ordered = false, checklist = false) {
-  const tag = ordered ? 'ol' : 'ul'
-  const className = checklist ? ' class="task-list"' : ''
+  const tag = ordered ? "ol" : "ul";
+  const className = checklist ? ' class="task-list"' : "";
   const renderedItems = items
     .map((item) => {
       if (checklist) {
-        return `<li><input type="checkbox" disabled${item.checked ? ' checked' : ''}> <span>${renderInline(item.text)}</span></li>`
+        return `<li><input type="checkbox" disabled${item.checked ? " checked" : ""}> <span>${renderInline(item.text)}</span></li>`;
       }
-      return `<li>${renderInline(item.text)}</li>`
+      return `<li>${renderInline(item.text)}</li>`;
     })
-    .join('')
-  return `<${tag}${className}>${renderedItems}</${tag}>`
+    .join("");
+  return `<${tag}${className}>${renderedItems}</${tag}>`;
 }
 
 function markdownToHtml(markdown, sourceLabel) {
-  const lines = markdown.replace(/\r\n/g, '\n').split('\n')
-  const out = []
-  let i = 0
+  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  const out = [];
+  let i = 0;
 
-  if (lines[0]?.trim() === '---') {
-    const frontmatter = []
-    i = 1
-    while (i < lines.length && lines[i].trim() !== '---') frontmatter.push(lines[i++])
-    if (i < lines.length) i++
-    out.push(renderFrontmatter(frontmatter.join('\n')))
+  if (lines[0]?.trim() === "---") {
+    const frontmatter = [];
+    i = 1;
+    while (i < lines.length && lines[i].trim() !== "---") frontmatter.push(lines[i++]);
+    if (i < lines.length) i++;
+    out.push(renderFrontmatter(frontmatter.join("\n")));
   }
 
   while (i < lines.length) {
-    const line = lines[i]
-    const trimmed = line.trim()
+    const line = lines[i];
+    const trimmed = line.trim();
 
-    if (trimmed === '') {
-      i++
-      continue
+    if (trimmed === "") {
+      i++;
+      continue;
     }
 
-    const fence = line.match(/^```([A-Za-z0-9_-]+)?\s*$/)
+    const fence = line.match(/^```([A-Za-z0-9_-]+)?\s*$/);
     if (fence) {
-      const lang = fence[1] ? ` data-lang="${escapeAttr(fence[1])}"` : ''
-      const code = []
-      i++
-      while (i < lines.length && !/^```\s*$/.test(lines[i])) code.push(lines[i++])
-      if (i < lines.length) i++
-      out.push(`<pre${lang}><code>${escapeHtml(code.join('\n'))}</code></pre>`)
-      continue
+      const lang = fence[1] ? ` data-lang="${escapeAttr(fence[1])}"` : "";
+      const code = [];
+      i++;
+      while (i < lines.length && !/^```\s*$/.test(lines[i])) code.push(lines[i++]);
+      if (i < lines.length) i++;
+      out.push(`<pre${lang}><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+      continue;
     }
 
     if (isTableStart(lines, i)) {
-      const tableLines = [lines[i], lines[i + 1]]
-      i += 2
-      while (i < lines.length && lines[i].includes('|') && lines[i].trim() !== '') tableLines.push(lines[i++])
-      out.push(renderTable(tableLines))
-      continue
+      const tableLines = [lines[i], lines[i + 1]];
+      i += 2;
+      while (i < lines.length && lines[i].includes("|") && lines[i].trim() !== "")
+        tableLines.push(lines[i++]);
+      out.push(renderTable(tableLines));
+      continue;
     }
 
-    const heading = line.match(/^(#{1,6})\s+(.+)$/)
+    const heading = line.match(/^(#{1,6})\s+(.+)$/);
     if (heading) {
-      const level = heading[1].length
-      const text = heading[2].replace(/\s+#+$/, '')
-      const id = uniqueId(`${sourceLabel}-${text}`)
-      out.push(`<h${level} id="${id}">${renderInline(text)}</h${level}>`)
-      i++
-      continue
+      const level = heading[1].length;
+      const text = heading[2].replace(/\s+#+$/, "");
+      const id = uniqueId(`${sourceLabel}-${text}`);
+      out.push(`<h${level} id="${id}">${renderInline(text)}</h${level}>`);
+      i++;
+      continue;
     }
 
     if (/^-{3,}\s*$/.test(trimmed)) {
-      out.push('<hr>')
-      i++
-      continue
+      out.push("<hr>");
+      i++;
+      continue;
     }
 
     if (/^>\s?/.test(line)) {
-      const quote = []
-      while (i < lines.length && /^>\s?/.test(lines[i])) quote.push(lines[i++].replace(/^>\s?/, ''))
-      out.push(`<blockquote>${quote.map((part) => `<p>${renderInline(part)}</p>`).join('')}</blockquote>`)
-      continue
+      const quote = [];
+      while (i < lines.length && /^>\s?/.test(lines[i]))
+        quote.push(lines[i++].replace(/^>\s?/, ""));
+      out.push(
+        `<blockquote>${quote.map((part) => `<p>${renderInline(part)}</p>`).join("")}</blockquote>`,
+      );
+      continue;
     }
 
     if (/^\s*- \[[ xX]\]\s+/.test(line)) {
-      const { items, next } = collectListItems(lines, i, 'checklist')
-      i = next
-      out.push(renderList(items, false, true))
-      continue
+      const { items, next } = collectListItems(lines, i, "checklist");
+      i = next;
+      out.push(renderList(items, false, true));
+      continue;
     }
 
     if (/^\s*-\s+/.test(line)) {
-      const { items, next } = collectListItems(lines, i, 'unordered')
-      i = next
-      out.push(renderList(items))
-      continue
+      const { items, next } = collectListItems(lines, i, "unordered");
+      i = next;
+      out.push(renderList(items));
+      continue;
     }
 
     if (/^\s*\d+\.\s+/.test(line)) {
-      const { items, next } = collectListItems(lines, i, 'ordered')
-      i = next
-      out.push(renderList(items, true))
-      continue
+      const { items, next } = collectListItems(lines, i, "ordered");
+      i = next;
+      out.push(renderList(items, true));
+      continue;
     }
 
-    const para = [trimmed]
-    i++
-    while (i < lines.length && !startsBlock(lines[i], lines[i + 1])) para.push(lines[i++].trim())
-    out.push(`<p>${renderInline(para.join(' '))}</p>`)
+    const para = [trimmed];
+    i++;
+    while (i < lines.length && !startsBlock(lines[i], lines[i + 1])) para.push(lines[i++].trim());
+    out.push(`<p>${renderInline(para.join(" "))}</p>`);
   }
 
-  return out.join('\n')
+  return out.join("\n");
 }
 
 function readMarkdown(path) {
-  return readFileSync(path, 'utf8')
+  return readFileSync(path, "utf8");
 }
 
 function prettyTitle(slug) {
@@ -323,17 +328,17 @@ function prettyTitle(slug) {
     .split(/[-_]/g)
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
+    .join(" ");
 }
 
 function searchText(parts) {
-  return parts.filter(Boolean).join(' ').toLowerCase()
+  return parts.filter(Boolean).join(" ").toLowerCase();
 }
 
-function navButton(id, title, meta = '') {
+function navButton(id, title, meta = "") {
   return `<button class="nav-link" type="button" data-target="${escapeAttr(id)}" data-search="${escapeAttr(
     `${title} ${meta}`.toLowerCase(),
-  )}"><span>${escapeHtml(title)}</span>${meta ? `<small>${escapeHtml(meta)}</small>` : ''}</button>`
+  )}"><span>${escapeHtml(title)}</span>${meta ? `<small>${escapeHtml(meta)}</small>` : ""}</button>`;
 }
 
 function docSection({ id, title, group, path, bodyHtml, search }) {
@@ -344,64 +349,71 @@ function docSection({ id, title, group, path, bodyHtml, search }) {
       <span>${escapeHtml(path)}</span>
     </header>
     <article class="markdown-body">${bodyHtml}</article>
-  </section>`
+  </section>`;
 }
 
 function specSection(slug) {
-  const title = prettyTitle(slug)
-  const planPath = join(SPECS_DIR, slug, 'PLAN.md')
-  const execPath = join(SPECS_DIR, slug, 'EXECUTION.md')
-  const planHtml = markdownToHtml(readMarkdown(planPath), `${slug}-plan`)
-  const hasExecution = existsSync(execPath)
-  const executionHtml = hasExecution ? markdownToHtml(readMarkdown(execPath), `${slug}-execution`) : ''
-  const id = `spec-${slug}`
-  const relPlan = relative(ROOT_DIR, planPath)
+  const title = prettyTitle(slug);
+  const planPath = join(SPECS_DIR, slug, "PLAN.md");
+  const execPath = join(SPECS_DIR, slug, "EXECUTION.md");
+  const planHtml = markdownToHtml(readMarkdown(planPath), `${slug}-plan`);
+  const hasExecution = existsSync(execPath);
+  const executionHtml = hasExecution
+    ? markdownToHtml(readMarkdown(execPath), `${slug}-execution`)
+    : "";
+  const id = `spec-${slug}`;
+  const relPlan = relative(ROOT_DIR, planPath);
 
   const tabs = hasExecution
     ? `<div class="tabs" role="tablist" aria-label="${escapeAttr(title)} documents">
         <button type="button" class="tab is-active" data-tab-target="${escapeAttr(id)}-plan">Plan</button>
         <button type="button" class="tab" data-tab-target="${escapeAttr(id)}-execution">Execution</button>
       </div>`
-    : ''
+    : "";
 
   const executionPanel = hasExecution
     ? `<article class="markdown-body tab-panel" id="${escapeAttr(id)}-execution" hidden>${executionHtml}</article>`
-    : ''
+    : "";
 
   return `<section class="doc-section spec-doc" id="${escapeAttr(id)}" data-search="${escapeAttr(
-    searchText([slug, title, readMarkdown(planPath).slice(0, 500), hasExecution ? readMarkdown(execPath).slice(0, 500) : '']),
+    searchText([
+      slug,
+      title,
+      readMarkdown(planPath).slice(0, 500),
+      hasExecution ? readMarkdown(execPath).slice(0, 500) : "",
+    ]),
   )}">
     <header class="doc-header">
       <p>Spec</p>
       <h2>${escapeHtml(title)}</h2>
-      <span>${escapeHtml(relPlan)}${hasExecution ? ' + EXECUTION.md' : ''}</span>
+      <span>${escapeHtml(relPlan)}${hasExecution ? " + EXECUTION.md" : ""}</span>
     </header>
     ${tabs}
     <article class="markdown-body tab-panel" id="${escapeAttr(id)}-plan">${planHtml}</article>
     ${executionPanel}
-  </section>`
+  </section>`;
 }
 
 function loadDocGroup(dirName, group) {
-  const dir = join(DOCS_DIR, dirName)
-  if (!existsSync(dir)) return []
+  const dir = join(DOCS_DIR, dirName);
+  if (!existsSync(dir)) return [];
 
   return readdirSync(dir)
-    .filter((file) => file.endsWith('.md'))
+    .filter((file) => file.endsWith(".md"))
     .sort()
     .map((file) => {
-      const path = join(dir, file)
-      const title = file.replace(/\.md$/, '').replace(/^\d+-/, '')
-      const text = readMarkdown(path)
+      const path = join(dir, file);
+      const title = file.replace(/\.md$/, "").replace(/^\d+-/, "");
+      const text = readMarkdown(path);
       return {
-        id: `${dirName}-${slugify(file.replace(/\.md$/, ''))}`,
+        id: `${dirName}-${slugify(file.replace(/\.md$/, ""))}`,
         title: prettyTitle(title),
         group,
         path: relative(ROOT_DIR, path),
         bodyHtml: markdownToHtml(text, `${dirName}-${file}`),
         search: searchText([group, title, text.slice(0, 700)]),
-      }
-    })
+      };
+    });
 }
 
 function renderBoard(rows) {
@@ -413,8 +425,8 @@ function renderBoard(rows) {
       </div>
       <div class="board-stats" aria-label="Spec summary">
         <span><strong>${rows.length}</strong> specs</span>
-        <span><strong>${rows.filter((row) => row.status === 'Done').length}</strong> done</span>
-        <span><strong>${rows.filter((row) => row.status !== 'Done').length}</strong> open</span>
+        <span><strong>${rows.filter((row) => row.status === "Done").length}</strong> done</span>
+        <span><strong>${rows.filter((row) => row.status !== "Done").length}</strong> open</span>
       </div>
     </header>
     <div class="board-table">
@@ -431,7 +443,9 @@ function renderBoard(rows) {
         <tbody>
           ${rows
             .map(
-              (row) => `<tr data-search="${escapeAttr(searchText([row.slug, row.status, row.phases, row.debt, row.description]))}">
+              (
+                row,
+              ) => `<tr data-search="${escapeAttr(searchText([row.slug, row.status, row.phases, row.debt, row.description]))}">
                 <td><button type="button" class="board-link" data-target="spec-${escapeAttr(row.slug)}">${escapeHtml(row.slug)}</button></td>
                 <td><span class="status status-${escapeAttr(slugify(row.status))}">${escapeHtml(row.status)}</span></td>
                 <td>${escapeHtml(row.phases)}</td>
@@ -439,68 +453,82 @@ function renderBoard(rows) {
                 <td>${escapeHtml(row.description)}</td>
               </tr>`,
             )
-            .join('')}
+            .join("")}
         </tbody>
       </table>
     </div>
-  </section>`
+  </section>`;
 }
 
 function buildHtml() {
-  let specRecords
+  let specRecords;
   try {
-    specRecords = collectSpecRecords(SPECS_DIR)
+    specRecords = collectSpecRecords(SPECS_DIR);
   } catch (err) {
     if (err instanceof SpecStatusError) {
-      console.error(`docs-dashboard: ${err.message}`)
-      process.exit(1)
+      console.error(`docs-dashboard: ${err.message}`);
+      process.exit(1);
     }
-    throw err
+    throw err;
   }
 
-  const { rows, referenceRows } = specRecords
-  const specs = [...rows.map((row) => row.slug), ...referenceRows.map((row) => row.slug)].sort()
-  const adrDocs = loadDocGroup('adr', 'ADR')
-  const designDocs = loadDocGroup('design', 'Design')
+  const { rows, referenceRows } = specRecords;
+  const specs = [...rows.map((row) => row.slug), ...referenceRows.map((row) => row.slug)].sort();
+  const adrDocs = loadDocGroup("adr", "ADR");
+  const designDocs = loadDocGroup("design", "Design");
   const standaloneDocs = [
     {
-      id: 'backlog',
-      title: 'Backlog',
-      group: 'Backlog',
-      path: 'docs/BACKLOG.md',
-      bodyHtml: markdownToHtml(readMarkdown(join(DOCS_DIR, 'BACKLOG.md')), 'backlog'),
-      search: searchText(['backlog', readMarkdown(join(DOCS_DIR, 'BACKLOG.md')).slice(0, 700)]),
+      id: "backlog",
+      title: "Backlog",
+      group: "Backlog",
+      path: "docs/BACKLOG.md",
+      bodyHtml: markdownToHtml(readMarkdown(join(DOCS_DIR, "BACKLOG.md")), "backlog"),
+      search: searchText(["backlog", readMarkdown(join(DOCS_DIR, "BACKLOG.md")).slice(0, 700)]),
     },
     {
-      id: 'product-plan',
-      title: 'Product Plan',
-      group: 'Product Plan',
-      path: 'docs/PLAN.md',
-      bodyHtml: markdownToHtml(readMarkdown(join(DOCS_DIR, 'PLAN.md')), 'product-plan'),
-      search: searchText(['product plan', readMarkdown(join(DOCS_DIR, 'PLAN.md')).slice(0, 700)]),
+      id: "product-plan",
+      title: "Product Plan",
+      group: "Product Plan",
+      path: "docs/PLAN.md",
+      bodyHtml: markdownToHtml(readMarkdown(join(DOCS_DIR, "PLAN.md")), "product-plan"),
+      search: searchText(["product plan", readMarkdown(join(DOCS_DIR, "PLAN.md")).slice(0, 700)]),
     },
     {
-      id: 'context',
-      title: 'Context',
-      group: 'Context',
-      path: 'CONTEXT.md',
-      bodyHtml: markdownToHtml(readMarkdown(join(ROOT_DIR, 'CONTEXT.md')), 'context'),
-      search: searchText(['context', readMarkdown(join(ROOT_DIR, 'CONTEXT.md')).slice(0, 700)]),
+      id: "context",
+      title: "Context",
+      group: "Context",
+      path: "CONTEXT.md",
+      bodyHtml: markdownToHtml(readMarkdown(join(ROOT_DIR, "CONTEXT.md")), "context"),
+      search: searchText(["context", readMarkdown(join(ROOT_DIR, "CONTEXT.md")).slice(0, 700)]),
     },
-  ].filter((doc) => existsSync(join(ROOT_DIR, doc.path)))
+  ].filter((doc) => existsSync(join(ROOT_DIR, doc.path)));
 
   const nav = [
-    ['Board', navButton('board', 'Specs Board', `${rows.length} specs`)],
-    ['Specs', specs.map((slug) => navButton(`spec-${slug}`, slug, rows.find((row) => row.slug === slug)?.status ?? 'Reference')).join('')],
-    ['ADRs', adrDocs.map((doc) => navButton(doc.id, doc.title)).join('')],
-    ['Design', designDocs.map((doc) => navButton(doc.id, doc.title)).join('')],
-    ['Backlog', navButton('backlog', 'Backlog')],
-    ['Context', navButton('context', 'Context')],
-    ['Product Plan', navButton('product-plan', 'Product Plan')],
+    ["Board", navButton("board", "Specs Board", `${rows.length} specs`)],
+    [
+      "Specs",
+      specs
+        .map((slug) =>
+          navButton(
+            `spec-${slug}`,
+            slug,
+            rows.find((row) => row.slug === slug)?.status ?? "Reference",
+          ),
+        )
+        .join(""),
+    ],
+    ["ADRs", adrDocs.map((doc) => navButton(doc.id, doc.title)).join("")],
+    ["Design", designDocs.map((doc) => navButton(doc.id, doc.title)).join("")],
+    ["Backlog", navButton("backlog", "Backlog")],
+    ["Context", navButton("context", "Context")],
+    ["Product Plan", navButton("product-plan", "Product Plan")],
   ]
     .filter(([, links]) => links)
-    .map(([group, links]) => `<section class="nav-group"><h2>${escapeHtml(group)}</h2>${links}</section>`)
-    .join('')
+    .map(
+      ([group, links]) =>
+        `<section class="nav-group"><h2>${escapeHtml(group)}</h2>${links}</section>`,
+    )
+    .join("");
 
   const sections = [
     renderBoard(rows),
@@ -508,7 +536,7 @@ function buildHtml() {
     ...adrDocs.map(docSection),
     ...designDocs.map(docSection),
     ...standaloneDocs.map(docSection),
-  ].join('\n')
+  ].join("\n");
 
   return `<!doctype html>
 <html lang="en">
@@ -1134,13 +1162,14 @@ function buildHtml() {
     showSection('board')
   </script>
 </body>
-</html>`
+</html>`;
 }
 
-writeFileSync(OUTPUT_PATH, buildHtml())
-console.log(`docs-dashboard: wrote ${relative(ROOT_DIR, OUTPUT_PATH)}`)
+writeFileSync(OUTPUT_PATH, buildHtml());
+console.log(`docs-dashboard: wrote ${relative(ROOT_DIR, OUTPUT_PATH)}`);
 
-const opened = process.platform === 'darwin' ? spawnSync('open', [OUTPUT_PATH], { stdio: 'ignore' }) : null
+const opened =
+  process.platform === "darwin" ? spawnSync("open", [OUTPUT_PATH], { stdio: "ignore" }) : null;
 if (!opened || opened.status !== 0) {
-  console.log(`docs-dashboard: open ${OUTPUT_PATH}`)
+  console.log(`docs-dashboard: open ${OUTPUT_PATH}`);
 }

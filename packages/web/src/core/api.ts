@@ -1,21 +1,21 @@
-import { z } from 'zod'
-import { supabase } from '@/core/supabase'
+import { z } from "zod";
+import { supabase } from "@/core/supabase";
 
 const apiErrorSchema = z.object({
   error: z.string(),
   details: z.unknown().optional(),
-})
+});
 
 /** Thrown by `apiFetch` on any non-2xx response (or a missing auth session, as 401). */
 export class ApiError extends Error {
-  status: number
-  details?: unknown
+  status: number;
+  details?: unknown;
 
   constructor(message: string, status: number, details?: unknown) {
-    super(message)
-    this.name = 'ApiError'
-    this.status = status
-    this.details = details
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.details = details;
   }
 }
 
@@ -26,69 +26,75 @@ export class ApiError extends Error {
  * classify failures the same way.
  */
 export function isClientError(error: unknown): boolean {
-  return error instanceof ApiError && error.status < 500
+  return error instanceof ApiError && error.status < 500;
 }
 
 /** Returns the first field-level API validation message when one is available. */
 export function getFieldErrorMessage(error: unknown): string | null {
-  if (!(error instanceof ApiError) || !error.details || typeof error.details !== 'object') {
-    return null
+  if (!(error instanceof ApiError) || !error.details || typeof error.details !== "object") {
+    return null;
   }
 
-  const fieldErrors = (error.details as { fieldErrors?: unknown }).fieldErrors
-  if (!fieldErrors || typeof fieldErrors !== 'object') {
-    return null
+  const fieldErrors = (error.details as { fieldErrors?: unknown }).fieldErrors;
+  if (!fieldErrors || typeof fieldErrors !== "object") {
+    return null;
   }
 
   for (const messages of Object.values(fieldErrors)) {
-    if (!Array.isArray(messages)) continue
-    const message = messages.find((item): item is string => typeof item === 'string' && item.length > 0)
-    if (message) return message
+    if (!Array.isArray(messages)) continue;
+    const message = messages.find(
+      (item): item is string => typeof item === "string" && item.length > 0,
+    );
+    if (message) return message;
   }
 
-  return null
+  return null;
 }
 
 function apiBase() {
-  return import.meta.env.VITE_API_BASE ?? '/api'
+  return import.meta.env.VITE_API_BASE ?? "/api";
 }
 
 export async function apiFetch(path: string, init?: RequestInit) {
   const {
     data: { session },
-  } = await supabase.auth.getSession()
+  } = await supabase.auth.getSession();
 
   if (!session?.access_token) {
-    throw new ApiError('Missing auth session', 401)
+    throw new ApiError("Missing auth session", 401);
   }
 
   const response = await fetch(`${apiBase()}${path}`, {
     ...init,
     headers: {
-      ...(init?.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(init?.body !== undefined ? { "Content-Type": "application/json" } : {}),
       Authorization: `Bearer ${session.access_token}`,
       ...init?.headers,
     },
-  })
+  });
 
   if (!response.ok) {
-    let message = `API request failed: ${response.status}`
-    let details: unknown
+    let message = `API request failed: ${response.status}`;
+    let details: unknown;
     try {
-      const body = apiErrorSchema.parse(await response.json())
-      message = body.error
-      details = body.details
+      const body = apiErrorSchema.parse(await response.json());
+      message = body.error;
+      details = body.details;
     } catch {
       // keep fallback message
     }
-    throw new ApiError(message, response.status, details)
+    throw new ApiError(message, response.status, details);
   }
 
-  return response
+  return response;
 }
 
-export async function apiJson<T>(path: string, schema: z.ZodType<T>, init?: RequestInit): Promise<T> {
-  const response = await apiFetch(path, init)
-  const json = await response.json()
-  return schema.parse(json)
+export async function apiJson<T>(
+  path: string,
+  schema: z.ZodType<T>,
+  init?: RequestInit,
+): Promise<T> {
+  const response = await apiFetch(path, init);
+  const json = await response.json();
+  return schema.parse(json);
 }

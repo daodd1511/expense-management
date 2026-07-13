@@ -1,22 +1,22 @@
-import { Component, type ReactNode } from 'react'
-import { useLang } from '@/core/i18n'
+import { Component, type ReactNode } from "react";
+import { useLang } from "@/core/i18n";
 
 class ErrorBoundaryImpl extends Component<
   { children: ReactNode; title: string; reloadLabel: string },
   { hasError: boolean }
 > {
-  state = { hasError: false }
+  state = { hasError: false };
 
   static getDerivedStateFromError() {
-    return { hasError: true }
+    return { hasError: true };
   }
 
   componentDidCatch(error: unknown) {
-    console.error('[render]', error)
+    console.error("[render]", error);
   }
 
   render() {
-    if (!this.state.hasError) return this.props.children
+    if (!this.state.hasError) return this.props.children;
 
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
@@ -29,7 +29,7 @@ class ErrorBoundaryImpl extends Component<
           {this.props.reloadLabel}
         </button>
       </div>
-    )
+    );
   }
 }
 
@@ -39,11 +39,11 @@ class ErrorBoundaryImpl extends Component<
  * component that supplies i18n'd copy via props.
  */
 export function ErrorBoundary({ children }: { children: ReactNode }) {
-  const { t } = useLang()
+  const { t } = useLang();
 
   return (
-    <ErrorBoundaryImpl title={t('error.boundary.title')} reloadLabel={t('error.boundary.reload')}>
+    <ErrorBoundaryImpl title={t("error.boundary.title")} reloadLabel={t("error.boundary.reload")}>
       {children}
     </ErrorBoundaryImpl>
-  )
+  );
 }

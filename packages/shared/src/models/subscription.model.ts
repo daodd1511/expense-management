@@ -1,11 +1,11 @@
-import { z } from 'zod'
-import { subscriptionCadenceSchema } from './common.model'
+import { z } from "zod";
+import { subscriptionCadenceSchema } from "./common.model";
 
 export const subscriptionSchema = z.object({
   id: z.string(),
   name: z.string(),
   amount: z.number(),
-  type: z.enum(['expense', 'income']),
+  type: z.enum(["expense", "income"]),
   categoryId: z.string().nullable(),
   accountId: z.string(),
   cadence: subscriptionCadenceSchema,
@@ -14,6 +14,6 @@ export const subscriptionSchema = z.object({
   nextDueDate: z.string(),
   note: z.string().optional(),
   active: z.boolean(),
-})
+});
 
-export type Subscription = Readonly<z.infer<typeof subscriptionSchema>>
+export type Subscription = Readonly<z.infer<typeof subscriptionSchema>>;

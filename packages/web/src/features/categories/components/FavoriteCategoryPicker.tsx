@@ -1,25 +1,26 @@
-
-import { LayoutGrid, Sparkles } from 'lucide-react'
-import { useCallback, useState } from 'react'
-import { CategoryIcon, colorVar } from '@/shared/components/CategoryIcon'
-import { CategoryPicker } from '@/features/categories/components/CategoryPicker'
-import { CategoryTile } from '@/features/categories/components/CategoryTile'
-import { BottomSheet, Modal } from '@/shared/components/ui/overlay'
-import { useIsDesktop } from '@/shared/hooks/useIsDesktop'
-import { useLang } from '@/core/i18n'
-import type { Category } from '@/core/types'
-import { cn } from '@/shared/lib/utils'
+import { LayoutGrid, Sparkles } from "lucide-react";
+import { useCallback, useState } from "react";
+import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
+import { CategoryPicker } from "@/features/categories/components/CategoryPicker";
+import { CategoryTile } from "@/features/categories/components/CategoryTile";
+import { BottomSheet, Modal } from "@/shared/components/ui/overlay";
+import { useIsDesktop } from "@/shared/hooks/useIsDesktop";
+import { useLang } from "@/core/i18n";
+import type { Category } from "@/core/types";
+import { cn } from "@/shared/lib/utils";
 
 function buildFavoritesList(categories: Category[], favoriteCategoryIds: Set<string>): Category[] {
-  return categories.filter((category) => favoriteCategoryIds.has(category.id))
+  return categories.filter((category) => favoriteCategoryIds.has(category.id));
 }
 
 function buildCategoryMeta(categories: Category[], category: Category) {
-  const parent = category.parentId ? categories.find((candidate) => candidate.id === category.parentId) : null
+  const parent = category.parentId
+    ? categories.find((candidate) => candidate.id === category.parentId)
+    : null;
   return {
     title: category.name,
     subtitle: parent?.name ?? null,
-  }
+  };
 }
 
 export function FavoriteCategoryPicker({
@@ -28,35 +29,35 @@ export function FavoriteCategoryPicker({
   selectedId,
   onSelect,
   allowClear = false,
-  clearLabel = '—',
+  clearLabel = "—",
   disabled = false,
 }: {
-  categories: Category[]
-  favoriteCategoryIds: Set<string>
-  selectedId: string | null
-  onSelect: (id: string) => void
-  allowClear?: boolean
-  clearLabel?: string
-  disabled?: boolean
+  categories: Category[];
+  favoriteCategoryIds: Set<string>;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  allowClear?: boolean;
+  clearLabel?: string;
+  disabled?: boolean;
 }) {
-  const { t } = useLang()
-  const isDesktop = useIsDesktop()
-  const [showAllOpen, setShowAllOpen] = useState(false)
-  const favorites = buildFavoritesList(categories, favoriteCategoryIds)
+  const { t } = useLang();
+  const isDesktop = useIsDesktop();
+  const [showAllOpen, setShowAllOpen] = useState(false);
+  const favorites = buildFavoritesList(categories, favoriteCategoryIds);
   const selectedNonFavorite =
     selectedId && !favoriteCategoryIds.has(selectedId)
-      ? categories.find((category) => category.id === selectedId) ?? null
-      : null
+      ? (categories.find((category) => category.id === selectedId) ?? null)
+      : null;
 
-  const handleShowAll = useCallback(() => setShowAllOpen(true), [])
-  const handleCloseShowAll = useCallback(() => setShowAllOpen(false), [])
+  const handleShowAll = useCallback(() => setShowAllOpen(true), []);
+  const handleCloseShowAll = useCallback(() => setShowAllOpen(false), []);
   const handleSelectFromModal = useCallback(
     (id: string) => {
-      onSelect(id)
-      setShowAllOpen(false)
+      onSelect(id);
+      setShowAllOpen(false);
     },
     [onSelect],
-  )
+  );
 
   return (
     <div className="flex flex-col gap-3">
@@ -65,14 +66,16 @@ export function FavoriteCategoryPicker({
           {allowClear && (
             <button
               type="button"
-              onClick={() => onSelect('')}
+              onClick={() => onSelect("")}
               aria-label={clearLabel}
               aria-pressed={selectedId === null}
               disabled={disabled}
               className={cn(
-                'flex items-center gap-3 rounded-xl border border-dashed px-3 py-2.5 text-left transition-colors',
-                selectedId === null ? 'border-primary bg-accent text-primary' : 'border-border text-muted-foreground hover:bg-muted',
-                disabled && 'cursor-not-allowed opacity-60',
+                "flex items-center gap-3 rounded-xl border border-dashed px-3 py-2.5 text-left transition-colors",
+                selectedId === null
+                  ? "border-primary bg-accent text-primary"
+                  : "border-border text-muted-foreground hover:bg-muted",
+                disabled && "cursor-not-allowed opacity-60",
               )}
             >
               <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-medium">
@@ -91,7 +94,9 @@ export function FavoriteCategoryPicker({
                 disabled={disabled}
               />
             ))}
-            {!disabled && <AllCategoriesTile label={t('category.showAll')} onClick={handleShowAll} />}
+            {!disabled && (
+              <AllCategoriesTile label={t("category.showAll")} onClick={handleShowAll} />
+            )}
           </div>
           {selectedNonFavorite && (
             <SelectedCategoryRow
@@ -107,23 +112,25 @@ export function FavoriteCategoryPicker({
           {allowClear && (
             <button
               type="button"
-              onClick={() => onSelect('')}
+              onClick={() => onSelect("")}
               aria-label={clearLabel}
               aria-pressed={selectedId === null}
               disabled={disabled}
               className={cn(
-                'inline-flex w-fit items-center rounded-lg border border-dashed px-3 py-2 text-sm transition-colors',
-                selectedId === null ? 'border-primary bg-accent text-primary' : 'border-border text-muted-foreground hover:bg-muted',
-                disabled && 'cursor-not-allowed opacity-60',
+                "inline-flex w-fit items-center rounded-lg border border-dashed px-3 py-2 text-sm transition-colors",
+                selectedId === null
+                  ? "border-primary bg-accent text-primary"
+                  : "border-border text-muted-foreground hover:bg-muted",
+                disabled && "cursor-not-allowed opacity-60",
               )}
             >
               {clearLabel}
             </button>
           )}
           <EmptyFavoritesPanel
-            headline={t('category.noFavorites')}
-            hint={t('category.noFavoritesHint')}
-            ctaLabel={t('category.browseAll')}
+            headline={t("category.noFavorites")}
+            hint={t("category.noFavoritesHint")}
+            ctaLabel={t("category.browseAll")}
             onClick={handleShowAll}
             disabled={disabled}
           />
@@ -146,14 +153,19 @@ export function FavoriteCategoryPicker({
             selectedId={selectedId}
             categories={categories}
             onClear={() => {
-              onSelect('')
-              setShowAllOpen(false)
+              onSelect("");
+              setShowAllOpen(false);
             }}
             onSelect={handleSelectFromModal}
           />
         </Modal>
       ) : (
-        <BottomSheet open={showAllOpen} onClose={handleCloseShowAll} title={t('category.allCategories')} fullHeight>
+        <BottomSheet
+          open={showAllOpen}
+          onClose={handleCloseShowAll}
+          title={t("category.allCategories")}
+          fullHeight
+        >
           <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <ShowAllContent
               allowClear={allowClear}
@@ -161,8 +173,8 @@ export function FavoriteCategoryPicker({
               selectedId={selectedId}
               categories={categories}
               onClear={() => {
-                onSelect('')
-                setShowAllOpen(false)
+                onSelect("");
+                setShowAllOpen(false);
               }}
               onSelect={handleSelectFromModal}
             />
@@ -170,7 +182,7 @@ export function FavoriteCategoryPicker({
         </BottomSheet>
       )}
     </div>
-  )
+  );
 }
 
 function ShowAllContent({
@@ -181,12 +193,12 @@ function ShowAllContent({
   onClear,
   onSelect,
 }: {
-  allowClear: boolean
-  clearLabel: string
-  selectedId: string | null
-  categories: Category[]
-  onClear: () => void
-  onSelect: (id: string) => void
+  allowClear: boolean;
+  clearLabel: string;
+  selectedId: string | null;
+  categories: Category[];
+  onClear: () => void;
+  onSelect: (id: string) => void;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -196,8 +208,10 @@ function ShowAllContent({
           onClick={onClear}
           aria-label={clearLabel}
           className={cn(
-            'inline-flex w-fit items-center rounded-lg border border-dashed px-3 py-2 text-sm transition-colors',
-            selectedId === null ? 'border-primary bg-accent text-primary' : 'border-border text-muted-foreground hover:bg-muted',
+            "inline-flex w-fit items-center rounded-lg border border-dashed px-3 py-2 text-sm transition-colors",
+            selectedId === null
+              ? "border-primary bg-accent text-primary"
+              : "border-border text-muted-foreground hover:bg-muted",
           )}
         >
           {clearLabel}
@@ -205,7 +219,7 @@ function ShowAllContent({
       )}
       <CategoryPicker categories={categories} selectedId={selectedId} onSelect={onSelect} />
     </div>
-  )
+  );
 }
 
 /**
@@ -225,7 +239,7 @@ function AllCategoriesTile({ label, onClick }: { label: string; onClick: () => v
       </span>
       <span className="line-clamp-2 text-xs font-medium">{label}</span>
     </button>
-  )
+  );
 }
 
 function EmptyFavoritesPanel({
@@ -235,11 +249,11 @@ function EmptyFavoritesPanel({
   onClick,
   disabled,
 }: {
-  headline: string
-  hint: string
-  ctaLabel: string
-  onClick: () => void
-  disabled: boolean
+  headline: string;
+  hint: string;
+  ctaLabel: string;
+  onClick: () => void;
+  disabled: boolean;
 }) {
   const content = (
     <>
@@ -257,14 +271,14 @@ function EmptyFavoritesPanel({
         </span>
       )}
     </>
-  )
+  );
 
   if (disabled) {
     return (
       <div className="flex flex-col items-center gap-2.5 rounded-2xl border border-dashed border-border bg-accent/25 px-4 py-6 text-center opacity-60">
         {content}
       </div>
-    )
+    );
   }
 
   return (
@@ -275,7 +289,7 @@ function EmptyFavoritesPanel({
     >
       {content}
     </button>
-  )
+  );
 }
 
 function SelectedCategoryRow({
@@ -284,13 +298,13 @@ function SelectedCategoryRow({
   onSelect,
   disabled = false,
 }: {
-  categories: Category[]
-  category: Category
-  onSelect: (id: string) => void
-  disabled?: boolean
+  categories: Category[];
+  category: Category;
+  onSelect: (id: string) => void;
+  disabled?: boolean;
 }) {
-  const handleSelect = useCallback(() => onSelect(category.id), [category.id, onSelect])
-  const { title, subtitle } = buildCategoryMeta(categories, category)
+  const handleSelect = useCallback(() => onSelect(category.id), [category.id, onSelect]);
+  const { title, subtitle } = buildCategoryMeta(categories, category);
 
   return (
     <button
@@ -299,8 +313,8 @@ function SelectedCategoryRow({
       aria-pressed
       disabled={disabled}
       className={cn(
-        'flex min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors bg-accent ring-1 ring-primary/25',
-        disabled && 'cursor-not-allowed opacity-60',
+        "flex min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors bg-accent ring-1 ring-primary/25",
+        disabled && "cursor-not-allowed opacity-60",
       )}
     >
       <span
@@ -314,5 +328,5 @@ function SelectedCategoryRow({
         <span className="truncate text-sm font-medium text-foreground">{title}</span>
       </span>
     </button>
-  )
+  );
 }
