@@ -3,6 +3,14 @@ export { budgetPatchToRow, fromBudget, toBudget } from "./budget.mapper";
 export { categoryPatchToRow, fromCategory, toCategory } from "./category.mapper";
 export { fromFavorite, toFavorite } from "./favorite.mapper";
 export {
+  fromPerson,
+  loanMetadataPatchToRow,
+  personPatchToRow,
+  toLoan,
+  toLoanEvent,
+  toPerson,
+} from "./loan.mapper";
+export {
   advanceNextDueDate,
   buildNextDueDate,
   fromSubscription,

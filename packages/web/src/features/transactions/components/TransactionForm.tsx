@@ -53,7 +53,15 @@ function clampTimePart(value: string, max: number) {
 
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, "0"));
 const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, "0"));
-const AMOUNT_TONE_BY_TYPE = { income: "income", expense: "expense", transfer: "neutral" } as const;
+// 'loan' transactions are never created through this generic form (the API rejects
+// type: 'loan' here; only the Loans feature's RPCs may create them) but TxType includes
+// it, so this lookup must still handle it for exhaustiveness.
+const AMOUNT_TONE_BY_TYPE = {
+  income: "income",
+  expense: "expense",
+  transfer: "neutral",
+  loan: "neutral",
+} as const;
 
 function TimeWheelColumn({
   label,

@@ -1,5 +1,5 @@
 import type { BalanceTrendPoint } from "./dtos";
-import type { Transaction } from "./models";
+import type { Loan, LoanEvent, LoanStatus, Transaction } from "./models";
 
 function getBalance(balanceByAccountId: Map<string, number>, accountId: string) {
   return balanceByAccountId.get(accountId) ?? 0;
@@ -121,4 +121,78 @@ export function computeBalanceTrend(
     runningBalance += netByMonth.get(month) ?? 0;
     return { month, balance: runningBalance };
   });
+}
+
+/**
+ * Whole-day difference between two 'YYYY-MM-DD' local dates (`toIso` minus `fromIso`),
+ * positive when `toIso` is later. Both inputs are already plain date strings with no time
+ * or timezone component, so parsing each via Date.UTC and diffing is safe here — the
+ * UTC-vs-local drift pitfall only applies when mixing a parsed date against a live "now".
+ */
+function diffDaysUtc(fromIso: string, toIso: string): number {
+  const [fy, fm, fd] = fromIso.split("-").map(Number);
+  const [ty, tm, td] = toIso.split("-").map(Number);
+  const fromUtc = Date.UTC(fy, fm - 1, fd);
+  const toUtc = Date.UTC(ty, tm - 1, td);
+  return Math.round((toUtc - fromUtc) / 86_400_000);
+}
+
+const LOAN_DUE_SOON_WINDOW_DAYS = 7;
+
+function findLoanOrigin(events: LoanEvent[]): LoanEvent | undefined {
+  return events.find((event) => event.kind === "disbursement" || event.kind === "opening");
+}
+
+/** Origin amount (disbursement or opening event); 0 if the origin event is missing. */
+export function computeLoanOriginAmount(events: LoanEvent[]): number {
+  return findLoanOrigin(events)?.amount ?? 0;
+}
+
+/**
+ * Origin amount minus repayments, until a write-off or forgiveness closes the remainder
+ * (then 0 — nothing more is owed, regardless of the closing event's own recorded amount).
+ */
+export function computeLoanOutstandingBalance(events: LoanEvent[]): number {
+  const isClosed = events.some(
+    (event) => event.kind === "write_off" || event.kind === "forgiveness",
+  );
+  if (isClosed) return 0;
+
+  const repaid = events
+    .filter((event) => event.kind === "repayment")
+    .reduce((sum, event) => sum + event.amount, 0);
+
+  return computeLoanOriginAmount(events) - repaid;
+}
+
+/** Derives status from event history and today's local date — never a stored field. */
+export function computeLoanStatus(loan: Loan, events: LoanEvent[], todayIso: string): LoanStatus {
+  if (events.some((event) => event.kind === "write_off")) return "written-off";
+  if (events.some((event) => event.kind === "forgiveness")) return "forgiven";
+  if (computeLoanOutstandingBalance(events) <= 0) return "repaid";
+  if (!loan.dueDate) return "open";
+
+  const daysUntilDue = diffDaysUtc(todayIso, loan.dueDate);
+  if (daysUntilDue < 0) return "overdue";
+  if (daysUntilDue <= LOAN_DUE_SOON_WINDOW_DAYS) return "due-soon";
+  return "open";
+}
+
+export type LoanComputedState = {
+  originAmount: number;
+  outstandingBalance: number;
+  status: LoanStatus;
+};
+
+/** Bundles the three event-derived fields callers building a loan summary/detail need. */
+export function computeLoanState(
+  loan: Loan,
+  events: LoanEvent[],
+  todayIso: string,
+): LoanComputedState {
+  return {
+    originAmount: computeLoanOriginAmount(events),
+    outstandingBalance: computeLoanOutstandingBalance(events),
+    status: computeLoanStatus(loan, events, todayIso),
+  };
 }
