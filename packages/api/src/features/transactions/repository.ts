@@ -160,6 +160,23 @@ export async function createLinkedTransferFee(
   return parseTransactionRow(data, "Inserted transfer fee failed validation");
 }
 
+/** Rows among `ids` that are loan-linked — generic patch/delete/bulk-delete must reject
+ * these (see PLAN.md -> "Mutation Ownership and Atomicity"); only Loans may mutate them. */
+export async function listLoanLinkedIds(userId: string, ids: string[]): Promise<string[]> {
+  if (ids.length === 0) return [];
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("id")
+    .eq("owner_id", userId)
+    .in("id", ids)
+    .not("loan_event_id", "is", null);
+
+  if (error) throw error;
+  return (data ?? []).map((row) => row.id as string);
+}
+
 export async function updateTransaction(userId: string, id: string, patch: TransactionPatch) {
   const supabase = getSupabase();
   const { data, error } = await supabase
