@@ -118,13 +118,13 @@ export function TransactionsPage() {
       month={state.month}
       query={state.query}
       type={state.type}
-      categoryId={state.categoryId}
-      accountId={state.accountId}
+      categoryIds={state.categoryIds}
+      accountIds={state.accountIds}
       onMonthChange={(month) => updateTransactionsState({ month })}
       onQueryChange={(query) => updateTransactionsState({ query })}
       onTypeChange={(type) => updateTransactionsState({ type })}
-      onCategoryChange={(categoryId) => updateTransactionsState({ categoryId })}
-      onAccountChange={(accountId) => updateTransactionsState({ accountId })}
+      onCategoryChange={(categoryIds) => updateTransactionsState({ categoryIds })}
+      onAccountChange={(accountIds) => updateTransactionsState({ accountIds })}
       shouldFocusSearch={shouldFocusSearch}
       onSearchFocusHandled={() =>
         navigate({ to: "/transactions", search: buildTransactionsSearch(state), replace: true })
@@ -136,13 +136,13 @@ export function TransactionsPage() {
       month={state.month}
       query={state.query}
       type={state.type}
-      categoryId={state.categoryId}
-      accountId={state.accountId}
+      categoryIds={state.categoryIds}
+      accountIds={state.accountIds}
       onMonthChange={(month) => updateTransactionsState({ month })}
       onQueryChange={(query) => updateTransactionsState({ query })}
       onTypeChange={(type) => updateTransactionsState({ type })}
-      onCategoryChange={(categoryId) => updateTransactionsState({ categoryId })}
-      onAccountChange={(accountId) => updateTransactionsState({ accountId })}
+      onCategoryChange={(categoryIds) => updateTransactionsState({ categoryIds })}
+      onAccountChange={(accountIds) => updateTransactionsState({ accountIds })}
     />
   );
 }

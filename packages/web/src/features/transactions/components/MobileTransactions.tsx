@@ -4,23 +4,18 @@ import { useAccounts, useAccountLookup } from "@/features/accounts/queries";
 import { useCategories, useCategoryLookup } from "@/features/categories/queries";
 import { CategoryFilterSelect } from "@/features/categories/components/CategoryFilterSelect";
 import { TransactionsMonthSwitcher } from "@/features/transactions/components/TransactionsMonthSwitcher";
+import { TransactionMultiFilterSelect } from "@/features/transactions/components/TransactionMultiFilterSelect";
 import { TransactionRow } from "@/features/transactions/components/TransactionRow";
 import { useTransactions } from "@/features/transactions/queries";
-import type { TransactionFilterType } from "@/features/transactions/view-state";
+import {
+  matchesTransactionSelection,
+  type TransactionFilterType,
+} from "@/features/transactions/view-state";
 import { useLang } from "@/core/i18n";
 import type { Transaction } from "@/core/types";
 import { MobilePageContainer } from "@/shared/components/MobilePageContainer";
 import { Input } from "@/shared/components/ui/input";
 import { TransactionsSkeleton } from "@/shared/components/Skeleton";
-import {
-  Select,
-  SelectItem,
-  SelectPopup,
-  SelectPortal,
-  SelectPositioner,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select";
 import { formatDayLabel, formatVND } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 
@@ -35,8 +30,8 @@ export function MobileTransactions({
   month,
   query,
   type,
-  categoryId,
-  accountId,
+  categoryIds,
+  accountIds,
   onMonthChange,
   onQueryChange,
   onTypeChange,
@@ -47,13 +42,13 @@ export function MobileTransactions({
   month: string;
   query: string;
   type: TransactionFilterType;
-  categoryId: string;
-  accountId: string;
+  categoryIds: string[];
+  accountIds: string[];
   onMonthChange: (month: string) => void;
   onQueryChange: (query: string) => void;
   onTypeChange: (type: TransactionFilterType) => void;
-  onCategoryChange: (categoryId: string) => void;
-  onAccountChange: (accountId: string) => void;
+  onCategoryChange: (categoryIds: string[]) => void;
+  onAccountChange: (accountIds: string[]) => void;
 }) {
   const { data: transactions = [], isPending: transactionsPending } = useTransactions(month);
   const { data: categories = [], isPending: categoriesPending } = useCategories();
@@ -62,6 +57,7 @@ export function MobileTransactions({
   const getAccount = useAccountLookup();
   const { t, lang } = useLang();
   const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const balanceAccountId = accountIds.length === 1 ? accountIds[0] : undefined;
 
   const typeFilters: { value: TransactionFilterType; label: string }[] = [
     { value: "all", label: t("tx.filterAll") },
@@ -73,8 +69,7 @@ export function MobileTransactions({
   const groups = useMemo(() => {
     const filtered = transactions.filter((tx) => {
       if (type !== "all" && tx.type !== type) return false;
-      if (categoryId && tx.categoryId !== categoryId) return false;
-      if (accountId && tx.accountId !== accountId && tx.toAccountId !== accountId) return false;
+      if (!matchesTransactionSelection(tx, categoryIds, accountIds)) return false;
       if (query) {
         const searchValue = query.toLowerCase();
         const haystack = [
@@ -100,7 +95,7 @@ export function MobileTransactions({
     }
 
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [transactions, type, categoryId, accountId, query, getCategory, getAccount]);
+  }, [transactions, type, categoryIds, accountIds, query, getCategory, getAccount]);
 
   if (transactionsPending || categoriesPending || accountsPending) {
     return <TransactionsSkeleton mobile />;
@@ -146,7 +141,7 @@ export function MobileTransactions({
             onClick={() => setShowMoreFilters((current) => !current)}
             className={cn(
               "shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
-              categoryId || accountId
+              categoryIds.length > 0 || accountIds.length > 0
                 ? "border-transparent bg-accent text-foreground"
                 : "border-border bg-background text-foreground",
             )}
@@ -159,15 +154,17 @@ export function MobileTransactions({
           <div className="grid grid-cols-1 gap-2">
             <CategoryFilterSelect
               categories={categories}
-              value={categoryId}
+              values={categoryIds}
               ariaLabel={t("tx.filterCategory")}
               emptyLabel={t("tx.filterCategoryAll")}
+              selectedLabel={(count) => t("tx.filterSelected", { n: count })}
               onChange={onCategoryChange}
             />
-            <FilterSelect
-              value={accountId}
+            <TransactionMultiFilterSelect
+              values={accountIds}
               ariaLabel={t("tx.filterAccount")}
               emptyLabel={t("tx.filterAccountAll")}
+              selectedLabel={(count) => t("tx.filterSelected", { n: count })}
               options={accounts.map((account) => ({ value: account.id, label: account.name }))}
               onChange={onAccountChange}
             />
@@ -193,7 +190,7 @@ export function MobileTransactions({
                     <TransactionRow
                       key={tx.id}
                       tx={tx}
-                      balanceAccountId={accountId || undefined}
+                      balanceAccountId={balanceAccountId}
                       onClick={() => onEdit(tx)}
                       swipe
                     />
@@ -209,41 +206,5 @@ export function MobileTransactions({
         )}
       </MobilePageContainer>
     </div>
-  );
-}
-
-function FilterSelect({
-  value,
-  ariaLabel,
-  emptyLabel,
-  options,
-  onChange,
-}: {
-  value: string;
-  ariaLabel: string;
-  emptyLabel: string;
-  options: { value: string; label: string }[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <Select value={value} onValueChange={(nextValue) => onChange(nextValue ?? "")}>
-      <SelectTrigger aria-label={ariaLabel}>
-        <SelectValue>
-          {options.find((option) => option.value === value)?.label ?? emptyLabel}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectPortal>
-        <SelectPositioner>
-          <SelectPopup>
-            <SelectItem value="">{emptyLabel}</SelectItem>
-            {options.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectPopup>
-        </SelectPositioner>
-      </SelectPortal>
-    </Select>
   );
 }

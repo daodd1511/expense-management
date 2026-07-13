@@ -1,4 +1,4 @@
-import type { TxType } from "@/core/types";
+import type { Transaction, TxType } from "@/core/types";
 import { todayLocalMonthIso } from "@/shared/lib/date";
 
 export type TransactionFilterType = TxType | "all";
@@ -7,8 +7,8 @@ export interface TransactionsViewState {
   month: string;
   query: string;
   type: TransactionFilterType;
-  categoryId: string;
-  accountId: string;
+  categoryIds: string[];
+  accountIds: string[];
 }
 
 const MONTH_PATTERN = /^\d{4}-\d{2}$/;
@@ -19,9 +19,22 @@ export function defaultTransactionsViewState(): TransactionsViewState {
     month: todayLocalMonthIso(),
     query: "",
     type: "all",
-    categoryId: "",
-    accountId: "",
+    categoryIds: [],
+    accountIds: [],
   };
+}
+
+function parseIdList(value: unknown): string[] {
+  const values = Array.isArray(value) ? value : [value];
+  return [
+    ...new Set(
+      values
+        .filter((item): item is string => typeof item === "string")
+        .flatMap((item) => item.split(","))
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  ];
 }
 
 export function parseTransactionsViewState(search: Record<string, unknown>): TransactionsViewState {
@@ -35,11 +48,10 @@ export function parseTransactionsViewState(search: Record<string, unknown>): Tra
     typeof search.type === "string" && TYPE_VALUES.includes(search.type as TransactionFilterType)
       ? (search.type as TransactionFilterType)
       : defaults.type;
-  const categoryId =
-    typeof search.categoryId === "string" ? search.categoryId : defaults.categoryId;
-  const accountId = typeof search.accountId === "string" ? search.accountId : defaults.accountId;
+  const categoryIds = parseIdList(search.categoryId);
+  const accountIds = parseIdList(search.accountId);
 
-  return { month, query, type, categoryId, accountId };
+  return { month, query, type, categoryIds, accountIds };
 }
 
 export function buildTransactionsSearch(
@@ -50,9 +62,25 @@ export function buildTransactionsSearch(
     month: state.month === defaults.month ? undefined : state.month,
     query: state.query || undefined,
     type: state.type === defaults.type ? undefined : state.type,
-    categoryId: state.categoryId || undefined,
-    accountId: state.accountId || undefined,
+    categoryId: state.categoryIds.length > 0 ? state.categoryIds.join(",") : undefined,
+    accountId: state.accountIds.length > 0 ? state.accountIds.join(",") : undefined,
   };
+}
+
+export function matchesTransactionSelection(
+  transaction: Transaction,
+  categoryIds: readonly string[],
+  accountIds: readonly string[],
+): boolean {
+  const categoryMatches =
+    categoryIds.length === 0 ||
+    (transaction.categoryId !== null && categoryIds.includes(transaction.categoryId));
+  const accountMatches =
+    accountIds.length === 0 ||
+    accountIds.includes(transaction.accountId) ||
+    (transaction.toAccountId != null && accountIds.includes(transaction.toAccountId));
+
+  return categoryMatches && accountMatches;
 }
 
 export function monthFromHref(href: string): string {

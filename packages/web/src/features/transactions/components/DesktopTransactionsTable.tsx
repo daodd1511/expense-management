@@ -12,7 +12,6 @@ import {
 import {
   type ColumnDef,
   type PaginationState,
-  type RowSelectionState,
   type SortingState,
   flexRender,
   getCoreRowModel,
@@ -25,9 +24,13 @@ import { useAccounts, useAccountLookup } from "@/features/accounts/queries";
 import { useCategories, useCategoryLookup } from "@/features/categories/queries";
 import { CategoryFilterSelect } from "@/features/categories/components/CategoryFilterSelect";
 import { TransactionsMonthSwitcher } from "@/features/transactions/components/TransactionsMonthSwitcher";
+import { TransactionMultiFilterSelect } from "@/features/transactions/components/TransactionMultiFilterSelect";
 import { useDeleteTransactions, useTransactions } from "@/features/transactions/queries";
 import { getTransactionBalanceLines } from "@/features/transactions/balance-lines";
-import type { TransactionFilterType } from "@/features/transactions/view-state";
+import {
+  matchesTransactionSelection,
+  type TransactionFilterType,
+} from "@/features/transactions/view-state";
 import { useLang } from "@/core/i18n";
 import type { Category, Transaction } from "@/core/types";
 import { CategoryBreadcrumb } from "@/features/categories/components/CategoryBreadcrumb";
@@ -36,15 +39,6 @@ import { Button } from "@/shared/components/ui/button";
 import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
 import { Input } from "@/shared/components/ui/input";
 import { TransactionsSkeleton } from "@/shared/components/Skeleton";
-import {
-  Select,
-  SelectItem,
-  SelectPopup,
-  SelectPortal,
-  SelectPositioner,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select";
 import {
   Table,
   TableBody,
@@ -89,8 +83,8 @@ export function DesktopTransactionsTable({
   month,
   query,
   type,
-  categoryId,
-  accountId,
+  categoryIds,
+  accountIds,
   onMonthChange,
   onQueryChange,
   onTypeChange,
@@ -103,13 +97,13 @@ export function DesktopTransactionsTable({
   month: string;
   query: string;
   type: TransactionFilterType;
-  categoryId: string;
-  accountId: string;
+  categoryIds: string[];
+  accountIds: string[];
   onMonthChange: (month: string) => void;
   onQueryChange: (query: string) => void;
   onTypeChange: (type: TransactionFilterType) => void;
-  onCategoryChange: (categoryId: string) => void;
-  onAccountChange: (accountId: string) => void;
+  onCategoryChange: (categoryIds: string[]) => void;
+  onAccountChange: (accountIds: string[]) => void;
   shouldFocusSearch?: boolean;
   onSearchFocusHandled?: () => void;
 }) {
@@ -121,13 +115,13 @@ export function DesktopTransactionsTable({
   const deleteTxs = useDeleteTransactions();
   const { t } = useLang();
   const [sorting, setSorting] = useState<SortingState>([{ id: "date", desc: true }]);
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: PAGE_SIZE,
   });
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const searchRef = useRef<HTMLInputElement | null>(null);
+  const balanceAccountId = accountIds.length === 1 ? accountIds[0] : undefined;
 
   const typeFilters: { value: TransactionFilterType; label: string }[] = [
     { value: "all", label: t("tx.filterAll") },
@@ -140,8 +134,7 @@ export function DesktopTransactionsTable({
     return transactions
       .filter((tx) => {
         if (type !== "all" && tx.type !== type) return false;
-        if (categoryId && tx.categoryId !== categoryId) return false;
-        if (accountId && tx.accountId !== accountId && tx.toAccountId !== accountId) return false;
+        if (!matchesTransactionSelection(tx, categoryIds, accountIds)) return false;
         if (query) {
           const searchValue = query.toLowerCase();
           const haystack = [
@@ -180,32 +173,10 @@ export function DesktopTransactionsTable({
           accountLabel: getAccount(tx.accountId)?.name ?? "",
         };
       });
-  }, [transactions, type, categoryId, accountId, query, getCategory, getAccount, t]);
+  }, [transactions, type, categoryIds, accountIds, query, getCategory, getAccount, t]);
 
   const columns = useMemo<ColumnDef<TransactionRow>[]>(
     () => [
-      {
-        id: "select",
-        enableSorting: false,
-        header: ({ table }) => (
-          <input
-            type="checkbox"
-            checked={table.getIsAllPageRowsSelected()}
-            onChange={table.getToggleAllPageRowsSelectedHandler()}
-            aria-label={t("tx.selectAll")}
-            className="size-4 accent-primary"
-          />
-        ),
-        cell: ({ row }) => (
-          <input
-            type="checkbox"
-            checked={row.getIsSelected()}
-            onChange={row.getToggleSelectedHandler()}
-            aria-label={t("tx.selectItem", { name: row.original.categoryLabel })}
-            className="size-4 accent-primary"
-          />
-        ),
-      },
       {
         accessorKey: "dateLabel",
         id: "date",
@@ -320,7 +291,7 @@ export function DesktopTransactionsTable({
             </span>
             {getTransactionBalanceLines(
               row.original.transaction,
-              accountId,
+              balanceAccountId,
               (accountId) => getAccount(accountId)?.name,
             ).map((balance) => (
               <span key={balance} className="text-xs tabular text-muted-foreground">
@@ -356,15 +327,14 @@ export function DesktopTransactionsTable({
         ),
       },
     ],
-    [accountId, getAccount, onEdit, t],
+    [balanceAccountId, getAccount, onEdit, t],
   );
 
   const table = useReactTable({
     data: filtered,
     columns,
-    state: { sorting, rowSelection, pagination },
+    state: { sorting, pagination },
     onSortingChange: setSorting,
-    onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
     getRowId: (row) => row.id,
     getCoreRowModel: getCoreRowModel(),
@@ -374,7 +344,6 @@ export function DesktopTransactionsTable({
 
   const handleConfirmDelete = async () => {
     await deleteTxs.mutateAsync(pendingDeleteIds);
-    setRowSelection({});
     setPendingDeleteIds([]);
   };
 
@@ -387,13 +356,12 @@ export function DesktopTransactionsTable({
 
   useEffect(() => {
     setPagination((current) => ({ ...current, pageIndex: 0 }));
-  }, [month, query, type, categoryId, accountId]);
+  }, [month, query, type, categoryIds, accountIds]);
 
   if (transactionsPending || categoriesPending || accountsPending) {
     return <TransactionsSkeleton />;
   }
 
-  const selectedCount = table.getFilteredSelectedRowModel().rows.length;
   const pageCount = Math.max(1, table.getPageCount());
   const currentPage = table.getState().pagination.pageIndex + 1;
 
@@ -417,23 +385,21 @@ export function DesktopTransactionsTable({
         <div className="w-44">
           <CategoryFilterSelect
             categories={categories}
-            value={categoryId}
+            values={categoryIds}
             ariaLabel={t("tx.filterCategory")}
             emptyLabel={t("tx.filterCategoryAll")}
-            onChange={(value) => {
-              onCategoryChange(value);
-            }}
+            selectedLabel={(count) => t("tx.filterSelected", { n: count })}
+            onChange={onCategoryChange}
           />
         </div>
         <div className="w-44">
-          <FilterSelect
-            value={accountId}
+          <TransactionMultiFilterSelect
+            values={accountIds}
             ariaLabel={t("tx.filterAccount")}
             emptyLabel={t("tx.filterAccountAll")}
+            selectedLabel={(count) => t("tx.filterSelected", { n: count })}
             options={accounts.map((account) => ({ value: account.id, label: account.name }))}
-            onChange={(value) => {
-              onAccountChange(value);
-            }}
+            onChange={onAccountChange}
           />
         </div>
         <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
@@ -460,45 +426,13 @@ export function DesktopTransactionsTable({
         </span>
       </div>
 
-      {selectedCount > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-border bg-accent px-4 py-2 text-sm">
-          <span className="font-medium text-accent-foreground">
-            {t("tx.selected", { n: selectedCount })}
-          </span>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setRowSelection({})}>
-              {t("tx.deselect")}
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() =>
-                setPendingDeleteIds(
-                  table
-                    .getFilteredSelectedRowModel()
-                    .rows.map((row) => row.original.transaction.id),
-                )
-              }
-            >
-              <Trash2 className="size-3.5" /> {t("tx.delete")}
-            </Button>
-          </div>
-        </div>
-      )}
-
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <Table>
           <TableHeader className="bg-muted/40 text-xs">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className={cn(
-                      header.id === "select" && "w-10",
-                      header.id === "actions" && "w-20",
-                    )}
-                  >
+                  <TableHead key={header.id} className={cn(header.id === "actions" && "w-20")}>
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}
@@ -564,42 +498,6 @@ export function DesktopTransactionsTable({
         onConfirm={handleConfirmDelete}
       />
     </div>
-  );
-}
-
-function FilterSelect({
-  value,
-  ariaLabel,
-  emptyLabel,
-  options,
-  onChange,
-}: {
-  value: string;
-  ariaLabel: string;
-  emptyLabel: string;
-  options: { value: string; label: string }[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <Select value={value} onValueChange={(nextValue) => onChange(nextValue ?? "")}>
-      <SelectTrigger aria-label={ariaLabel}>
-        <SelectValue>
-          {options.find((option) => option.value === value)?.label ?? emptyLabel}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectPortal>
-        <SelectPositioner>
-          <SelectPopup>
-            <SelectItem value="">{emptyLabel}</SelectItem>
-            {options.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectPopup>
-        </SelectPositioner>
-      </SelectPortal>
-    </Select>
   );
 }
 

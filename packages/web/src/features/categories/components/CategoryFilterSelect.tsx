@@ -49,55 +49,60 @@ function CategoryChipItem({ category, active }: { category: Category; active: bo
  */
 export function CategoryFilterSelect({
   categories,
-  value,
+  values,
   onChange,
   ariaLabel,
   emptyLabel,
+  selectedLabel,
 }: {
   categories: Category[];
-  value: string;
-  onChange: (categoryId: string) => void;
+  values: string[];
+  onChange: (categoryIds: string[]) => void;
   ariaLabel: string;
   emptyLabel: string;
+  selectedLabel: (count: number) => string;
 }) {
   const visibleCategories = categories.filter((category) => !category.isHidden);
   const groups = groupCategories(visibleCategories);
   const byId = new Map(visibleCategories.map((category) => [category.id, category]));
+  const selectedCategory = values.length === 1 ? byId.get(values[0]) : undefined;
 
   return (
-    <Select value={value} onValueChange={(nextValue) => onChange(nextValue ?? "")}>
+    <Select multiple value={values} onValueChange={onChange}>
       <SelectTrigger aria-label={ariaLabel}>
         <SelectValue>
-          {(selected: string | null) => {
-            const category = selected ? byId.get(selected) : undefined;
-            if (!category) return <span className="text-muted-foreground">{emptyLabel}</span>;
-            return (
-              <span className="flex min-w-0 items-center gap-2">
-                <CategoryIcon
-                  name={category.icon}
-                  className="size-3.5 shrink-0"
-                  style={{ color: colorVar(category.color) }}
-                />
-                <span className="truncate">{category.name}</span>
-              </span>
-            );
-          }}
+          {selectedCategory ? (
+            <span className="flex min-w-0 items-center gap-2">
+              <CategoryIcon
+                name={selectedCategory.icon}
+                className="size-3.5 shrink-0"
+                style={{ color: colorVar(selectedCategory.color) }}
+              />
+              <span className="truncate">{selectedCategory.name}</span>
+            </span>
+          ) : (
+            <span className="text-muted-foreground">
+              {values.length > 0 ? selectedLabel(values.length) : emptyLabel}
+            </span>
+          )}
         </SelectValue>
       </SelectTrigger>
       <SelectPortal>
         <SelectPositioner>
           <SelectPopup className="w-80 max-w-[90vw] p-3">
-            <SelectPrimitive.Item
-              value=""
+            <button
+              type="button"
+              disabled={values.length === 0}
+              onClick={() => onChange([])}
               className={cn(
                 "mb-3 inline-flex shrink-0 cursor-default items-center rounded-full border px-3 py-1.5 text-sm font-medium outline-none transition-colors",
-                value === ""
+                values.length === 0
                   ? "border-primary bg-accent text-primary"
                   : "border-border bg-background text-foreground data-[highlighted]:bg-muted",
               )}
             >
-              <SelectPrimitive.ItemText>{emptyLabel}</SelectPrimitive.ItemText>
-            </SelectPrimitive.Item>
+              {emptyLabel}
+            </button>
             <div className="flex flex-col gap-3">
               {groups.map(({ parent, childCategories }) => (
                 <SelectGroup key={parent.id} className="flex flex-col gap-1.5">
@@ -110,12 +115,12 @@ export function CategoryFilterSelect({
                     {parent.name}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    <CategoryChipItem category={parent} active={value === parent.id} />
+                    <CategoryChipItem category={parent} active={values.includes(parent.id)} />
                     {childCategories.map((child) => (
                       <CategoryChipItem
                         key={child.id}
                         category={child}
-                        active={value === child.id}
+                        active={values.includes(child.id)}
                       />
                     ))}
                   </div>
