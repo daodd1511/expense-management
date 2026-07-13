@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { txTypeSchema } from "../models";
+import { loanCashFlowDirectionSchema, txTypeSchema } from "../models";
 import { isoDateSchema, localTimeSchema } from "./common.dto";
 
 function todayIsoDate() {
@@ -29,6 +29,8 @@ export const transactionRowSchema = z.object({
   receipt_url: z.string().nullable(),
   subscription_id: z.string().nullable(),
   linked_transfer_id: z.string().nullable().optional(),
+  cash_flow_direction: loanCashFlowDirectionSchema.nullable().optional(),
+  loan_event_id: z.string().nullable().optional(),
   created_at: z.string(),
 });
 

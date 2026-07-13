@@ -17,3 +17,12 @@ reportsRouter.get(
   }),
   (c) => controller.getIncomeExpenseReport(c, c.req.valid("query") as ReportQuery),
 );
+reportsRouter.get(
+  "/financial-position",
+  zValidator("query", reportQuerySchema, (result, c) => {
+    if (!result.success) {
+      return jsonError(c, 400, "Invalid request query", z.flattenError(result.error));
+    }
+  }),
+  (c) => controller.getFinancialPosition(c, c.req.valid("query") as ReportQuery),
+);

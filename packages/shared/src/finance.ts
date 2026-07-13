@@ -244,8 +244,7 @@ function computeFinancialPositionBoundary(
 }
 
 export type FinancialPositionReport = {
-  from: string;
-  to: string;
+  range: { from: string; to: string };
   opening: FinancialPositionAccountState;
   closing: FinancialPositionAccountState;
   income: number;
@@ -374,8 +373,7 @@ export function computeFinancialPosition(input: {
     forgiveness;
 
   return {
-    from,
-    to,
+    range: { from, to },
     opening,
     closing,
     income,

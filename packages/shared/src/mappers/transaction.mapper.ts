@@ -16,6 +16,8 @@ export function toTransaction(row: TransactionRow): Transaction {
     receipt: row.receipt_url ?? undefined,
     subscriptionId: row.subscription_id,
     linkedTransferId: row.linked_transfer_id,
+    cashFlowDirection: row.cash_flow_direction ?? undefined,
+    loanEventId: row.loan_event_id,
   };
 }
 
@@ -35,6 +37,8 @@ export function fromTransaction(params: { transaction: Omit<Transaction, "id">; 
     receipt_url: transaction.receipt ?? null,
     subscription_id: transaction.subscriptionId ?? null,
     linked_transfer_id: transaction.linkedTransferId ?? null,
+    cash_flow_direction: transaction.cashFlowDirection ?? null,
+    loan_event_id: transaction.loanEventId ?? null,
   };
 }
 
