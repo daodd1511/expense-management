@@ -17,13 +17,13 @@ commit. Your only product is an accurate PASS/FAIL report.
 
 Run from the repo root unless noted:
 
-| Check               | Command                                                                 | Notes                                                                |
-| ------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Typecheck (all)     | `pnpm typecheck`                                                        | recursive `tsc --noEmit` (web + api; shared has no typecheck script) |
-| Typecheck (one pkg) | `pnpm --filter @wallet/web typecheck` or `--filter @wallet/api`         | prefer scoped when only one package changed                          |
-| Tests (all)         | `pnpm test`                                                             | recursive `vitest run` — non-watch, safe                             |
-| Tests (one pkg)     | `pnpm --filter @wallet/web test` (also `@wallet/api`, `@wallet/shared`) |                                                                      |
-| Build               | `pnpm build`                                                            | web only: `tsc -b && vite build`                                     |
+| Check | Command | Notes |
+|---|---|---|
+| Typecheck (all) | `pnpm typecheck` | recursive `tsc --noEmit` (web + api; shared has no typecheck script) |
+| Typecheck (one pkg) | `pnpm --filter @wallet/web typecheck` or `--filter @wallet/api` | prefer scoped when only one package changed |
+| Tests (all) | `pnpm test` | recursive `vitest run` — non-watch, safe |
+| Tests (one pkg) | `pnpm --filter @wallet/web test` (also `@wallet/api`, `@wallet/shared`) | |
+| Build | `pnpm build` | web only: `tsc -b && vite build` |
 
 There is no lint script — TypeScript strict mode is the only static gate.
 

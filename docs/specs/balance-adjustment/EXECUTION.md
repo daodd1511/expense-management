@@ -37,13 +37,11 @@ the database.
 - [x] `packages/api` category routes/controller/service/repository: no code change needed — `listCategories`/`listReportCategories` both `select('*')`, so `isHidden` passes through automatically once the shared mapper is updated. Confirm with the gate below rather than editing.
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/shared exec tsc --noEmit` (categorySchema/dto/mapper changes)
 - [x] `pnpm --filter @wallet/api exec tsc --noEmit` (service.ts consumes shared types)
 - [x] `pnpm --filter @wallet/api exec vitest run src/features/reports/reports.test.ts src/features/categories` (add/extend a reports test asserting a hidden-category transaction is excluded from totals/series/categoryGroups)
 
 **Review checklist (user, at PR review):**
-
 - [ ] Apply the migration locally; confirm the two `Balance Adjustment` categories exist with `is_hidden = true` and correct `type`
 - [ ] Hit `GET` categories/reports endpoints directly (or via existing UI) and confirm `isHidden` appears on category payloads and hidden-category transactions are absent from report totals
 
@@ -62,12 +60,10 @@ Depends on `isHidden` existing on `Category` (Phase 1). Purely additive filterin
 - [x] (amended 2026-07-10) `packages/web/src/core/data.ts`, `packages/web/src/features/budgets/components/BudgetForm.test.ts`, `packages/web/src/features/categories/components/{CategoriesPage,CategoryPicker,FavoriteCategoryPicker}.test.tsx` — add `isHidden: false` to pre-existing typed category fixtures required by the Phase 1 shared contract
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web exec tsc --noEmit`
 - [x] `pnpm --filter @wallet/web exec vitest run src/features/transactions/components/TransactionForm.test.tsx src/features/categories/components/CategoryFilterSelect.test.tsx` (extend both with a case asserting a hidden category is absent from the rendered options)
 
 **Review checklist (user, at PR review):**
-
 - [ ] Open TransactionForm's category select, `CategoryFilterSelect` (transactions filter), and the budget category picker — confirm neither `Balance Adjustment` category appears in any of them
 
 **On completion:** run agent gate, update STATUS + checkboxes, stop and ask before
@@ -84,12 +80,10 @@ The user-facing surface; depends on the hidden categories existing (Phase 1) and
 - [x] `packages/web/src/features/accounts/components/MobileAccounts.tsx` — add "Reconcile balance" action to the account detail `BottomSheet` (~line 170), opens `ReconcileBalanceForm`
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web exec tsc --noEmit`
 - [x] `pnpm --filter @wallet/web exec vitest run src/features/accounts` (add `ReconcileBalanceForm.test.tsx` covering: actual < computed → expense txn with hidden expense category id; actual > computed → income txn with hidden income category id; actual == computed → no mutation call)
 
 **Review checklist (user, at PR review):**
-
 - [ ] Reconcile an account with actual < computed balance (mobile + desktop) — expense transaction created, account balance now matches actual
 - [ ] Reconcile with actual > computed — income transaction created
 - [ ] Reconcile with actual == computed — form closes, no transaction created

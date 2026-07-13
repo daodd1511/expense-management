@@ -41,13 +41,11 @@ this phase builds.
       non-CI builds; CI's shallow clone still has `HEAD`, so both git commands work.)
 
 **Agent gate (hard):**
-
 - [x] `pnpm typecheck`
 - [x] `pnpm test`
 - [x] `pnpm build` (exercises the `define` git read + version row render path)
 
 **Review checklist (user, at PR review):**
-
 - [ ] Settings shows `0.1.0 · <sha> · <date>` on both desktop and mobile layouts.
 - [ ] `pnpm dev` renders the `dev` fallback without crashing (no git env in the define path).
 - [ ] After a real deploy, the SHA/date in Settings match the deployed commit.
@@ -85,14 +83,12 @@ would leave the waiting worker never activating.
       that feeds `needRefresh`; confirm it's not double-registering against the provider.
 
 **Agent gate (hard):**
-
 - [x] `pnpm typecheck`
 - [x] `pnpm test`
 - [x] `pnpm build`
 
 **Review checklist (user, at PR review — requires a real deploy + device/browser, not
 agent-runnable):**
-
 - [ ] Deploy build B while build A is open and foregrounded → page does **not** auto-reload;
       Settings gains an "Update" control; no toast mid-session.
 - [ ] Cold-open with a pending (waiting) update → toast appears once; tapping Update reloads to

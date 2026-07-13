@@ -59,7 +59,7 @@ expense transaction.
   happened).
 - **Reports**: `Transfer Fee` is a normal (non-hidden-from-reports) expense
   category — it counts toward expense totals and appears in the category
-  breakdown, same as any real spending category. Only its _picker_
+  breakdown, same as any real spending category. Only its *picker*
   visibility is hidden (see below), not its reporting visibility.
 - **Category picker visibility**: `Transfer Fee` is seeded with
   `isHidden: true` (same mechanism as `balance-adjustment`'s hidden

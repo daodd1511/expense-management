@@ -28,7 +28,6 @@ This phase establishes the backend and shared DTO contract that every frontend r
 - [x] Add shared DTO validation coverage for `packages/shared/src/dtos/report.dto.ts` in a report DTO test file if the response schema has non-trivial validation branches.
 
 **Agent gate (hard):**
-
 - [x] `pnpm typecheck`
 - [x] `pnpm --filter @wallet/shared test`
 - [x] `pnpm --filter @wallet/api typecheck`
@@ -36,7 +35,6 @@ This phase establishes the backend and shared DTO contract that every frontend r
 - [x] `pnpm --filter @wallet/api build`
 
 **Review checklist (user, at PR review):**
-
 - [ ] Review the API response shape for `GET /api/reports/income-expense?from=YYYY-MM-DD&to=YYYY-MM-DD` and confirm it still matches the planned reusable report contract.
 
 **On completion:** run agent gate, update STATUS + checkboxes, stop and ask before push/PR. Review checklist goes into the PR description.
@@ -54,7 +52,7 @@ This phase wires the new report endpoint through the web app and creates the rou
 - [x] Add `ReportsPage` and `OtherPage` exports in `packages/web/src/routing/app-pages.tsx`.
 - [x] Add `/reports` and `/other` routes in `packages/web/src/routing/router.tsx`.
 - [x] Update `packages/web/src/routing/app-route-state.ts` to recognize `reports` and `other`.
-- [x] Update transaction overlay return handling so `/reports` is allowed as a `returnTo` target for `/transactions/$transactionId/edit`. _(Superseded in the same commit: route-based overlay removed entirely, replaced by `features/transactions/transaction-overlay.tsx`'s `TransactionOverlayProvider`/`useTransactionOverlay` context — no more `returnTo`/route.)_
+- [x] Update transaction overlay return handling so `/reports` is allowed as a `returnTo` target for `/transactions/$transactionId/edit`. *(Superseded in the same commit: route-based overlay removed entirely, replaced by `features/transactions/transaction-overlay.tsx`'s `TransactionOverlayProvider`/`useTransactionOverlay` context — no more `returnTo`/route.)*
 - [x] Update `packages/web/src/layouts/desktop/DesktopApp.tsx` to add Reports to the sidebar between Overview and Transactions.
 - [x] Update `packages/web/src/layouts/mobile/MobileApp.tsx` bottom navigation to `Home / Accounts / Reports / Other`, keeping the center add-transaction FAB.
 - [x] Add the `Other` hub page in the web routing layer with links to Transactions, Planning (`/subscriptions`), Categories (`/settings/categories`), and Settings.
@@ -62,13 +60,11 @@ This phase wires the new report endpoint through the web app and creates the rou
 - [x] Update `packages/web/src/layouts/mobile/MobileApp.test.tsx` for the reordered mobile bottom navigation.
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 - [x] `pnpm --filter @wallet/web build`
 
 **Review checklist (user, at PR review):**
-
 - [ ] On mobile, confirm bottom nav order is Home / Accounts / Reports / Other and the center add button still opens the add-transaction sheet.
 - [ ] On mobile, confirm Other links to Transactions, Planning, Categories, and Settings.
 - [ ] On desktop, confirm Reports appears in the sidebar between Overview and Transactions.
@@ -88,19 +84,17 @@ This phase builds the actual v1 report experience on top of the API and route sh
 - [x] Use the shadcn MCP before implementing report UI primitives: inspect `@shadcn/card`, `@shadcn/tabs`, `@shadcn/collapsible` or `@shadcn/accordion`, and `@shadcn/chart`; prefer existing wrappers in `packages/web/src/shared/components/ui/` and add/adapt shadcn-backed wrappers only where missing.
 - [x] Use `CategoryDonut` from `packages/web/src/shared/components/Charts.tsx` for the expense pie chart, mapping expense category aggregates to category labels, icons, and colors via existing category lookups.
 - [x] Resolve account labels for expanded transaction rows through existing account lookups.
-- [x] On transaction row click, navigate to `/transactions/$transactionId/edit` with `returnTo` set to the current Reports URL so the existing transaction edit overlay opens and returns correctly. _(Superseded: row click now calls `openEdit(transactionId, month)` on the `TransactionOverlayProvider` context directly — no navigation, no route, no `returnTo`. The underlying Reports page no longer unmounts while the form is open.)_
+- [x] On transaction row click, navigate to `/transactions/$transactionId/edit` with `returnTo` set to the current Reports URL so the existing transaction edit overlay opens and returns correctly. *(Superseded: row click now calls `openEdit(transactionId, month)` on the `TransactionOverlayProvider` context directly — no navigation, no route, no `returnTo`. The underlying Reports page no longer unmounts while the form is open.)*
 - [x] Add Reports loading and empty states using existing skeleton/state patterns from `packages/web/src/shared/components/Skeleton.tsx`.
 - [x] Add vi/en i18n keys in `packages/web/src/core/i18n.tsx` for report totals, empty states, category breakdown, transaction count copy, and expand/collapse labels.
 - [x] Add or update report component tests covering report empty state, expense category sorting descending, category expand/collapse, and transaction row click opening the edit route.
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 - [x] `pnpm --filter @wallet/web build`
 
 **Review checklist (user, at PR review):**
-
 - [ ] Open Reports on mobile and desktop and confirm the default month is the current local month.
 - [ ] Change months and confirm the totals, pie chart, and category list update together.
 - [ ] Expand an expense category and confirm its transactions appear under the category row.

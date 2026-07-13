@@ -25,7 +25,7 @@ Backend + tooling only, no FE dependency — independently verifiable and revert
 
 - [x] **F2 migration** — `supabase/migrations/20260705061832_log_subscription_rpc.sql`:
       `log_subscription(p_owner_id, p_subscription_id, p_type, p_amount, p_category_id,
-    p_account_id, p_merchant, p_note, p_tx_date, p_next_due_date)` — single `plpgsql`
+      p_account_id, p_merchant, p_note, p_tx_date, p_next_due_date)` — single `plpgsql`
       function body (implicit transaction) that row-locks the subscription, inserts the
       transaction, updates `next_due_date`, and returns both rows (flat `tx_*`/`sub_*`
       columns). Kept `INVOKER` (default), scoped by `owner_id = p_owner_id` throughout.
@@ -46,7 +46,6 @@ Backend + tooling only, no FE dependency — independently verifiable and revert
       reflected the edit. Edit reverted after the check (git clean).
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/api typecheck` — pass
 - [x] `pnpm --filter @wallet/api build` — pass
 - [x] `pnpm --filter @wallet/api test` — 6 files / 24 tests pass (no existing
@@ -55,7 +54,6 @@ Backend + tooling only, no FE dependency — independently verifiable and revert
       CLI dep, not on global `$PATH`).
 
 **Review checklist (user, at PR review):**
-
 - [x] Migration applied (`npx supabase db push`) against the linked project.
 - [ ] Log a subscription payment (one-tap) → exactly one transaction is created and
       `next_due_date` advances by one cadence.
@@ -91,12 +89,10 @@ Centralizes date-only handling before the refactor relocates the fns that depend
       `monthSummary` month-boundary + transfer-exclusion — moves with the fn in Phase 3).
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck` — pass
 - [x] `pnpm --filter @wallet/web test` — 17 files / 88 tests pass
 
 **Review checklist (user, at PR review):**
-
 - [ ] Near a month boundary, a transaction dated the 1st shows under the current month.
 - [ ] Subscription due countdown / "due soon" banner reads correctly at day boundaries.
 - [ ] Existing date displays (transaction rows, headers) are visually unchanged.
@@ -141,13 +137,11 @@ means Phases 1–2 don't have to chase a moving import surface.
       `log_subscription` RPC, balance noted as still client-computed.
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck` — pass
 - [x] `pnpm --filter @wallet/web test` — 17 files / 92 tests pass
 - [x] `pnpm build` — pass (web build + PWA precache)
 
 **Review checklist (user, at PR review):**
-
 - [ ] App boots with no "must be used within StoreProvider" error; every screen renders
       (accounts, transactions, budgets, subscriptions, categories, dashboard, settings).
 - [ ] Account balances match pre-refactor values.

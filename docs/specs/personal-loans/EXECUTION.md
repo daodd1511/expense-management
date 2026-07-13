@@ -28,12 +28,10 @@ Establish the authoritative loan/event ledger, shared contracts, and atomic life
 - [ ] Add focused shared and API lifecycle coverage in `packages/shared/src/{dtos/loan.dto.test.ts,finance.test.ts}` and `packages/api/src/features/{loans/loans.test.ts,transactions/transactions.test.ts}`.
 
 **Agent gate (hard):**
-
 - [ ] `pnpm --filter @wallet/shared exec tsc --noEmit && pnpm --filter @wallet/api typecheck`
 - [ ] `pnpm --filter @wallet/shared exec vitest run src/dtos/loan.dto.test.ts src/finance.test.ts && pnpm --filter @wallet/api exec vitest run src/features/loans/loans.test.ts src/features/transactions/transactions.test.ts`
 
 **Review checklist (user, at PR review):**
-
 - [ ] Create lending, borrowing, and opening loans; verify their events and linked account transactions are created or omitted as specified.
 - [ ] Attempt generic editing/deleting of a loan transaction and confirm the UI directs the user to Loans.
 
@@ -52,12 +50,10 @@ Build historical loan-aware accounting and API summaries on the completed event 
 - [ ] Add historical accounting coverage in `packages/shared/src/{dtos/report.dto.test.ts,finance.test.ts}` and `packages/api/src/features/{reports/reports.test.ts,analytics/analytics.test.ts}`.
 
 **Agent gate (hard):**
-
 - [ ] `pnpm --filter @wallet/shared exec tsc --noEmit && pnpm --filter @wallet/api typecheck`
 - [ ] `pnpm --filter @wallet/shared exec vitest run src/dtos/report.dto.test.ts src/finance.test.ts && pnpm --filter @wallet/api exec vitest run src/features/reports/reports.test.ts src/features/analytics/analytics.test.ts src/features/transactions/transactions.test.ts`
 
 **Review checklist (user, at PR review):**
-
 - [ ] Verify a mixed period reconciles account totals and net worth, including opening loans and write-off/forgiveness events.
 - [ ] Confirm loan principal is absent from income, expenses, budgets, and savings metrics.
 
@@ -75,12 +71,10 @@ Expose the completed loan and financial-position APIs through typed, invalidatio
 - [ ] Add query behavior coverage in `packages/web/src/features/{loans/queries.test.tsx,reports/queries.test.tsx,dashboard/queries.test.tsx}`.
 
 **Agent gate (hard):**
-
 - [ ] `pnpm --filter @wallet/web typecheck`
 - [ ] `pnpm --filter @wallet/web exec vitest run src/features/loans/queries.test.tsx src/features/reports/queries.test.tsx src/features/dashboard/queries.test.tsx`
 
 **Review checklist (user, at PR review):**
-
 - [ ] Perform a loan mutation and verify loans, account balances, transactions, dashboard, and Financial Position refresh together.
 
 **On completion:** run agent gate, update STATUS + checkboxes, stop and ask before push/PR. Review checklist goes into the PR description.
@@ -97,12 +91,10 @@ Deliver the dedicated person-first desktop and mobile Loans experiences using th
 - [ ] Add focused UI coverage in `packages/web/src/features/loans/components/{LoansPage,LoanDetail,LoanForm,RepaymentForm}.test.tsx`.
 
 **Agent gate (hard):**
-
 - [ ] `pnpm --filter @wallet/web typecheck`
 - [ ] `pnpm --filter @wallet/web exec vitest run src/features/loans/components/LoansPage.test.tsx src/features/loans/components/LoanDetail.test.tsx src/features/loans/components/LoanForm.test.tsx src/features/loans/components/RepaymentForm.test.tsx`
 
 **Review checklist (user, at PR review):**
-
 - [ ] On desktop and mobile, create a disbursed loan and an opening loan, then record partial and final repayments through different accounts.
 - [ ] Verify due states, filters, closed-history visibility, and write-off/forgiveness/reopen confirmation copy.
 
@@ -122,12 +114,10 @@ Connect Loans to routing, navigation, transaction history, dashboard, reports, a
 - [ ] Add routing, navigation, transaction-row, dashboard, and Financial Position coverage in the corresponding `packages/web/src/{routing,layouts,features}/**/*.test.tsx` files.
 
 **Agent gate (hard):**
-
 - [ ] `pnpm --filter @wallet/web typecheck`
 - [ ] `pnpm --filter @wallet/web exec vitest run src/routing/router.test.ts src/layouts/mobile/MobileApp.test.tsx src/features/transactions/components/TransactionRow.test.tsx src/features/transactions/components/DesktopTransactionsTable.test.tsx src/features/reports/components/FinancialPositionReport.test.tsx src/features/dashboard/components/DesktopDashboard.test.tsx`
 
 **Review checklist (user, at PR review):**
-
 - [ ] Verify Loans is reachable from desktop, mobile Other, dashboard, and loan transaction rows while the mobile bottom nav remains unchanged.
 - [ ] Verify English and Vietnamese copy across Loans, transaction rows, dashboard, and Financial Position reports.
 

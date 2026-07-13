@@ -48,7 +48,6 @@ Branch: `category-redesign/phase-1-schema-api` (off `main`)
       409 on delete-with-children, re-parent validation
 
 **Verification gate (hard, before marking phase done):**
-
 - [x] `tsc --noEmit -p packages/shared/tsconfig.json` passes
 - [x] `tsc --noEmit -p packages/api/tsconfig.json` passes
 - [x] Backend test suite passes (direct vitest run, per known `pnpm` sandbox caveat)
@@ -89,7 +88,6 @@ Branch: `category-redesign/phase-2-fe-data` (off `phase-1`)
 - [x] Update/add FE tests covering the new type-based filter replacing `INCOME_CATS`
 
 **Verification gate (hard):**
-
 - [x] `tsc --noEmit -p packages/web/tsconfig.json` passes
 - [x] FE test suite passes (11/11: `api.test.ts`, `BudgetForm.test.ts` new,
       `TransactionForm.test.tsx` with 2 new cases)
@@ -126,7 +124,6 @@ Branch: `category-redesign/phase-3-fe-ui` (off `phase-2`)
       `lucide-react`) — same, already done in Phase 1's reseed migration
 
 **Verification gate (hard):**
-
 - [x] `tsc --noEmit -p packages/web/tsconfig.json` passes
 - [ ] Manual check in browser: mobile + desktop picker both render grouped hierarchy
       correctly, donut chart shows 12 visually distinct expense colors, no color collisions

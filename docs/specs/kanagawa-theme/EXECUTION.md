@@ -41,13 +41,11 @@ matte pass only makes visual sense on top of these colors.
       muted-foreground on card, light mode.
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 - [x] `pnpm build`
 
 **Review checklist (user, at PR review):**
-
 - [ ] Light mode reads as cream washi paper, dark mode as sumi ink — dashboard, transactions,
       budgets, subscriptions, settings, both mobile (<1024px) and desktop widths.
 - [ ] Buttons/FAB/active nav/focus ring are wave blue in both modes; subscription/recurring
@@ -91,13 +89,11 @@ shadows→borders can only be judged against the Phase 1 palette.
       the sanctioned floating-layer shadows (`rg` check, list survivors in the PR).
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 - [x] `pnpm build`
 
 **Review checklist (user, at PR review):**
-
 - [ ] Cards/tiles sit flat on the paper background, separated by ink borders — no floating
       drop-shadow look on dashboard, budgets, or account screens, both modes.
 - [ ] Popovers, select dropdowns, and the mobile bottom sheet still visually separate from

@@ -147,12 +147,12 @@ Extend the transaction model with:
 
 Cash direction is derived from loan direction and event kind:
 
-| Loan event             | Transaction cash direction |
-| ---------------------- | -------------------------- |
-| Lending disbursement   | Outflow                    |
-| Borrowing disbursement | Inflow                     |
-| Lending repayment      | Inflow                     |
-| Borrowing repayment    | Outflow                    |
+| Loan event | Transaction cash direction |
+| --- | --- |
+| Lending disbursement | Outflow |
+| Borrowing disbursement | Inflow |
+| Lending repayment | Inflow |
+| Borrowing repayment | Outflow |
 
 Opening balances, write-offs, and forgiveness are non-cash events and do not
 create transactions.

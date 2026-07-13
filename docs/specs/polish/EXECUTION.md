@@ -25,13 +25,11 @@ the broader loading-state and keyboard work builds on it.
 - [x] Add or update targeted tests covering the confirm flow and loading state in the relevant subscription component tests.
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 - [x] `pnpm --filter @wallet/web build`
 
 **Review checklist (user, at PR review):**
-
 - [ ] On desktop, clicking a due-banner or subscription-list log action opens a confirmation dialog showing amount, account, category, and date before any transaction is created.
 - [ ] On mobile, confirming a due subscription requires the same preview step and the confirm action shows a loading state while the mutation is in flight.
 - [ ] Confirming a subscription payment creates exactly one transaction and advances the next due date using the existing server-backed behavior.
@@ -71,13 +69,11 @@ the pattern for the remaining list and delete-confirm surfaces.
       ("shows a loading label and disables controls while confirm is pending").
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck` — pass
 - [x] `pnpm --filter @wallet/web test` — 26 files / 122 tests pass
 - [x] `pnpm --filter @wallet/web build` — pass
 
 **Review checklist (user, at PR review):**
-
 - [ ] Each primary desktop and mobile data screen shows a skeleton on first load instead of flashing empty content.
 - [ ] Delete confirmations disable the confirm action and show progress text/icon until the mutation settles.
 - [ ] Existing empty states still appear only after a completed load with no data.
@@ -116,13 +112,11 @@ without blocking the earlier UX fixes.
       dispatch, Enter dispatch, arrow-key highlight movement).
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck` — pass
 - [x] `pnpm --filter @wallet/web test` — 28 files / 135 tests pass
 - [x] `pnpm --filter @wallet/web build` — pass
 
 **Review checklist (user, at PR review):**
-
 - [ ] `Cmd/Ctrl+K` opens the palette on desktop and filters actions as text is entered.
 - [ ] `N` opens the new-transaction flow and `/` focuses search when the user is not typing into an input.
 - [ ] Desktop palette actions navigate to each listed screen and launch the listed creation flows.

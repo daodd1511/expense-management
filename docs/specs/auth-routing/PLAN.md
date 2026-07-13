@@ -21,26 +21,26 @@ the resource server verifying Supabase JWTs; authentication itself stays in Supa
 
 ## Key decisions
 
-| Topic                          | Decision                                                                                                                                                     |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Auth provider ownership        | Keep Supabase Auth as the identity provider. FE authenticates with Supabase; API continues verifying Supabase JWTs in `packages/api/src/middleware/auth.ts`. |
-| Login methods                  | Support Google OAuth + email/password on the same auth surface.                                                                                              |
-| Signup                         | Self-service signup from the app.                                                                                                                            |
-| Verification                   | Immediate access for v1; no mandatory email verification gate.                                                                                               |
-| Reset flow                     | Support forgot-password email + password update completion flow.                                                                                             |
-| Auth UI shape                  | One shared auth card, but routed via nested auth routes: `/auth/sign-in`, `/auth/sign-up`, `/auth/forgot-password`.                                          |
-| Router choice                  | TanStack Router, code-based route tree first.                                                                                                                |
-| Route ownership                | Router becomes the source of truth for top-level navigation; browser back/forward must work.                                                                 |
-| Route tree shape               | Public auth routes + one protected app layout.                                                                                                               |
-| Responsive strategy            | One shared route tree for both mobile and desktop; layouts stay responsive presentation, not separate router trees.                                          |
-| Planning/budgets/subscriptions | Normalize to distinct routes `/budgets` and `/subscriptions`; `/planning` is removed or reduced to a compatibility redirect.                                 |
-| Settings categories            | Categories move under `/settings/categories`, not a top-level `/categories`.                                                                                 |
-| Transaction flows              | Route-addressable: `/transactions/new` and `/transactions/$transactionId/edit`, rendered as overlay UI per viewport.                                         |
-| Redirect behavior              | Unauthenticated access redirects to `/auth/sign-in` while preserving the intended destination; authenticated users are redirected away from `/auth/*`.       |
-| Auth abstraction               | Centralize all auth operations behind `useAuth` / auth provider methods rather than calling Supabase directly from components.                               |
-| Error handling                 | Normalize Supabase auth failures into app-owned, translated error cases rather than surfacing raw provider messages.                                         |
-| Signup fields                  | `email` + `password` only for v1.                                                                                                                            |
-| Validation                     | Basic client validation aligned to Supabase settings; no custom password-complexity policy.                                                                  |
+| Topic | Decision |
+|---|---|
+| Auth provider ownership | Keep Supabase Auth as the identity provider. FE authenticates with Supabase; API continues verifying Supabase JWTs in `packages/api/src/middleware/auth.ts`. |
+| Login methods | Support Google OAuth + email/password on the same auth surface. |
+| Signup | Self-service signup from the app. |
+| Verification | Immediate access for v1; no mandatory email verification gate. |
+| Reset flow | Support forgot-password email + password update completion flow. |
+| Auth UI shape | One shared auth card, but routed via nested auth routes: `/auth/sign-in`, `/auth/sign-up`, `/auth/forgot-password`. |
+| Router choice | TanStack Router, code-based route tree first. |
+| Route ownership | Router becomes the source of truth for top-level navigation; browser back/forward must work. |
+| Route tree shape | Public auth routes + one protected app layout. |
+| Responsive strategy | One shared route tree for both mobile and desktop; layouts stay responsive presentation, not separate router trees. |
+| Planning/budgets/subscriptions | Normalize to distinct routes `/budgets` and `/subscriptions`; `/planning` is removed or reduced to a compatibility redirect. |
+| Settings categories | Categories move under `/settings/categories`, not a top-level `/categories`. |
+| Transaction flows | Route-addressable: `/transactions/new` and `/transactions/$transactionId/edit`, rendered as overlay UI per viewport. |
+| Redirect behavior | Unauthenticated access redirects to `/auth/sign-in` while preserving the intended destination; authenticated users are redirected away from `/auth/*`. |
+| Auth abstraction | Centralize all auth operations behind `useAuth` / auth provider methods rather than calling Supabase directly from components. |
+| Error handling | Normalize Supabase auth failures into app-owned, translated error cases rather than surfacing raw provider messages. |
+| Signup fields | `email` + `password` only for v1. |
+| Validation | Basic client validation aligned to Supabase settings; no custom password-complexity policy. |
 
 ## Route map
 

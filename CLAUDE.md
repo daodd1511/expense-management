@@ -150,7 +150,6 @@ Motion tokens: `--duration-fast/base/slow`, `--ease-out`, `--ease-in-out`. Z-ind
 scale: `--z-dropdown` through `--z-tooltip`. OKLCH color space throughout.
 
 ### Commit Messages
-
 - The `terse-commit` skill generates messages matching this convention (plain
   imperative subject, no Conventional Commits prefix). Always invoke it before
   running `git commit` in this repo, regardless of how the request is phrased.
@@ -192,7 +191,6 @@ Large/architectural changes flow: `/grill-me` → `docs/specs/<feature>/PLAN.md`
 grilling should also maintain the glossary and ADRs (see "Domain Model & Decisions").
 
 ### State model
-
 - **Git is the authoritative state store**: branch name encodes spec+phase
   (`<feature-slug>/phase-<n>-<desc>`), commits encode progress. Each `EXECUTION.md` opens
   with a **STATUS block** (current phase, per-phase state, verification debt) — the only
@@ -211,7 +209,6 @@ grilling should also maintain the glossary and ADRs (see "Domain Model & Decisio
   STATUS win — INDEX.md is advisory, like `HANDOFF.md`.
 
 ### Branch model — stacked by default
-
 - **Default: stacked.** Each phase branches off the **previous phase's branch** (phase 1
   off the integration branch, currently `develop`; resolve at plan time, never hardcode).
   Push → PR to the previous phase's branch (or to the integration branch if the previous
@@ -225,7 +222,6 @@ grilling should also maintain the glossary and ADRs (see "Domain Model & Decisio
 - After a phase's PR merges, ask before deleting the merged phase branch (local + remote).
 
 ### Checkpoints
-
 - Starting a phase authorizes its commits — nothing else.
 - Gate pass → one ask: "push + open PR?". Remote actions are never bundled with anything
   else (see Hard Stops below).
@@ -243,32 +239,27 @@ and resume in `.claude/skills/spec-phase/SKILL.md` — invoke the relevant one r
 re-deriving it.
 
 ## Coding Standards
-
 - Always use `react-frontend-developer` skill for frontend code generation.
 
 ### Reuse First
-
 - Prefer existing components, hooks, utilities, and models before creating new ones.
 - Before creating a new component, check both [packages/web/src/shared/components](packages/web/src/shared/components) and the relevant feature module for a compatible pattern.
 - Create new shared components only when reuse is likely across multiple screens/features.
 - If a new component is required, keep it small, composable, and aligned with existing naming and folder conventions.
 
 ### TypeScript Strictness
-
 - Keep TypeScript strict. Prefer precise types, discriminated unions, and generics over broad fallback types.
 - Avoid `any`. If unavoidable, limit scope to the smallest boundary and include a short justification comment with a follow-up improvement note.
 - Prefer `unknown` plus narrowing over `any` when handling untyped data.
 - Do not silence type errors with unsafe assertions unless there is no practical typed alternative.
 
 ### Documentation Expectations
-
 - Add concise documentation for exported functions, exported types/interfaces, and exported constants when behavior is not obvious.
 - At minimum, document purpose, inputs, output/return value, and important side effects or constraints.
 - Keep documentation accurate when behavior changes; update or remove stale comments in the same change.
 - For complex business rules, link to canonical docs instead of duplicating long explanations.
 
 ## Safety Rules
-
 - Report outcomes faithfully: distinguish completed actions, not-run checks, and blockers.
   Never claim something was run or verified when it was not.
 - Stop and ask before: destructive/irreversible actions, bulk edits that are hard to review,

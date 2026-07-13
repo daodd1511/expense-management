@@ -34,7 +34,7 @@ Backend only — no FE dependency, independently verifiable and revertable.
 - [x] `packages/api/src/lib/http.ts`: new `mapDbError(c, error)` helper — inspects
       `error.code`: `23505` → `409` "This item already exists", `23503` → `409` "This
       action conflicts with related data", default → `console.error('[db] unexpected
-    error:', error)` + `500` generic `"Internal server error"` (raw Postgres message
+      error:', error)` + `500` generic `"Internal server error"` (raw Postgres message
       dropped from the response body, only reaches server logs). `DbError` type exported
       for consumers that need to carry an error through an intermediate result type (see
       `categories.ts` note below)
@@ -43,7 +43,7 @@ Backend only — no FE dependency, independently verifiable and revertable.
       route files with `mapDbError(c, error)` — `categories.ts`, `favorites.ts`,
       `budgets.ts`, `transactions.ts`, `accounts.ts`, `subscriptions.ts`. Row-shape
       validation failures (Zod `safeParse` after insert/update, e.g. `'Inserted category
-    failed validation'`) were left as `jsonError` — those aren't Postgres errors, `mapDbError`
+      failed validation'`) were left as `jsonError` — those aren't Postgres errors, `mapDbError`
       doesn't apply
 - [x] `categories.ts`'s `loadParentCandidate` helper previously discarded the Postgres
       error code (returned only `.message` as a plain string), so its two call sites
@@ -61,10 +61,9 @@ Backend only — no FE dependency, independently verifiable and revertable.
       calls with `jsonError(c, 401, '...')`
 - [x] `packages/api/src/index.ts`: added global
       `app.onError((err, c) => { console.error('[uncaught]', err); return jsonError(c, 500,
-    'Internal server error') })`
+      'Internal server error') })`
 
 **Verification gate (hard):**
-
 - [x] `pnpm --filter @wallet/api typecheck` passes
 - [x] `pnpm --filter @wallet/api test` passes — 24/24 (20 prior + 4 new in `http.test.ts`'s
       `mapDbError` suite: `23505` → 409 clean message, `23503` → 409 clean message,
@@ -100,7 +99,7 @@ already starts toasting once this lands, since it's wired at the `QueryClient` l
 
 - [x] Added `sonner` dependency to `packages/web`
 - [x] `packages/web/src/core/api.ts`: new `class ApiError extends Error { status: number;
-    details?: unknown }`; `apiFetch` throws `ApiError` instead of plain `Error` on
+      details?: unknown }`; `apiFetch` throws `ApiError` instead of plain `Error` on
       non-2xx (using `response.status` and the BE's `details` field, now captured via an
       extended `apiErrorSchema`); the "Missing auth session" throw becomes
       `new ApiError('Missing auth session', 401)`
@@ -114,9 +113,9 @@ already starts toasting once this lands, since it's wired at the `QueryClient` l
       originally sketched — extracted so the status-family branching logic is unit
       testable without mounting the whole app): `handleMutationError(error)` shows a
       `sonner` toast, message selected by `error instanceof ApiError && error.status < 500
-    ? translate('error.badRequest') : translate('error.server')`. `main.tsx` constructs
+      ? translate('error.badRequest') : translate('error.server')`. `main.tsx` constructs
       `QueryClient` with `mutationCache: new MutationCache({ onError: handleMutationError
-    })`, adds `<Toaster richColors position="top-center" />` near the root
+      })`, adds `<Toaster richColors position="top-center" />` near the root
 - [x] New `packages/web/src/core/ErrorBoundary.tsx`: class component
       (`ErrorBoundaryImpl`) wrapped by a function component (`ErrorBoundary`) that supplies
       i18n'd copy via props — React error boundaries must be class components with no hook
@@ -127,7 +126,7 @@ already starts toasting once this lands, since it's wired at the `QueryClient` l
       differs from the original sketch**: nested inside `LangProvider` (around
       `AuthGate`/`StoreProvider`/`ResponsiveApp` only), not directly below
       `QueryClientProvider` as first written. `ErrorBoundary` itself calls `useLang()` for
-      its fallback text, so it must render _inside_ `LangProvider`'s subtree, not above it
+      its fallback text, so it must render *inside* `LangProvider`'s subtree, not above it
       — placing it directly below `QueryClientProvider` (above `LangProvider`) would throw
       immediately ("useLang must be used within LangProvider"). This also means a crash in
       `AuthProvider`/`ThemeProvider`/`LangProvider` themselves isn't caught, but those are
@@ -135,7 +134,6 @@ already starts toasting once this lands, since it's wired at the `QueryClient` l
       (`AuthGate`, `StoreProvider`, `ResponsiveApp`) is fully covered
 
 **Verification gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck` passes
 - [x] `pnpm --filter @wallet/web test` passes — 34/34 (26 prior + 2 new `api.test.ts` cases
       for `ApiError`'s `status`/`details` + 3 new `mutationErrorHandler.test.ts` cases:
@@ -178,7 +176,7 @@ input intact, inline banner shown (toast already fires automatically from Phase 
 - [x] Shared `packages/web/src/shared/hooks/useFormSubmit.ts` (extracted rather than
       duplicated per form — picked after seeing the try/catch + banner-state pattern would
       be identical across all 5): wraps an async `onSubmit`, exposes `{ submit,
-    isSubmitting, errorMessage }`; on rejection sets `errorMessage` via a shared
+      isSubmitting, errorMessage }`; on rejection sets `errorMessage` via a shared
       `isClientError(error)` classifier (new export in `core/api.ts`, also used by
       Phase 2's `mutationErrorHandler` — extracted so both classify failures identically)
       picking between `error.badRequest`/`error.server` copy. Also added
@@ -193,7 +191,7 @@ input intact, inline banner shown (toast already fires automatically from Phase 
       `MobileBudgets.tsx`/`DesktopBudgets.tsx`, `MobileAccounts.tsx`/`DesktopAccounts.tsx`,
       `MobileSubscriptions.tsx`/`DesktopSubscriptions.tsx`, `MobileApp.tsx`/`DesktopApp.tsx`)
       had its submit handler changed to `async`, `await`-ing the store call and only
-      closing the form/sheet/drawer _after_ that await succeeds — previously these closed
+      closing the form/sheet/drawer *after* that await succeeds — previously these closed
       unconditionally right after firing `.mutate()`, so a failure and a success looked
       identical to the user (form always closed). This was the actual behavior change that
       makes "form stays open on failure" true, not just the `useFormSubmit` plumbing itself
@@ -202,7 +200,6 @@ input intact, inline banner shown (toast already fires automatically from Phase 
       unmount, never inside the submit path)
 
 **Verification gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck` passes
 - [x] `pnpm --filter @wallet/web test` passes — 39/39 (34 prior + 4 new
       `useFormSubmit.test.ts` cases covering success/4xx/5xx/error-clearing-on-retry, + 1

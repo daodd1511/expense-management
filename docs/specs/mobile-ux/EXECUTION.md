@@ -40,12 +40,10 @@ Pure frontend. Fixes the four form-level issues that all live in the add-transac
       `packages/web/index.html`.
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test` (incl. `TransactionForm.test.tsx`)
 
 **Review checklist (user, at PR review):**
-
 - [ ] On a mobile viewport (or real device), open Add Transaction — amount is focused and
       keyboard is up.
 - [ ] Type `1000000` — input shows `1.000.000` inline, no duplicate formatted line below.
@@ -68,12 +66,10 @@ Branch: `mobile-ux/phase-2-list-parent` (off `mobile-ux/phase-1-form-fixes`, sta
       Keep the existing `truncate` so long breadcrumbs clip gracefully.
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 
 **Review checklist (user, at PR review):**
-
 - [ ] A transaction on a nested category (e.g. Food › Dating) shows both levels.
 - [ ] A top-level-category transaction shows only its own name.
 - [ ] A transfer row is unchanged.
@@ -103,13 +99,11 @@ Restyle `CategoriesPage.tsx` (serves both mobile + desktop). No data/API changes
       parent-level favorite toggle.
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test` (incl. `CategoriesPage.test.tsx` — update assertions
       if the structure they query changed)
 
 **Review checklist (user, at PR review):**
-
 - [ ] Segmented control switches expense/income sets.
 - [ ] No bordered boxes remain; star is a visible trailing toggle that toggles favorite and
       does not overlap.
@@ -136,12 +130,10 @@ In `features/transactions/queries.ts`, convert the three mutation hooks to optim
 - [x] Remove the optimistic-updates line from `docs/BACKLOG.md` (Ideas section).
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 
 **Review checklist (user, at PR review):**
-
 - [ ] Add a transaction — it appears in the list instantly before the request resolves.
 - [ ] Edit one — change shows immediately. Delete one — row disappears immediately.
 - [ ] Force an error (e.g. offline) — the optimistic change rolls back and an error surfaces.
@@ -169,12 +161,10 @@ Branch: `mobile-ux/phase-5-pull-to-refresh` (off `mobile-ux/phase-4-optimistic`,
       rest of that line's items).
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 
 **Review checklist (user, at PR review):**
-
 - [ ] Mobile viewport/device: at the top of Home, drag down → indicator appears → release →
       queries refetch. Same on Transactions.
 - [ ] A normal mid-list scroll does not trigger a refresh.

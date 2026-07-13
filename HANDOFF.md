@@ -8,7 +8,7 @@ tree, and project/spec artifacts for authoritative state.
 - Repository: `/Users/thomasduong/dev/personal/wallet2/personal-expense-management-app`
 - Branch: `develop`, clean working tree, up to date with `origin/develop`.
 - Latest commit: `cb56018 replace app version footer with update-only button
-and /version route`.
+  and /version route`.
 - Spec state: `docs/specs/system-category-translations/EXECUTION.md` STATUS
   block — both phases `done`/`done-with-debt`, merged into `develop`, phase
   branches deleted (local + remote). One open verification debt recorded

@@ -8,25 +8,25 @@ opening ten EXECUTION.md files.
 
 ## Decisions (from grill session, 2026-07-06)
 
-| Topic           | Choice                                                                                                                                                                                                                                                                          |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sync model      | **Script-generated**, never hand-edited. File carries a "generated — do not edit" banner.                                                                                                                                                                                       |
-| Trigger         | Agents run `pnpm specs:index` at spec checkpoints (whenever a STATUS block changes) and commit the regenerated INDEX.md alongside. Manual runs anytime. No git hooks.                                                                                                           |
-| Parse strategy  | **Normalize once, strict parser.** One-time pass rewrites all existing STATUS blocks to the canonical format below; the script exits nonzero naming the offending file on any non-conforming block.                                                                             |
+| Topic | Choice |
+|-------|--------|
+| Sync model | **Script-generated**, never hand-edited. File carries a "generated — do not edit" banner. |
+| Trigger | Agents run `pnpm specs:index` at spec checkpoints (whenever a STATUS block changes) and commit the regenerated INDEX.md alongside. Manual runs anytime. No git hooks. |
+| Parse strategy | **Normalize once, strict parser.** One-time pass rewrites all existing STATUS blocks to the canonical format below; the script exits nonzero naming the offending file on any non-conforming block. |
 | Status taxonomy | Four states + debt flag: **Not started** = `PLAN.md` only; **Pending** = EXECUTION.md exists, no phase begun; **In progress** = any phase `in-progress`; **Done** = all phases `done`/`done-with-debt`. Debt renders in its own column (⚠ + short note), not as a fifth status. |
-| Odd specs       | `be-integration` (PLAN-only) → Not started. `spec-workflow-v2` → excluded via a `status: reference` marker line in its PLAN.md that the script recognizes; listed under a small Reference section at the bottom of INDEX.md.                                                    |
-| Layout          | One table, sorted In progress → Pending → Not started → Done. Columns: Spec (linked to PLAN.md), Status, Phases (`n/m`), Debt, Description.                                                                                                                                     |
-| Rule home       | CLAUDE.md "Spec-Driven Execution Workflow" section gains one line: after touching any STATUS block, run `pnpm specs:index` and commit the regenerated INDEX.md with it. Global `~/.claude/skills` are **not** edited.                                                           |
-| Script          | Plain Node `.mjs` at `scripts/spec-index.mjs`, zero dependencies (Node 22 runs it directly). Root `package.json` script `specs:index`.                                                                                                                                          |
+| Odd specs | `be-integration` (PLAN-only) → Not started. `spec-workflow-v2` → excluded via a `status: reference` marker line in its PLAN.md that the script recognizes; listed under a small Reference section at the bottom of INDEX.md. |
+| Layout | One table, sorted In progress → Pending → Not started → Done. Columns: Spec (linked to PLAN.md), Status, Phases (`n/m`), Debt, Description. |
+| Rule home | CLAUDE.md "Spec-Driven Execution Workflow" section gains one line: after touching any STATUS block, run `pnpm specs:index` and commit the regenerated INDEX.md with it. Global `~/.claude/skills` are **not** edited. |
+| Script | Plain Node `.mjs` at `scripts/spec-index.mjs`, zero dependencies (Node 22 runs it directly). Root `package.json` script `specs:index`. |
 
 ## Canonical STATUS format (the contract the parser enforces)
 
 ```markdown
 ## STATUS
 
-- Current phase: <n> — <state> # or: All phases complete
-- Phase <n> — <name>: <state> # state ∈ pending | in-progress | done | done-with-debt (no backticks)
-- Verification debt: none # or a short one-line description
+- Current phase: <n> — <state>        # or: All phases complete
+- Phase <n> — <name>: <state>         # state ∈ pending | in-progress | done | done-with-debt (no backticks)
+- Verification debt: none             # or a short one-line description
 ```
 
 Multi-line debt descriptions collapse to one line during normalization. Phase counts for

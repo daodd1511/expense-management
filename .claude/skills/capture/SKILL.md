@@ -16,7 +16,6 @@ Append the item to `docs/BACKLOG.md`:
 4. Confirm with the section name and the exact line added.
 
 Rules:
-
 - Never rewrite, reorder, or delete existing lines during capture.
 - Lines are deleted only when an item ships or graduates into a `docs/specs/<feature>/` plan.
 - Proactive captures (not user-requested) must be listed in the session's final summary.

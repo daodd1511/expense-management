@@ -42,13 +42,11 @@ on. No app-shell navigation migration yet.
       from `/auth/sign-in`, `/auth/sign-up`, and `/auth/forgot-password`.
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 - [x] `pnpm --filter @wallet/web build`
 
 **Review checklist (user, at PR review):**
-
 - [ ] Visiting a protected URL while signed out lands on `/auth/sign-in` and, after
       successful auth, returns to the original destination.
 - [ ] Google sign-in still works through the new routed auth flow.
@@ -88,13 +86,11 @@ while preserving responsive presentation.
       regress the current loading experience.
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 - [x] `pnpm --filter @wallet/web build`
 
 **Review checklist (user, at PR review):**
-
 - [ ] Browser back/forward works across dashboard, transactions, budgets, subscriptions,
       accounts, settings, and settings/categories on both mobile and desktop layouts.
 - [ ] Deep-linking directly to `/subscriptions` and `/settings/categories` loads the correct
@@ -133,13 +129,11 @@ route-addressable and removing obsolete navigation/auth scaffolding.
       cancel/back behavior, and auth redirect preservation through a protected overlay URL.
 
 **Agent gate (hard):**
-
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] `pnpm --filter @wallet/web test`
 - [x] `pnpm --filter @wallet/web build`
 
 **Review checklist (user, at PR review):**
-
 - [ ] Opening "add transaction" changes the URL to `/transactions/new`; closing/canceling
       returns to the previous route on both mobile and desktop.
 - [ ] Editing a transaction from the list changes the URL to
