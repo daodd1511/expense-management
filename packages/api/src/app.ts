@@ -5,6 +5,7 @@ import { analyticsRouter } from "./features/analytics/routes";
 import { budgetsRouter } from "./features/budgets/routes";
 import { categoriesRouter } from "./features/categories/routes";
 import { favoritesRouter } from "./features/favorites/routes";
+import { loansRouter, peopleRouter } from "./features/loans/routes";
 import { reportsRouter } from "./features/reports/routes";
 import { subscriptionsRouter } from "./features/subscriptions/routes";
 import { transactionsRouter } from "./features/transactions/routes";
@@ -30,6 +31,8 @@ export function createApp() {
   api.route("/categories", categoriesRouter);
   api.route("/budgets", budgetsRouter);
   api.route("/favorites", favoritesRouter);
+  api.route("/loans", loansRouter);
+  api.route("/people", peopleRouter);
   api.route("/reports", reportsRouter);
   api.route("/subscriptions", subscriptionsRouter);
   api.route("/analytics", analyticsRouter);
