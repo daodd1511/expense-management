@@ -127,11 +127,16 @@ The sum of all computed account balances. It measures money held in accounts
 and excludes personal-loan receivables and liabilities.
 _Avoid_: net worth, wealth
 
-**Balance adjustment**:
-A correction that makes an account's computed balance match its observed
-balance. It changes account total and net worth without representing income or
-spending.
-_Avoid_: income, expense, reconciliation payment
+**Balance checkpoint**:
+An observed balance for one account at an exact local date and time. It is an
+authoritative historical fact that remains even when no correction is needed.
+_Avoid_: balance adjustment, reconciliation transaction, snapshot transaction
+
+**Unexplained adjustment**:
+The signed difference between a balance checkpoint and the account's computed
+balance immediately before it. It is derived from ledger history and is neither
+income nor spending.
+_Avoid_: fixed correction, adjustment transaction, miscellaneous income, miscellaneous expense
 
 **Surplus / deficit**:
 The difference between income and expenses over a period. A positive difference
