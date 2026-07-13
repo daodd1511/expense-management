@@ -211,8 +211,7 @@ describe("transactions service listTransactions", () => {
 
   it("recomputes later balances when an older row changes or disappears on refetch", async () => {
     vi.spyOn(repository, "listAccountOpeningBalances").mockResolvedValue({ cash: 1000 });
-    const listTransactionsForBalance = vi
-      .spyOn(repository, "listTransactionsForBalance")
+    vi.spyOn(repository, "listTransactionsForBalance")
       .mockResolvedValueOnce([
         {
           id: "older",

@@ -161,7 +161,7 @@ function renderTable(lines) {
 function startsBlock(line, nextLine = "") {
   return (
     line.trim() === "" ||
-    /^```/.test(line) ||
+    line.startsWith("```") ||
     /^#{1,6}\s+/.test(line) ||
     /^-{3,}\s*$/.test(line.trim()) ||
     /^>\s?/.test(line) ||

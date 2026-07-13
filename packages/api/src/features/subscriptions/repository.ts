@@ -6,8 +6,6 @@ import {
   transactionRowSchema,
   type Database,
   type Subscription,
-  type SubscriptionCreate,
-  type SubscriptionPatch,
 } from "@wallet/shared";
 import { getSupabase } from "../../config/supabase";
 import { parseRows } from "../../lib/response";

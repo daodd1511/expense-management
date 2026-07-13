@@ -17,13 +17,7 @@ import {
   useSubscriptions,
   useUpdateSubscription,
 } from "@/features/subscriptions/queries";
-import {
-  daysUntilDue,
-  isDue,
-  isDueSoon,
-  monthlyEquivalent,
-  totalMonthlyCost,
-} from "@/features/subscriptions/helpers";
+import { daysUntilDue, isDue, isDueSoon, totalMonthlyCost } from "@/features/subscriptions/helpers";
 import type { Subscription } from "@/core/types";
 import { todayLocalIso } from "@/shared/lib/date";
 import { cn } from "@/shared/lib/utils";

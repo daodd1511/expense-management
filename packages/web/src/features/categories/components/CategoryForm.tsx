@@ -92,7 +92,6 @@ export function CategoryForm({
     isSubmitting: isSaving,
     errorMessage: saveError,
   } = useFormSubmit(onSave);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const errorMessage = saveError ?? deleteError;
 
@@ -103,14 +102,11 @@ export function CategoryForm({
 
   const handleConfirmDelete = async () => {
     setDeleteError(null);
-    setIsDeleting(true);
     try {
       await onDelete();
       setConfirmDeleteOpen(false);
     } catch (error: unknown) {
       setDeleteError(translate(isClientError(error) ? "error.badRequest" : "error.server"));
-    } finally {
-      setIsDeleting(false);
     }
   };
 

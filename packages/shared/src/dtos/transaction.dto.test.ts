@@ -38,6 +38,8 @@ describe("transactionCreateSchema", () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
+      // Narrows the safeParse union; expect(result.success).toBe(false) above already guarantees this branch runs.
+      // oxlint-disable-next-line vitest/no-conditional-expect
       expect(result.error.issues[0]?.message).toBe("Transaction date cannot be in the future");
     }
   });

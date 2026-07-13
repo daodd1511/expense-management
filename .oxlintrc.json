@@ -7,6 +7,14 @@
   "rules": {
     "vitest/require-mock-type-parameters": "off"
   },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx"],
+      "rules": {
+        "unicorn/no-thenable": "off"
+      }
+    }
+  ],
   "env": {
     "builtin": true
   },

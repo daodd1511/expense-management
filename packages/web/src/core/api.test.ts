@@ -73,17 +73,15 @@ describe("apiFetch", () => {
 
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(
-            JSON.stringify({
-              error: "Invalid request body",
-              details: { fieldErrors: { name: ["Required"] } },
-            }),
-            { status: 400, headers: { "Content-Type": "application/json" } },
-          ),
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: "Invalid request body",
+            details: { fieldErrors: { name: ["Required"] } },
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
         ),
+      ),
     );
 
     await expect(apiFetch("/transactions")).rejects.toMatchObject({
