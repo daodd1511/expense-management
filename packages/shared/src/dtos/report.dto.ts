@@ -48,7 +48,7 @@ export const incomeExpenseReportResponseSchema = z.object({
   data: incomeExpenseReportSchema,
 });
 
-const financialPositionAccountStateSchema = z.object({
+export const financialPositionAccountStateSchema = z.object({
   accountTotal: z.number(),
   lendingOutstanding: z.number(),
   borrowingOutstanding: z.number(),

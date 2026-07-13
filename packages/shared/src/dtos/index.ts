@@ -1,8 +1,18 @@
 export {
   balanceTrendPointSchema,
   balanceTrendResponseSchema,
+  dashboardSummaryResponseSchema,
+  dashboardSummarySchema,
+  loansSummarySchema,
+  netWorthTrendPointSchema,
+  netWorthTrendResponseSchema,
   type BalanceTrendPoint,
   type BalanceTrendResponse,
+  type DashboardSummary,
+  type DashboardSummaryResponse,
+  type LoansSummary,
+  type NetWorthTrendPoint,
+  type NetWorthTrendResponse,
 } from "./analytics.dto";
 export {
   accountCreateSchema,
@@ -29,6 +39,7 @@ export {
   type CategoryRow,
 } from "./category.dto";
 export {
+  financialPositionAccountStateSchema,
   financialPositionResponseSchema,
   financialPositionSchema,
   incomeExpenseReportResponseSchema,

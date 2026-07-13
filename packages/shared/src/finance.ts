@@ -1,4 +1,4 @@
-import type { BalanceTrendPoint } from "./dtos";
+import type { BalanceTrendPoint, LoansSummary, NetWorthTrendPoint } from "./dtos";
 import type { Loan, LoanDirection, LoanEvent, LoanStatus, Transaction } from "./models";
 
 function getBalance(balanceByAccountId: Map<string, number>, accountId: string) {
@@ -133,6 +133,50 @@ export function computeBalanceTrend(
   });
 }
 
+/** Last calendar day of a 'YYYY-MM' month as a 'YYYY-MM-DD' string. */
+function monthEndIso(monthIso: string): string {
+  const [year, month] = monthIso.split("-").map(Number);
+  const lastDay = new Date(year, month, 0).getDate();
+  return `${monthIso}-${String(lastDay).padStart(2, "0")}`;
+}
+
+/**
+ * Net worth (account total + lending outstanding − borrowing outstanding) at the end of
+ * each of the trailing `monthsBack` months (inclusive of `referenceMonth`). Distinct from
+ * computeBalanceTrend, which tracks only liquid account balances: here loan events also
+ * move outstanding lending/borrowing as of each month-end boundary, per PLAN.md ->
+ * Dashboard's "net-worth trend includes loan events as-of each point". Re-derives each
+ * point from the full transaction/event history rather than accumulating deltas, since
+ * loan outstanding (unlike a running account balance) isn't a simple per-month sum — a
+ * write-off/forgiveness can zero it out regardless of origin amount.
+ */
+export function computeNetWorthTrend(
+  accounts: { id: string; openingBalance: number }[],
+  transactions: Transaction[],
+  loans: { direction: LoanDirection; events: LoanEvent[] }[],
+  referenceMonth: string,
+  monthsBack = 6,
+): NetWorthTrendPoint[] {
+  const months: string[] = [];
+  for (let i = monthsBack - 1; i >= 0; i--) {
+    months.push(shiftMonth(referenceMonth, -i));
+  }
+
+  return months.map((month) => {
+    const boundary = monthEndIso(month);
+    const transactionsThroughBoundary = transactions.filter((tx) => tx.date <= boundary);
+    const loansThroughBoundary = loans.map((loan) => ({
+      direction: loan.direction,
+      events: loan.events.filter((event) => event.date <= boundary),
+    }));
+
+    const { accountTotal, lendingOutstanding, borrowingOutstanding, netWorth } =
+      computeFinancialPositionBoundary(accounts, transactionsThroughBoundary, loansThroughBoundary);
+
+    return { month, netWorth, accountTotal, lendingOutstanding, borrowingOutstanding };
+  });
+}
+
 /**
  * Whole-day difference between two 'YYYY-MM-DD' local dates (`toIso` minus `fromIso`),
  * positive when `toIso` is later. Both inputs are already plain date strings with no time
@@ -207,6 +251,29 @@ export function computeLoanState(
   };
 }
 
+/**
+ * Dashboard's compact Loans summary (PLAN.md -> Dashboard): owed-to-user/user-owes are
+ * lending/borrowing outstanding sums, net position is their difference, and overdue count
+ * reuses each loan's own derived status rather than re-deriving due-date logic here.
+ */
+export function computeLoansSummary(
+  loans: { loan: Loan; events: LoanEvent[] }[],
+  todayIso: string,
+): LoansSummary {
+  let owedToUser = 0;
+  let userOwes = 0;
+  let overdueCount = 0;
+
+  for (const { loan, events } of loans) {
+    const state = computeLoanState(loan, events, todayIso);
+    if (loan.direction === "lending") owedToUser += state.outstandingBalance;
+    else userOwes += state.outstandingBalance;
+    if (state.status === "overdue") overdueCount += 1;
+  }
+
+  return { owedToUser, userOwes, netPosition: owedToUser - userOwes, overdueCount };
+}
+
 export type FinancialPositionAccountState = {
   accountTotal: number;
   lendingOutstanding: number;
@@ -241,6 +308,16 @@ function computeFinancialPositionBoundary(
     borrowingOutstanding,
     netWorth: accountTotal + lendingOutstanding - borrowingOutstanding,
   };
+}
+
+/** Dashboard's Net worth KPI (PLAN.md -> Dashboard) — account total plus lending/borrowing
+ * outstanding as of "now", given every transaction/loan event dated on or before today. */
+export function computeNetWorthSnapshot(
+  accounts: { id: string; openingBalance: number }[],
+  transactionsThroughToday: Transaction[],
+  loans: { direction: LoanDirection; events: LoanEvent[] }[],
+): FinancialPositionAccountState {
+  return computeFinancialPositionBoundary(accounts, transactionsThroughToday, loans);
 }
 
 export type FinancialPositionReport = {
