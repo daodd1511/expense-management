@@ -5,9 +5,9 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 1 — done
+- Current phase: 2 — in-progress
 - Phase 1 — Persistence and loan lifecycle API: done
-- Phase 2 — Financial position and dashboard API: pending
+- Phase 2 — Financial position and dashboard API: in-progress
 - Phase 3 — Web loan data layer: pending
 - Phase 4 — Responsive Loans UI: pending
 - Phase 5 — App integration: pending
