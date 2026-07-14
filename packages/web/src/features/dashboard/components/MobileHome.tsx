@@ -2,13 +2,13 @@ import { ArrowDownLeft, ArrowUpRight, ChevronRight, HandCoins, TrendingUp } from
 import { DATE_LOCALE } from "@/core/i18n";
 import { BalanceTrendChart, CategoryDonut } from "@/shared/components/Charts";
 import { AccountList } from "@/features/accounts/components/AccountList";
-import { useDashboardSummary, useNetWorthTrend } from "@/features/dashboard/queries";
+import { useBalanceTrend, useDashboardSummary } from "@/features/dashboard/queries";
 import { TransactionRow } from "@/features/transactions/components/TransactionRow";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { DashboardSkeleton } from "@/shared/components/Skeleton";
 import { MobilePageContainer } from "@/shared/components/MobilePageContainer";
 import { buildDonutData, monthSummary } from "@/shared/lib/derive";
-import { formatVND, monthLabel } from "@/shared/lib/format";
+import { formatCompactVND, formatVND, monthLabel } from "@/shared/lib/format";
 import { useLang } from "@/core/i18n";
 import { useTransactions } from "@/features/transactions/queries";
 import { todayLocalMonthIso } from "@/shared/lib/date";
@@ -35,7 +35,7 @@ export function MobileHome({
 }) {
   const { data: transactions = [], isPending: transactionsPending } = useTransactions();
   const { data: dashboardSummary, isPending: dashboardSummaryPending } = useDashboardSummary();
-  const { data: netWorthTrend = [], isPending: netWorthTrendPending } = useNetWorthTrend();
+  const { data: balanceTrend = [], isPending: balanceTrendPending } = useBalanceTrend();
   const { isPending: accountsPending } = useAccounts();
   const { data: subscriptions = [], isPending: subscriptionsPending } = useSubscriptions();
   const getCategory = useCategoryLookup();
@@ -49,9 +49,9 @@ export function MobileHome({
     (subscription) => isDue(subscription) || isDueSoon(subscription),
   );
   const monthlySubscriptionCost = totalMonthlyCost(subscriptions);
-  const trendData = netWorthTrend.map((entry) => ({
+  const trendData = balanceTrend.map((entry) => ({
     month: toTrendLabel(entry.month, lang),
-    balance: entry.netWorth,
+    balance: entry.balance,
   }));
 
   const handleCategorySelect = (categoryId?: string) => {
@@ -65,7 +65,7 @@ export function MobileHome({
   if (
     transactionsPending ||
     dashboardSummaryPending ||
-    netWorthTrendPending ||
+    balanceTrendPending ||
     accountsPending ||
     subscriptionsPending ||
     !dashboardSummary
@@ -84,70 +84,33 @@ export function MobileHome({
             </span>
             <TrendingUp className="size-4 opacity-80" />
           </div>
-          <div className="tabular mt-1 text-3xl font-bold tracking-tight">
-            {formatVND(summary.balance)}
+          <div
+            className="tabular mt-1 whitespace-nowrap text-3xl font-bold tracking-tight"
+            title={formatVND(summary.balance)}
+          >
+            {formatCompactVND(summary.balance, lang)}
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-primary-foreground/10 p-3">
               <div className="flex items-center gap-1 text-xs opacity-80">
                 <ArrowDownLeft className="size-3.5" /> {t("dashboard.income")}
               </div>
-              <div className="tabular mt-0.5 text-base font-semibold">
-                {formatVND(summary.income)}
+              <div
+                className="tabular mt-0.5 whitespace-nowrap text-base font-semibold"
+                title={formatVND(summary.income)}
+              >
+                {formatCompactVND(summary.income, lang)}
               </div>
             </div>
             <div className="rounded-xl bg-primary-foreground/10 p-3">
               <div className="flex items-center gap-1 text-xs opacity-80">
                 <ArrowUpRight className="size-3.5" /> {t("dashboard.expense")}
               </div>
-              <div className="tabular mt-0.5 text-base font-semibold">
-                {formatVND(summary.expense)}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-5">
-          <SectionTitle
-            title={t("dashboard.loans")}
-            action={t("dashboard.viewAll")}
-            onAction={() => onNavigate("loans")}
-          />
-          <div className="mt-4 rounded-xl bg-accent p-4">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                <HandCoins className="size-4" />
-                {t("loans.netPosition")}
-              </span>
-              {dashboardSummary.loans.overdueCount > 0 && (
-                <span className="text-xs font-semibold text-expense">
-                  {t("loans.overdueCountValue", { n: dashboardSummary.loans.overdueCount })}
-                </span>
-              )}
-            </div>
-            <div
-              className={
-                dashboardSummary.loans.netPosition >= 0
-                  ? "tabular mt-1 text-2xl font-bold text-income"
-                  : "tabular mt-1 text-2xl font-bold text-expense"
-              }
-            >
-              {formatVND(dashboardSummary.loans.netPosition)}
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <span className="text-muted-foreground">{t("loans.owedToUser")}</span>
-                <strong className="tabular mt-1 block text-income">
-                  {formatVND(dashboardSummary.loans.owedToUser)}
-                </strong>
-              </div>
-              <div>
-                <span className="text-muted-foreground">{t("loans.userOwes")}</span>
-                <strong className="tabular mt-1 block text-expense">
-                  {formatVND(dashboardSummary.loans.userOwes)}
-                </strong>
+              <div
+                className="tabular mt-0.5 whitespace-nowrap text-base font-semibold"
+                title={formatVND(summary.expense)}
+              >
+                {formatCompactVND(summary.expense, lang)}
               </div>
             </div>
           </div>
@@ -205,8 +168,11 @@ export function MobileHome({
           <div className="mt-4 space-y-3">
             <div className="rounded-xl bg-muted/60 p-4">
               <div className="text-xs text-muted-foreground">{t("sub.monthlyCost")}</div>
-              <div className="tabular mt-1 text-2xl font-semibold tracking-tight">
-                {formatVND(monthlySubscriptionCost)}
+              <div
+                className="tabular mt-1 whitespace-nowrap text-2xl font-semibold tracking-tight"
+                title={formatVND(monthlySubscriptionCost)}
+              >
+                {formatCompactVND(monthlySubscriptionCost, lang)}
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
                 {t("sub.activeCount", { n: activeSubscriptions.length })}
@@ -232,12 +198,12 @@ export function MobileHome({
       {/* Trend */}
       <Card>
         <CardContent className="p-5">
-          <SectionTitle title={t("dashboard.netWorthTrend6m")} />
+          <SectionTitle title={t("dashboard.trend6mShort")} />
           <div className="mt-2">
             <BalanceTrendChart
               data={trendData}
               height={170}
-              balanceLabel={t("dashboard.netWorth")}
+              balanceLabel={t("dashboard.monthBalance")}
             />
           </div>
         </CardContent>
@@ -253,6 +219,60 @@ export function MobileHome({
           />
           <div className="mt-3">
             <AccountList />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Loans */}
+      <Card>
+        <CardContent className="p-5">
+          <SectionTitle
+            title={t("dashboard.loans")}
+            action={t("dashboard.viewAll")}
+            onAction={() => onNavigate("loans")}
+          />
+          <div className="mt-4 rounded-xl bg-accent p-4">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                <HandCoins className="size-4" />
+                {t("loans.netPosition")}
+              </span>
+              {dashboardSummary.loans.overdueCount > 0 && (
+                <span className="text-xs font-semibold text-expense">
+                  {t("loans.overdueCountValue", { n: dashboardSummary.loans.overdueCount })}
+                </span>
+              )}
+            </div>
+            <div
+              title={formatVND(dashboardSummary.loans.netPosition)}
+              className={
+                dashboardSummary.loans.netPosition >= 0
+                  ? "tabular mt-1 text-2xl font-bold text-income"
+                  : "tabular mt-1 text-2xl font-bold text-expense"
+              }
+            >
+              {formatCompactVND(dashboardSummary.loans.netPosition, lang)}
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <span className="text-muted-foreground">{t("loans.owedToUser")}</span>
+                <strong
+                  className="tabular mt-1 block whitespace-nowrap text-income"
+                  title={formatVND(dashboardSummary.loans.owedToUser)}
+                >
+                  {formatCompactVND(dashboardSummary.loans.owedToUser, lang)}
+                </strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground">{t("loans.userOwes")}</span>
+                <strong
+                  className="tabular mt-1 block whitespace-nowrap text-expense"
+                  title={formatVND(dashboardSummary.loans.userOwes)}
+                >
+                  {formatCompactVND(dashboardSummary.loans.userOwes, lang)}
+                </strong>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

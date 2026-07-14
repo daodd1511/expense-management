@@ -5,19 +5,18 @@ import {
   ChevronRight,
   HandCoins,
   PiggyBank,
-  Scale,
   Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { DATE_LOCALE } from "@/core/i18n";
 import { BalanceTrendChart, CategoryDonut } from "@/shared/components/Charts";
 import { AccountList } from "@/features/accounts/components/AccountList";
-import { useDashboardSummary, useNetWorthTrend } from "@/features/dashboard/queries";
+import { useBalanceTrend, useDashboardSummary } from "@/features/dashboard/queries";
 import { TransactionRow } from "@/features/transactions/components/TransactionRow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { DashboardSkeleton } from "@/shared/components/Skeleton";
 import { buildDonutData, monthSummary } from "@/shared/lib/derive";
-import { formatVND } from "@/shared/lib/format";
+import { formatCompactVND, formatVND } from "@/shared/lib/format";
 import { useLang } from "@/core/i18n";
 import { useTransactions } from "@/features/transactions/queries";
 import { todayLocalMonthIso } from "@/shared/lib/date";
@@ -45,7 +44,7 @@ export function DesktopDashboard({
 }) {
   const { data: transactions = [], isPending: transactionsPending } = useTransactions();
   const { data: dashboardSummary, isPending: dashboardSummaryPending } = useDashboardSummary();
-  const { data: netWorthTrend = [], isPending: netWorthTrendPending } = useNetWorthTrend();
+  const { data: balanceTrend = [], isPending: balanceTrendPending } = useBalanceTrend();
   const { isPending: accountsPending } = useAccounts();
   const { data: subscriptions = [], isPending: subscriptionsPending } = useSubscriptions();
   const getCategory = useCategoryLookup();
@@ -60,9 +59,9 @@ export function DesktopDashboard({
     (subscription) => isDue(subscription) || isDueSoon(subscription),
   );
   const monthlySubscriptionCost = totalMonthlyCost(subscriptions);
-  const trendData = netWorthTrend.map((entry) => ({
+  const trendData = balanceTrend.map((entry) => ({
     month: toTrendLabel(entry.month, lang),
-    balance: entry.netWorth,
+    balance: entry.balance,
   }));
 
   const handleCategorySelect = (categoryId?: string) => {
@@ -76,7 +75,7 @@ export function DesktopDashboard({
   if (
     transactionsPending ||
     dashboardSummaryPending ||
-    netWorthTrendPending ||
+    balanceTrendPending ||
     accountsPending ||
     subscriptionsPending ||
     !dashboardSummary
@@ -87,32 +86,29 @@ export function DesktopDashboard({
   return (
     <div className="flex flex-col gap-5">
       {/* KPI row */}
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <Kpi
           label={t("dashboard.monthBalance")}
-          value={formatVND(summary.balance)}
+          value={formatCompactVND(summary.balance, lang)}
+          valueTitle={formatVND(summary.balance)}
           icon={Wallet}
           accent
         />
         <Kpi
           label={t("dashboard.income")}
-          value={formatVND(summary.income)}
+          value={formatCompactVND(summary.income, lang)}
+          valueTitle={formatVND(summary.income)}
           icon={ArrowDownLeft}
           tone="income"
         />
         <Kpi
           label={t("dashboard.expense")}
-          value={formatVND(summary.expense)}
+          value={formatCompactVND(summary.expense, lang)}
+          valueTitle={formatVND(summary.expense)}
           icon={ArrowUpRight}
           tone="expense"
         />
         <Kpi label={t("dashboard.savingsRate")} value={`${savingRate}%`} icon={PiggyBank} />
-        <Kpi
-          label={t("dashboard.netWorth")}
-          value={formatVND(dashboardSummary.netWorth.netWorth)}
-          icon={Scale}
-          tone={dashboardSummary.netWorth.netWorth >= 0 ? "income" : "expense"}
-        />
       </div>
 
       {/* Widget grid */}
@@ -154,13 +150,13 @@ export function DesktopDashboard({
 
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>{t("dashboard.netWorthTrend6m")}</CardTitle>
+            <CardTitle>{t("dashboard.trend6m")}</CardTitle>
           </CardHeader>
           <CardContent>
             <BalanceTrendChart
               data={trendData}
               height={260}
-              balanceLabel={t("dashboard.netWorth")}
+              balanceLabel={t("dashboard.monthBalance")}
             />
           </CardContent>
         </Card>
@@ -179,25 +175,32 @@ export function DesktopDashboard({
                 {t("loans.netPosition")}
               </div>
               <div
+                title={formatVND(dashboardSummary.loans.netPosition)}
                 className={cn(
                   "tabular mt-2 text-2xl font-bold",
                   dashboardSummary.loans.netPosition >= 0 ? "text-income" : "text-expense",
                 )}
               >
-                {formatVND(dashboardSummary.loans.netPosition)}
+                {formatCompactVND(dashboardSummary.loans.netPosition, lang)}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="rounded-xl border border-border p-3">
                 <span className="text-muted-foreground">{t("loans.owedToUser")}</span>
-                <strong className="tabular mt-1 block text-income">
-                  {formatVND(dashboardSummary.loans.owedToUser)}
+                <strong
+                  className="tabular mt-1 block whitespace-nowrap text-income"
+                  title={formatVND(dashboardSummary.loans.owedToUser)}
+                >
+                  {formatCompactVND(dashboardSummary.loans.owedToUser, lang)}
                 </strong>
               </div>
               <div className="rounded-xl border border-border p-3">
                 <span className="text-muted-foreground">{t("loans.userOwes")}</span>
-                <strong className="tabular mt-1 block text-expense">
-                  {formatVND(dashboardSummary.loans.userOwes)}
+                <strong
+                  className="tabular mt-1 block whitespace-nowrap text-expense"
+                  title={formatVND(dashboardSummary.loans.userOwes)}
+                >
+                  {formatCompactVND(dashboardSummary.loans.userOwes, lang)}
                 </strong>
               </div>
             </div>
@@ -219,8 +222,11 @@ export function DesktopDashboard({
                 <CalendarClock className="size-4" />
                 {t("sub.monthlyCost")}
               </div>
-              <div className="tabular mt-2 text-2xl font-bold tracking-tight">
-                {formatVND(monthlySubscriptionCost)}
+              <div
+                className="tabular mt-2 whitespace-nowrap text-2xl font-bold tracking-tight"
+                title={formatVND(monthlySubscriptionCost)}
+              >
+                {formatCompactVND(monthlySubscriptionCost, lang)}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -290,12 +296,14 @@ export function DesktopDashboard({
 function Kpi({
   label,
   value,
+  valueTitle,
   icon: Icon,
   tone,
   accent,
 }: {
   label: string;
   value: string;
+  valueTitle?: string;
   icon: LucideIcon;
   tone?: "income" | "expense";
   accent?: boolean;
@@ -308,8 +316,9 @@ function Kpi({
             {label}
           </span>
           <span
+            title={valueTitle}
             className={cn(
-              "tabular text-2xl font-bold tracking-tight",
+              "tabular whitespace-nowrap text-2xl font-bold tracking-tight",
               tone === "income" && "text-income",
               tone === "expense" && "text-expense",
             )}
