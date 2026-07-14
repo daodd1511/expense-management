@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useLang } from "@/core/i18n";
 import { useLoanSummaries, usePersonSummaries } from "@/features/loans/queries";
 import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent } from "@/shared/components/ui/card";
 import { formatVND } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 import {
