@@ -27,6 +27,7 @@ import { useAccounts, useAccountLookup } from "@/features/accounts/queries";
 import { useCategories, useCategoryLookup } from "@/features/categories/queries";
 import { CategoryFilterSelect } from "@/features/categories/components/CategoryFilterSelect";
 import { TransactionsMonthSwitcher } from "@/features/transactions/components/TransactionsMonthSwitcher";
+import { TransactionMultiFilterSelect } from "@/features/transactions/components/TransactionMultiFilterSelect";
 import { useDeleteTransactions, useTransactions } from "@/features/transactions/queries";
 import { useLoanEventLinkLookup } from "@/features/loans/queries";
 import {
@@ -35,25 +36,18 @@ import {
   transactionAmountLabel,
 } from "@/features/transactions/loan-transaction";
 import { getTransactionBalanceLines } from "@/features/transactions/balance-lines";
-import type { TransactionFilterType } from "@/features/transactions/view-state";
+import {
+  matchesTransactionSelection,
+  type TransactionFilterType,
+} from "@/features/transactions/view-state";
 import { useLang } from "@/core/i18n";
 import type { Category, Transaction } from "@/core/types";
-import { CategoryBreadcrumb } from "@/features/categories/components/CategoryBreadcrumb";
 import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
 import { Input } from "@/shared/components/ui/input";
 import { TransactionsSkeleton } from "@/shared/components/Skeleton";
-import {
-  Select,
-  SelectItem,
-  SelectPopup,
-  SelectPortal,
-  SelectPositioner,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select";
 import {
   Table,
   TableBody,
@@ -73,7 +67,6 @@ type TransactionRow = {
   dateLabel: string;
   timeLabel?: string;
   categoryLabel: string;
-  category?: Category;
   parentCategory?: Category;
   noteLabel?: string;
   categoryIcon?: string;
@@ -99,14 +92,80 @@ function getTransactionCategoryLabel({
   return categoryName ?? "";
 }
 
+function DesktopCategoryCell({
+  row,
+  onOpenLoan,
+}: {
+  row: TransactionRow;
+  onOpenLoan?: (loanId: string) => void;
+}) {
+  const isTransfer = row.transaction.type === "transfer";
+  const isLoan = row.transaction.type === "loan";
+
+  const content = (
+    <>
+      <span
+        className={cn(
+          "inline-flex size-8 shrink-0 items-center justify-center rounded-xl",
+          isTransfer && "bg-muted text-transfer",
+          isLoan && "bg-accent text-primary",
+        )}
+        style={
+          isTransfer || isLoan
+            ? undefined
+            : {
+                color: colorVar(row.categoryColor),
+                backgroundColor: `color-mix(in oklab, ${colorVar(row.categoryColor)} 16%, transparent)`,
+              }
+        }
+      >
+        {isTransfer ? (
+          <ArrowLeftRight className="size-4" />
+        ) : isLoan ? (
+          <HandCoins className="size-4" />
+        ) : (
+          <CategoryIcon name={row.categoryIcon} className="size-4" />
+        )}
+      </span>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-sm font-semibold text-foreground">
+            {row.categoryLabel}
+          </span>
+          {row.transaction.receipt && (
+            <Paperclip className="size-3 shrink-0 text-muted-foreground" />
+          )}
+        </span>
+        {row.parentCategory && (
+          <span className="truncate text-xs text-muted-foreground">{row.parentCategory.name}</span>
+        )}
+      </span>
+    </>
+  );
+
+  if (isLoan) {
+    return (
+      <button
+        type="button"
+        onClick={() => row.loanId && onOpenLoan?.(row.loanId)}
+        className="flex max-w-[15rem] min-w-0 items-center gap-2.5 text-left"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return <span className="flex max-w-[15rem] min-w-0 items-center gap-2.5">{content}</span>;
+}
+
 export function DesktopTransactionsTable({
   onEdit,
   onOpenLoan,
   month,
   query,
   type,
-  categoryId,
-  accountId,
+  categoryIds,
+  accountIds,
   onMonthChange,
   onQueryChange,
   onTypeChange,
@@ -120,13 +179,13 @@ export function DesktopTransactionsTable({
   month: string;
   query: string;
   type: TransactionFilterType;
-  categoryId: string;
-  accountId: string;
+  categoryIds: string[];
+  accountIds: string[];
   onMonthChange: (month: string) => void;
   onQueryChange: (query: string) => void;
   onTypeChange: (type: TransactionFilterType) => void;
-  onCategoryChange: (categoryId: string) => void;
-  onAccountChange: (accountId: string) => void;
+  onCategoryChange: (categoryIds: string[]) => void;
+  onAccountChange: (accountIds: string[]) => void;
   shouldFocusSearch?: boolean;
   onSearchFocusHandled?: () => void;
 }) {
@@ -146,6 +205,7 @@ export function DesktopTransactionsTable({
   });
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const searchRef = useRef<HTMLInputElement | null>(null);
+  const balanceAccountId = accountIds.length === 1 ? accountIds[0] : undefined;
 
   const typeFilters: { value: TransactionFilterType; label: string }[] = [
     { value: "all", label: t("tx.filterAll") },
@@ -160,8 +220,7 @@ export function DesktopTransactionsTable({
       .filter((tx) => {
         const loanLink = getLoanEventLink(tx.loanEventId);
         if (type !== "all" && tx.type !== type) return false;
-        if (categoryId && tx.categoryId !== categoryId) return false;
-        if (accountId && tx.accountId !== accountId && tx.toAccountId !== accountId) return false;
+        if (!matchesTransactionSelection(tx, categoryIds, accountIds)) return false;
         if (query) {
           const searchValue = query.toLowerCase();
           const haystack = [
@@ -195,7 +254,6 @@ export function DesktopTransactionsTable({
             transferLabel: t("tx.transfer"),
             loanLabel: t(loanTransactionLabelKey(loanLink)),
           }),
-          category,
           parentCategory,
           noteLabel:
             [loanLink?.personName, tx.note?.trim()].filter(Boolean).join(" · ") || undefined,
@@ -209,8 +267,8 @@ export function DesktopTransactionsTable({
   }, [
     transactions,
     type,
-    categoryId,
-    accountId,
+    categoryIds,
+    accountIds,
     query,
     getCategory,
     getAccount,
@@ -268,46 +326,7 @@ export function DesktopTransactionsTable({
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           />
         ),
-        cell: ({ row }) => {
-          const tx = row.original.transaction;
-
-          if (tx.type === "transfer") {
-            return (
-              <span className="inline-flex items-center gap-1.5 text-transfer">
-                <ArrowLeftRight className="size-3.5" /> {t("tx.transfer")}
-              </span>
-            );
-          }
-
-          if (tx.type === "loan") {
-            return (
-              <button
-                type="button"
-                onClick={() => row.original.loanId && onOpenLoan?.(row.original.loanId)}
-                className="inline-flex items-center gap-1.5 text-primary"
-              >
-                <HandCoins className="size-3.5" /> {row.original.categoryLabel}
-              </button>
-            );
-          }
-
-          return (
-            <span className="flex max-w-[14rem] min-w-0 items-start gap-1.5">
-              <CategoryIcon
-                name={row.original.categoryIcon}
-                className="mt-0.5 size-3.5 shrink-0"
-                style={{ color: colorVar(row.original.categoryColor) }}
-              />
-              <CategoryBreadcrumb
-                category={row.original.category}
-                parentCategory={row.original.parentCategory}
-                trailing={
-                  tx.receipt && <Paperclip className="size-3 shrink-0 text-muted-foreground" />
-                }
-              />
-            </span>
-          );
-        },
+        cell: ({ row }) => <DesktopCategoryCell row={row.original} onOpenLoan={onOpenLoan} />,
       },
       {
         accessorKey: "noteLabel",
@@ -365,7 +384,7 @@ export function DesktopTransactionsTable({
             </span>
             {getTransactionBalanceLines(
               row.original.transaction,
-              accountId,
+              balanceAccountId,
               (accountId) => getAccount(accountId)?.name,
             ).map((balance) => (
               <span key={balance} className="text-xs tabular text-muted-foreground">
@@ -413,7 +432,7 @@ export function DesktopTransactionsTable({
           ),
       },
     ],
-    [accountId, getAccount, onEdit, onOpenLoan, t],
+    [balanceAccountId, getAccount, onEdit, onOpenLoan, t],
   );
 
   const table = useReactTable({
@@ -445,7 +464,7 @@ export function DesktopTransactionsTable({
 
   useEffect(() => {
     setPagination((current) => ({ ...current, pageIndex: 0 }));
-  }, [month, query, type, categoryId, accountId]);
+  }, [month, query, type, categoryIds, accountIds]);
 
   if (transactionsPending || categoriesPending || accountsPending) {
     return <TransactionsSkeleton />;
@@ -475,23 +494,21 @@ export function DesktopTransactionsTable({
         <div className="w-44">
           <CategoryFilterSelect
             categories={categories}
-            value={categoryId}
+            values={categoryIds}
             ariaLabel={t("tx.filterCategory")}
             emptyLabel={t("tx.filterCategoryAll")}
-            onChange={(value) => {
-              onCategoryChange(value);
-            }}
+            selectedLabel={(count) => t("tx.filterSelected", { n: count })}
+            onChange={onCategoryChange}
           />
         </div>
         <div className="w-44">
-          <FilterSelect
-            value={accountId}
+          <TransactionMultiFilterSelect
+            values={accountIds}
             ariaLabel={t("tx.filterAccount")}
             emptyLabel={t("tx.filterAccountAll")}
+            selectedLabel={(count) => t("tx.filterSelected", { n: count })}
             options={accounts.map((account) => ({ value: account.id, label: account.name }))}
-            onChange={(value) => {
-              onAccountChange(value);
-            }}
+            onChange={onAccountChange}
           />
         </div>
         <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
@@ -622,42 +639,6 @@ export function DesktopTransactionsTable({
         onConfirm={handleConfirmDelete}
       />
     </div>
-  );
-}
-
-function FilterSelect({
-  value,
-  ariaLabel,
-  emptyLabel,
-  options,
-  onChange,
-}: {
-  value: string;
-  ariaLabel: string;
-  emptyLabel: string;
-  options: { value: string; label: string }[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <Select value={value} onValueChange={(nextValue) => onChange(nextValue ?? "")}>
-      <SelectTrigger aria-label={ariaLabel}>
-        <SelectValue>
-          {options.find((option) => option.value === value)?.label ?? emptyLabel}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectPortal>
-        <SelectPositioner>
-          <SelectPopup>
-            <SelectItem value="">{emptyLabel}</SelectItem>
-            {options.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectPopup>
-        </SelectPositioner>
-      </SelectPortal>
-    </Select>
   );
 }
 

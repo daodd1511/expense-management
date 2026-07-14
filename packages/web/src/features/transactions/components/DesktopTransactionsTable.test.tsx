@@ -79,6 +79,12 @@ vi.mock("@/features/categories/components/CategoryFilterSelect", () => ({
   ),
 }));
 
+vi.mock("@/features/transactions/components/TransactionMultiFilterSelect", () => ({
+  TransactionMultiFilterSelect: ({ ariaLabel }: { ariaLabel: string }) => (
+    <div aria-label={ariaLabel}>account-filter</div>
+  ),
+}));
+
 vi.mock("@/features/transactions/components/TransactionsMonthSwitcher", () => ({
   TransactionsMonthSwitcher: () => <div>month-switcher</div>,
 }));
@@ -100,10 +106,8 @@ vi.mock("@/core/i18n", () => ({
         "tx.filterCategoryAll": "All categories",
         "tx.filterAccount": "Filter account",
         "tx.filterAccountAll": "All accounts",
+        "tx.filterSelected": `${vars?.n ?? 0} selected`,
         "tx.count": `${vars?.n ?? 0} transactions`,
-        "tx.selected": `${vars?.n ?? 0} selected`,
-        "tx.deselect": "Deselect",
-        "tx.delete": "Delete",
         "tx.colDate": "Date",
         "tx.colCategory": "Category",
         "tx.colDescription": "Description",
@@ -181,8 +185,8 @@ describe("DesktopTransactionsTable", () => {
         month="2026-07"
         query=""
         type="all"
-        categoryId=""
-        accountId=""
+        categoryIds={[]}
+        accountIds={[]}
         onMonthChange={vi.fn()}
         onQueryChange={vi.fn()}
         onTypeChange={vi.fn()}
@@ -211,8 +215,8 @@ describe("DesktopTransactionsTable", () => {
         month="2026-07"
         query="Alex"
         type="loan"
-        categoryId=""
-        accountId=""
+        categoryIds={[]}
+        accountIds={[]}
         onMonthChange={vi.fn()}
         onQueryChange={vi.fn()}
         onTypeChange={vi.fn()}

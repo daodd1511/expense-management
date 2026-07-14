@@ -51,10 +51,11 @@ describe("CategoryFilterSelect", () => {
     render(
       <CategoryFilterSelect
         categories={categories}
-        value="food"
+        values={["food"]}
         onChange={vi.fn()}
         ariaLabel="Category"
         emptyLabel="All categories"
+        selectedLabel={(count) => `${count} selected`}
       />,
     );
 
@@ -65,10 +66,11 @@ describe("CategoryFilterSelect", () => {
     render(
       <CategoryFilterSelect
         categories={categories}
-        value=""
+        values={[]}
         onChange={vi.fn()}
         ariaLabel="Category"
         emptyLabel="All categories"
+        selectedLabel={(count) => `${count} selected`}
       />,
     );
 
@@ -82,10 +84,11 @@ describe("CategoryFilterSelect", () => {
     render(
       <CategoryFilterSelect
         categories={categories}
-        value=""
+        values={[]}
         onChange={vi.fn()}
         ariaLabel="Category"
         emptyLabel="All categories"
+        selectedLabel={(count) => `${count} selected`}
       />,
     );
 
@@ -99,6 +102,6 @@ describe("CategoryFilterSelect", () => {
     expect(optionLabels).toContain("Dating");
     expect(optionLabels).toContain("Transport");
     expect(optionLabels).not.toContain("Balance Adjustment");
-    expect(optionLabels).toContain("All categories");
+    expect(screen.getByRole("button", { name: "All categories", hidden: true })).toBeDefined();
   });
 });
