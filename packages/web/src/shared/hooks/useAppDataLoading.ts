@@ -4,6 +4,7 @@ import { useCategories } from "@/features/categories/queries";
 import { useFavorites } from "@/features/categories/favorites-queries";
 import { useSubscriptions } from "@/features/subscriptions/queries";
 import { useTransactions } from "@/features/transactions/queries";
+import { useLoanSummaries } from "@/features/loans/queries";
 
 /** True while any of the app's top-level data queries are on their initial load. */
 export function useAppDataLoading(): boolean {
@@ -13,6 +14,7 @@ export function useAppDataLoading(): boolean {
   const favQuery = useFavorites();
   const budgetQuery = useBudgets();
   const subQuery = useSubscriptions();
+  const loansQuery = useLoanSummaries();
 
   return (
     txQuery.isLoading ||
@@ -20,6 +22,7 @@ export function useAppDataLoading(): boolean {
     catQuery.isLoading ||
     favQuery.isLoading ||
     budgetQuery.isLoading ||
-    subQuery.isLoading
+    subQuery.isLoading ||
+    loansQuery.isLoading
   );
 }

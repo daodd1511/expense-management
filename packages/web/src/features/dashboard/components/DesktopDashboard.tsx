@@ -3,14 +3,16 @@ import {
   ArrowUpRight,
   CalendarClock,
   ChevronRight,
+  HandCoins,
   PiggyBank,
+  Scale,
   Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { DATE_LOCALE } from "@/core/i18n";
 import { BalanceTrendChart, CategoryDonut } from "@/shared/components/Charts";
 import { AccountList } from "@/features/accounts/components/AccountList";
-import { useBalanceTrend } from "@/features/dashboard/queries";
+import { useDashboardSummary, useNetWorthTrend } from "@/features/dashboard/queries";
 import { TransactionRow } from "@/features/transactions/components/TransactionRow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { DashboardSkeleton } from "@/shared/components/Skeleton";
@@ -35,12 +37,15 @@ function toTrendLabel(month: string, lang: "vi" | "en") {
 export function DesktopDashboard({
   onNavigate,
   onEdit,
+  onOpenLoan,
 }: {
   onNavigate: (section: string, search?: Record<string, string | undefined>) => void;
   onEdit: (tx: Transaction) => void;
+  onOpenLoan?: (loanId: string) => void;
 }) {
   const { data: transactions = [], isPending: transactionsPending } = useTransactions();
-  const { data: balanceTrend = [], isPending: balanceTrendPending } = useBalanceTrend();
+  const { data: dashboardSummary, isPending: dashboardSummaryPending } = useDashboardSummary();
+  const { data: netWorthTrend = [], isPending: netWorthTrendPending } = useNetWorthTrend();
   const { isPending: accountsPending } = useAccounts();
   const { data: subscriptions = [], isPending: subscriptionsPending } = useSubscriptions();
   const getCategory = useCategoryLookup();
@@ -55,9 +60,9 @@ export function DesktopDashboard({
     (subscription) => isDue(subscription) || isDueSoon(subscription),
   );
   const monthlySubscriptionCost = totalMonthlyCost(subscriptions);
-  const trendData = balanceTrend.map((entry) => ({
+  const trendData = netWorthTrend.map((entry) => ({
     month: toTrendLabel(entry.month, lang),
-    balance: entry.balance,
+    balance: entry.netWorth,
   }));
 
   const handleCategorySelect = (categoryId?: string) => {
@@ -68,14 +73,21 @@ export function DesktopDashboard({
     });
   };
 
-  if (transactionsPending || balanceTrendPending || accountsPending || subscriptionsPending) {
+  if (
+    transactionsPending ||
+    dashboardSummaryPending ||
+    netWorthTrendPending ||
+    accountsPending ||
+    subscriptionsPending ||
+    !dashboardSummary
+  ) {
     return <DashboardSkeleton />;
   }
 
   return (
     <div className="flex flex-col gap-5">
       {/* KPI row */}
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
         <Kpi
           label={t("dashboard.monthBalance")}
           value={formatVND(summary.balance)}
@@ -95,6 +107,12 @@ export function DesktopDashboard({
           tone="expense"
         />
         <Kpi label={t("dashboard.savingsRate")} value={`${savingRate}%`} icon={PiggyBank} />
+        <Kpi
+          label={t("dashboard.netWorth")}
+          value={formatVND(dashboardSummary.netWorth.netWorth)}
+          icon={Scale}
+          tone={dashboardSummary.netWorth.netWorth >= 0 ? "income" : "expense"}
+        />
       </div>
 
       {/* Widget grid */}
@@ -136,19 +154,60 @@ export function DesktopDashboard({
 
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>{t("dashboard.trend6m")}</CardTitle>
+            <CardTitle>{t("dashboard.netWorthTrend6m")}</CardTitle>
           </CardHeader>
           <CardContent>
             <BalanceTrendChart
               data={trendData}
               height={260}
-              balanceLabel={t("dashboard.monthBalance")}
+              balanceLabel={t("dashboard.netWorth")}
             />
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle>{t("dashboard.loans")}</CardTitle>
+            <Action label={t("dashboard.viewAll")} onClick={() => onNavigate("loans")} />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-xl bg-accent p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <HandCoins className="size-4" />
+                {t("loans.netPosition")}
+              </div>
+              <div
+                className={cn(
+                  "tabular mt-2 text-2xl font-bold",
+                  dashboardSummary.loans.netPosition >= 0 ? "text-income" : "text-expense",
+                )}
+              >
+                {formatVND(dashboardSummary.loans.netPosition)}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="rounded-xl border border-border p-3">
+                <span className="text-muted-foreground">{t("loans.owedToUser")}</span>
+                <strong className="tabular mt-1 block text-income">
+                  {formatVND(dashboardSummary.loans.owedToUser)}
+                </strong>
+              </div>
+              <div className="rounded-xl border border-border p-3">
+                <span className="text-muted-foreground">{t("loans.userOwes")}</span>
+                <strong className="tabular mt-1 block text-expense">
+                  {formatVND(dashboardSummary.loans.userOwes)}
+                </strong>
+              </div>
+            </div>
+            {dashboardSummary.loans.overdueCount > 0 && (
+              <div className="rounded-xl bg-expense-muted px-3 py-2 text-xs font-medium text-expense">
+                {t("loans.overdueCountValue", { n: dashboardSummary.loans.overdueCount })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
         <Card className="lg:col-span-1">
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle>{t("nav.subscriptions")}</CardTitle>
@@ -213,7 +272,12 @@ export function DesktopDashboard({
           <CardContent>
             <div className="flex flex-col divide-y divide-border">
               {recent.map((t) => (
-                <TransactionRow key={t.id} tx={t} onClick={() => onEdit(t)} />
+                <TransactionRow
+                  key={t.id}
+                  tx={t}
+                  onClick={() => onEdit(t)}
+                  onOpenLoan={onOpenLoan}
+                />
               ))}
             </div>
           </CardContent>

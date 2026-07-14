@@ -5,6 +5,7 @@ export type AppSection =
   | "budgets"
   | "subscriptions"
   | "accounts"
+  | "loans"
   | "other"
   | "settings"
   | "settings-categories";
@@ -16,6 +17,7 @@ export function sectionFromPath(pathname: string): AppSection {
   if (pathname === "/subscriptions" || pathname.startsWith("/subscriptions/"))
     return "subscriptions";
   if (pathname === "/accounts" || pathname.startsWith("/accounts/")) return "accounts";
+  if (pathname === "/loans" || pathname.startsWith("/loans/")) return "loans";
   if (pathname === "/other" || pathname.startsWith("/other/")) return "other";
   if (pathname === "/settings/categories" || pathname.startsWith("/settings/categories/"))
     return "settings-categories";

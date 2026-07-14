@@ -1,5 +1,5 @@
 import { AlertCircle, Plus, UsersRound, WalletCards } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLang } from "@/core/i18n";
 import { useLoanSummaries, usePersonSummaries } from "@/features/loans/queries";
 import { MobilePageContainer } from "@/shared/components/MobilePageContainer";
@@ -16,7 +16,17 @@ import {
 import { LoanFilters, LoanKpiGrid, LoanSummaryRow } from "./LoanOverviewParts";
 import { LoanOverlays } from "./LoanOverlays";
 
-export function MobileLoans() {
+export function MobileLoans({
+  loanId,
+  createIntentToken,
+  onCreateIntentHandled,
+  onLoanIdChange,
+}: {
+  loanId?: string;
+  createIntentToken?: string;
+  onCreateIntentHandled?: () => void;
+  onLoanIdChange?: (loanId: string | null) => void;
+}) {
   const { t } = useLang();
   const loansQuery = useLoanSummaries();
   const peopleQuery = usePersonSummaries();
@@ -24,12 +34,26 @@ export function MobileLoans() {
   const people = peopleQuery.data ?? [];
   const [direction, setDirection] = useState<LoanDirectionFilter>("all");
   const [status, setStatus] = useState<LoanStatusFilter>("open-group");
-  const [detailLoanId, setDetailLoanId] = useState<string | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
+  const [detailLoanId, setDetailLoanIdState] = useState<string | null>(loanId ?? null);
+  const [createOpen, setCreateOpen] = useState(Boolean(createIntentToken));
+  const [handledCreateIntent, setHandledCreateIntent] = useState<string | null>(null);
   const filteredLoans = filterLoans(loans, direction, status);
   const grouped = loansByPerson(filteredLoans);
   const visiblePeople = people.filter((person) => grouped.has(person.id));
   const kpis = loanKpis(loans);
+
+  const setDetailLoanId = (nextLoanId: string | null) => {
+    setDetailLoanIdState(nextLoanId);
+    onLoanIdChange?.(nextLoanId);
+  };
+
+  useEffect(() => setDetailLoanIdState(loanId ?? null), [loanId]);
+  useEffect(() => {
+    if (!createIntentToken || handledCreateIntent === createIntentToken) return;
+    setCreateOpen(true);
+    setHandledCreateIntent(createIntentToken);
+    onCreateIntentHandled?.();
+  }, [createIntentToken, handledCreateIntent, onCreateIntentHandled]);
 
   if (loansQuery.isPending || peopleQuery.isPending) {
     return (
