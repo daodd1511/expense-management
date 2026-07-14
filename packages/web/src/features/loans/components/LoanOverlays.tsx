@@ -154,6 +154,12 @@ export function LoanOverlays({
       },
     });
 
+  const requestDeleteCurrentRepayment = () => {
+    if (!repayment?.event) return;
+    requestDeleteRepayment(repayment.loan, repayment.event);
+    setRepayment(null);
+  };
+
   return (
     <>
       <ResponsiveOverlay
@@ -180,6 +186,7 @@ export function LoanOverlays({
         {detailLoanId && (
           <LoanDetail
             loanId={detailLoanId}
+            variant={variant}
             onBack={() => onDetailLoanIdChange(null)}
             onRepay={(loan) => setRepayment({ loan })}
             onEditRepayment={(loan, event) => setRepayment({ loan, event })}
@@ -204,6 +211,7 @@ export function LoanOverlays({
             loan={repayment.loan}
             initial={repayment.event}
             accounts={accounts}
+            onDelete={repayment.event ? requestDeleteCurrentRepayment : undefined}
             onSubmit={async (input) => {
               if (repayment.event)
                 await updateRepayment.mutateAsync({

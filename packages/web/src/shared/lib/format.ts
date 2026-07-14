@@ -9,6 +9,19 @@ export function formatVND(amount: number, withSymbol = true): string {
   return withSymbol ? `${grouped} ₫` : grouped;
 }
 
+/** Compacts only values that would overflow constrained dashboard cards. */
+export function formatCompactVND(amount: number, lang: Lang = "vi"): string {
+  const exact = formatVND(amount);
+  if (exact.length <= 13) return exact;
+
+  const locale = lang === "vi" ? "vi-VN" : "en-US";
+  const compact = new Intl.NumberFormat(locale, {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(Math.round(Math.abs(amount)));
+  return `${compact} ₫`;
+}
+
 // signed amount with +/- for income/expense, ± for transfer neutral
 export function formatSigned(amount: number, type: TxType): string {
   const base = formatVND(amount);

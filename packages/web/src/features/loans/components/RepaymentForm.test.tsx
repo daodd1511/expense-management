@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { Account, LoanDetail } from "@wallet/shared";
+import type { Account, LoanDetail, LoanEvent } from "@wallet/shared";
 import { RepaymentForm } from "./RepaymentForm";
 
 vi.mock("@/core/i18n", () => ({ useLang: () => ({ t: (key: string) => key }) }));
@@ -48,6 +48,13 @@ const loan: LoanDetail = {
 const accounts: Account[] = [
   { id: "account-1", name: "Cash", kind: "cash", openingBalance: 0, balance: 0 },
 ];
+const repayment: LoanEvent = {
+  id: "repayment-1",
+  loanId: "loan-1",
+  kind: "repayment",
+  amount: 400_000,
+  date: "2026-07-10",
+};
 
 describe("RepaymentForm", () => {
   it("defaults to the outstanding balance and submits a selected account", async () => {
@@ -65,5 +72,27 @@ describe("RepaymentForm", () => {
         expect.objectContaining({ amount: 600_000, accountId: "account-1" }),
       ),
     );
+  });
+
+  it("offers deletion only while editing an existing repayment", () => {
+    const onDelete = vi.fn();
+    const { rerender } = render(
+      <RepaymentForm
+        loan={loan}
+        initial={repayment}
+        accounts={accounts}
+        onSubmit={vi.fn()}
+        onDelete={onDelete}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "loans.deleteRepayment" }));
+    expect(onDelete).toHaveBeenCalledOnce();
+
+    rerender(
+      <RepaymentForm loan={loan} accounts={accounts} onSubmit={vi.fn()} onCancel={vi.fn()} />,
+    );
+    expect(screen.queryByRole("button", { name: "loans.deleteRepayment" })).toBeNull();
   });
 });

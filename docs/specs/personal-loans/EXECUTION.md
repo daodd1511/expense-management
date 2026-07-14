@@ -5,12 +5,12 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 4 — done
+- Current phase: All phases complete
 - Phase 1 — Persistence and loan lifecycle API: done
 - Phase 2 — Financial position and dashboard API: done
 - Phase 3 — Web loan data layer: done
 - Phase 4 — Responsive Loans UI: done
-- Phase 5 — App integration: pending
+- Phase 5 — App integration: done
 - Verification debt: none
 
 Mode: goal.
@@ -106,16 +106,17 @@ Branch: `personal-loans/phase-5-app-integration` (off `personal-loans/phase-4-lo
 
 Connect Loans to routing, navigation, transaction history, dashboard, reports, and global loading without changing mobile primary navigation.
 
-- [ ] Add `/loans` and `/loans/$loanId` in `packages/web/src/routing/{router,app-pages,app-route-state}.tsx` with stable transaction-to-loan deep links.
-- [ ] Add desktop sidebar/command-palette and mobile Other-hub entries in `packages/web/src/layouts/{desktop/DesktopApp,mobile/MobileApp}.tsx` and `packages/web/src/routing/app-pages.tsx`.
-- [ ] Render read-only loan rows/filter/deep links in `packages/web/src/features/transactions/components/{DesktopTransactionsTable,MobileTransactions,TransactionRow}.tsx` and transaction view state.
-- [ ] Add net-worth/loan summary and historical trend integration in `packages/web/src/features/dashboard/components/{DesktopDashboard,MobileHome}.tsx`.
-- [ ] Add Financial Position selection/rendering in `packages/web/src/features/reports/components/{ReportsPage,FinancialPositionReport}.tsx` and `report-types.ts`; include loan summaries in global app-data/pull-to-refresh paths.
-- [ ] Add routing, navigation, transaction-row, dashboard, and Financial Position coverage in the corresponding `packages/web/src/{routing,layouts,features}/**/*.test.tsx` files.
+- [x] Add lightweight loan-event link metadata in `packages/shared/src/dtos/loan.dto.ts`, `packages/api/src/features/loans/{routes,controller,service}.ts`, and `packages/web/src/features/loans/{db,queries}.ts` so transaction rows resolve event labels and `/loans/$loanId` without fetching every loan detail. (amended 2026-07-14)
+- [x] Add `/loans` and `/loans/$loanId` in `packages/web/src/routing/{router,app-pages,app-route-state}.tsx` with stable transaction-to-loan deep links.
+- [x] Add desktop sidebar/command-palette and mobile Other-hub entries in `packages/web/src/layouts/{desktop/DesktopApp,mobile/MobileApp}.tsx` and `packages/web/src/routing/app-pages.tsx`.
+- [x] Render read-only loan rows/filter/deep links in `packages/web/src/features/transactions/components/{DesktopTransactionsTable,MobileTransactions,TransactionRow}.tsx` and transaction view state.
+- [x] Add net-worth/loan summary and historical trend integration in `packages/web/src/features/dashboard/components/{DesktopDashboard,MobileHome}.tsx`.
+- [x] Add Financial Position selection/rendering in `packages/web/src/features/reports/components/{ReportsPage,FinancialPositionReport}.tsx` and `report-types.ts`; include loan summaries in global app-data/pull-to-refresh paths.
+- [x] Add routing, navigation, transaction-row, dashboard, and Financial Position coverage in the corresponding `packages/web/src/{routing,layouts,features}/**/*.test.tsx` files.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web exec vitest run src/routing/router.test.ts src/layouts/mobile/MobileApp.test.tsx src/features/transactions/components/TransactionRow.test.tsx src/features/transactions/components/DesktopTransactionsTable.test.tsx src/features/reports/components/FinancialPositionReport.test.tsx src/features/dashboard/components/DesktopDashboard.test.tsx`
+- [x] `pnpm --filter @wallet/shared exec tsc --noEmit && pnpm --filter @wallet/api typecheck && pnpm --filter @wallet/web typecheck` (amended 2026-07-14)
+- [x] `pnpm --filter @wallet/api exec vitest run src/features/loans/loans.test.ts && pnpm --filter @wallet/web exec vitest run src/routing/router.test.ts src/layouts/mobile/MobileApp.test.tsx src/features/transactions/components/TransactionRow.test.tsx src/features/transactions/components/DesktopTransactionsTable.test.tsx src/features/reports/components/FinancialPositionReport.test.tsx src/features/dashboard/components/DesktopDashboard.test.tsx` (amended 2026-07-14)
 
 **Review checklist (user, at PR review):**
 - [ ] Verify Loans is reachable from desktop, mobile Other, dashboard, and loan transaction rows while the mobile bottom nav remains unchanged.

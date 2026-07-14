@@ -2,12 +2,14 @@ import { z } from "zod";
 import { apiJson } from "@/core/api";
 import {
   loanDetailSchema,
+  loanEventLinkSchema,
   loanSummarySchema,
   personSchema,
   personSummarySchema,
   type CloseLoan,
   type DisbursedLoanCreate,
   type LoanDetail,
+  type LoanEventLink,
   type LoanDisbursementPatch,
   type LoanMetadataPatch,
   type LoanRepaymentCreate,
@@ -25,6 +27,7 @@ const personResponseSchema = z.object({ data: personSchema });
 const loanSummariesResponseSchema = z.object({ data: z.array(loanSummarySchema) });
 const personSummariesResponseSchema = z.object({ data: z.array(personSummarySchema) });
 const loanDetailResponseSchema = z.object({ data: loanDetailSchema });
+const loanEventLinksResponseSchema = z.object({ data: z.array(loanEventLinkSchema) });
 const okResponseSchema = z.object({ ok: z.literal(true) });
 
 function withToday(path: string, today: string): string {
@@ -77,6 +80,11 @@ export async function fetchLoanDetail(id: string, today: string): Promise<LoanDe
     withToday(`/loans/${encodeURIComponent(id)}`, today),
     loanDetailResponseSchema,
   );
+  return response.data;
+}
+
+export async function fetchLoanEventLinks(): Promise<LoanEventLink[]> {
+  const response = await apiJson("/loans/event-links", loanEventLinksResponseSchema);
   return response.data;
 }
 

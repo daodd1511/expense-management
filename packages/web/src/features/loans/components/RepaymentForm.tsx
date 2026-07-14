@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trash2 } from "lucide-react";
 import { useLang } from "@/core/i18n";
 import { AccountSelect } from "@/features/accounts/components/AccountSelect";
 import { AmountField } from "@/shared/components/AmountField";
@@ -6,6 +7,7 @@ import { FormErrorBanner } from "@/shared/components/FormErrorBanner";
 import { FormFooterBar } from "@/shared/components/FormFooterBar";
 import { SheetFormHeader } from "@/shared/components/SheetFormHeader";
 import { DatePicker } from "@/shared/components/ui/date-picker";
+import { Button } from "@/shared/components/ui/button";
 import { Label } from "@/shared/components/ui/input";
 import { useFormSubmit } from "@/shared/hooks/useFormSubmit";
 import { todayLocalIso } from "@/shared/lib/date";
@@ -16,12 +18,14 @@ export function RepaymentForm({
   initial,
   accounts,
   onSubmit,
+  onDelete,
   onCancel,
 }: {
   loan: LoanDetail;
   initial?: LoanEvent;
   accounts: readonly Account[];
   onSubmit: (input: LoanRepaymentCreate) => Promise<void>;
+  onDelete?: () => void;
   onCancel: () => void;
 }) {
   const { t } = useLang();
@@ -77,6 +81,19 @@ export function RepaymentForm({
       {errorMessage && (
         <div className="px-4 pt-3 sm:px-5">
           <FormErrorBanner message={errorMessage} />
+        </div>
+      )}
+      {initial && onDelete && (
+        <div className="px-4 pt-4 sm:px-5">
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full justify-center text-expense hover:bg-expense-muted hover:text-expense"
+            onClick={onDelete}
+          >
+            <Trash2 className="size-4" />
+            {t("loans.deleteRepayment")}
+          </Button>
         </div>
       )}
       <FormFooterBar

@@ -12,7 +12,13 @@ export interface TransactionsViewState {
 }
 
 const MONTH_PATTERN = /^\d{4}-\d{2}$/;
-const TYPE_VALUES: readonly TransactionFilterType[] = ["all", "expense", "income", "transfer"];
+const TYPE_VALUES: readonly TransactionFilterType[] = [
+  "all",
+  "expense",
+  "income",
+  "transfer",
+  "loan",
+];
 
 export function defaultTransactionsViewState(): TransactionsViewState {
   return {

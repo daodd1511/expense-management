@@ -6,6 +6,7 @@ import { FormErrorBanner } from "@/shared/components/FormErrorBanner";
 import { FormFooterBar } from "@/shared/components/FormFooterBar";
 import { SheetFormHeader } from "@/shared/components/SheetFormHeader";
 import { DatePicker } from "@/shared/components/ui/date-picker";
+import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Input, Label, Textarea } from "@/shared/components/ui/input";
 import {
   Select,
@@ -179,20 +180,20 @@ export function LoanForm({
           )}
         </div>
 
-        <label className="flex items-center justify-between gap-4 rounded-xl border border-border p-3">
-          <span>
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-3">
+          <label htmlFor="loan-opening">
             <span className="block text-sm font-medium">{t("loans.trackExisting")}</span>
             <span className="block text-xs text-muted-foreground">
               {t("loans.trackExistingHint")}
             </span>
-          </span>
-          <input
-            type="checkbox"
+          </label>
+          <Checkbox
+            id="loan-opening"
             checked={opening}
-            onChange={(event) => setOpening(event.target.checked)}
-            className="size-4 accent-primary"
+            onCheckedChange={setOpening}
+            aria-label={t("loans.trackExisting")}
           />
-        </label>
+        </div>
 
         {!opening && (
           <div className="flex flex-col gap-2">

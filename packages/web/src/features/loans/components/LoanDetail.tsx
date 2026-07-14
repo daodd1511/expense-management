@@ -10,11 +10,14 @@ import {
 import { useLang } from "@/core/i18n";
 import { useLoanDetail } from "@/features/loans/queries";
 import { Button } from "@/shared/components/ui/button";
+import { useSwipeActions } from "@/shared/hooks/useSwipeActions";
 import { formatShortDate, formatVND } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 import type { LoanDetail as LoanDetailModel, LoanEvent } from "@wallet/shared";
 import { isOpenLoan, LOAN_EVENT_KEYS } from "./loan-ui";
 import { LoanStatusBadge } from "./LoanOverviewParts";
+
+const SWIPE_ACTION_WIDTH = 128;
 
 function eventCashTone(loan: LoanDetailModel, event: LoanEvent) {
   if (event.kind === "opening" || event.kind === "write_off" || event.kind === "forgiveness") {
@@ -28,6 +31,7 @@ function eventCashTone(loan: LoanDetailModel, event: LoanEvent) {
 
 export function LoanDetail({
   loanId,
+  variant,
   onBack,
   onRepay,
   onEditRepayment,
@@ -38,6 +42,7 @@ export function LoanDetail({
   onDelete,
 }: {
   loanId: string;
+  variant: "mobile" | "desktop";
   onBack: () => void;
   onRepay: (loan: LoanDetailModel) => void;
   onEditRepayment: (loan: LoanDetailModel, event: LoanEvent) => void;
@@ -134,44 +139,22 @@ export function LoanDetail({
             <CalendarDays className="size-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold">{t("loans.eventHistory")}</h3>
           </div>
-          <ol className="relative ml-2 border-l border-border pl-5">
+          <ol
+            data-testid="loan-event-timeline"
+            className="relative before:absolute before:inset-y-0 before:left-2 before:w-px before:-translate-x-1/2 before:bg-border before:content-['']"
+          >
             {loan.events.map((event) => (
-              <li key={event.id} className="relative pb-5 last:pb-0">
-                <span className="absolute top-1 -left-[1.52rem] size-2.5 rounded-full border-2 border-card bg-primary" />
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium">{t(LOAN_EVENT_KEYS[event.kind])}</p>
-                    <p className="text-xs text-muted-foreground">{formatShortDate(event.date)}</p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span
-                      className={cn("tabular text-sm font-semibold", eventCashTone(loan, event))}
-                    >
-                      {formatVND(event.amount)}
-                    </span>
-                    {event.kind === "repayment" && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => onEditRepayment(loan, event)}
-                          aria-label={t("loans.editRepayment")}
-                          className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
-                        >
-                          <Pencil className="size-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onDeleteRepayment(loan, event)}
-                          aria-label={t("loans.deleteRepayment")}
-                          className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-expense-muted hover:text-expense"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </li>
+              <LoanEventHistoryRow
+                key={event.id}
+                loan={loan}
+                event={event}
+                variant={variant}
+                editLabel={t("loans.editRepayment")}
+                deleteLabel={t("loans.deleteRepayment")}
+                eventLabel={t(LOAN_EVENT_KEYS[event.kind])}
+                onEdit={() => onEditRepayment(loan, event)}
+                onDelete={() => onDeleteRepayment(loan, event)}
+              />
             ))}
           </ol>
         </section>
@@ -184,42 +167,179 @@ export function LoanDetail({
         )}
       </div>
 
-      <footer className="sticky bottom-0 grid gap-2 border-t border-border bg-card px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5">
+      <footer className="sticky bottom-0 flex flex-col gap-2 border-t border-border bg-card px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5">
         {open && (
           <Button size="lg" onClick={() => onRepay(loan)}>
             <Plus className="size-4" />
             {t("loans.recordRepayment")}
           </Button>
         )}
-        <div className="grid grid-cols-2 gap-2">
-          {canCorrectOrigin && (
-            <Button variant="outline" onClick={() => onCorrectOrigin(loan)}>
-              <Pencil className="size-4" />
-              {t("loans.correctOrigin")}
+        <div className="flex flex-col gap-2">
+          <div data-testid="loan-lifecycle-actions" className="flex flex-wrap gap-2">
+            {canCorrectOrigin && (
+              <Button
+                variant="outline"
+                className="h-auto min-h-9 min-w-32 flex-1 whitespace-normal py-2 text-center leading-tight"
+                onClick={() => onCorrectOrigin(loan)}
+              >
+                <Pencil className="size-4" />
+                {t("loans.correctOrigin")}
+              </Button>
+            )}
+            {open && (
+              <Button
+                variant="outline"
+                className="h-auto min-h-9 min-w-32 flex-1 whitespace-normal py-2 text-center leading-tight"
+                onClick={() => onCloseLoan(loan)}
+              >
+                <CircleDollarSign className="size-4" />
+                {loan.direction === "lending" ? t("loans.writeOff") : t("loans.forgive")}
+              </Button>
+            )}
+            {closed && (
+              <Button
+                variant="outline"
+                className="h-auto min-h-9 min-w-32 flex-1 whitespace-normal py-2 text-center leading-tight"
+                onClick={() => onReopen(loan)}
+              >
+                <RotateCcw className="size-4" />
+                {t("loans.reopen")}
+              </Button>
+            )}
+          </div>
+          <div className="flex">
+            <Button
+              variant="ghost"
+              className="w-full justify-center text-expense hover:bg-expense-muted hover:text-expense"
+              onClick={() => onDelete(loan)}
+            >
+              <Trash2 className="size-4" />
+              {t("loans.deleteLoan")}
             </Button>
-          )}
-          {open && (
-            <Button variant="outline" onClick={() => onCloseLoan(loan)}>
-              <CircleDollarSign className="size-4" />
-              {loan.direction === "lending" ? t("loans.writeOff") : t("loans.forgive")}
-            </Button>
-          )}
-          {closed && (
-            <Button variant="outline" onClick={() => onReopen(loan)}>
-              <RotateCcw className="size-4" />
-              {t("loans.reopen")}
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            className="text-expense hover:bg-expense-muted hover:text-expense"
-            onClick={() => onDelete(loan)}
-          >
-            <Trash2 className="size-4" />
-            {t("loans.deleteLoan")}
-          </Button>
+          </div>
         </div>
       </footer>
     </div>
+  );
+}
+
+function LoanEventHistoryRow({
+  loan,
+  event,
+  variant,
+  eventLabel,
+  editLabel,
+  deleteLabel,
+  onEdit,
+  onDelete,
+}: {
+  loan: LoanDetailModel;
+  event: LoanEvent;
+  variant: "mobile" | "desktop";
+  eventLabel: string;
+  editLabel: string;
+  deleteLabel: string;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { offset, isDragging, bind } = useSwipeActions(SWIPE_ACTION_WIDTH);
+  const isRepayment = event.kind === "repayment";
+  const swipe = variant === "mobile" && isRepayment;
+  const eventSummary = (
+    <>
+      <span className="min-w-0 flex-1 text-left">
+        <span className="block truncate text-sm font-medium">{eventLabel}</span>
+        <span className="block text-xs text-muted-foreground">{formatShortDate(event.date)}</span>
+      </span>
+      <span
+        data-testid={`loan-event-amount-${event.id}`}
+        className={cn(
+          "tabular w-32 shrink-0 whitespace-nowrap text-right text-sm font-semibold",
+          eventCashTone(loan, event),
+        )}
+      >
+        {formatVND(event.amount)}
+      </span>
+    </>
+  );
+  const mainContent =
+    variant === "desktop" && isRepayment ? (
+      <button
+        type="button"
+        data-testid={`loan-event-main-${event.id}`}
+        onClick={onEdit}
+        className="flex min-w-0 flex-1 items-start justify-between gap-3 rounded-lg text-left hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+      >
+        {eventSummary}
+      </button>
+    ) : (
+      <div
+        data-testid={`loan-event-main-${event.id}`}
+        className="flex min-w-0 flex-1 items-start justify-between gap-3"
+      >
+        {eventSummary}
+      </div>
+    );
+
+  const content = (
+    <div
+      data-testid={`loan-event-${event.id}`}
+      className={cn(
+        "relative z-10 flex min-h-10 w-full items-start gap-1 bg-card pr-1",
+        swipe && "touch-pan-y",
+      )}
+      style={
+        swipe
+          ? {
+              transform: `translateX(${offset}px)`,
+              transition: isDragging ? "none" : "transform 0.2s ease-out",
+            }
+          : undefined
+      }
+      onTouchStart={swipe ? bind.onTouchStart : undefined}
+      onTouchMove={swipe ? bind.onTouchMove : undefined}
+      onTouchEnd={swipe ? bind.onTouchEnd : undefined}
+      onTouchCancel={swipe ? bind.onTouchCancel : undefined}
+    >
+      {mainContent}
+    </div>
+  );
+
+  return (
+    <li className="grid grid-cols-[1rem_minmax(0,1fr)] gap-3 pb-5 last:pb-0">
+      <div className="relative" aria-hidden="true">
+        <span
+          data-testid={`loan-event-marker-${event.id}`}
+          className="absolute top-1 left-1/2 z-10 size-2.5 -translate-x-1/2 rounded-full bg-primary"
+        />
+      </div>
+      <div className="min-w-0">
+        {swipe ? (
+          <div className="relative overflow-hidden">
+            <div className="absolute inset-y-0 right-0 flex">
+              <button
+                type="button"
+                onClick={onEdit}
+                aria-label={editLabel}
+                className="flex w-16 items-center justify-center bg-accent text-accent-foreground"
+              >
+                <Pencil className="size-4" />
+              </button>
+              <button
+                type="button"
+                onClick={onDelete}
+                aria-label={deleteLabel}
+                className="flex w-16 items-center justify-center bg-expense text-expense-foreground"
+              >
+                <Trash2 className="size-4" />
+              </button>
+            </div>
+            {content}
+          </div>
+        ) : (
+          content
+        )}
+      </div>
+    </li>
   );
 }

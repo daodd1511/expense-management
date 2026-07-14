@@ -20,6 +20,7 @@ const TITLE_KEY_BY_SECTION: Record<AppSection, TranslationKey> = {
   budgets: "nav.budgets",
   subscriptions: "nav.subscriptions",
   accounts: "nav.accounts",
+  loans: "nav.loans",
   other: "nav.other",
   settings: "nav.settings",
   "settings-categories": "settings.categories",

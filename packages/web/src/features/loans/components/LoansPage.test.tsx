@@ -56,7 +56,6 @@ describe("LoansPage", () => {
 
   it("renders the desktop person-first ledger with KPIs", () => {
     render(<LoansPage />);
-    expect(screen.getByText("loans.ledgerLabel")).toBeTruthy();
     expect(screen.getAllByText("Mai").length).toBeGreaterThan(0);
     expect(screen.getAllByText("loans.owedToUser").length).toBeGreaterThan(0);
     expect(screen.getAllByText("loans.statusOverdue").length).toBeGreaterThan(0);
@@ -65,7 +64,6 @@ describe("LoansPage", () => {
   it("renders the purpose-built mobile card layout below the desktop breakpoint", () => {
     mocks.isDesktop = false;
     render(<LoansPage />);
-    expect(screen.getByText("loans.ledgerLabel")).toBeTruthy();
     expect(screen.getAllByText("Mai").length).toBeGreaterThan(0);
     expect(screen.getByLabelText("loans.newLoan")).toBeTruthy();
   });

@@ -1,5 +1,5 @@
 import { AlertCircle, Plus, UsersRound, WalletCards } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLang } from "@/core/i18n";
 import { useLoanSummaries, usePersonSummaries } from "@/features/loans/queries";
 import { MobilePageContainer } from "@/shared/components/MobilePageContainer";
@@ -16,7 +16,17 @@ import {
 import { LoanFilters, LoanKpiGrid, LoanSummaryRow } from "./LoanOverviewParts";
 import { LoanOverlays } from "./LoanOverlays";
 
-export function MobileLoans() {
+export function MobileLoans({
+  loanId,
+  createIntentToken,
+  onCreateIntentHandled,
+  onLoanIdChange,
+}: {
+  loanId?: string;
+  createIntentToken?: string;
+  onCreateIntentHandled?: () => void;
+  onLoanIdChange?: (loanId: string | null) => void;
+}) {
   const { t } = useLang();
   const loansQuery = useLoanSummaries();
   const peopleQuery = usePersonSummaries();
@@ -24,12 +34,30 @@ export function MobileLoans() {
   const people = peopleQuery.data ?? [];
   const [direction, setDirection] = useState<LoanDirectionFilter>("all");
   const [status, setStatus] = useState<LoanStatusFilter>("open-group");
-  const [detailLoanId, setDetailLoanId] = useState<string | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
+  const [detailLoanId, setDetailLoanIdState] = useState<string | null>(
+    loanId ?? null,
+  );
+  const [createOpen, setCreateOpen] = useState(Boolean(createIntentToken));
+  const [handledCreateIntent, setHandledCreateIntent] = useState<string | null>(
+    null,
+  );
   const filteredLoans = filterLoans(loans, direction, status);
   const grouped = loansByPerson(filteredLoans);
   const visiblePeople = people.filter((person) => grouped.has(person.id));
   const kpis = loanKpis(loans);
+
+  const setDetailLoanId = (nextLoanId: string | null) => {
+    setDetailLoanIdState(nextLoanId);
+    onLoanIdChange?.(nextLoanId);
+  };
+
+  useEffect(() => setDetailLoanIdState(loanId ?? null), [loanId]);
+  useEffect(() => {
+    if (!createIntentToken || handledCreateIntent === createIntentToken) return;
+    setCreateOpen(true);
+    setHandledCreateIntent(createIntentToken);
+    onCreateIntentHandled?.();
+  }, [createIntentToken, handledCreateIntent, onCreateIntentHandled]);
 
   if (loansQuery.isPending || peopleQuery.isPending) {
     return (
@@ -65,12 +93,9 @@ export function MobileLoans() {
   return (
     <MobilePageContainer>
       <header className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-            {t("loans.ledgerLabel")}
-          </p>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight">{t("loans.title")}</h1>
-        </div>
+        <h1 className="mt-1 text-xl font-semibold tracking-tight">
+          {t("loans.title")}
+        </h1>
         <Button
           size="icon"
           aria-label={t("loans.newLoan")}
@@ -95,7 +120,9 @@ export function MobileLoans() {
           </span>
           <div>
             <h2 className="text-sm font-semibold">{t("loans.emptyTitle")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{t("loans.emptyMessage")}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t("loans.emptyMessage")}
+            </p>
           </div>
           <button
             type="button"
@@ -123,13 +150,19 @@ export function MobileLoans() {
                     </span>
                     {person.overdueCount > 0 && (
                       <span className="rounded-full bg-expense px-2 py-0.5 text-xs font-bold text-expense-foreground">
-                        {t("loans.overdueCountValue", { n: person.overdueCount })}
+                        {t("loans.overdueCountValue", {
+                          n: person.overdueCount,
+                        })}
                       </span>
                     )}
                   </div>
                   <div className="tabular mt-2 flex gap-4 text-xs">
-                    <span className="text-income">+{formatVND(person.lendingTotal)}</span>
-                    <span className="text-expense">−{formatVND(person.borrowingTotal)}</span>
+                    <span className="text-income">
+                      +{formatVND(person.lendingTotal)}
+                    </span>
+                    <span className="text-expense">
+                      −{formatVND(person.borrowingTotal)}
+                    </span>
                     <span className="ml-auto text-muted-foreground">
                       {t("loans.openCount", { n: person.openCount })}
                     </span>
