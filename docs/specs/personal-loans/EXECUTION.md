@@ -5,11 +5,11 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 3 — done
+- Current phase: 4 — in-progress
 - Phase 1 — Persistence and loan lifecycle API: done
 - Phase 2 — Financial position and dashboard API: done
 - Phase 3 — Web loan data layer: done
-- Phase 4 — Responsive Loans UI: pending
+- Phase 4 — Responsive Loans UI: in-progress
 - Phase 5 — App integration: pending
 - Verification debt: none
 
@@ -85,9 +85,9 @@ Branch: `personal-loans/phase-4-loans-ui` (off `personal-loans/phase-3-web-data`
 
 Deliver the dedicated person-first desktop and mobile Loans experiences using the established data layer.
 
-- [ ] Add person-first list, filters, KPIs, and empty/loading/error states in `packages/web/src/features/loans/components/{DesktopLoans,MobileLoans,LoansPage}.tsx`.
-- [ ] Add loan detail, event history, origin/repayment forms, opening-loan mode, confirmation actions, and desktop/mobile overlays in `packages/web/src/features/loans/components/`.
-- [ ] Add Loans navigation/form/state/validation/confirmation translations in `packages/web/src/core/i18n.tsx`.
+- [x] Add person-first list, filters, KPIs, and empty/loading/error states in `packages/web/src/features/loans/components/{DesktopLoans,MobileLoans,LoansPage}.tsx`.
+- [x] Add loan detail, event history, origin/repayment forms, opening-loan mode, confirmation actions, and desktop/mobile overlays in `packages/web/src/features/loans/components/`.
+- [x] Add Loans navigation/form/state/validation/confirmation translations in `packages/web/src/core/i18n.tsx`.
 - [ ] Add focused UI coverage in `packages/web/src/features/loans/components/{LoansPage,LoanDetail,LoanForm,RepaymentForm}.test.tsx`.
 
 **Agent gate (hard):**
