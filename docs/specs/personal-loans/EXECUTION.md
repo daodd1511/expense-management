@@ -5,11 +5,11 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 4 — in-progress
+- Current phase: 4 — done
 - Phase 1 — Persistence and loan lifecycle API: done
 - Phase 2 — Financial position and dashboard API: done
 - Phase 3 — Web loan data layer: done
-- Phase 4 — Responsive Loans UI: in-progress
+- Phase 4 — Responsive Loans UI: done
 - Phase 5 — App integration: pending
 - Verification debt: none
 
@@ -88,11 +88,11 @@ Deliver the dedicated person-first desktop and mobile Loans experiences using th
 - [x] Add person-first list, filters, KPIs, and empty/loading/error states in `packages/web/src/features/loans/components/{DesktopLoans,MobileLoans,LoansPage}.tsx`.
 - [x] Add loan detail, event history, origin/repayment forms, opening-loan mode, confirmation actions, and desktop/mobile overlays in `packages/web/src/features/loans/components/`.
 - [x] Add Loans navigation/form/state/validation/confirmation translations in `packages/web/src/core/i18n.tsx`.
-- [ ] Add focused UI coverage in `packages/web/src/features/loans/components/{LoansPage,LoanDetail,LoanForm,RepaymentForm}.test.tsx`.
+- [x] Add focused UI coverage in `packages/web/src/features/loans/components/{LoansPage,LoanDetail,LoanForm,RepaymentForm}.test.tsx`.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web exec vitest run src/features/loans/components/LoansPage.test.tsx src/features/loans/components/LoanDetail.test.tsx src/features/loans/components/LoanForm.test.tsx src/features/loans/components/RepaymentForm.test.tsx`
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm --filter @wallet/web exec vitest run src/features/loans/components/LoansPage.test.tsx src/features/loans/components/LoanDetail.test.tsx src/features/loans/components/LoanForm.test.tsx src/features/loans/components/RepaymentForm.test.tsx`
 
 **Review checklist (user, at PR review):**
 - [ ] On desktop and mobile, create a disbursed loan and an opening loan, then record partial and final repayments through different accounts.
