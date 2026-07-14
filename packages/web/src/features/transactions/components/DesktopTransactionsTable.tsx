@@ -41,6 +41,7 @@ import type { Category, Transaction } from "@/core/types";
 import { CategoryBreadcrumb } from "@/features/categories/components/CategoryBreadcrumb";
 import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
 import { Button } from "@/shared/components/ui/button";
+import { Checkbox } from "@/shared/components/ui/checkbox";
 import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
 import { Input } from "@/shared/components/ui/input";
 import { TransactionsSkeleton } from "@/shared/components/Skeleton";
@@ -223,22 +224,18 @@ export function DesktopTransactionsTable({
         id: "select",
         enableSorting: false,
         header: ({ table }) => (
-          <input
-            type="checkbox"
+          <Checkbox
             checked={table.getIsAllPageRowsSelected()}
-            onChange={table.getToggleAllPageRowsSelectedHandler()}
+            onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked)}
             aria-label={t("tx.selectAll")}
-            className="size-4 accent-primary"
           />
         ),
         cell: ({ row }) =>
           row.original.transaction.type === "loan" ? null : (
-            <input
-              type="checkbox"
+            <Checkbox
               checked={row.getIsSelected()}
-              onChange={row.getToggleSelectedHandler()}
+              onCheckedChange={(checked) => row.toggleSelected(checked)}
               aria-label={t("tx.selectItem", { name: row.original.categoryLabel })}
-              className="size-4 accent-primary"
             />
           ),
       },
