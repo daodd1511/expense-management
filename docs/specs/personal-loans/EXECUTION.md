@@ -5,10 +5,10 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 2 — done
+- Current phase: 3 — in-progress
 - Phase 1 — Persistence and loan lifecycle API: done
 - Phase 2 — Financial position and dashboard API: done
-- Phase 3 — Web loan data layer: pending
+- Phase 3 — Web loan data layer: in-progress
 - Phase 4 — Responsive Loans UI: pending
 - Phase 5 — App integration: pending
 - Verification debt: none
@@ -65,9 +65,9 @@ Branch: `personal-loans/phase-3-web-data` (off `personal-loans/phase-2-financial
 
 Expose the completed loan and financial-position APIs through typed, invalidation-safe web queries before rendering new screens.
 
-- [ ] Add `packages/web/src/features/loans/{db,queries}.ts` for People, loan, event, and action requests with user-scoped list/detail query keys.
-- [ ] Extend `packages/web/src/features/{reports,dashboard}/{db,queries}.ts` for Financial Position and loan/net-worth summaries.
-- [ ] Update loan mutation invalidation in `packages/web/src/features/loans/queries.ts` for loans, People aggregates, transactions, accounts, dashboard, and Financial Position reports.
+- [x] Add `packages/web/src/features/loans/{db,queries}.ts` for People, loan, event, and action requests with user-scoped list/detail query keys.
+- [x] Extend `packages/web/src/features/{reports,dashboard}/{db,queries}.ts` for Financial Position and loan/net-worth summaries.
+- [x] Update loan mutation invalidation in `packages/web/src/features/loans/queries.ts` for loans, People aggregates, transactions, accounts, dashboard, and Financial Position reports.
 - [ ] Add query behavior coverage in `packages/web/src/features/{loans/queries.test.tsx,reports/queries.test.tsx,dashboard/queries.test.tsx}`.
 
 **Agent gate (hard):**
