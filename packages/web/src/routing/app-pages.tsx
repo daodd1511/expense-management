@@ -1,6 +1,6 @@
 import { startTransition } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { ArrowLeftRight, CalendarClock, Settings, Tags, Target } from "lucide-react";
+import { ArrowLeftRight, CalendarClock, HandCoins, Settings, Tags, Target } from "lucide-react";
 import { SubscriptionDueBanner } from "@/features/subscriptions/components/SubscriptionDueBanner";
 import { useTransactionOverlay } from "@/features/transactions/transaction-overlay";
 import { MobileAccounts } from "@/features/accounts/components/MobileAccounts";
@@ -14,6 +14,7 @@ import { DesktopSettings } from "@/features/settings/components/Settings";
 import { MobileSettings } from "@/features/settings/components/MobileSettings";
 import { DesktopSubscriptions } from "@/features/subscriptions/components/DesktopSubscriptions";
 import { MobileSubscriptions } from "@/features/subscriptions/components/MobileSubscriptions";
+import { LoansPage as LoansWorkspace } from "@/features/loans/components/LoansPage";
 import { ReportsPage as ReportsShell } from "@/features/reports/components/ReportsPage";
 import { DesktopTransactionsTable } from "@/features/transactions/components/DesktopTransactionsTable";
 import { MobileTransactions } from "@/features/transactions/components/MobileTransactions";
@@ -40,6 +41,8 @@ function useAppNavigation() {
     goBudgets: () => navigate({ to: "/budgets" }),
     goSubscriptions: () => navigate({ to: "/subscriptions" }),
     goAccounts: () => navigate({ to: "/accounts" }),
+    goLoans: (loanId?: string) =>
+      loanId ? navigate({ to: "/loans/$loanId", params: { loanId } }) : navigate({ to: "/loans" }),
     goSettings: () => navigate({ to: "/settings" }),
     goOther: () => navigate({ to: "/other" }),
   };
@@ -66,8 +69,10 @@ export function DashboardPage() {
           else if (section === "subscriptions") navigation.goSubscriptions();
           else if (section === "accounts") navigation.goAccounts();
           else if (section === "transactions") navigation.goTransactions(search);
+          else if (section === "loans") navigation.goLoans();
         }}
         onEdit={openEdit}
+        onOpenLoan={(loanId) => navigation.goLoans(loanId)}
       />
     );
   }
@@ -81,8 +86,10 @@ export function DashboardPage() {
           else if (section === "subscriptions") navigation.goSubscriptions();
           else if (section === "accounts") navigation.goAccounts();
           else if (section === "transactions") navigation.goTransactions(search);
+          else if (section === "loans") navigation.goLoans();
         }}
         onEdit={openEdit}
+        onOpenLoan={(loanId) => navigation.goLoans(loanId)}
       />
     </div>
   );
@@ -90,6 +97,7 @@ export function DashboardPage() {
 
 export function TransactionsPage() {
   const isDesktop = useIsDesktop();
+  const navigation = useAppNavigation();
   const location = useLocation();
   const navigate = useNavigate();
   const { openEdit } = useTransactionNavigation();
@@ -115,6 +123,7 @@ export function TransactionsPage() {
   return isDesktop ? (
     <DesktopTransactionsTable
       onEdit={openEdit}
+      onOpenLoan={(loanId) => navigation.goLoans(loanId)}
       month={state.month}
       query={state.query}
       type={state.type}
@@ -133,6 +142,7 @@ export function TransactionsPage() {
   ) : (
     <MobileTransactions
       onEdit={openEdit}
+      onOpenLoan={(loanId) => navigation.goLoans(loanId)}
       month={state.month}
       query={state.query}
       type={state.type}
@@ -149,7 +159,7 @@ export function TransactionsPage() {
 
 /** `createIntentToken`/`onCreateIntentHandled` for a desktop page reached via a `?create=`
  * URL token (the command palette's "New account/budget/subscription" actions). */
-function useCreateIntent(path: "/accounts" | "/budgets" | "/subscriptions") {
+function useCreateIntent(path: "/accounts" | "/budgets" | "/subscriptions" | "/loans") {
   const location = useLocation();
   const navigate = useNavigate();
   const { create } = validateCreateIntentSearch(location.search as Record<string, unknown>);
@@ -186,6 +196,19 @@ export function AccountsPage() {
     />
   ) : (
     <MobileAccounts />
+  );
+}
+
+export function LoansPage({ loanId }: { loanId?: string }) {
+  const createIntent = useCreateIntent("/loans");
+  const navigation = useAppNavigation();
+
+  return (
+    <LoansWorkspace
+      loanId={loanId}
+      {...createIntent}
+      onLoanIdChange={(nextLoanId) => navigation.goLoans(nextLoanId ?? undefined)}
+    />
   );
 }
 
@@ -226,6 +249,12 @@ export function OtherPage() {
       label: t("other.subscriptions"),
       description: t("other.subscriptionsDesc"),
       icon: CalendarClock,
+    },
+    {
+      to: "/loans",
+      label: t("nav.loans"),
+      description: t("other.loansDesc"),
+      icon: HandCoins,
     },
     {
       to: "/settings/categories",
@@ -281,6 +310,8 @@ export function AppRouteContent({ pathname }: { pathname: string }) {
       return <SubscriptionsPage />;
     case "accounts":
       return <AccountsPage />;
+    case "loans":
+      return <LoansPage />;
     case "other":
       return <OtherPage />;
     case "settings":

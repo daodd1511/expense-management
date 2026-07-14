@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const txTypeSchema = z.enum(["expense", "income", "transfer"]);
+export const txTypeSchema = z.enum(["expense", "income", "transfer", "loan"]);
 export type TxType = z.infer<typeof txTypeSchema>;
 
 export const langSchema = z.enum(["vi", "en"]);

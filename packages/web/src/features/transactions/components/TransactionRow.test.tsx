@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { TransactionRow } from "./TransactionRow";
 
@@ -27,11 +28,25 @@ vi.mock("@/features/transactions/queries", () => ({
   useDeleteTransaction: () => ({ mutateAsync: vi.fn() }),
 }));
 
+vi.mock("@/features/loans/queries", () => ({
+  useLoanEventLinkLookup: () => (eventId: string | null | undefined) =>
+    eventId === "event-1"
+      ? {
+          eventId,
+          loanId: "loan-1",
+          kind: "disbursement",
+          direction: "lending",
+          personName: "Alex",
+        }
+      : undefined,
+}));
+
 vi.mock("@/core/i18n", () => ({
   useLang: () => ({
     t: (key: string) =>
       ({
         "tx.transfer": "Transfer",
+        "tx.loanLent": "Lent",
       })[key] ?? key,
   }),
 }));
@@ -158,5 +173,32 @@ describe("TransactionRow", () => {
     );
     expect(screen.getByText("955.000 ₫")).toBeDefined();
     expect(screen.queryByText("825.000 ₫")).toBeNull();
+  });
+
+  it("opens the linked loan and never exposes swipe edit/delete actions", async () => {
+    const user = userEvent.setup();
+    const onOpenLoan = vi.fn();
+    const onClick = vi.fn();
+
+    render(
+      <TransactionRow
+        tx={makeTransaction({
+          type: "loan",
+          categoryId: null,
+          loanEventId: "event-1",
+          merchant: "Loan disbursement",
+        })}
+        onClick={onClick}
+        onOpenLoan={onOpenLoan}
+        swipe
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /Lent/i }));
+
+    expect(onOpenLoan).toHaveBeenCalledWith("loan-1");
+    expect(onClick).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Sửa" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Xóa" })).toBeNull();
   });
 });

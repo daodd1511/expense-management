@@ -267,6 +267,10 @@ re-deriving it.
 - When a decision materially affects behavior or scope and confidence is low, ask instead of guessing.
 - Never hardcode secrets or place sensitive client/personal data in source, logs, tests, or docs;
   use synthetic data in tests and redact sensitive values in output.
+- This repo (`daodd1511/expense-management`) lives under the personal GitHub account, not the
+  company one. Before any `gh` operation (`gh repo view`, `gh pr create`, etc.), check
+  `gh auth status`; if the active account is the company account (`daoduong-saritasa`), run
+  `gh auth switch --user daodd1511` first — otherwise `gh` can't resolve the repo.
 
 ### Monorepo Notes
 

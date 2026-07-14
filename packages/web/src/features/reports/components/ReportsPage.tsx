@@ -18,6 +18,7 @@ import { useIsDesktop } from "@/shared/hooks/useIsDesktop";
 import { DEFAULT_REPORT_TYPE_ID, REPORT_TYPES, type ReportTypeId } from "../report-types";
 import { currentReportMonth } from "../report-date";
 import { IncomeExpenseReport } from "./IncomeExpenseReport";
+import { FinancialPositionReport } from "./FinancialPositionReport";
 
 const REPORT_TYPE_OPTIONS = Object.values(REPORT_TYPES);
 
@@ -63,9 +64,7 @@ export function ReportsPage() {
 
           <div className="flex flex-wrap items-center gap-3">
             <ReportTypeSelect value={activeType} onChange={setActiveType} className="w-56" />
-            {activeType === "income-expense" && (
-              <TransactionsMonthSwitcher month={selectedMonth} onChange={handleMonthChange} />
-            )}
+            <TransactionsMonthSwitcher month={selectedMonth} onChange={handleMonthChange} />
           </div>
         </>
       ) : (
@@ -82,18 +81,17 @@ export function ReportsPage() {
           <CardContent className="grid gap-3">
             <p className="text-sm font-medium">{t(activeReportType.labelKey)}</p>
             <p className="text-sm text-muted-foreground">{t(activeReportType.descriptionKey)}</p>
-            {activeType === "income-expense" && (
-              <TransactionsMonthSwitcher
-                month={selectedMonth}
-                onChange={handleMonthChange}
-                className="justify-between sm:justify-start sm:self-start"
-              />
-            )}
+            <TransactionsMonthSwitcher
+              month={selectedMonth}
+              onChange={handleMonthChange}
+              className="justify-between sm:justify-start sm:self-start"
+            />
           </CardContent>
         </Card>
       )}
 
       {activeType === "income-expense" && <IncomeExpenseReport month={selectedMonth} />}
+      {activeType === "financial-position" && <FinancialPositionReport month={selectedMonth} />}
     </MobilePageContainer>
   );
 }

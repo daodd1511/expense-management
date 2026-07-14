@@ -397,6 +397,81 @@ describe("transactionsRouter", () => {
   });
 });
 
+describe("loan guards", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    getSupabase.mockReset();
+  });
+
+  it("rejects generic creation of type: loan", async () => {
+    const response = await makeApp().request("/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "loan",
+        amount: 1000,
+        categoryId: null,
+        accountId: "acc-1",
+        merchant: "AAA",
+        date: "2026-07-01",
+        cashFlowDirection: "outflow",
+        loanEventId: "event-1",
+      }),
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("rejects patching a loan-linked transaction with a 409, before the not-found check", async () => {
+    vi.spyOn(repository, "listLoanLinkedIds").mockResolvedValue(["tx-1"]);
+    const updateSpy = vi.spyOn(repository, "updateTransaction");
+
+    await expect(
+      service.updateTransaction("user-1", "tx-1", { amount: 500 }),
+    ).rejects.toMatchObject({
+      status: 409,
+    });
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+  it("rejects deleting a loan-linked transaction with a 409", async () => {
+    vi.spyOn(repository, "listLoanLinkedIds").mockResolvedValue(["tx-1"]);
+    const deleteSpy = vi.spyOn(repository, "deleteTransaction");
+
+    await expect(service.deleteTransaction("user-1", "tx-1")).rejects.toMatchObject({
+      status: 409,
+    });
+    expect(deleteSpy).not.toHaveBeenCalled();
+  });
+
+  it("rejects a mixed bulk delete when any id is loan-linked", async () => {
+    vi.spyOn(repository, "listLoanLinkedIds").mockResolvedValue(["tx-2"]);
+    const deleteSpy = vi.spyOn(repository, "deleteTransactions");
+
+    await expect(service.deleteTransactions("user-1", ["tx-1", "tx-2"])).rejects.toMatchObject({
+      status: 409,
+    });
+    expect(deleteSpy).not.toHaveBeenCalled();
+  });
+
+  it("allows patching an ordinary transaction unaffected", async () => {
+    vi.spyOn(repository, "listLoanLinkedIds").mockResolvedValue([]);
+    vi.spyOn(repository, "updateTransaction").mockResolvedValue({
+      id: "tx-1",
+      type: "expense",
+      amount: 500,
+      categoryId: "cat-1",
+      accountId: "acc-1",
+      merchant: "AAA",
+      date: "2026-07-01",
+    });
+
+    await expect(
+      service.updateTransaction("user-1", "tx-1", { amount: 500 }),
+    ).resolves.toMatchObject({ amount: 500 });
+  });
+});
+
 describe("transfer fees", () => {
   it("creates a positive transfer fee through the atomic repository operation", async () => {
     const created = {

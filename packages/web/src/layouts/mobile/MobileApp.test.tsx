@@ -32,6 +32,7 @@ vi.mock("@/core/i18n", () => ({
         "nav.home": "Home",
         "nav.accounts": "Accounts",
         "nav.reports": "Reports",
+        "nav.loans": "Loans",
         "nav.other": "Other",
         "nav.settings": "Settings",
         "nav.dashboard": "Dashboard",
@@ -68,6 +69,7 @@ describe("MobileApp", () => {
     const accounts = screen.getByRole("button", { name: "Accounts" });
     const reports = screen.getByRole("button", { name: "Reports" });
     const other = screen.getByRole("button", { name: "Other" });
+    expect(screen.queryByRole("button", { name: "Loans" })).toBeNull();
 
     expect(home.compareDocumentPosition(accounts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(

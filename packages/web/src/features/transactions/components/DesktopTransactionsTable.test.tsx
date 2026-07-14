@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { DesktopTransactionsTable } from "./DesktopTransactionsTable";
 
@@ -17,6 +18,22 @@ const transactions = [
     time: "12:15",
     receipt: null,
     subscriptionId: null,
+  },
+  {
+    id: "tx-loan",
+    type: "loan" as const,
+    amount: 300000,
+    balanceAfter: 550000,
+    categoryId: null,
+    accountId: "cash",
+    toAccountId: null,
+    merchant: "Loan disbursement",
+    note: null,
+    date: "2026-07-04",
+    time: "09:00",
+    receipt: null,
+    subscriptionId: null,
+    loanEventId: "event-1",
   },
 ];
 
@@ -43,6 +60,19 @@ vi.mock("@/features/accounts/queries", () => ({
     accounts.find((account) => account.id === id),
 }));
 
+vi.mock("@/features/loans/queries", () => ({
+  useLoanEventLinkLookup: () => (eventId: string | null | undefined) =>
+    eventId === "event-1"
+      ? {
+          eventId,
+          loanId: "loan-1",
+          kind: "disbursement",
+          direction: "lending",
+          personName: "Alex",
+        }
+      : undefined,
+}));
+
 vi.mock("@/features/categories/components/CategoryFilterSelect", () => ({
   CategoryFilterSelect: ({ ariaLabel }: { ariaLabel: string }) => (
     <div aria-label={ariaLabel}>category-filter</div>
@@ -67,7 +97,10 @@ vi.mock("@/core/i18n", () => ({
         "tx.filterExpense": "Expense",
         "tx.filterIncome": "Income",
         "tx.filterTransfer": "Transfer",
+        "tx.filterLoan": "Loan",
         "tx.transfer": "Transfer",
+        "tx.loanLent": "Lent",
+        "tx.openLoan": "Open loan detail",
         "tx.search": "Search transactions...",
         "tx.filterCategory": "Filter category",
         "tx.filterCategoryAll": "All categories",
@@ -85,6 +118,8 @@ vi.mock("@/core/i18n", () => ({
         "tx.pageNext": "Next",
         "tx.edit": "Edit",
         "tx.deleteOne": "Delete one",
+        "tx.selectAll": "Select all",
+        "tx.selectItem": `Select ${vars?.name ?? ""}`,
         "tx.notFound": "No transactions found.",
       })[key] ?? key,
   }),
@@ -160,12 +195,42 @@ describe("DesktopTransactionsTable", () => {
       />,
     );
 
-    expect(screen.getAllByRole("columnheader")).toHaveLength(6);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(7);
     expect(screen.getByText("Amount")).toBeDefined();
     expect(screen.queryByRole("columnheader", { name: /balance/i })).toBeNull();
 
     const amountCell = screen.getByText("−150.000 ₫").closest("td");
     expect(amountCell).not.toBeNull();
     expect(within(amountCell as HTMLTableCellElement).getByText("850.000 ₫")).toBeDefined();
+  });
+
+  it("renders loan rows as read-only deep links", async () => {
+    const user = userEvent.setup();
+    const onEdit = vi.fn();
+    const onOpenLoan = vi.fn();
+    render(
+      <DesktopTransactionsTable
+        onEdit={onEdit}
+        onOpenLoan={onOpenLoan}
+        month="2026-07"
+        query="Alex"
+        type="loan"
+        categoryIds={[]}
+        accountIds={[]}
+        onMonthChange={vi.fn()}
+        onQueryChange={vi.fn()}
+        onTypeChange={vi.fn()}
+        onCategoryChange={vi.fn()}
+        onAccountChange={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /Lent/i }));
+
+    expect(onOpenLoan).toHaveBeenCalledWith("loan-1");
+    expect(onEdit).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Delete one" })).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: /Lent/i })).toBeNull();
   });
 });

@@ -1,14 +1,19 @@
-import { ArrowLeftRight, Paperclip, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeftRight, HandCoins, Paperclip, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
 import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
 import { useSwipeActions } from "@/shared/hooks/useSwipeActions";
-import { amountColorClass, formatSigned } from "@/shared/lib/format";
 import { useLang } from "@/core/i18n";
 import { useCategoryLookup } from "@/features/categories/queries";
 import { CategoryBreadcrumb } from "@/features/categories/components/CategoryBreadcrumb";
 import { useAccountLookup } from "@/features/accounts/queries";
 import { useDeleteTransaction } from "@/features/transactions/queries";
+import { useLoanEventLinkLookup } from "@/features/loans/queries";
+import {
+  loanTransactionLabelKey,
+  transactionAmountClass,
+  transactionAmountLabel,
+} from "@/features/transactions/loan-transaction";
 import {
   getTransactionBalanceEntries,
   type TransactionBalanceEntry,
@@ -59,6 +64,13 @@ function Leading({ tx }: { tx: Transaction }) {
       </span>
     );
   }
+  if (tx.type === "loan") {
+    return (
+      <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-primary">
+        <HandCoins className="size-4" />
+      </span>
+    );
+  }
   const cat = getCategory(tx.categoryId);
   return (
     <span
@@ -80,15 +92,18 @@ export function TransactionRow({
   tx,
   balanceAccountId,
   onClick,
+  onOpenLoan,
   swipe = false,
 }: {
   tx: Transaction;
   balanceAccountId?: string;
   onClick?: () => void;
+  onOpenLoan?: (loanId: string) => void;
   swipe?: boolean;
 }) {
   const getCategory = useCategoryLookup();
   const getAccount = useAccountLookup();
+  const getLoanEventLink = useLoanEventLinkLookup();
   const deleteTx = useDeleteTransaction();
   const { t } = useLang();
   const { offset, isDragging, bind } = useSwipeActions(SWIPE_ACTION_WIDTH);
@@ -97,6 +112,8 @@ export function TransactionRow({
   const parentCat = cat?.parentId ? getCategory(cat.parentId) : undefined;
   const acc = getAccount(tx.accountId);
   const note = tx.note?.trim() || undefined;
+  const loanLink = getLoanEventLink(tx.loanEventId);
+  const handleOpen = tx.type === "loan" && loanLink ? () => onOpenLoan?.(loanLink.loanId) : onClick;
   const balanceEntries = getTransactionBalanceEntries(
     tx,
     balanceAccountId,
@@ -107,7 +124,9 @@ export function TransactionRow({
   const accountLine =
     tx.type === "transfer" ? `${acc?.name} → ${getAccount(tx.toAccountId)?.name}` : acc?.name;
   const subtitle =
-    [transferBalancePair ? undefined : accountLine, note].filter(Boolean).join(" · ") || undefined;
+    [loanLink?.personName, transferBalancePair ? undefined : accountLine, note]
+      .filter(Boolean)
+      .join(" · ") || undefined;
 
   const content = (
     <div
@@ -128,7 +147,7 @@ export function TransactionRow({
       <Leading tx={tx} />
       <button
         type="button"
-        onClick={onClick}
+        onClick={handleOpen}
         className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 text-left"
       >
         <span className="flex min-w-0 flex-col">
@@ -138,6 +157,10 @@ export function TransactionRow({
                 {t("tx.transfer")}
               </span>
               {tx.receipt && <Paperclip className="size-3 shrink-0 text-muted-foreground" />}
+            </span>
+          ) : tx.type === "loan" ? (
+            <span className="truncate text-sm font-semibold text-foreground">
+              {t(loanTransactionLabelKey(loanLink))}
             </span>
           ) : (
             <CategoryBreadcrumb
@@ -151,8 +174,8 @@ export function TransactionRow({
           {subtitle && <span className="truncate text-xs text-muted-foreground">{subtitle}</span>}
         </span>
         <span className="flex shrink-0 flex-col items-end self-start">
-          <span className={cn("tabular text-sm font-semibold", amountColorClass(tx.type))}>
-            {formatSigned(tx.amount, tx.type)}
+          <span className={cn("tabular text-sm font-semibold", transactionAmountClass(tx))}>
+            {transactionAmountLabel(tx)}
           </span>
           {!transferBalancePair &&
             balanceEntries.map((balance) => (
@@ -166,7 +189,7 @@ export function TransactionRow({
     </div>
   );
 
-  if (!swipe) return content;
+  if (!swipe || tx.type === "loan") return content;
 
   return (
     <div className="relative overflow-hidden">

@@ -17,5 +17,21 @@ export {
   type CategoryType,
 } from "./category.model";
 export { favoriteSchema, type Favorite } from "./favorite.model";
+export {
+  loanCashFlowDirectionSchema,
+  loanDirectionSchema,
+  loanEventKindSchema,
+  loanEventSchema,
+  loanSchema,
+  loanStatusSchema,
+  personSchema,
+  type Loan,
+  type LoanCashFlowDirection,
+  type LoanDirection,
+  type LoanEvent,
+  type LoanEventKind,
+  type LoanStatus,
+  type Person,
+} from "./loan.model";
 export { subscriptionSchema, type Subscription } from "./subscription.model";
 export { transactionSchema, type Transaction } from "./transaction.model";
