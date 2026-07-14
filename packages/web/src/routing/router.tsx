@@ -11,7 +11,8 @@ import {
   AccountsPage,
   BudgetsPage,
   DashboardPage,
-  OtherPage,
+  PlanningPage,
+  PositionPage,
   LoansPage,
   ReportsPage,
   SettingsCategoriesPage,
@@ -167,6 +168,12 @@ const reportsRoute = createRoute({
   component: ReportsPage,
 });
 
+const planningRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "planning",
+  component: PlanningPage,
+});
+
 const budgetsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "budgets",
@@ -179,6 +186,12 @@ const subscriptionsRoute = createRoute({
   path: "subscriptions",
   validateSearch: validateCreateIntentSearch,
   component: SubscriptionsPage,
+});
+
+const positionRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "position",
+  component: PositionPage,
 });
 
 const accountsRoute = createRoute({
@@ -204,7 +217,13 @@ const loanDetailRoute = createRoute({
 const otherRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "other",
-  component: OtherPage,
+  beforeLoad: () => {
+    throw redirect({
+      to: "/planning",
+      replace: true,
+    });
+  },
+  component: EmptyRouteComponent,
 });
 
 const settingsRoute = createRoute({
@@ -219,18 +238,6 @@ const settingsCategoriesRoute = createRoute({
   component: SettingsCategoriesPage,
 });
 
-const planningRedirectRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "planning",
-  beforeLoad: () => {
-    throw redirect({
-      to: "/budgets",
-      replace: true,
-    });
-  },
-  component: EmptyRouteComponent,
-});
-
 const routeTree = rootRoute.addChildren([
   versionRoute,
   authRoute.addChildren([signInRoute, signUpRoute, forgotPasswordRoute, resetPasswordRoute]),
@@ -238,15 +245,16 @@ const routeTree = rootRoute.addChildren([
     dashboardRoute,
     transactionsRoute,
     reportsRoute,
+    planningRoute,
     budgetsRoute,
     subscriptionsRoute,
+    positionRoute,
     accountsRoute,
     loansRoute,
     loanDetailRoute,
     otherRoute,
     settingsRoute,
     settingsCategoriesRoute,
-    planningRedirectRoute,
   ]),
 ]);
 

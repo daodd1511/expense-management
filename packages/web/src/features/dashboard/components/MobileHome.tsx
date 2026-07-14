@@ -120,7 +120,11 @@ export function MobileHome({
       {/* Donut */}
       <Card>
         <CardContent className="p-5">
-          <SectionTitle title={t("dashboard.byCategory")} />
+          <SectionTitle
+            title={t("dashboard.byCategory")}
+            action={t("nav.reports")}
+            onAction={() => onNavigate("reports")}
+          />
           <div className="mt-3 flex items-center gap-3">
             <div className="w-[9.375rem] shrink-0">
               <CategoryDonut

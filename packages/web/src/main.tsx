@@ -16,6 +16,7 @@ import { registerForegroundSWUpdateCheck } from "./core/swUpdate";
 import { AppRouter } from "./routing/router";
 import { ThemeProvider } from "./shared/components/ThemeProvider";
 import { OfflineBanner } from "./shared/components/OfflineBanner";
+import { TooltipProvider } from "./shared/components/ui/tooltip";
 
 registerForegroundSWUpdateCheck();
 
@@ -35,13 +36,15 @@ createRoot(document.getElementById("root")!).render(
       <AuthProvider>
         <ThemeProvider>
           <LangProvider>
-            <PwaUpdateProvider>
-              <Toaster richColors position="top-center" />
-              <OfflineBanner />
-              <ErrorBoundary>
-                <AppRouter />
-              </ErrorBoundary>
-            </PwaUpdateProvider>
+            <TooltipProvider>
+              <PwaUpdateProvider>
+                <Toaster richColors position="top-center" />
+                <OfflineBanner />
+                <ErrorBoundary>
+                  <AppRouter />
+                </ErrorBoundary>
+              </PwaUpdateProvider>
+            </TooltipProvider>
           </LangProvider>
         </ThemeProvider>
       </AuthProvider>

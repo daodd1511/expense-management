@@ -1,6 +1,5 @@
 import { startTransition } from "react";
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { ArrowLeftRight, CalendarClock, HandCoins, Settings, Tags, Target } from "lucide-react";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { SubscriptionDueBanner } from "@/features/subscriptions/components/SubscriptionDueBanner";
 import { useTransactionOverlay } from "@/features/transactions/transaction-overlay";
 import { MobileAccounts } from "@/features/accounts/components/MobileAccounts";
@@ -10,6 +9,8 @@ import { MobileBudgets } from "@/features/budgets/components/MobileBudgets";
 import { CategoriesPage } from "@/features/categories/components/CategoriesPage";
 import { DesktopDashboard } from "@/features/dashboard/components/DesktopDashboard";
 import { MobileHome } from "@/features/dashboard/components/MobileHome";
+import { MobilePlanningOverview } from "@/features/dashboard/components/MobilePlanningOverview";
+import { MobilePositionOverview } from "@/features/dashboard/components/MobilePositionOverview";
 import { DesktopSettings } from "@/features/settings/components/Settings";
 import { MobileSettings } from "@/features/settings/components/MobileSettings";
 import { DesktopSubscriptions } from "@/features/subscriptions/components/DesktopSubscriptions";
@@ -18,9 +19,6 @@ import { LoansPage as LoansWorkspace } from "@/features/loans/components/LoansPa
 import { ReportsPage as ReportsShell } from "@/features/reports/components/ReportsPage";
 import { DesktopTransactionsTable } from "@/features/transactions/components/DesktopTransactionsTable";
 import { MobileTransactions } from "@/features/transactions/components/MobileTransactions";
-import { MobilePageContainer } from "@/shared/components/MobilePageContainer";
-import { Card, CardContent } from "@/shared/components/ui/card";
-import { useLang } from "@/core/i18n";
 import { useIsDesktop } from "@/shared/hooks/useIsDesktop";
 import type { Transaction } from "@/core/types";
 import {
@@ -36,6 +34,7 @@ function useAppNavigation() {
 
   return {
     goDashboard: () => navigate({ to: "/" }),
+    goReports: () => navigate({ to: "/reports" }),
     goTransactions: (search?: Record<string, string | undefined>) =>
       navigate({ to: "/transactions", search }),
     goBudgets: () => navigate({ to: "/budgets" }),
@@ -44,7 +43,6 @@ function useAppNavigation() {
     goLoans: (loanId?: string) =>
       loanId ? navigate({ to: "/loans/$loanId", params: { loanId } }) : navigate({ to: "/loans" }),
     goSettings: () => navigate({ to: "/settings" }),
-    goOther: () => navigate({ to: "/other" }),
   };
 }
 
@@ -70,6 +68,7 @@ export function DashboardPage() {
           else if (section === "accounts") navigation.goAccounts();
           else if (section === "transactions") navigation.goTransactions(search);
           else if (section === "loans") navigation.goLoans();
+          else if (section === "reports") navigation.goReports();
         }}
         onEdit={openEdit}
         onOpenLoan={(loanId) => navigation.goLoans(loanId)}
@@ -87,6 +86,7 @@ export function DashboardPage() {
           else if (section === "accounts") navigation.goAccounts();
           else if (section === "transactions") navigation.goTransactions(search);
           else if (section === "loans") navigation.goLoans();
+          else if (section === "reports") navigation.goReports();
         }}
         onEdit={openEdit}
         onOpenLoan={(loanId) => navigation.goLoans(loanId)}
@@ -216,6 +216,14 @@ export function ReportsPage() {
   return <ReportsShell />;
 }
 
+export function PlanningPage() {
+  return <MobilePlanningOverview />;
+}
+
+export function PositionPage() {
+  return <MobilePositionOverview />;
+}
+
 export function SettingsPage() {
   const isDesktop = useIsDesktop();
 
@@ -228,74 +236,6 @@ export function SettingsCategoriesPage() {
   return <CategoriesPage variant={isDesktop ? "desktop" : "mobile"} />;
 }
 
-export function OtherPage() {
-  const { t } = useLang();
-
-  const items = [
-    {
-      to: "/transactions",
-      label: t("other.transactions"),
-      description: t("other.transactionsDesc"),
-      icon: ArrowLeftRight,
-    },
-    {
-      to: "/budgets",
-      label: t("other.budgets"),
-      description: t("other.budgetsDesc"),
-      icon: Target,
-    },
-    {
-      to: "/subscriptions",
-      label: t("other.subscriptions"),
-      description: t("other.subscriptionsDesc"),
-      icon: CalendarClock,
-    },
-    {
-      to: "/loans",
-      label: t("nav.loans"),
-      description: t("other.loansDesc"),
-      icon: HandCoins,
-    },
-    {
-      to: "/settings/categories",
-      label: t("other.categories"),
-      description: t("other.categoriesDesc"),
-      icon: Tags,
-    },
-    {
-      to: "/settings",
-      label: t("other.settings"),
-      description: t("other.settingsDesc"),
-      icon: Settings,
-    },
-  ] as const;
-
-  return (
-    <MobilePageContainer className="gap-6 lg:p-0">
-      <div className="grid gap-4 sm:grid-cols-2">
-        {items.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link key={item.to} to={item.to} className="block">
-              <Card className="h-full transition-colors hover:bg-muted/50">
-                <CardContent className="flex h-full items-start gap-3 p-5">
-                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                    <Icon className="size-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold">{item.label}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
-      </div>
-    </MobilePageContainer>
-  );
-}
-
 export function AppRouteContent({ pathname }: { pathname: string }) {
   const section = sectionFromPath(pathname);
 
@@ -304,16 +244,18 @@ export function AppRouteContent({ pathname }: { pathname: string }) {
       return <ReportsPage />;
     case "transactions":
       return <TransactionsPage />;
+    case "planning":
+      return <PlanningPage />;
     case "budgets":
       return <BudgetsPage />;
     case "subscriptions":
       return <SubscriptionsPage />;
+    case "position":
+      return <PositionPage />;
     case "accounts":
       return <AccountsPage />;
     case "loans":
       return <LoansPage />;
-    case "other":
-      return <OtherPage />;
     case "settings":
       return <SettingsPage />;
     case "settings-categories":

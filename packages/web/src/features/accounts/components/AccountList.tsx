@@ -6,9 +6,10 @@ import { useAccounts } from "@/features/accounts/queries";
 import type { AccountKind } from "@/core/types";
 import { cn } from "@/shared/lib/utils";
 
-export function AccountList({ className }: { className?: string }) {
+export function AccountList({ className, limit }: { className?: string; limit?: number }) {
   const { data: accounts = [] } = useAccounts();
   const { t } = useLang();
+  const visibleAccounts = limit ? accounts.slice(0, limit) : accounts;
 
   const KIND: Record<AccountKind, { icon: LucideIcon; label: string }> = {
     cash: { icon: Banknote, label: t("accounts.kindCash") },
@@ -19,7 +20,7 @@ export function AccountList({ className }: { className?: string }) {
 
   return (
     <ul className={cn("flex flex-col divide-y divide-border", className)}>
-      {accounts.map((a) => {
+      {visibleAccounts.map((a) => {
         const meta = KIND[a.kind];
         const Icon = meta.icon;
         const bal = a.balance ?? a.openingBalance;
