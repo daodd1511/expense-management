@@ -46,6 +46,10 @@ export async function listPersonSummaries(c: Context<AuthEnv>, query: LoanListQu
   return c.json({ data: await service.listPersonSummaries(c.get("userId"), query.today) });
 }
 
+export async function listLoanEventLinks(c: Context<AuthEnv>) {
+  return c.json({ data: await service.listLoanEventLinks(c.get("userId")) });
+}
+
 export async function getLoanDetail(c: Context<AuthEnv>, query: LoanListQuery) {
   const data = await service.getLoanDetail(
     c.get("userId"),

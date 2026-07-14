@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invalidateLoanDependentQueries } from "@/core/query-invalidation";
 import { useAuth } from "@/features/auth/auth";
@@ -8,6 +9,7 @@ import {
   deleteLoanRepayment,
   deletePerson,
   fetchLoanDetail,
+  fetchLoanEventLinks,
   fetchLoanSummaries,
   fetchPeople,
   fetchPersonSummaries,
@@ -43,6 +45,7 @@ export const loanQueryKeys = {
     ["loans", userId, "person-summaries", today] as const,
   detail: (userId: UserId, loanId: string, today: string) =>
     ["loans", userId, "detail", loanId, today] as const,
+  eventLinks: (userId: UserId) => ["loans", userId, "event-links"] as const,
 };
 
 function useLoanMutationInvalidation() {
@@ -85,6 +88,23 @@ export function useLoanDetail(loanId: string, today: string = todayLocalIso()) {
     queryFn: () => fetchLoanDetail(loanId, today),
     enabled: !!user && loanId.length > 0,
   });
+}
+
+export function useLoanEventLinks() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: loanQueryKeys.eventLinks(user?.id),
+    queryFn: fetchLoanEventLinks,
+    enabled: !!user,
+  });
+}
+
+export function useLoanEventLinkLookup() {
+  const { data: links = [] } = useLoanEventLinks();
+  return useMemo(() => {
+    const byEventId = new Map(links.map((link) => [link.eventId, link]));
+    return (eventId: string | null | undefined) => (eventId ? byEventId.get(eventId) : undefined);
+  }, [links]);
 }
 
 export function useAddPerson() {

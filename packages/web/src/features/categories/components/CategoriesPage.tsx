@@ -214,7 +214,7 @@ function CategoryGroupBox({
         isDesktop && "rounded-2xl border border-border bg-card p-3",
       )}
     >
-      <div className={cn("flex items-center gap-2", isDesktop && "px-1 pb-2")}>
+      <div className={cn("flex items-center gap-2", isDesktop && "px-1")}>
         <button
           type="button"
           disabled={parent.isSystem}
@@ -232,11 +232,13 @@ function CategoryGroupBox({
           </span>
           <span className="truncate text-sm font-semibold">{parent.name}</span>
         </button>
-        <FavoriteToggle
-          isFavorite={favoriteCategoryIds.has(parent.id)}
-          label={parent.name}
-          onToggle={() => onToggleFavorite(parent.id)}
-        />
+        {!parent.isHidden && (
+          <FavoriteToggle
+            isFavorite={favoriteCategoryIds.has(parent.id)}
+            label={parent.name}
+            onToggle={() => onToggleFavorite(parent.id)}
+          />
+        )}
       </div>
 
       {childCategories.length > 0 && (
@@ -252,7 +254,8 @@ function CategoryGroupBox({
                 disabled={child.isSystem}
                 onClick={() => onSelect(child)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-xl px-3 py-3 pr-12 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-70",
+                  "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-70",
+                  !child.isHidden && "pr-12",
                   isDesktop && "border border-border bg-muted/35 hover:bg-muted",
                   editingId === child.id ? "bg-accent" : !child.isSystem && "hover:bg-muted",
                 )}
@@ -265,12 +268,14 @@ function CategoryGroupBox({
                 </span>
                 <span className="truncate text-sm text-foreground">{child.name}</span>
               </button>
-              <FavoriteToggle
-                isFavorite={favoriteCategoryIds.has(child.id)}
-                label={child.name}
-                onToggle={() => onToggleFavorite(child.id)}
-                className="absolute top-1/2 right-3 -translate-y-1/2"
-              />
+              {!child.isHidden && (
+                <FavoriteToggle
+                  isFavorite={favoriteCategoryIds.has(child.id)}
+                  label={child.name}
+                  onToggle={() => onToggleFavorite(child.id)}
+                  className="absolute top-1/2 right-3 -translate-y-1/2"
+                />
+              )}
             </div>
           ))}
         </div>
