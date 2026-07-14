@@ -1,4 +1,5 @@
-import { Check, LogOut, Moon, Sun } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Check, ChevronRight, LogOut, Moon, Sun, Tags } from "lucide-react";
 import { useTheme } from "@/shared/components/ThemeProvider";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
@@ -15,6 +16,21 @@ export function SettingsBody() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
+      <Link to="/settings/categories" className="block lg:col-span-2">
+        <Card className="flex items-center gap-4 p-5 transition-colors hover:bg-muted/50">
+          <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-primary">
+            <Tags className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">{t("settings.categories")}</span>
+            <span className="block text-sm text-muted-foreground">
+              {t("other.categoriesDesc")}
+            </span>
+          </span>
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        </Card>
+      </Link>
+
       {/* Appearance */}
       <Card className="flex flex-col gap-4 p-6">
         <div>

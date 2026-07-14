@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import type { AnchorHTMLAttributes, ReactNode } from "react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { MobileApp } from "./MobileApp";
@@ -7,6 +8,18 @@ const navigate = vi.fn();
 const openCreate = vi.fn();
 
 vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    children,
+    to,
+    ...props
+  }: {
+    children: ReactNode;
+    to: string;
+  } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={to} {...props}>
+      {children}
+    </a>
+  ),
   Outlet: () => <div>outlet</div>,
   useLocation: () => ({
     pathname: "/",
@@ -30,10 +43,9 @@ vi.mock("@/core/i18n", () => ({
     t: (key: string) =>
       ({
         "nav.home": "Home",
-        "nav.accounts": "Accounts",
-        "nav.reports": "Reports",
-        "nav.loans": "Loans",
-        "nav.other": "Other",
+        "nav.activity": "Activity",
+        "nav.plan": "Plan",
+        "nav.position": "Position",
         "nav.settings": "Settings",
         "nav.dashboard": "Dashboard",
         "app.addTransaction": "Add transaction",
@@ -65,17 +77,14 @@ describe("MobileApp", () => {
 
     render(<MobileApp />);
 
-    const home = screen.getByRole("button", { name: "Home" });
-    const accounts = screen.getByRole("button", { name: "Accounts" });
-    const reports = screen.getByRole("button", { name: "Reports" });
-    const other = screen.getByRole("button", { name: "Other" });
-    expect(screen.queryByRole("button", { name: "Loans" })).toBeNull();
+    const home = screen.getByRole("link", { name: "Home" });
+    const activity = screen.getByRole("link", { name: "Activity" });
+    const plan = screen.getByRole("link", { name: "Plan" });
+    const position = screen.getByRole("link", { name: "Position" });
 
-    expect(home.compareDocumentPosition(accounts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(
-      accounts.compareDocumentPosition(reports) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(reports.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(home.compareDocumentPosition(activity) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(activity.compareDocumentPosition(plan) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(plan.compareDocumentPosition(position) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Add transaction" }));
 

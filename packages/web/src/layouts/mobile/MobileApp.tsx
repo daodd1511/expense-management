@@ -1,5 +1,5 @@
-import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { ChartPie, Ellipsis, Home, Plus, Settings, Wallet } from "lucide-react";
+import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { Home, Landmark, Plus, Receipt, Settings, Target, Wallet } from "lucide-react";
 import {
   TransactionOverlaySheet,
   useTransactionOverlay,
@@ -10,18 +10,23 @@ import { useLang } from "@/core/i18n";
 import type { TranslationKey } from "@/core/i18n";
 import { useAppDataLoading } from "@/shared/hooks/useAppDataLoading";
 import { cn } from "@/shared/lib/utils";
-import { isSettingsSection, sectionFromPath } from "@/routing/app-route-state";
+import {
+  isSettingsSection,
+  navigationAreaFromSection,
+  sectionFromPath,
+} from "@/routing/app-route-state";
 import type { AppSection } from "@/routing/app-route-state";
 
 const TITLE_KEY_BY_SECTION: Record<AppSection, TranslationKey> = {
   dashboard: "nav.dashboard",
   reports: "nav.reports",
   transactions: "nav.transactions",
+  planning: "nav.plan",
   budgets: "nav.budgets",
   subscriptions: "nav.subscriptions",
+  position: "nav.position",
   accounts: "nav.accounts",
   loans: "nav.loans",
-  other: "nav.other",
   settings: "nav.settings",
   "settings-categories": "settings.categories",
 };
@@ -33,11 +38,12 @@ export function MobileApp() {
   const location = useLocation();
   const { openCreate } = useTransactionOverlay();
   const section = sectionFromPath(location.pathname);
+  const activeArea = navigationAreaFromSection(section);
 
   const title = t(TITLE_KEY_BY_SECTION[section]);
 
   const NAV: {
-    href: "/" | "/accounts" | "/reports" | "/other";
+    href: "/" | "/transactions" | "/planning" | "/position";
     label: string;
     icon: typeof Home;
     active: boolean;
@@ -46,25 +52,25 @@ export function MobileApp() {
       href: "/",
       label: t("nav.home"),
       icon: Home,
-      active: section === "dashboard",
+      active: activeArea === "overview",
     },
     {
-      href: "/accounts",
-      label: t("nav.accounts"),
-      icon: Wallet,
-      active: section === "accounts",
+      href: "/transactions",
+      label: t("nav.activity"),
+      icon: Receipt,
+      active: activeArea === "activity",
     },
     {
-      href: "/reports",
-      label: t("nav.reports"),
-      icon: ChartPie,
-      active: section === "reports",
+      href: "/planning",
+      label: t("nav.plan"),
+      icon: Target,
+      active: activeArea === "planning",
     },
     {
-      href: "/other",
-      label: t("nav.other"),
-      icon: Ellipsis,
-      active: section === "other",
+      href: "/position",
+      label: t("nav.position"),
+      icon: Landmark,
+      active: activeArea === "position",
     },
   ];
 
@@ -112,7 +118,7 @@ export function MobileApp() {
                 label={n.label}
                 icon={n.icon}
                 active={n.active}
-                onClick={() => navigate({ to: n.href })}
+                href={n.href}
               />
             ))}
             <div className="flex justify-center">
@@ -131,7 +137,7 @@ export function MobileApp() {
                 label={n.label}
                 icon={n.icon}
                 active={n.active}
-                onClick={() => navigate({ to: n.href })}
+                href={n.href}
               />
             ))}
           </div>
@@ -147,17 +153,17 @@ function NavButton({
   label,
   icon: Icon,
   active,
-  onClick,
+  href,
 }: {
   label: string;
   icon: typeof Home;
   active: boolean;
-  onClick: () => void;
+  href: "/" | "/transactions" | "/planning" | "/position";
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <Link
+      to={href}
+      aria-current={active ? "page" : undefined}
       className={cn(
         "flex flex-col items-center gap-1 py-1 text-[0.65rem] font-medium transition-colors",
         active ? "text-primary" : "text-muted-foreground",
@@ -167,6 +173,6 @@ function NavButton({
         <Icon className={cn("size-5", active && "fill-primary/15")} />
       </span>
       {label}
-    </button>
+    </Link>
   );
 }
