@@ -21,7 +21,12 @@ function buildQueryBuilder(data: unknown[]) {
     lte: ReturnType<typeof vi.fn>;
     in: ReturnType<typeof vi.fn>;
     or: ReturnType<typeof vi.fn>;
+    is: ReturnType<typeof vi.fn>;
     order: ReturnType<typeof vi.fn>;
+    then: (
+      resolve: (value: { data: unknown[]; error: null }) => void,
+      reject: (reason: unknown) => void,
+    ) => Promise<void>;
   } = {
     select: vi.fn(() => builder),
     eq: vi.fn(() => builder),
@@ -29,7 +34,9 @@ function buildQueryBuilder(data: unknown[]) {
     lte: vi.fn(() => builder),
     in: vi.fn(() => builder),
     or: vi.fn(() => builder),
-    order: vi.fn(async () => ({ data, error: null })),
+    is: vi.fn(() => builder),
+    order: vi.fn(() => builder),
+    then: (resolve, reject) => Promise.resolve({ data, error: null }).then(resolve, reject),
   };
 
   return builder;
@@ -38,19 +45,66 @@ function buildQueryBuilder(data: unknown[]) {
 function buildClient({
   categories,
   transactions,
+  accounts = [],
+  loans = [],
+  loanEvents = [],
 }: {
   categories: unknown[];
   transactions: unknown[];
+  accounts?: unknown[];
+  loans?: unknown[];
+  loanEvents?: unknown[];
 }) {
   const transactionsBuilder = buildQueryBuilder(transactions);
   const categoriesBuilder = buildQueryBuilder(categories);
+  const accountsBuilder = buildQueryBuilder(accounts);
+  const loansBuilder = buildQueryBuilder(loans);
+  const loanEventsBuilder = buildQueryBuilder(loanEvents);
   const from = vi.fn((table: string) => {
     if (table === "transactions") return transactionsBuilder;
     if (table === "categories") return categoriesBuilder;
+    if (table === "accounts") return accountsBuilder;
+    if (table === "loans") return loansBuilder;
+    if (table === "loan_events") return loanEventsBuilder;
     throw new Error(`Unexpected table: ${table}`);
   });
 
-  return { from, transactionsBuilder, categoriesBuilder };
+  return {
+    from,
+    transactionsBuilder,
+    categoriesBuilder,
+    accountsBuilder,
+    loansBuilder,
+    loanEventsBuilder,
+  };
+}
+
+function makeLoanRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "loan-1",
+    owner_id: "user-1",
+    person_id: "person-1",
+    direction: "lending",
+    description: null,
+    note: null,
+    due_date: null,
+    original_date: null,
+    created_at: "2026-07-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function makeLoanEventRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "event-1",
+    owner_id: "user-1",
+    loan_id: "loan-1",
+    kind: "disbursement",
+    amount: 200_000,
+    event_date: "2026-07-01",
+    created_at: "2026-07-01T00:00:00.000Z",
+    ...overrides,
+  };
 }
 
 function makeApp() {
@@ -379,5 +433,96 @@ describe("reportsRouter", () => {
     );
 
     expect(response.status).toBe(400);
+  });
+
+  describe("GET /financial-position", () => {
+    it("reconciles account total and net worth across a period spanning a loan disbursement", async () => {
+      getSupabase.mockReturnValue(
+        buildClient({
+          categories: [],
+          accounts: [{ id: "cash", opening_balance: 1_000_000 }],
+          transactions: [
+            {
+              id: "salary",
+              owner_id: "user-1",
+              type: "income",
+              amount: 300_000,
+              category_id: null,
+              account_id: "cash",
+              to_account_id: null,
+              merchant: "Salary",
+              note: null,
+              tx_date: "2026-07-02",
+              receipt_url: null,
+              subscription_id: null,
+              created_at: "2026-07-02T00:00:00.000Z",
+            },
+            {
+              id: "lend-tx",
+              owner_id: "user-1",
+              type: "loan",
+              amount: 200_000,
+              category_id: null,
+              account_id: "cash",
+              to_account_id: null,
+              cash_flow_direction: "outflow",
+              loan_event_id: "lend-event",
+              merchant: "Loan",
+              note: null,
+              tx_date: "2026-07-04",
+              receipt_url: null,
+              subscription_id: null,
+              created_at: "2026-07-04T00:00:00.000Z",
+            },
+          ],
+          loans: [makeLoanRow({ id: "loan-lend", direction: "lending" })],
+          loanEvents: [
+            makeLoanEventRow({
+              id: "lend-event",
+              loan_id: "loan-lend",
+              amount: 200_000,
+              event_date: "2026-07-04",
+            }),
+          ],
+        }),
+      );
+
+      const response = await makeApp().request(
+        "/reports/financial-position?from=2026-07-01&to=2026-07-31",
+      );
+      const body = (await response.json()) as {
+        data: {
+          closing: Record<string, number>;
+          reconciliation: { accountTotal: { matches: boolean }; netWorth: { matches: boolean } };
+          income: number;
+          expense: number;
+          loanCashFlow: Record<string, number>;
+        };
+      };
+
+      expect(body.data.closing).toEqual({
+        // 1,000,000 opening + 300,000 income − 200,000 loan disbursement outflow.
+        accountTotal: 1_100_000,
+        lendingOutstanding: 200_000,
+        borrowingOutstanding: 0,
+        netWorth: 1_300_000,
+      });
+      expect(body.data.reconciliation.accountTotal.matches).toBe(true);
+      expect(body.data.reconciliation.netWorth.matches).toBe(true);
+      // Loan principal must not appear in income/expense.
+      expect(body.data.income).toBe(300_000);
+      expect(body.data.expense).toBe(0);
+      expect(body.data.loanCashFlow).toMatchObject({ lent: 200_000, net: -200_000 });
+    });
+
+    it("rejects an inverted date range", async () => {
+      getSupabase.mockReturnValue(buildClient({ categories: [], transactions: [] }));
+
+      const response = await makeApp().request(
+        "/reports/financial-position?from=2026-08-31&to=2026-07-01",
+      );
+
+      expect(response.status).toBe(400);
+    });
   });
 });

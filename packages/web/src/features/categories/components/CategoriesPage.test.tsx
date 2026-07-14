@@ -60,9 +60,20 @@ const incomeCategory: Category = {
   parentId: null,
 };
 
+const hiddenCategory: Category = {
+  id: "system-adjustment",
+  name: "Balance adjustment",
+  icon: "Scale",
+  color: "chart-4",
+  isSystem: true,
+  isHidden: true,
+  type: "expense",
+  parentId: null,
+};
+
 vi.mock("@/features/categories/queries", () => ({
   useCategories: () => ({
-    data: [systemCategory, customCategory, nestedExpenseCategory, incomeCategory],
+    data: [systemCategory, customCategory, nestedExpenseCategory, incomeCategory, hiddenCategory],
   }),
   useAddCategory: () => asMutation(storeMocks.addCategory),
   useUpdateCategory: () => asMutation(storeMocks.updateCategory),
@@ -140,6 +151,13 @@ describe("CategoriesPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Custom coffee" }));
     expect(screen.getByText("Edit category")).toBeDefined();
+  });
+
+  it("shows hidden transaction categories without a favorite action", () => {
+    render(<CategoriesPage variant="desktop" />);
+
+    expect(screen.getByRole("button", { name: "Balance adjustment" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Favorite Balance adjustment" })).toBeNull();
   });
 
   it("creates a child category from the add form parent selector", async () => {

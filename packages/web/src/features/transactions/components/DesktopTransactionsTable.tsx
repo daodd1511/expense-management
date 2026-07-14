@@ -4,6 +4,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  ExternalLink,
+  HandCoins,
   Paperclip,
   Pencil,
   Search,
@@ -12,6 +14,7 @@ import {
 import {
   type ColumnDef,
   type PaginationState,
+  type RowSelectionState,
   type SortingState,
   flexRender,
   getCoreRowModel,
@@ -26,6 +29,12 @@ import { CategoryFilterSelect } from "@/features/categories/components/CategoryF
 import { TransactionsMonthSwitcher } from "@/features/transactions/components/TransactionsMonthSwitcher";
 import { TransactionMultiFilterSelect } from "@/features/transactions/components/TransactionMultiFilterSelect";
 import { useDeleteTransactions, useTransactions } from "@/features/transactions/queries";
+import { useLoanEventLinkLookup } from "@/features/loans/queries";
+import {
+  loanTransactionLabelKey,
+  transactionAmountClass,
+  transactionAmountLabel,
+} from "@/features/transactions/loan-transaction";
 import { getTransactionBalanceLines } from "@/features/transactions/balance-lines";
 import {
   matchesTransactionSelection,
@@ -35,6 +44,7 @@ import { useLang } from "@/core/i18n";
 import type { Category, Transaction } from "@/core/types";
 import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
 import { Button } from "@/shared/components/ui/button";
+import { Checkbox } from "@/shared/components/ui/checkbox";
 import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
 import { Input } from "@/shared/components/ui/input";
 import { TransactionsSkeleton } from "@/shared/components/Skeleton";
@@ -46,7 +56,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/shared/components/ui/table";
-import { amountColorClass, formatShortDate, formatSigned } from "@/shared/lib/format";
+import { formatShortDate } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 
 const PAGE_SIZE = 9;
@@ -62,32 +72,46 @@ type TransactionRow = {
   categoryIcon?: string;
   categoryColor: string;
   accountLabel: string;
+  loanId?: string;
+  loanPersonName?: string;
 };
 
 function getTransactionCategoryLabel({
   transaction,
   categoryName,
   transferLabel,
+  loanLabel,
 }: {
   transaction: Transaction;
   categoryName?: string;
   transferLabel: string;
+  loanLabel: string;
 }) {
-  return transaction.type === "transfer" ? transferLabel : (categoryName ?? "");
+  if (transaction.type === "transfer") return transferLabel;
+  if (transaction.type === "loan") return loanLabel;
+  return categoryName ?? "";
 }
 
-function DesktopCategoryCell({ row }: { row: TransactionRow }) {
+function DesktopCategoryCell({
+  row,
+  onOpenLoan,
+}: {
+  row: TransactionRow;
+  onOpenLoan?: (loanId: string) => void;
+}) {
   const isTransfer = row.transaction.type === "transfer";
+  const isLoan = row.transaction.type === "loan";
 
-  return (
-    <span className="flex max-w-[15rem] min-w-0 items-center gap-2.5">
+  const content = (
+    <>
       <span
         className={cn(
           "inline-flex size-8 shrink-0 items-center justify-center rounded-xl",
           isTransfer && "bg-muted text-transfer",
+          isLoan && "bg-accent text-primary",
         )}
         style={
-          isTransfer
+          isTransfer || isLoan
             ? undefined
             : {
                 color: colorVar(row.categoryColor),
@@ -97,6 +121,8 @@ function DesktopCategoryCell({ row }: { row: TransactionRow }) {
       >
         {isTransfer ? (
           <ArrowLeftRight className="size-4" />
+        ) : isLoan ? (
+          <HandCoins className="size-4" />
         ) : (
           <CategoryIcon name={row.categoryIcon} className="size-4" />
         )}
@@ -114,12 +140,27 @@ function DesktopCategoryCell({ row }: { row: TransactionRow }) {
           <span className="truncate text-xs text-muted-foreground">{row.parentCategory.name}</span>
         )}
       </span>
-    </span>
+    </>
   );
+
+  if (isLoan) {
+    return (
+      <button
+        type="button"
+        onClick={() => row.loanId && onOpenLoan?.(row.loanId)}
+        className="flex max-w-[15rem] min-w-0 items-center gap-2.5 text-left"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return <span className="flex max-w-[15rem] min-w-0 items-center gap-2.5">{content}</span>;
 }
 
 export function DesktopTransactionsTable({
   onEdit,
+  onOpenLoan,
   month,
   query,
   type,
@@ -134,6 +175,7 @@ export function DesktopTransactionsTable({
   onSearchFocusHandled,
 }: {
   onEdit: (tx: Transaction) => void;
+  onOpenLoan?: (loanId: string) => void;
   month: string;
   query: string;
   type: TransactionFilterType;
@@ -152,9 +194,11 @@ export function DesktopTransactionsTable({
   const { data: accounts = [], isPending: accountsPending } = useAccounts();
   const getCategory = useCategoryLookup();
   const getAccount = useAccountLookup();
+  const getLoanEventLink = useLoanEventLinkLookup();
   const deleteTxs = useDeleteTransactions();
   const { t } = useLang();
   const [sorting, setSorting] = useState<SortingState>([{ id: "date", desc: true }]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: PAGE_SIZE,
@@ -168,11 +212,13 @@ export function DesktopTransactionsTable({
     { value: "expense", label: t("tx.filterExpense") },
     { value: "income", label: t("tx.filterIncome") },
     { value: "transfer", label: t("tx.filterTransfer") },
+    { value: "loan", label: t("tx.filterLoan") },
   ];
 
   const filtered = useMemo(() => {
     return transactions
       .filter((tx) => {
+        const loanLink = getLoanEventLink(tx.loanEventId);
         if (type !== "all" && tx.type !== type) return false;
         if (!matchesTransactionSelection(tx, categoryIds, accountIds)) return false;
         if (query) {
@@ -183,6 +229,7 @@ export function DesktopTransactionsTable({
             getCategory(tx.categoryId)?.name,
             getAccount(tx.accountId)?.name,
             getAccount(tx.toAccountId)?.name,
+            loanLink?.personName,
           ]
             .filter(Boolean)
             .join(" ")
@@ -194,6 +241,7 @@ export function DesktopTransactionsTable({
       .map<TransactionRow>((tx) => {
         const category = getCategory(tx.categoryId);
         const parentCategory = category?.parentId ? getCategory(category.parentId) : undefined;
+        const loanLink = getLoanEventLink(tx.loanEventId);
 
         return {
           id: tx.id,
@@ -204,18 +252,51 @@ export function DesktopTransactionsTable({
             transaction: tx,
             categoryName: category?.name,
             transferLabel: t("tx.transfer"),
+            loanLabel: t(loanTransactionLabelKey(loanLink)),
           }),
           parentCategory,
-          noteLabel: tx.note?.trim() || undefined,
+          noteLabel:
+            [loanLink?.personName, tx.note?.trim()].filter(Boolean).join(" · ") || undefined,
           categoryIcon: category?.icon,
           categoryColor: category?.color ?? "chart-1",
           accountLabel: getAccount(tx.accountId)?.name ?? "",
+          loanId: loanLink?.loanId,
+          loanPersonName: loanLink?.personName,
         };
       });
-  }, [transactions, type, categoryIds, accountIds, query, getCategory, getAccount, t]);
+  }, [
+    transactions,
+    type,
+    categoryIds,
+    accountIds,
+    query,
+    getCategory,
+    getAccount,
+    getLoanEventLink,
+    t,
+  ]);
 
   const columns = useMemo<ColumnDef<TransactionRow>[]>(
     () => [
+      {
+        id: "select",
+        enableSorting: false,
+        header: ({ table }) => (
+          <Checkbox
+            checked={table.getIsAllPageRowsSelected()}
+            onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked)}
+            aria-label={t("tx.selectAll")}
+          />
+        ),
+        cell: ({ row }) =>
+          row.original.transaction.type === "loan" ? null : (
+            <Checkbox
+              checked={row.getIsSelected()}
+              onCheckedChange={(checked) => row.toggleSelected(checked)}
+              aria-label={t("tx.selectItem", { name: row.original.categoryLabel })}
+            />
+          ),
+      },
       {
         accessorKey: "dateLabel",
         id: "date",
@@ -245,7 +326,7 @@ export function DesktopTransactionsTable({
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           />
         ),
-        cell: ({ row }) => <DesktopCategoryCell row={row.original} />,
+        cell: ({ row }) => <DesktopCategoryCell row={row.original} onOpenLoan={onOpenLoan} />,
       },
       {
         accessorKey: "noteLabel",
@@ -296,10 +377,10 @@ export function DesktopTransactionsTable({
             <span
               className={cn(
                 "block tabular font-semibold",
-                amountColorClass(row.original.transaction.type),
+                transactionAmountClass(row.original.transaction),
               )}
             >
-              {formatSigned(row.original.transaction.amount, row.original.transaction.type)}
+              {transactionAmountLabel(row.original.transaction)}
             </span>
             {getTransactionBalanceLines(
               row.original.transaction,
@@ -317,37 +398,51 @@ export function DesktopTransactionsTable({
         id: "actions",
         enableSorting: false,
         header: () => null,
-        cell: ({ row }) => (
-          <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-            <button
-              type="button"
-              onClick={() => onEdit(row.original.transaction)}
-              aria-label={t("tx.edit")}
-              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <Pencil className="size-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setPendingDeleteIds([row.original.transaction.id])}
-              aria-label={t("tx.deleteOne")}
-              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-expense-muted hover:text-expense"
-            >
-              <Trash2 className="size-3.5" />
-            </button>
-          </div>
-        ),
+        cell: ({ row }) =>
+          row.original.transaction.type === "loan" ? (
+            <div className="flex justify-end opacity-0 transition-opacity group-hover:opacity-100">
+              <button
+                type="button"
+                onClick={() => row.original.loanId && onOpenLoan?.(row.original.loanId)}
+                aria-label={t("tx.openLoan")}
+                className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-primary"
+              >
+                <ExternalLink className="size-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+              <button
+                type="button"
+                onClick={() => onEdit(row.original.transaction)}
+                aria-label={t("tx.edit")}
+                className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <Pencil className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingDeleteIds([row.original.transaction.id])}
+                aria-label={t("tx.deleteOne")}
+                className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-expense-muted hover:text-expense"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
+          ),
       },
     ],
-    [balanceAccountId, getAccount, onEdit, t],
+    [balanceAccountId, getAccount, onEdit, onOpenLoan, t],
   );
 
   const table = useReactTable({
     data: filtered,
     columns,
-    state: { sorting, pagination },
+    state: { sorting, rowSelection, pagination },
     onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
+    enableRowSelection: (row) => row.original.transaction.type !== "loan",
     getRowId: (row) => row.id,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -356,6 +451,7 @@ export function DesktopTransactionsTable({
 
   const handleConfirmDelete = async () => {
     await deleteTxs.mutateAsync(pendingDeleteIds);
+    setRowSelection({});
     setPendingDeleteIds([]);
   };
 
@@ -374,6 +470,7 @@ export function DesktopTransactionsTable({
     return <TransactionsSkeleton />;
   }
 
+  const selectedCount = table.getFilteredSelectedRowModel().rows.length;
   const pageCount = Math.max(1, table.getPageCount());
   const currentPage = table.getState().pagination.pageIndex + 1;
 
@@ -438,13 +535,45 @@ export function DesktopTransactionsTable({
         </span>
       </div>
 
+      {selectedCount > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-border bg-accent px-4 py-2 text-sm">
+          <span className="font-medium text-accent-foreground">
+            {t("tx.selected", { n: selectedCount })}
+          </span>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setRowSelection({})}>
+              {t("tx.deselect")}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() =>
+                setPendingDeleteIds(
+                  table
+                    .getFilteredSelectedRowModel()
+                    .rows.map((row) => row.original.transaction.id),
+                )
+              }
+            >
+              <Trash2 className="size-3.5" /> {t("tx.delete")}
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <Table>
           <TableHeader className="bg-muted/40 text-xs">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className={cn(header.id === "actions" && "w-20")}>
+                  <TableHead
+                    key={header.id}
+                    className={cn(
+                      header.id === "select" && "w-10",
+                      header.id === "actions" && "w-20",
+                    )}
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}

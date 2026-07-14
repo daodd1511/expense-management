@@ -3,6 +3,7 @@ import {
   ArrowUpRight,
   CalendarClock,
   ChevronRight,
+  HandCoins,
   PiggyBank,
   Wallet,
 } from "lucide-react";
@@ -10,12 +11,12 @@ import type { LucideIcon } from "lucide-react";
 import { DATE_LOCALE } from "@/core/i18n";
 import { BalanceTrendChart, CategoryDonut } from "@/shared/components/Charts";
 import { AccountList } from "@/features/accounts/components/AccountList";
-import { useBalanceTrend } from "@/features/dashboard/queries";
+import { useBalanceTrend, useDashboardSummary } from "@/features/dashboard/queries";
 import { TransactionRow } from "@/features/transactions/components/TransactionRow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { DashboardSkeleton } from "@/shared/components/Skeleton";
 import { buildDonutData, monthSummary } from "@/shared/lib/derive";
-import { formatVND } from "@/shared/lib/format";
+import { formatCompactVND, formatVND } from "@/shared/lib/format";
 import { useLang } from "@/core/i18n";
 import { useTransactions } from "@/features/transactions/queries";
 import { todayLocalMonthIso } from "@/shared/lib/date";
@@ -35,11 +36,14 @@ function toTrendLabel(month: string, lang: "vi" | "en") {
 export function DesktopDashboard({
   onNavigate,
   onEdit,
+  onOpenLoan,
 }: {
   onNavigate: (section: string, search?: Record<string, string | undefined>) => void;
   onEdit: (tx: Transaction) => void;
+  onOpenLoan?: (loanId: string) => void;
 }) {
   const { data: transactions = [], isPending: transactionsPending } = useTransactions();
+  const { data: dashboardSummary, isPending: dashboardSummaryPending } = useDashboardSummary();
   const { data: balanceTrend = [], isPending: balanceTrendPending } = useBalanceTrend();
   const { isPending: accountsPending } = useAccounts();
   const { data: subscriptions = [], isPending: subscriptionsPending } = useSubscriptions();
@@ -68,7 +72,14 @@ export function DesktopDashboard({
     });
   };
 
-  if (transactionsPending || balanceTrendPending || accountsPending || subscriptionsPending) {
+  if (
+    transactionsPending ||
+    dashboardSummaryPending ||
+    balanceTrendPending ||
+    accountsPending ||
+    subscriptionsPending ||
+    !dashboardSummary
+  ) {
     return <DashboardSkeleton />;
   }
 
@@ -78,19 +89,22 @@ export function DesktopDashboard({
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <Kpi
           label={t("dashboard.monthBalance")}
-          value={formatVND(summary.balance)}
+          value={formatCompactVND(summary.balance, lang)}
+          valueTitle={formatVND(summary.balance)}
           icon={Wallet}
           accent
         />
         <Kpi
           label={t("dashboard.income")}
-          value={formatVND(summary.income)}
+          value={formatCompactVND(summary.income, lang)}
+          valueTitle={formatVND(summary.income)}
           icon={ArrowDownLeft}
           tone="income"
         />
         <Kpi
           label={t("dashboard.expense")}
-          value={formatVND(summary.expense)}
+          value={formatCompactVND(summary.expense, lang)}
+          valueTitle={formatVND(summary.expense)}
           icon={ArrowUpRight}
           tone="expense"
         />
@@ -148,7 +162,55 @@ export function DesktopDashboard({
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle>{t("dashboard.loans")}</CardTitle>
+            <Action label={t("dashboard.viewAll")} onClick={() => onNavigate("loans")} />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-xl bg-accent p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <HandCoins className="size-4" />
+                {t("loans.netPosition")}
+              </div>
+              <div
+                title={formatVND(dashboardSummary.loans.netPosition)}
+                className={cn(
+                  "tabular mt-2 text-2xl font-bold",
+                  dashboardSummary.loans.netPosition >= 0 ? "text-income" : "text-expense",
+                )}
+              >
+                {formatCompactVND(dashboardSummary.loans.netPosition, lang)}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="rounded-xl border border-border p-3">
+                <span className="text-muted-foreground">{t("loans.owedToUser")}</span>
+                <strong
+                  className="tabular mt-1 block whitespace-nowrap text-income"
+                  title={formatVND(dashboardSummary.loans.owedToUser)}
+                >
+                  {formatCompactVND(dashboardSummary.loans.owedToUser, lang)}
+                </strong>
+              </div>
+              <div className="rounded-xl border border-border p-3">
+                <span className="text-muted-foreground">{t("loans.userOwes")}</span>
+                <strong
+                  className="tabular mt-1 block whitespace-nowrap text-expense"
+                  title={formatVND(dashboardSummary.loans.userOwes)}
+                >
+                  {formatCompactVND(dashboardSummary.loans.userOwes, lang)}
+                </strong>
+              </div>
+            </div>
+            {dashboardSummary.loans.overdueCount > 0 && (
+              <div className="rounded-xl bg-expense-muted px-3 py-2 text-xs font-medium text-expense">
+                {t("loans.overdueCountValue", { n: dashboardSummary.loans.overdueCount })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
         <Card className="lg:col-span-1">
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle>{t("nav.subscriptions")}</CardTitle>
@@ -160,8 +222,11 @@ export function DesktopDashboard({
                 <CalendarClock className="size-4" />
                 {t("sub.monthlyCost")}
               </div>
-              <div className="tabular mt-2 text-2xl font-bold tracking-tight">
-                {formatVND(monthlySubscriptionCost)}
+              <div
+                className="tabular mt-2 whitespace-nowrap text-2xl font-bold tracking-tight"
+                title={formatVND(monthlySubscriptionCost)}
+              >
+                {formatCompactVND(monthlySubscriptionCost, lang)}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -213,7 +278,13 @@ export function DesktopDashboard({
           <CardContent>
             <div className="flex flex-col divide-y divide-border">
               {recent.map((t) => (
-                <TransactionRow key={t.id} tx={t} onClick={() => onEdit(t)} />
+                <TransactionRow
+                  key={t.id}
+                  tx={t}
+                  compact
+                  onClick={() => onEdit(t)}
+                  onOpenLoan={onOpenLoan}
+                />
               ))}
             </div>
           </CardContent>
@@ -226,12 +297,14 @@ export function DesktopDashboard({
 function Kpi({
   label,
   value,
+  valueTitle,
   icon: Icon,
   tone,
   accent,
 }: {
   label: string;
   value: string;
+  valueTitle?: string;
   icon: LucideIcon;
   tone?: "income" | "expense";
   accent?: boolean;
@@ -244,8 +317,9 @@ function Kpi({
             {label}
           </span>
           <span
+            title={valueTitle}
             className={cn(
-              "tabular text-2xl font-bold tracking-tight",
+              "tabular whitespace-nowrap text-2xl font-bold tracking-tight",
               tone === "income" && "text-income",
               tone === "expense" && "text-expense",
             )}

@@ -36,6 +36,18 @@ function mapDbError(c: Context, error: DbError) {
     return jsonError(c, 409, "This action conflicts with related data");
   }
 
+  // Raised deliberately by our own plpgsql functions (loan lifecycle RPCs) with clean,
+  // user-facing messages — unlike the generic fallback below, always safe to pass through.
+  if (error.code === "P0002") {
+    logger.error({ error }, "database not found");
+    return jsonError(c, 404, error.message);
+  }
+
+  if (error.code === "22023") {
+    logger.error({ error }, "database domain validation error");
+    return jsonError(c, 400, error.message);
+  }
+
   logger.error({ error }, "database unexpected error");
   return jsonError(
     c,
@@ -64,6 +76,27 @@ export function handleError(error: unknown, c: Context) {
   return jsonError(c, 500, message);
 }
 
+/**
+ * Hono's dispatcher only routes thrown values to `app.onError` when `err instanceof
+ * Error` (see node_modules/hono/dist/compose.js) — but supabase-js's PostgrestError,
+ * thrown as-is by every repository's `if (error) throw error`, is a plain object, not
+ * an Error instance. Uncaught, it silently escapes `handleError` as an unhandled
+ * rejection instead of producing a mapped JSON response. Wrapping it in a real Error
+ * here (first middleware in the chain) fixes that for every feature, not just the one
+ * that surfaced it — `Object.assign` copies `code`/`message`/`details`/`hint` onto the
+ * new Error so `isDbError`/`mapDbError` still recognize it unchanged.
+ */
 export const errorMiddleware = createMiddleware(async (_c, next) => {
-  await next();
+  try {
+    await next();
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    if (typeof error === "object" && error !== null) {
+      throw Object.assign(
+        new Error(String((error as { message?: unknown }).message ?? "Unknown error")),
+        error,
+      );
+    }
+    throw new Error(String(error));
+  }
 });

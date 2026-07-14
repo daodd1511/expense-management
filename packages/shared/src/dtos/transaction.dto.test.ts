@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { transactionSchema } from "../models";
 import { transactionCreateSchema, transactionPatchSchema } from "./transaction.dto";
 
 function tomorrowIsoDate() {
@@ -131,5 +132,64 @@ describe("transactionPatchSchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+function baseTransaction(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "tx-1",
+    type: "expense",
+    amount: 1000,
+    categoryId: "cat-1",
+    accountId: "acc-1",
+    merchant: "Coffee",
+    date: "2026-07-01",
+    ...overrides,
+  };
+}
+
+describe("transactionSchema (loan field consistency)", () => {
+  it("accepts a valid loan row with cashFlowDirection, loanEventId, and null category/toAccountId", () => {
+    const result = transactionSchema.safeParse(
+      baseTransaction({
+        type: "loan",
+        categoryId: null,
+        cashFlowDirection: "outflow",
+        loanEventId: "event-1",
+      }),
+    );
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a loan row missing cashFlowDirection/loanEventId", () => {
+    const result = transactionSchema.safeParse(baseTransaction({ type: "loan", categoryId: null }));
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a loan row with a non-null category", () => {
+    const result = transactionSchema.safeParse(
+      baseTransaction({
+        type: "loan",
+        categoryId: "cat-1",
+        cashFlowDirection: "outflow",
+        loanEventId: "event-1",
+      }),
+    );
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a non-loan row that sets cashFlowDirection", () => {
+    const result = transactionSchema.safeParse(baseTransaction({ cashFlowDirection: "inflow" }));
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a non-loan row that sets loanEventId", () => {
+    const result = transactionSchema.safeParse(baseTransaction({ loanEventId: "event-1" }));
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts an ordinary expense row with neither loan field set", () => {
+    const result = transactionSchema.safeParse(baseTransaction());
+    expect(result.success).toBe(true);
   });
 });

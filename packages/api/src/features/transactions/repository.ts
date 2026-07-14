@@ -104,12 +104,15 @@ export async function createTransferWithFee(
       p_owner_id: userId,
       p_amount: transaction.amount,
       p_account_id: transaction.accountId,
-      p_to_account_id: transaction.toAccountId ?? null,
+      // Postgres accepts NULL for these plain (non-NOT-NULL, no-DEFAULT) function params;
+      // supabase gen types only marks an RPC arg optional/nullable when the SQL has a
+      // DEFAULT, so it types them as required non-null strings here regardless.
+      p_to_account_id: (transaction.toAccountId ?? null) as string,
       p_merchant: transaction.merchant,
-      p_note: transaction.note ?? null,
+      p_note: (transaction.note ?? null) as string,
       p_tx_date: transaction.date,
-      p_tx_time: transaction.time ?? null,
-      p_receipt_url: transaction.receipt ?? null,
+      p_tx_time: (transaction.time ?? null) as string,
+      p_receipt_url: (transaction.receipt ?? null) as string,
       p_fee: fee,
     })
     .single();
@@ -155,6 +158,23 @@ export async function createLinkedTransferFee(
     .single();
   if (error) throw error;
   return parseTransactionRow(data, "Inserted transfer fee failed validation");
+}
+
+/** Rows among `ids` that are loan-linked — generic patch/delete/bulk-delete must reject
+ * these (see PLAN.md -> "Mutation Ownership and Atomicity"); only Loans may mutate them. */
+export async function listLoanLinkedIds(userId: string, ids: string[]): Promise<string[]> {
+  if (ids.length === 0) return [];
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("id")
+    .eq("owner_id", userId)
+    .in("id", ids)
+    .not("loan_event_id", "is", null);
+
+  if (error) throw error;
+  return (data ?? []).map((row) => row.id as string);
 }
 
 export async function updateTransaction(userId: string, id: string, patch: TransactionPatch) {

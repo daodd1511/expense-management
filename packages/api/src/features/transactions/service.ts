@@ -62,7 +62,18 @@ export async function createTransaction(userId: string, transaction: Transaction
   return repository.createTransaction(userId, transaction);
 }
 
+const LOAN_LINKED_MESSAGE = "This transaction is linked to a loan. Edit or delete it from Loans.";
+
+async function rejectIfLoanLinked(userId: string, ids: string[]) {
+  const linkedIds = await repository.listLoanLinkedIds(userId, ids);
+  if (linkedIds.length > 0) {
+    throw new ApiError(409, LOAN_LINKED_MESSAGE);
+  }
+}
+
 export async function updateTransaction(userId: string, id: string, patch: TransactionPatch) {
+  await rejectIfLoanLinked(userId, [id]);
+
   const transaction = await repository.updateTransaction(userId, id, patch);
   if (!transaction) {
     throw new ApiError(404, "Transaction not found");
@@ -101,10 +112,14 @@ export async function updateTransaction(userId: string, id: string, patch: Trans
 }
 
 export async function deleteTransactions(userId: string, ids: string[]) {
+  // Mixed selections are rejected as a whole, not partially processed (PLAN.md).
+  await rejectIfLoanLinked(userId, ids);
   return repository.deleteTransactions(userId, ids);
 }
 
 export async function deleteTransaction(userId: string, id: string) {
+  await rejectIfLoanLinked(userId, [id]);
+
   const deleted = await repository.deleteTransaction(userId, id);
   if (!deleted) {
     throw new ApiError(404, "Transaction not found");

@@ -1,14 +1,14 @@
-import { ArrowDownLeft, ArrowUpRight, ChevronRight, TrendingUp } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ChevronRight, HandCoins, TrendingUp } from "lucide-react";
 import { DATE_LOCALE } from "@/core/i18n";
 import { BalanceTrendChart, CategoryDonut } from "@/shared/components/Charts";
 import { AccountList } from "@/features/accounts/components/AccountList";
-import { useBalanceTrend } from "@/features/dashboard/queries";
+import { useBalanceTrend, useDashboardSummary } from "@/features/dashboard/queries";
 import { TransactionRow } from "@/features/transactions/components/TransactionRow";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { DashboardSkeleton } from "@/shared/components/Skeleton";
 import { MobilePageContainer } from "@/shared/components/MobilePageContainer";
 import { buildDonutData, monthSummary } from "@/shared/lib/derive";
-import { formatVND, monthLabel } from "@/shared/lib/format";
+import { formatCompactVND, formatVND, monthLabel } from "@/shared/lib/format";
 import { useLang } from "@/core/i18n";
 import { useTransactions } from "@/features/transactions/queries";
 import { todayLocalMonthIso } from "@/shared/lib/date";
@@ -27,11 +27,14 @@ function toTrendLabel(month: string, lang: "vi" | "en") {
 export function MobileHome({
   onNavigate,
   onEdit,
+  onOpenLoan,
 }: {
   onNavigate: (section: string, search?: Record<string, string | undefined>) => void;
   onEdit: (tx: Transaction) => void;
+  onOpenLoan?: (loanId: string) => void;
 }) {
   const { data: transactions = [], isPending: transactionsPending } = useTransactions();
+  const { data: dashboardSummary, isPending: dashboardSummaryPending } = useDashboardSummary();
   const { data: balanceTrend = [], isPending: balanceTrendPending } = useBalanceTrend();
   const { isPending: accountsPending } = useAccounts();
   const { data: subscriptions = [], isPending: subscriptionsPending } = useSubscriptions();
@@ -59,7 +62,14 @@ export function MobileHome({
     });
   };
 
-  if (transactionsPending || balanceTrendPending || accountsPending || subscriptionsPending) {
+  if (
+    transactionsPending ||
+    dashboardSummaryPending ||
+    balanceTrendPending ||
+    accountsPending ||
+    subscriptionsPending ||
+    !dashboardSummary
+  ) {
     return <DashboardSkeleton mobile />;
   }
 
@@ -74,24 +84,33 @@ export function MobileHome({
             </span>
             <TrendingUp className="size-4 opacity-80" />
           </div>
-          <div className="tabular mt-1 text-3xl font-bold tracking-tight">
-            {formatVND(summary.balance)}
+          <div
+            className="tabular mt-1 whitespace-nowrap text-3xl font-bold tracking-tight"
+            title={formatVND(summary.balance)}
+          >
+            {formatCompactVND(summary.balance, lang)}
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-primary-foreground/10 p-3">
               <div className="flex items-center gap-1 text-xs opacity-80">
                 <ArrowDownLeft className="size-3.5" /> {t("dashboard.income")}
               </div>
-              <div className="tabular mt-0.5 text-base font-semibold">
-                {formatVND(summary.income)}
+              <div
+                className="tabular mt-0.5 whitespace-nowrap text-base font-semibold"
+                title={formatVND(summary.income)}
+              >
+                {formatCompactVND(summary.income, lang)}
               </div>
             </div>
             <div className="rounded-xl bg-primary-foreground/10 p-3">
               <div className="flex items-center gap-1 text-xs opacity-80">
                 <ArrowUpRight className="size-3.5" /> {t("dashboard.expense")}
               </div>
-              <div className="tabular mt-0.5 text-base font-semibold">
-                {formatVND(summary.expense)}
+              <div
+                className="tabular mt-0.5 whitespace-nowrap text-base font-semibold"
+                title={formatVND(summary.expense)}
+              >
+                {formatCompactVND(summary.expense, lang)}
               </div>
             </div>
           </div>
@@ -101,7 +120,11 @@ export function MobileHome({
       {/* Donut */}
       <Card>
         <CardContent className="p-5">
-          <SectionTitle title={t("dashboard.byCategory")} />
+          <SectionTitle
+            title={t("dashboard.byCategory")}
+            action={t("nav.reports")}
+            onAction={() => onNavigate("reports")}
+          />
           <div className="mt-3 flex items-center gap-3">
             <div className="w-[9.375rem] shrink-0">
               <CategoryDonut
@@ -149,8 +172,11 @@ export function MobileHome({
           <div className="mt-4 space-y-3">
             <div className="rounded-xl bg-muted/60 p-4">
               <div className="text-xs text-muted-foreground">{t("sub.monthlyCost")}</div>
-              <div className="tabular mt-1 text-2xl font-semibold tracking-tight">
-                {formatVND(monthlySubscriptionCost)}
+              <div
+                className="tabular mt-1 whitespace-nowrap text-2xl font-semibold tracking-tight"
+                title={formatVND(monthlySubscriptionCost)}
+              >
+                {formatCompactVND(monthlySubscriptionCost, lang)}
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
                 {t("sub.activeCount", { n: activeSubscriptions.length })}
@@ -201,6 +227,60 @@ export function MobileHome({
         </CardContent>
       </Card>
 
+      {/* Loans */}
+      <Card>
+        <CardContent className="p-5">
+          <SectionTitle
+            title={t("dashboard.loans")}
+            action={t("dashboard.viewAll")}
+            onAction={() => onNavigate("loans")}
+          />
+          <div className="mt-4 rounded-xl bg-accent p-4">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                <HandCoins className="size-4" />
+                {t("loans.netPosition")}
+              </span>
+              {dashboardSummary.loans.overdueCount > 0 && (
+                <span className="text-xs font-semibold text-expense">
+                  {t("loans.overdueCountValue", { n: dashboardSummary.loans.overdueCount })}
+                </span>
+              )}
+            </div>
+            <div
+              title={formatVND(dashboardSummary.loans.netPosition)}
+              className={
+                dashboardSummary.loans.netPosition >= 0
+                  ? "tabular mt-1 text-2xl font-bold text-income"
+                  : "tabular mt-1 text-2xl font-bold text-expense"
+              }
+            >
+              {formatCompactVND(dashboardSummary.loans.netPosition, lang)}
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <span className="text-muted-foreground">{t("loans.owedToUser")}</span>
+                <strong
+                  className="tabular mt-1 block whitespace-nowrap text-income"
+                  title={formatVND(dashboardSummary.loans.owedToUser)}
+                >
+                  {formatCompactVND(dashboardSummary.loans.owedToUser, lang)}
+                </strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground">{t("loans.userOwes")}</span>
+                <strong
+                  className="tabular mt-1 block whitespace-nowrap text-expense"
+                  title={formatVND(dashboardSummary.loans.userOwes)}
+                >
+                  {formatCompactVND(dashboardSummary.loans.userOwes, lang)}
+                </strong>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Recent */}
       <Card>
         <CardContent className="p-5">
@@ -211,7 +291,12 @@ export function MobileHome({
           />
           <div className="mt-1 flex flex-col">
             {recent.map((tx) => (
-              <TransactionRow key={tx.id} tx={tx} onClick={() => onEdit(tx)} />
+              <TransactionRow
+                key={tx.id}
+                tx={tx}
+                onClick={() => onEdit(tx)}
+                onOpenLoan={onOpenLoan}
+              />
             ))}
           </div>
         </CardContent>

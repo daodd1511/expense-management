@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       accounts: {
@@ -76,6 +101,50 @@ export type Database = {
           },
         ]
       }
+      categories: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string
+          id: string
+          is_hidden: boolean
+          name: string
+          owner_id: string | null
+          parent_id: string | null
+          type: string
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          icon: string
+          id?: string
+          is_hidden?: boolean
+          name: string
+          owner_id?: string | null
+          parent_id?: string | null
+          type: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          is_hidden?: boolean
+          name?: string
+          owner_id?: string | null
+          parent_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       category_favorites: {
         Row: {
           category_id: string
@@ -99,47 +168,6 @@ export type Database = {
           {
             foreignKeyName: "category_favorites_category_id_fkey"
             columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      categories: {
-        Row: {
-          color: string
-          created_at: string
-          icon: string
-          id: string
-          name: string
-          owner_id: string | null
-          parent_id: string | null
-          type: string
-        }
-        Insert: {
-          color: string
-          created_at?: string
-          icon: string
-          id?: string
-          name: string
-          owner_id?: string | null
-          parent_id?: string | null
-          type: string
-        }
-        Update: {
-          color?: string
-          created_at?: string
-          icon?: string
-          id?: string
-          name?: string
-          owner_id?: string | null
-          parent_id?: string | null
-          type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "categories_parent_id_fkey"
-            columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
@@ -171,6 +199,112 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loan_events: {
+        Row: {
+          amount: number
+          created_at: string
+          event_date: string
+          id: string
+          kind: string
+          loan_id: string
+          owner_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          event_date: string
+          id?: string
+          kind: string
+          loan_id: string
+          owner_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          event_date?: string
+          id?: string
+          kind?: string
+          loan_id?: string
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_events_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loan_people: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          note: string | null
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          note?: string | null
+          owner_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          note?: string | null
+          owner_id?: string
+        }
+        Relationships: []
+      }
+      loans: {
+        Row: {
+          created_at: string
+          description: string | null
+          direction: string
+          due_date: string | null
+          id: string
+          note: string | null
+          original_date: string | null
+          owner_id: string
+          person_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          direction: string
+          due_date?: string | null
+          id?: string
+          note?: string | null
+          original_date?: string | null
+          owner_id: string
+          person_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          direction?: string
+          due_date?: string | null
+          id?: string
+          note?: string | null
+          original_date?: string | null
+          owner_id?: string
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loans_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "loan_people"
             referencedColumns: ["id"]
           },
         ]
@@ -245,10 +379,12 @@ export type Database = {
         Row: {
           account_id: string
           amount: number
+          cash_flow_direction: string | null
           category_id: string | null
           created_at: string
           id: string
           linked_transfer_id: string | null
+          loan_event_id: string | null
           merchant: string
           note: string | null
           owner_id: string
@@ -262,10 +398,12 @@ export type Database = {
         Insert: {
           account_id: string
           amount: number
+          cash_flow_direction?: string | null
           category_id?: string | null
           created_at?: string
           id?: string
           linked_transfer_id?: string | null
+          loan_event_id?: string | null
           merchant?: string
           note?: string | null
           owner_id: string
@@ -279,10 +417,12 @@ export type Database = {
         Update: {
           account_id?: string
           amount?: number
+          cash_flow_direction?: string | null
           category_id?: string | null
           created_at?: string
           id?: string
           linked_transfer_id?: string | null
+          loan_event_id?: string | null
           merchant?: string
           note?: string | null
           owner_id?: string
@@ -316,6 +456,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_loan_event_id_fkey"
+            columns: ["loan_event_id"]
+            isOneToOne: false
+            referencedRelation: "loan_events"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_subscription_id_fkey"
             columns: ["subscription_id"]
             isOneToOne: false
@@ -336,62 +483,259 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      close_loan: {
+        Args: {
+          p_event_date: string
+          p_kind: string
+          p_loan_id: string
+          p_owner_id: string
+        }
+        Returns: {
+          event_amount: number
+          event_created_at: string
+          event_event_date: string
+          event_id: string
+          event_kind: string
+          event_loan_id: string
+          event_owner_id: string
+        }[]
+      }
+      create_disbursed_loan: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_description: string
+          p_direction: string
+          p_due_date: string
+          p_event_date: string
+          p_note: string
+          p_owner_id: string
+          p_person_id: string
+        }
+        Returns: {
+          event_amount: number
+          event_created_at: string
+          event_event_date: string
+          event_id: string
+          event_kind: string
+          event_loan_id: string
+          event_owner_id: string
+          loan_created_at: string
+          loan_description: string
+          loan_direction: string
+          loan_due_date: string
+          loan_id: string
+          loan_note: string
+          loan_original_date: string
+          loan_owner_id: string
+          loan_person_id: string
+          tx_account_id: string
+          tx_amount: number
+          tx_cash_flow_direction: string
+          tx_created_at: string
+          tx_id: string
+          tx_loan_event_id: string
+          tx_merchant: string
+          tx_owner_id: string
+          tx_tx_date: string
+          tx_type: string
+        }[]
+      }
+      create_loan_repayment: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_event_date: string
+          p_loan_id: string
+          p_owner_id: string
+        }
+        Returns: {
+          event_amount: number
+          event_created_at: string
+          event_event_date: string
+          event_id: string
+          event_kind: string
+          event_loan_id: string
+          event_owner_id: string
+          tx_account_id: string
+          tx_amount: number
+          tx_cash_flow_direction: string
+          tx_created_at: string
+          tx_id: string
+          tx_loan_event_id: string
+          tx_merchant: string
+          tx_owner_id: string
+          tx_tx_date: string
+          tx_type: string
+        }[]
+      }
+      create_opening_loan: {
+        Args: {
+          p_amount: number
+          p_balance_as_of: string
+          p_description: string
+          p_direction: string
+          p_due_date: string
+          p_note: string
+          p_original_date: string
+          p_owner_id: string
+          p_person_id: string
+        }
+        Returns: {
+          event_amount: number
+          event_created_at: string
+          event_event_date: string
+          event_id: string
+          event_kind: string
+          event_loan_id: string
+          event_owner_id: string
+          loan_created_at: string
+          loan_description: string
+          loan_direction: string
+          loan_due_date: string
+          loan_id: string
+          loan_note: string
+          loan_original_date: string
+          loan_owner_id: string
+          loan_person_id: string
+        }[]
+      }
       create_transfer_with_fee: {
         Args: {
-          p_owner_id: string
-          p_amount: number
           p_account_id: string
-          p_to_account_id: string | null
-          p_merchant: string
-          p_note: string | null
-          p_tx_date: string
-          p_tx_time: string | null
-          p_receipt_url: string | null
+          p_amount: number
           p_fee: number
+          p_merchant: string
+          p_note: string
+          p_owner_id: string
+          p_receipt_url: string
+          p_to_account_id: string
+          p_tx_date: string
+          p_tx_time: string
         }
-        Returns: Database["public"]["Tables"]["transactions"]["Row"][]
+        Returns: {
+          account_id: string
+          amount: number
+          cash_flow_direction: string | null
+          category_id: string | null
+          created_at: string
+          id: string
+          linked_transfer_id: string | null
+          loan_event_id: string | null
+          merchant: string
+          note: string | null
+          owner_id: string
+          receipt_url: string | null
+          subscription_id: string | null
+          to_account_id: string | null
+          tx_date: string
+          tx_time: string | null
+          type: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "transactions"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       log_subscription: {
         Args: {
+          p_account_id: string
+          p_amount: number
+          p_category_id: string
+          p_merchant: string
+          p_next_due_date: string
+          p_note: string
           p_owner_id: string
           p_subscription_id: string
-          p_type: string
-          p_amount: number
-          p_category_id: string | null
-          p_account_id: string
-          p_merchant: string
-          p_note: string | null
           p_tx_date: string
-          p_next_due_date: string
+          p_type: string
         }
         Returns: {
-          tx_id: string
-          tx_owner_id: string
-          tx_type: string
-          tx_amount: number
-          tx_category_id: string | null
-          tx_account_id: string
-          tx_to_account_id: string | null
-          tx_merchant: string
-          tx_note: string | null
-          tx_tx_date: string
-          tx_receipt_url: string | null
-          tx_subscription_id: string | null
-          tx_created_at: string
-          sub_id: string
-          sub_owner_id: string
-          sub_name: string
-          sub_amount: number
-          sub_type: string
-          sub_category_id: string | null
           sub_account_id: string
-          sub_cadence: string
-          sub_day_of_month: number
-          sub_month_of_year: number
-          sub_next_due_date: string
-          sub_note: string | null
           sub_active: boolean
+          sub_amount: number
+          sub_cadence: string
+          sub_category_id: string
           sub_created_at: string
+          sub_day_of_month: number
+          sub_id: string
+          sub_month_of_year: number
+          sub_name: string
+          sub_next_due_date: string
+          sub_note: string
+          sub_owner_id: string
+          sub_type: string
+          tx_account_id: string
+          tx_amount: number
+          tx_category_id: string
+          tx_created_at: string
+          tx_id: string
+          tx_merchant: string
+          tx_note: string
+          tx_owner_id: string
+          tx_receipt_url: string
+          tx_subscription_id: string
+          tx_to_account_id: string
+          tx_tx_date: string
+          tx_type: string
+        }[]
+      }
+      update_loan_disbursement: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_event_date: string
+          p_loan_id: string
+          p_owner_id: string
+        }
+        Returns: {
+          event_amount: number
+          event_created_at: string
+          event_event_date: string
+          event_id: string
+          event_kind: string
+          event_loan_id: string
+          event_owner_id: string
+          tx_account_id: string
+          tx_amount: number
+          tx_cash_flow_direction: string
+          tx_created_at: string
+          tx_id: string
+          tx_loan_event_id: string
+          tx_merchant: string
+          tx_owner_id: string
+          tx_tx_date: string
+          tx_type: string
+        }[]
+      }
+      update_loan_repayment: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_event_date: string
+          p_event_id: string
+          p_owner_id: string
+        }
+        Returns: {
+          event_amount: number
+          event_created_at: string
+          event_event_date: string
+          event_id: string
+          event_kind: string
+          event_loan_id: string
+          event_owner_id: string
+          tx_account_id: string
+          tx_amount: number
+          tx_cash_flow_direction: string
+          tx_created_at: string
+          tx_id: string
+          tx_loan_event_id: string
+          tx_merchant: string
+          tx_owner_id: string
+          tx_tx_date: string
+          tx_type: string
         }[]
       }
     }
@@ -522,6 +866,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

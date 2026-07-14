@@ -42,3 +42,15 @@ export function invalidateSubscriptionLogDependentQueries(
     invalidateTransactionDependentQueries(queryClient, userId),
   ]);
 }
+
+export function invalidateLoanDependentQueries(queryClient: QueryClient, userId: UserId) {
+  return Promise.all([
+    invalidateUserQuery(queryClient, ["loans", userId]),
+    invalidateUserQuery(queryClient, ["transactions", userId]),
+    invalidateUserQuery(queryClient, ["accounts", userId]),
+    invalidateUserQuery(queryClient, ["reports", userId]),
+    invalidateUserQuery(queryClient, ["analytics", "dashboard-summary", userId]),
+    invalidateUserQuery(queryClient, ["analytics", "balance-trend", userId]),
+    invalidateUserQuery(queryClient, ["analytics", "net-worth-trend", userId]),
+  ]);
+}
