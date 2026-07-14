@@ -93,11 +93,8 @@ export function DesktopLoans({
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-start justify-between gap-4">
+      <header className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            {t("loans.ledgerLabel")}
-          </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t("loans.title")}</h1>
           <p className="text-sm text-muted-foreground">{t("loans.subtitle")}</p>
         </div>
