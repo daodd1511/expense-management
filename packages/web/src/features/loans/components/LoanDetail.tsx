@@ -139,7 +139,10 @@ export function LoanDetail({
             <CalendarDays className="size-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold">{t("loans.eventHistory")}</h3>
           </div>
-          <ol className="relative ml-2 border-l border-border pl-5">
+          <ol
+            data-testid="loan-event-timeline"
+            className="relative before:absolute before:inset-y-0 before:left-2 before:w-px before:-translate-x-1/2 before:bg-border before:content-['']"
+          >
             {loan.events.map((event) => (
               <LoanEventHistoryRow
                 key={event.id}
@@ -303,36 +306,40 @@ function LoanEventHistoryRow({
   );
 
   return (
-    <li className="relative pb-5 last:pb-0">
-      <span
-        data-testid={`loan-event-marker-${event.id}`}
-        className="absolute top-1 -left-[1.625rem] size-2.5 rounded-full border-2 border-card bg-primary"
-      />
-      {swipe ? (
-        <div className="relative overflow-hidden">
-          <div className="absolute inset-y-0 right-0 flex">
-            <button
-              type="button"
-              onClick={onEdit}
-              aria-label={editLabel}
-              className="flex w-16 items-center justify-center bg-accent text-accent-foreground"
-            >
-              <Pencil className="size-4" />
-            </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              aria-label={deleteLabel}
-              className="flex w-16 items-center justify-center bg-expense text-expense-foreground"
-            >
-              <Trash2 className="size-4" />
-            </button>
+    <li className="grid grid-cols-[1rem_minmax(0,1fr)] gap-3 pb-5 last:pb-0">
+      <div className="relative" aria-hidden="true">
+        <span
+          data-testid={`loan-event-marker-${event.id}`}
+          className="absolute top-1 left-1/2 z-10 size-2.5 -translate-x-1/2 rounded-full bg-primary"
+        />
+      </div>
+      <div className="min-w-0">
+        {swipe ? (
+          <div className="relative overflow-hidden">
+            <div className="absolute inset-y-0 right-0 flex">
+              <button
+                type="button"
+                onClick={onEdit}
+                aria-label={editLabel}
+                className="flex w-16 items-center justify-center bg-accent text-accent-foreground"
+              >
+                <Pencil className="size-4" />
+              </button>
+              <button
+                type="button"
+                onClick={onDelete}
+                aria-label={deleteLabel}
+                className="flex w-16 items-center justify-center bg-expense text-expense-foreground"
+              >
+                <Trash2 className="size-4" />
+              </button>
+            </div>
+            {content}
           </div>
-          {content}
-        </div>
-      ) : (
-        content
-      )}
+        ) : (
+          content
+        )}
+      </div>
     </li>
   );
 }

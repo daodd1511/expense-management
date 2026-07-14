@@ -95,9 +95,12 @@ describe("LoanDetail", () => {
     expect(row.classList.contains("w-full")).toBe(true);
     expect(row.classList.contains("pr-1")).toBe(true);
     expect(row.parentElement?.classList.contains("rounded-lg")).toBe(false);
-    expect(
-      screen.getByTestId("loan-event-marker-repayment-1").classList.contains("-left-[1.625rem]"),
-    ).toBe(true);
+    const timeline = screen.getByTestId("loan-event-timeline");
+    const marker = screen.getByTestId("loan-event-marker-repayment-1");
+    expect(timeline.classList.contains("before:left-2")).toBe(true);
+    expect(timeline.classList.contains("before:-translate-x-1/2")).toBe(true);
+    expect(marker.classList.contains("left-1/2")).toBe(true);
+    expect(marker.classList.contains("-translate-x-1/2")).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "loans.editRepayment" }));
     fireEvent.click(screen.getByRole("button", { name: "loans.deleteRepayment" }));
     expect(onEditRepayment).toHaveBeenCalledWith(loan, loan.events[1]);
