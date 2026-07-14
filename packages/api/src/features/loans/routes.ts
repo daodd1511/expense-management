@@ -58,6 +58,7 @@ loansRouter.get("/", validateQuery(loanListQuerySchema), (c) =>
 loansRouter.get("/people-summary", validateQuery(loanListQuerySchema), (c) =>
   controller.listPersonSummaries(c, c.req.valid("query")),
 );
+loansRouter.get("/event-links", controller.listLoanEventLinks);
 loansRouter.post(
   "/disbursed",
   validateQuery(loanListQuerySchema),

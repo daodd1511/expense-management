@@ -5,7 +5,6 @@ _git and `EXECUTION.md` STATUS blocks win._
 
 | Spec | Status | Phases | Debt | Description |
 |------|--------|--------|------|-------------|
-| [personal-loans](personal-loans/PLAN.md) | In progress | 2/5 | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed; do not… |
 | [multi-user-release-readiness](multi-user-release-readiness/PLAN.md) | Not started | — | — | Produced via /grill-with-docs. This is a small friends-and-family readiness check for an… |
 | [api-restructure](api-restructure/PLAN.md) | Done | 4/4 | — | Fourth and final spec of the batch. A behavior-preserving migration of packages/api from flat… |
 | [auth-routing](auth-routing/PLAN.md) | Done | 3/3 | — | Add email/password auth alongside the existing Google OAuth flow, and replace the app's… |
@@ -19,6 +18,7 @@ _git and `EXECUTION.md` STATUS blocks win._
 | [foundation](foundation/PLAN.md) | Done | 3/3 | — | Backend correctness, date-handling, and the store.tsx architecture refactor. First of three… |
 | [kanagawa-theme](kanagawa-theme/PLAN.md) | Done | 2/2 | — | Recolor the app to a Kanagawa-inspired "pigment on paper" palette: Washi (softened cream paper)… |
 | [mobile-ux](mobile-ux/PLAN.md) | Done | 5/5 | — | Produced via /grill-me. All decisions below were explicitly confirmed; do not reinterpret or… |
+| [personal-loans](personal-loans/PLAN.md) | Done | 5/5 | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed; do not… |
 | [polish](polish/PLAN.md) | Done | 3/3 | — | Third of three sibling specs from the "all Fixes + Features 7–13" batch. Builds on Spec 1… |
 | [pwa](pwa/PLAN.md) | Done | 2/2 | ⚠ manual browser checks (2 items) deferred; review checklist incomplete | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
 | [pwa-update-prompt](pwa-update-prompt/PLAN.md) | Done | 2/2 | — | Produced via /grill-with-docs interview. All decisions below were explicitly confirmed; do not… |

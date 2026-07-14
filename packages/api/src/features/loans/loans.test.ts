@@ -132,6 +132,31 @@ describe("loansRouter", () => {
     expect(response.status).toBe(400);
   });
 
+  it("lists lightweight event links for transaction deep links", async () => {
+    getSupabase.mockReturnValue(
+      createSupabaseStub([
+        { data: [loanRow], error: null },
+        { data: [personRow], error: null },
+        { data: [eventRow], error: null },
+      ]),
+    );
+
+    const response = await buildApp().request("/loans/event-links");
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      data: [
+        {
+          eventId: "event-1",
+          loanId: "loan-1",
+          kind: "disbursement",
+          direction: "lending",
+          personName: "Alex",
+        },
+      ],
+    });
+  });
+
   it("creates a disbursed loan through the RPC", async () => {
     getSupabase.mockReturnValue(
       createSupabaseStub([

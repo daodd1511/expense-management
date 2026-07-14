@@ -5,12 +5,12 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 2 — done
+- Current phase: All phases complete
 - Phase 1 — Persistence and loan lifecycle API: done
 - Phase 2 — Financial position and dashboard API: done
-- Phase 3 — Web loan data layer: pending
-- Phase 4 — Responsive Loans UI: pending
-- Phase 5 — App integration: pending
+- Phase 3 — Web loan data layer: done
+- Phase 4 — Responsive Loans UI: done
+- Phase 5 — App integration: done
 - Verification debt: none
 
 Mode: goal.
@@ -65,14 +65,14 @@ Branch: `personal-loans/phase-3-web-data` (off `personal-loans/phase-2-financial
 
 Expose the completed loan and financial-position APIs through typed, invalidation-safe web queries before rendering new screens.
 
-- [ ] Add `packages/web/src/features/loans/{db,queries}.ts` for People, loan, event, and action requests with user-scoped list/detail query keys.
-- [ ] Extend `packages/web/src/features/{reports,dashboard}/{db,queries}.ts` for Financial Position and loan/net-worth summaries.
-- [ ] Update loan mutation invalidation in `packages/web/src/features/loans/queries.ts` for loans, People aggregates, transactions, accounts, dashboard, and Financial Position reports.
-- [ ] Add query behavior coverage in `packages/web/src/features/{loans/queries.test.tsx,reports/queries.test.tsx,dashboard/queries.test.tsx}`.
+- [x] Add `packages/web/src/features/loans/{db,queries}.ts` for People, loan, event, and action requests with user-scoped list/detail query keys.
+- [x] Extend `packages/web/src/features/{reports,dashboard}/{db,queries}.ts` for Financial Position and loan/net-worth summaries.
+- [x] Update loan mutation invalidation in `packages/web/src/features/loans/queries.ts` for loans, People aggregates, transactions, accounts, dashboard, and Financial Position reports.
+- [x] Add query behavior coverage in `packages/web/src/features/{loans/queries.test.tsx,reports/queries.test.tsx,dashboard/queries.test.tsx}`.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web exec vitest run src/features/loans/queries.test.tsx src/features/reports/queries.test.tsx src/features/dashboard/queries.test.tsx`
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm --filter @wallet/web exec vitest run src/features/loans/queries.test.tsx src/features/reports/queries.test.tsx src/features/dashboard/queries.test.tsx`
 
 **Review checklist (user, at PR review):**
 - [ ] Perform a loan mutation and verify loans, account balances, transactions, dashboard, and Financial Position refresh together.
@@ -85,14 +85,14 @@ Branch: `personal-loans/phase-4-loans-ui` (off `personal-loans/phase-3-web-data`
 
 Deliver the dedicated person-first desktop and mobile Loans experiences using the established data layer.
 
-- [ ] Add person-first list, filters, KPIs, and empty/loading/error states in `packages/web/src/features/loans/components/{DesktopLoans,MobileLoans,LoansPage}.tsx`.
-- [ ] Add loan detail, event history, origin/repayment forms, opening-loan mode, confirmation actions, and desktop/mobile overlays in `packages/web/src/features/loans/components/`.
-- [ ] Add Loans navigation/form/state/validation/confirmation translations in `packages/web/src/core/i18n.tsx`.
-- [ ] Add focused UI coverage in `packages/web/src/features/loans/components/{LoansPage,LoanDetail,LoanForm,RepaymentForm}.test.tsx`.
+- [x] Add person-first list, filters, KPIs, and empty/loading/error states in `packages/web/src/features/loans/components/{DesktopLoans,MobileLoans,LoansPage}.tsx`.
+- [x] Add loan detail, event history, origin/repayment forms, opening-loan mode, confirmation actions, and desktop/mobile overlays in `packages/web/src/features/loans/components/`.
+- [x] Add Loans navigation/form/state/validation/confirmation translations in `packages/web/src/core/i18n.tsx`.
+- [x] Add focused UI coverage in `packages/web/src/features/loans/components/{LoansPage,LoanDetail,LoanForm,RepaymentForm}.test.tsx`.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web exec vitest run src/features/loans/components/LoansPage.test.tsx src/features/loans/components/LoanDetail.test.tsx src/features/loans/components/LoanForm.test.tsx src/features/loans/components/RepaymentForm.test.tsx`
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm --filter @wallet/web exec vitest run src/features/loans/components/LoansPage.test.tsx src/features/loans/components/LoanDetail.test.tsx src/features/loans/components/LoanForm.test.tsx src/features/loans/components/RepaymentForm.test.tsx`
 
 **Review checklist (user, at PR review):**
 - [ ] On desktop and mobile, create a disbursed loan and an opening loan, then record partial and final repayments through different accounts.
@@ -106,16 +106,17 @@ Branch: `personal-loans/phase-5-app-integration` (off `personal-loans/phase-4-lo
 
 Connect Loans to routing, navigation, transaction history, dashboard, reports, and global loading without changing mobile primary navigation.
 
-- [ ] Add `/loans` and `/loans/$loanId` in `packages/web/src/routing/{router,app-pages,app-route-state}.tsx` with stable transaction-to-loan deep links.
-- [ ] Add desktop sidebar/command-palette and mobile Other-hub entries in `packages/web/src/layouts/{desktop/DesktopApp,mobile/MobileApp}.tsx` and `packages/web/src/routing/app-pages.tsx`.
-- [ ] Render read-only loan rows/filter/deep links in `packages/web/src/features/transactions/components/{DesktopTransactionsTable,MobileTransactions,TransactionRow}.tsx` and transaction view state.
-- [ ] Add net-worth/loan summary and historical trend integration in `packages/web/src/features/dashboard/components/{DesktopDashboard,MobileHome}.tsx`.
-- [ ] Add Financial Position selection/rendering in `packages/web/src/features/reports/components/{ReportsPage,FinancialPositionReport}.tsx` and `report-types.ts`; include loan summaries in global app-data/pull-to-refresh paths.
-- [ ] Add routing, navigation, transaction-row, dashboard, and Financial Position coverage in the corresponding `packages/web/src/{routing,layouts,features}/**/*.test.tsx` files.
+- [x] Add lightweight loan-event link metadata in `packages/shared/src/dtos/loan.dto.ts`, `packages/api/src/features/loans/{routes,controller,service}.ts`, and `packages/web/src/features/loans/{db,queries}.ts` so transaction rows resolve event labels and `/loans/$loanId` without fetching every loan detail. (amended 2026-07-14)
+- [x] Add `/loans` and `/loans/$loanId` in `packages/web/src/routing/{router,app-pages,app-route-state}.tsx` with stable transaction-to-loan deep links.
+- [x] Add desktop sidebar/command-palette and mobile Other-hub entries in `packages/web/src/layouts/{desktop/DesktopApp,mobile/MobileApp}.tsx` and `packages/web/src/routing/app-pages.tsx`.
+- [x] Render read-only loan rows/filter/deep links in `packages/web/src/features/transactions/components/{DesktopTransactionsTable,MobileTransactions,TransactionRow}.tsx` and transaction view state.
+- [x] Add net-worth/loan summary and historical trend integration in `packages/web/src/features/dashboard/components/{DesktopDashboard,MobileHome}.tsx`.
+- [x] Add Financial Position selection/rendering in `packages/web/src/features/reports/components/{ReportsPage,FinancialPositionReport}.tsx` and `report-types.ts`; include loan summaries in global app-data/pull-to-refresh paths.
+- [x] Add routing, navigation, transaction-row, dashboard, and Financial Position coverage in the corresponding `packages/web/src/{routing,layouts,features}/**/*.test.tsx` files.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web exec vitest run src/routing/router.test.ts src/layouts/mobile/MobileApp.test.tsx src/features/transactions/components/TransactionRow.test.tsx src/features/transactions/components/DesktopTransactionsTable.test.tsx src/features/reports/components/FinancialPositionReport.test.tsx src/features/dashboard/components/DesktopDashboard.test.tsx`
+- [x] `pnpm --filter @wallet/shared exec tsc --noEmit && pnpm --filter @wallet/api typecheck && pnpm --filter @wallet/web typecheck` (amended 2026-07-14)
+- [x] `pnpm --filter @wallet/api exec vitest run src/features/loans/loans.test.ts && pnpm --filter @wallet/web exec vitest run src/routing/router.test.ts src/layouts/mobile/MobileApp.test.tsx src/features/transactions/components/TransactionRow.test.tsx src/features/transactions/components/DesktopTransactionsTable.test.tsx src/features/reports/components/FinancialPositionReport.test.tsx src/features/dashboard/components/DesktopDashboard.test.tsx` (amended 2026-07-14)
 
 **Review checklist (user, at PR review):**
 - [ ] Verify Loans is reachable from desktop, mobile Other, dashboard, and loan transaction rows while the mobile bottom nav remains unchanged.

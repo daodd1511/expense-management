@@ -145,6 +145,15 @@ export const personSummarySchema = z.object({
   overdueCount: z.number(),
 });
 
+/** Lightweight transaction-history lookup; avoids fetching every loan detail per row. */
+export const loanEventLinkSchema = z.object({
+  eventId: z.string(),
+  loanId: z.string(),
+  kind: loanEventKindSchema,
+  direction: loanDirectionSchema,
+  personName: z.string(),
+});
+
 export type PersonRow = z.infer<typeof personRowSchema>;
 export type LoanRow = z.infer<typeof loanRowSchema>;
 export type LoanEventRow = z.infer<typeof loanEventRowSchema>;
@@ -160,3 +169,4 @@ export type CloseLoan = z.infer<typeof closeLoanSchema>;
 export type LoanSummary = Readonly<z.infer<typeof loanSummarySchema>>;
 export type LoanDetail = Readonly<z.infer<typeof loanDetailSchema>>;
 export type PersonSummary = Readonly<z.infer<typeof personSummarySchema>>;
+export type LoanEventLink = Readonly<z.infer<typeof loanEventLinkSchema>>;

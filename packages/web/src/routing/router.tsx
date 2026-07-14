@@ -12,6 +12,7 @@ import {
   BudgetsPage,
   DashboardPage,
   OtherPage,
+  LoansPage,
   ReportsPage,
   SettingsCategoriesPage,
   SettingsPage,
@@ -187,6 +188,19 @@ const accountsRoute = createRoute({
   component: AccountsPage,
 });
 
+const loansRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "loans",
+  validateSearch: validateCreateIntentSearch,
+  component: LoansPage,
+});
+
+const loanDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "loans/$loanId",
+  component: () => <LoansPage loanId={loanDetailRoute.useParams().loanId} />,
+});
+
 const otherRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "other",
@@ -227,6 +241,8 @@ const routeTree = rootRoute.addChildren([
     budgetsRoute,
     subscriptionsRoute,
     accountsRoute,
+    loansRoute,
+    loanDetailRoute,
     otherRoute,
     settingsRoute,
     settingsCategoriesRoute,
