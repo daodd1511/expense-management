@@ -129,13 +129,18 @@ export function LoanFilters({
           </Button>
         ))}
       </div>
-      <div className="scrollbar-none flex gap-2 overflow-x-auto pb-1">
+      <div className="scrollbar-none flex flex-wrap gap-2 pb-1 lg:flex-nowrap lg:overflow-x-auto">
         {statuses.map(([value, label]) => (
           <Button
             key={value}
             size="sm"
-            className="shrink-0"
-            variant={status === value ? "secondary" : "ghost"}
+            className={cn(
+              "shrink-0",
+              status === value &&
+                "border-primary bg-transparent text-primary hover:bg-primary/5 hover:text-primary",
+            )}
+            variant={status === value ? "outline" : "ghost"}
+            aria-pressed={status === value}
             onClick={() => onStatusChange(value)}
           >
             {label}
