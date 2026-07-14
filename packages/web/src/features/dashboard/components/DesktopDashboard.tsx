@@ -281,6 +281,7 @@ export function DesktopDashboard({
                 <TransactionRow
                   key={t.id}
                   tx={t}
+                  compact
                   onClick={() => onEdit(t)}
                   onOpenLoan={onOpenLoan}
                 />

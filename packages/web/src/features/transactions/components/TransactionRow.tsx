@@ -94,12 +94,14 @@ export function TransactionRow({
   onClick,
   onOpenLoan,
   swipe = false,
+  compact = false,
 }: {
   tx: Transaction;
   balanceAccountId?: string;
   onClick?: () => void;
   onOpenLoan?: (loanId: string) => void;
   swipe?: boolean;
+  compact?: boolean;
 }) {
   const getCategory = useCategoryLookup();
   const getAccount = useAccountLookup();
@@ -127,6 +129,9 @@ export function TransactionRow({
     [loanLink?.personName, transferBalancePair ? undefined : accountLine, note]
       .filter(Boolean)
       .join(" · ") || undefined;
+  const compactSubtitle =
+    [cat?.name, transferBalancePair ? undefined : accountLine].filter(Boolean).join(" · ") ||
+    undefined;
 
   const content = (
     <div
@@ -148,7 +153,10 @@ export function TransactionRow({
       <button
         type="button"
         onClick={handleOpen}
-        className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 text-left"
+        className={cn(
+          "grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center text-left",
+          compact ? "gap-x-2" : "gap-x-3",
+        )}
       >
         <span className="flex min-w-0 flex-col">
           {tx.type === "transfer" ? (
@@ -162,6 +170,13 @@ export function TransactionRow({
             <span className="truncate text-sm font-semibold text-foreground">
               {t(loanTransactionLabelKey(loanLink))}
             </span>
+          ) : compact ? (
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate text-sm font-semibold text-foreground" title={tx.merchant}>
+                {tx.merchant}
+              </span>
+              {tx.receipt && <Paperclip className="size-3 shrink-0 text-muted-foreground" />}
+            </span>
           ) : (
             <CategoryBreadcrumb
               category={cat}
@@ -171,15 +186,28 @@ export function TransactionRow({
               }
             />
           )}
-          {subtitle && <span className="truncate text-xs text-muted-foreground">{subtitle}</span>}
+          {(compact ? compactSubtitle : subtitle) && (
+            <span className="truncate text-xs text-muted-foreground">
+              {compact ? compactSubtitle : subtitle}
+            </span>
+          )}
         </span>
         <span className="flex shrink-0 flex-col items-end self-start">
-          <span className={cn("tabular text-sm font-semibold", transactionAmountClass(tx))}>
+          <span
+            className={cn(
+              "tabular whitespace-nowrap font-semibold",
+              compact ? "text-[0.8125rem]" : "text-sm",
+              transactionAmountClass(tx),
+            )}
+          >
             {transactionAmountLabel(tx)}
           </span>
           {!transferBalancePair &&
             balanceEntries.map((balance) => (
-              <span key={balance.accountId} className="text-xs tabular text-muted-foreground">
+              <span
+                key={balance.accountId}
+                className="whitespace-nowrap text-xs tabular text-muted-foreground"
+              >
                 {balance.formattedAmount}
               </span>
             ))}
