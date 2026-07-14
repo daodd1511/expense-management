@@ -7,3 +7,8 @@ export async function getIncomeExpenseReport(c: Context<AuthEnv>, query: ReportQ
   const { from, to } = query;
   return c.json(await service.getIncomeExpenseReport(c.get("userId"), from, to));
 }
+
+export async function getFinancialPosition(c: Context<AuthEnv>, query: ReportQuery) {
+  const { from, to } = query;
+  return c.json(await service.getFinancialPosition(c.get("userId"), from, to));
+}

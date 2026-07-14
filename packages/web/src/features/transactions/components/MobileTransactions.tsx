@@ -27,11 +27,15 @@ import { cn } from "@/shared/lib/utils";
 function signedAmount(transaction: Transaction) {
   if (transaction.type === "income") return transaction.amount;
   if (transaction.type === "expense") return -transaction.amount;
+  if (transaction.type === "loan") {
+    return transaction.cashFlowDirection === "inflow" ? transaction.amount : -transaction.amount;
+  }
   return 0;
 }
 
 export function MobileTransactions({
   onEdit,
+  onOpenLoan,
   month,
   query,
   type,
@@ -44,6 +48,7 @@ export function MobileTransactions({
   onAccountChange,
 }: {
   onEdit: (tx: Transaction) => void;
+  onOpenLoan?: (loanId: string) => void;
   month: string;
   query: string;
   type: TransactionFilterType;
@@ -68,6 +73,7 @@ export function MobileTransactions({
     { value: "expense", label: t("tx.filterExpense") },
     { value: "income", label: t("tx.filterIncome") },
     { value: "transfer", label: t("tx.filterTransfer") },
+    { value: "loan", label: t("tx.filterLoan") },
   ];
 
   const groups = useMemo(() => {
@@ -195,6 +201,7 @@ export function MobileTransactions({
                       tx={tx}
                       balanceAccountId={accountId || undefined}
                       onClick={() => onEdit(tx)}
+                      onOpenLoan={onOpenLoan}
                       swipe
                     />
                   ))}

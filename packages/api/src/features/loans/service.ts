@@ -4,6 +4,7 @@ import {
   type DisbursedLoanCreate,
   type Loan,
   type LoanDetail,
+  type LoanEventLink,
   type LoanDisbursementPatch,
   type LoanEvent,
   type LoanMetadataPatch,
@@ -173,6 +174,19 @@ export async function listPersonSummaries(
       overdueCount: personLoans.filter((loan) => loan.status === "overdue").length,
     };
   });
+}
+
+export async function listLoanEventLinks(userId: string): Promise<LoanEventLink[]> {
+  const { loans, personNameById, eventsByLoanId } = await loanListContext(userId);
+  return loans.flatMap((loan) =>
+    (eventsByLoanId.get(loan.id) ?? []).map((event) => ({
+      eventId: event.id,
+      loanId: loan.id,
+      kind: event.kind,
+      direction: loan.direction,
+      personName: personNameById.get(loan.personId) ?? "",
+    })),
+  );
 }
 
 export async function getLoanDetail(

@@ -1,6 +1,6 @@
 import { apiJson } from "@/core/api";
-import { incomeExpenseReportResponseSchema } from "@wallet/shared";
-import type { IncomeExpenseReportResponse } from "@wallet/shared";
+import { financialPositionResponseSchema, incomeExpenseReportResponseSchema } from "@wallet/shared";
+import type { FinancialPositionResponse, IncomeExpenseReportResponse } from "@wallet/shared";
 
 export async function fetchIncomeExpenseReport(params: {
   from: string;
@@ -12,4 +12,19 @@ export async function fetchIncomeExpenseReport(params: {
   });
 
   return apiJson(`/reports/income-expense?${search.toString()}`, incomeExpenseReportResponseSchema);
+}
+
+export async function fetchFinancialPosition(params: {
+  from: string;
+  to: string;
+}): Promise<FinancialPositionResponse> {
+  const search = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+  });
+
+  return apiJson(
+    `/reports/financial-position?${search.toString()}`,
+    financialPositionResponseSchema,
+  );
 }

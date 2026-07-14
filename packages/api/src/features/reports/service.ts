@@ -1,5 +1,8 @@
 import {
+  computeFinancialPosition,
+  financialPositionResponseSchema,
   incomeExpenseReportResponseSchema,
+  type FinancialPositionResponse,
   type IncomeExpenseReportResponse,
   type ReportCategoryAggregate,
   type ReportTransactionRow,
@@ -45,8 +48,11 @@ export async function getIncomeExpenseReport(
   to: string,
 ): Promise<IncomeExpenseReportResponse> {
   const transactions = await repository.listReportTransactions(userId, from, to);
+  // Explicit income | expense, not "not transfer" — a catch-all would silently fold loan
+  // rows into the expense branch below (PLAN.md -> "Transaction Model").
   const reportableTransactions = transactions.filter(
-    (transaction) => transaction.type !== "transfer",
+    (transaction): transaction is typeof transaction & { type: "income" | "expense" } =>
+      transaction.type === "income" || transaction.type === "expense",
   );
   const categoryIds = [
     ...new Set(
@@ -192,6 +198,45 @@ export async function getIncomeExpenseReport(
 
   if (!response.success) {
     throw new ApiError(500, "Income vs expense report failed validation", response.error.flatten());
+  }
+
+  return response.data;
+}
+
+export async function getFinancialPosition(
+  userId: string,
+  from: string,
+  to: string,
+): Promise<FinancialPositionResponse> {
+  const [accounts, transactionsThroughTo, loans, balanceAdjustmentCategoryIds] = await Promise.all([
+    repository.listAccountsForPosition(userId),
+    repository.listTransactionsThroughDate(userId, to),
+    repository.listLoansWithEventsForPosition(userId),
+    repository.listBalanceAdjustmentCategoryIds(),
+  ]);
+
+  const balanceAdjustmentTransactionIds = new Set(
+    transactionsThroughTo
+      .filter((tx) => tx.categoryId && balanceAdjustmentCategoryIds.has(tx.categoryId))
+      .map((tx) => tx.id),
+  );
+
+  const report = computeFinancialPosition({
+    accounts,
+    transactionsThroughTo,
+    loans,
+    from,
+    to,
+    balanceAdjustmentTransactionIds,
+  });
+
+  const response = financialPositionResponseSchema.safeParse({ data: report });
+  if (!response.success) {
+    throw new ApiError(
+      500,
+      "Financial position report failed validation",
+      response.error.flatten(),
+    );
   }
 
   return response.data;

@@ -4,6 +4,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  ExternalLink,
+  HandCoins,
   Paperclip,
   Pencil,
   Search,
@@ -26,6 +28,12 @@ import { useCategories, useCategoryLookup } from "@/features/categories/queries"
 import { CategoryFilterSelect } from "@/features/categories/components/CategoryFilterSelect";
 import { TransactionsMonthSwitcher } from "@/features/transactions/components/TransactionsMonthSwitcher";
 import { useDeleteTransactions, useTransactions } from "@/features/transactions/queries";
+import { useLoanEventLinkLookup } from "@/features/loans/queries";
+import {
+  loanTransactionLabelKey,
+  transactionAmountClass,
+  transactionAmountLabel,
+} from "@/features/transactions/loan-transaction";
 import { getTransactionBalanceLines } from "@/features/transactions/balance-lines";
 import type { TransactionFilterType } from "@/features/transactions/view-state";
 import { useLang } from "@/core/i18n";
@@ -33,6 +41,7 @@ import type { Category, Transaction } from "@/core/types";
 import { CategoryBreadcrumb } from "@/features/categories/components/CategoryBreadcrumb";
 import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
 import { Button } from "@/shared/components/ui/button";
+import { Checkbox } from "@/shared/components/ui/checkbox";
 import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
 import { Input } from "@/shared/components/ui/input";
 import { TransactionsSkeleton } from "@/shared/components/Skeleton";
@@ -53,7 +62,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/shared/components/ui/table";
-import { amountColorClass, formatShortDate, formatSigned } from "@/shared/lib/format";
+import { formatShortDate } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 
 const PAGE_SIZE = 9;
@@ -70,22 +79,29 @@ type TransactionRow = {
   categoryIcon?: string;
   categoryColor: string;
   accountLabel: string;
+  loanId?: string;
+  loanPersonName?: string;
 };
 
 function getTransactionCategoryLabel({
   transaction,
   categoryName,
   transferLabel,
+  loanLabel,
 }: {
   transaction: Transaction;
   categoryName?: string;
   transferLabel: string;
+  loanLabel: string;
 }) {
-  return transaction.type === "transfer" ? transferLabel : (categoryName ?? "");
+  if (transaction.type === "transfer") return transferLabel;
+  if (transaction.type === "loan") return loanLabel;
+  return categoryName ?? "";
 }
 
 export function DesktopTransactionsTable({
   onEdit,
+  onOpenLoan,
   month,
   query,
   type,
@@ -100,6 +116,7 @@ export function DesktopTransactionsTable({
   onSearchFocusHandled,
 }: {
   onEdit: (tx: Transaction) => void;
+  onOpenLoan?: (loanId: string) => void;
   month: string;
   query: string;
   type: TransactionFilterType;
@@ -118,6 +135,7 @@ export function DesktopTransactionsTable({
   const { data: accounts = [], isPending: accountsPending } = useAccounts();
   const getCategory = useCategoryLookup();
   const getAccount = useAccountLookup();
+  const getLoanEventLink = useLoanEventLinkLookup();
   const deleteTxs = useDeleteTransactions();
   const { t } = useLang();
   const [sorting, setSorting] = useState<SortingState>([{ id: "date", desc: true }]);
@@ -134,11 +152,13 @@ export function DesktopTransactionsTable({
     { value: "expense", label: t("tx.filterExpense") },
     { value: "income", label: t("tx.filterIncome") },
     { value: "transfer", label: t("tx.filterTransfer") },
+    { value: "loan", label: t("tx.filterLoan") },
   ];
 
   const filtered = useMemo(() => {
     return transactions
       .filter((tx) => {
+        const loanLink = getLoanEventLink(tx.loanEventId);
         if (type !== "all" && tx.type !== type) return false;
         if (categoryId && tx.categoryId !== categoryId) return false;
         if (accountId && tx.accountId !== accountId && tx.toAccountId !== accountId) return false;
@@ -150,6 +170,7 @@ export function DesktopTransactionsTable({
             getCategory(tx.categoryId)?.name,
             getAccount(tx.accountId)?.name,
             getAccount(tx.toAccountId)?.name,
+            loanLink?.personName,
           ]
             .filter(Boolean)
             .join(" ")
@@ -161,6 +182,7 @@ export function DesktopTransactionsTable({
       .map<TransactionRow>((tx) => {
         const category = getCategory(tx.categoryId);
         const parentCategory = category?.parentId ? getCategory(category.parentId) : undefined;
+        const loanLink = getLoanEventLink(tx.loanEventId);
 
         return {
           id: tx.id,
@@ -171,16 +193,30 @@ export function DesktopTransactionsTable({
             transaction: tx,
             categoryName: category?.name,
             transferLabel: t("tx.transfer"),
+            loanLabel: t(loanTransactionLabelKey(loanLink)),
           }),
           category,
           parentCategory,
-          noteLabel: tx.note?.trim() || undefined,
+          noteLabel:
+            [loanLink?.personName, tx.note?.trim()].filter(Boolean).join(" · ") || undefined,
           categoryIcon: category?.icon,
           categoryColor: category?.color ?? "chart-1",
           accountLabel: getAccount(tx.accountId)?.name ?? "",
+          loanId: loanLink?.loanId,
+          loanPersonName: loanLink?.personName,
         };
       });
-  }, [transactions, type, categoryId, accountId, query, getCategory, getAccount, t]);
+  }, [
+    transactions,
+    type,
+    categoryId,
+    accountId,
+    query,
+    getCategory,
+    getAccount,
+    getLoanEventLink,
+    t,
+  ]);
 
   const columns = useMemo<ColumnDef<TransactionRow>[]>(
     () => [
@@ -188,23 +224,20 @@ export function DesktopTransactionsTable({
         id: "select",
         enableSorting: false,
         header: ({ table }) => (
-          <input
-            type="checkbox"
+          <Checkbox
             checked={table.getIsAllPageRowsSelected()}
-            onChange={table.getToggleAllPageRowsSelectedHandler()}
+            onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked)}
             aria-label={t("tx.selectAll")}
-            className="size-4 accent-primary"
           />
         ),
-        cell: ({ row }) => (
-          <input
-            type="checkbox"
-            checked={row.getIsSelected()}
-            onChange={row.getToggleSelectedHandler()}
-            aria-label={t("tx.selectItem", { name: row.original.categoryLabel })}
-            className="size-4 accent-primary"
-          />
-        ),
+        cell: ({ row }) =>
+          row.original.transaction.type === "loan" ? null : (
+            <Checkbox
+              checked={row.getIsSelected()}
+              onCheckedChange={(checked) => row.toggleSelected(checked)}
+              aria-label={t("tx.selectItem", { name: row.original.categoryLabel })}
+            />
+          ),
       },
       {
         accessorKey: "dateLabel",
@@ -243,6 +276,18 @@ export function DesktopTransactionsTable({
               <span className="inline-flex items-center gap-1.5 text-transfer">
                 <ArrowLeftRight className="size-3.5" /> {t("tx.transfer")}
               </span>
+            );
+          }
+
+          if (tx.type === "loan") {
+            return (
+              <button
+                type="button"
+                onClick={() => row.original.loanId && onOpenLoan?.(row.original.loanId)}
+                className="inline-flex items-center gap-1.5 text-primary"
+              >
+                <HandCoins className="size-3.5" /> {row.original.categoryLabel}
+              </button>
             );
           }
 
@@ -313,10 +358,10 @@ export function DesktopTransactionsTable({
             <span
               className={cn(
                 "block tabular font-semibold",
-                amountColorClass(row.original.transaction.type),
+                transactionAmountClass(row.original.transaction),
               )}
             >
-              {formatSigned(row.original.transaction.amount, row.original.transaction.type)}
+              {transactionAmountLabel(row.original.transaction)}
             </span>
             {getTransactionBalanceLines(
               row.original.transaction,
@@ -334,29 +379,41 @@ export function DesktopTransactionsTable({
         id: "actions",
         enableSorting: false,
         header: () => null,
-        cell: ({ row }) => (
-          <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-            <button
-              type="button"
-              onClick={() => onEdit(row.original.transaction)}
-              aria-label={t("tx.edit")}
-              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <Pencil className="size-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setPendingDeleteIds([row.original.transaction.id])}
-              aria-label={t("tx.deleteOne")}
-              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-expense-muted hover:text-expense"
-            >
-              <Trash2 className="size-3.5" />
-            </button>
-          </div>
-        ),
+        cell: ({ row }) =>
+          row.original.transaction.type === "loan" ? (
+            <div className="flex justify-end opacity-0 transition-opacity group-hover:opacity-100">
+              <button
+                type="button"
+                onClick={() => row.original.loanId && onOpenLoan?.(row.original.loanId)}
+                aria-label={t("tx.openLoan")}
+                className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-primary"
+              >
+                <ExternalLink className="size-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+              <button
+                type="button"
+                onClick={() => onEdit(row.original.transaction)}
+                aria-label={t("tx.edit")}
+                className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <Pencil className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingDeleteIds([row.original.transaction.id])}
+                aria-label={t("tx.deleteOne")}
+                className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-expense-muted hover:text-expense"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
+          ),
       },
     ],
-    [accountId, getAccount, onEdit, t],
+    [accountId, getAccount, onEdit, onOpenLoan, t],
   );
 
   const table = useReactTable({
@@ -366,6 +423,7 @@ export function DesktopTransactionsTable({
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
+    enableRowSelection: (row) => row.original.transaction.type !== "loan",
     getRowId: (row) => row.id,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),

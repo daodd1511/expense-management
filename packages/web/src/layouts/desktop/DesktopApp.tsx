@@ -4,6 +4,7 @@ import {
   CalendarClock,
   CreditCard,
   LayoutDashboard,
+  HandCoins,
   Plus,
   Receipt,
   Settings,
@@ -47,6 +48,7 @@ export function DesktopApp() {
       | "/budgets"
       | "/subscriptions"
       | "/accounts"
+      | "/loans"
       | "/settings/categories"
       | "/settings";
     section: typeof section;
@@ -66,6 +68,7 @@ export function DesktopApp() {
       badge: dueCount,
     },
     { href: "/accounts", section: "accounts", label: t("nav.accounts"), icon: Wallet },
+    { href: "/loans", section: "loans", label: t("nav.loans"), icon: HandCoins },
     {
       href: "/settings/categories",
       section: "settings-categories",
@@ -121,6 +124,12 @@ export function DesktopApp() {
       label: t("palette.newSubscription"),
       section: t("palette.sectionCreate"),
       onRun: () => navigate({ to: "/subscriptions", search: { create: String(Date.now()) } }),
+    },
+    {
+      id: "create-loan",
+      label: t("palette.newLoan"),
+      section: t("palette.sectionCreate"),
+      onRun: () => navigate({ to: "/loans", search: { create: String(Date.now()) } }),
     },
   ];
 
