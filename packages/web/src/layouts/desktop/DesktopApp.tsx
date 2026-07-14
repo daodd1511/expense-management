@@ -42,8 +42,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarRail,
-  SidebarTrigger,
 } from "@/shared/components/ui/sidebar";
 import { useAppDataLoading } from "@/shared/hooks/useAppDataLoading";
 import { useKeyboardShortcuts } from "@/shared/hooks/useKeyboardShortcuts";
@@ -144,28 +142,29 @@ export function DesktopApp() {
       style={
         {
           "--sidebar-width": "15rem",
-          "--sidebar-width-icon": "3.5rem",
         } as CSSProperties
       }
     >
-      <Sidebar collapsible="icon">
-        <SidebarHeader className="p-3">
+      <Sidebar
+        collapsible="none"
+        className="sticky top-0 h-dvh overflow-hidden border-r border-sidebar-border p-2"
+      >
+        <SidebarHeader className="p-2">
           <div className="flex min-h-11 items-center gap-2.5 overflow-hidden rounded-xl px-1">
             <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <CreditCard className="size-5" />
             </span>
-            <div className="min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
+            <div className="min-w-0 leading-tight">
               <p className="truncate text-sm font-semibold">{t("app.name")}</p>
               <p className="truncate text-xs text-muted-foreground">{t("app.tagline")}</p>
             </div>
           </div>
-          <SidebarMenu>
+          <SidebarMenu className="gap-1">
             <SidebarMenuItem>
               <SidebarMenuButton
-                size="lg"
                 tooltip={t("app.addTransaction")}
                 onClick={openNewTransaction}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+                className="h-10 justify-center rounded-xl bg-primary py-0 text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
               >
                 <Plus />
                 <span>{t("app.addTransaction")}</span>
@@ -174,12 +173,12 @@ export function DesktopApp() {
           </SidebarMenu>
         </SidebarHeader>
 
-        <SidebarContent>
+        <SidebarContent className="gap-1 py-1">
           {DESKTOP_NAVIGATION.map((group) => (
             <SidebarGroup key={group.labelKey} className="py-1">
               <SidebarGroupLabel>{t(group.labelKey)}</SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
+                <SidebarMenu className="gap-1">
                   {group.items.map((item) => {
                     const Icon = ICON_BY_SECTION[item.section] ?? LayoutDashboard;
                     const badge = item.section === "subscriptions" ? dueCount : 0;
@@ -190,6 +189,7 @@ export function DesktopApp() {
                           tooltip={t(item.labelKey)}
                           isActive={section === item.section}
                           aria-current={section === item.section ? "page" : undefined}
+                          className="h-10 rounded-xl px-3"
                         >
                           <Icon />
                           <span>{t(item.labelKey)}</span>
@@ -208,8 +208,8 @@ export function DesktopApp() {
           ))}
         </SidebarContent>
 
-        <SidebarFooter className="p-3">
-          <SidebarMenu>
+        <SidebarFooter className="mt-auto p-2">
+          <SidebarMenu className="gap-1">
             <SidebarMenuItem>
               <SidebarMenuButton
                 render={<Link to="/settings" />}
@@ -218,26 +218,23 @@ export function DesktopApp() {
                 aria-current={
                   section === "settings" || section === "settings-categories" ? "page" : undefined
                 }
+                className="h-10 rounded-xl px-3"
               >
                 <Settings />
                 <span>{t("nav.settings")}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
-          <div className="flex items-center justify-between rounded-xl border border-sidebar-border px-3 py-2 group-data-[collapsible=icon]:hidden">
+          <div className="flex items-center justify-between rounded-xl border border-sidebar-border px-3 py-2">
             <span className="text-xs font-medium text-muted-foreground">
               {t("settings.appearance")}
             </span>
             <ThemeToggle />
           </div>
         </SidebarFooter>
-        <SidebarRail />
       </Sidebar>
 
       <SidebarInset className="min-w-0 overflow-x-hidden">
-        <header className="flex h-12 shrink-0 items-center border-b border-border px-4">
-          <SidebarTrigger aria-label={t("sidebar.toggle")} />
-        </header>
         <div className="flex-1 px-5 py-6 lg:px-10 lg:py-8">
           <div className="mx-auto max-w-6xl">
             <Outlet />
