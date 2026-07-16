@@ -38,7 +38,7 @@ Branch: `account-reordering/phase-2-web-reordering` (off `account-reordering/pha
 
 This phase consumes the stable API contract and delivers one shared accessible ordering behavior across both layouts.
 
-- [ ] Add `reorderAccounts` in `packages/web/src/features/accounts/db.ts` and `useReorderAccounts` in `queries.ts` with optimistic `['accounts', userId]` ordering, rollback, and authoritative invalidation; cover it in new `queries.test.tsx`.
+- [x] Add `reorderAccounts` in `packages/web/src/features/accounts/db.ts` and `useReorderAccounts` in `queries.ts` with optimistic `['accounts', userId]` ordering, rollback, and authoritative invalidation; cover it in new `queries.test.tsx`.
 - [ ] Add reusable pointer/touch and keyboard ordering behavior in `packages/web/src/features/accounts/components/AccountReorderList.tsx`, with focus preservation and live announcements; cover it in `AccountReorderList.test.tsx` and add Vietnamese/English copy in `packages/web/src/core/i18n.tsx`.
 - [ ] Integrate `AccountReorderList` into `DesktopAccounts.tsx` and `MobileAccounts.tsx` without duplicating ordering state or disturbing existing edit, reconcile, delete, swipe, and transaction-navigation actions.
 - [ ] Keep API order unchanged through `AccountList.tsx` and `AccountSelect.tsx`; update `TransactionForm.tsx`, `SubscriptionForm.tsx`, `LoanForm.tsx`, `OriginForm.tsx`, and `RepaymentForm.tsx` so ordered Accounts drive first-Account defaults and Transfers use first-to-second, with focused component tests.

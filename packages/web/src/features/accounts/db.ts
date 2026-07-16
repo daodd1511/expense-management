@@ -39,3 +39,10 @@ export async function archiveAccount(id: string): Promise<void> {
     method: "DELETE",
   });
 }
+
+export async function reorderAccounts(accountIds: readonly string[]): Promise<void> {
+  await apiJson("/accounts/order", okResponseSchema, {
+    method: "PUT",
+    body: JSON.stringify({ accountIds }),
+  });
+}
