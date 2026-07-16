@@ -16,7 +16,7 @@ Branch: `account-reordering/phase-1-persistence-api` (off `develop`, stacked)
 
 This phase establishes the persistent order and authenticated atomic mutation consumed by the web phase.
 
-- [ ] Add `supabase/migrations/20260716000000_account_display_order.sql` with `accounts.display_order`, deterministic per-User backfill by `created_at` then `id`, append-on-create behavior, supporting index, and an atomic `reorder_accounts` RPC that accepts exactly the User's active Account IDs.
+- [x] Add `supabase/migrations/20260716000000_account_display_order.sql` with `accounts.display_order`, deterministic per-User backfill by `created_at` then `id`, append-on-create behavior, supporting index, and an atomic `reorder_accounts` RPC that accepts exactly the User's active Account IDs.
 - [ ] Update `packages/shared/src/models/account.model.ts`, `dtos/account.dto.ts`, `mappers/account.mapper.ts`, `database.types.ts`, and `index.ts` for `displayOrder`, the complete-order request, and the RPC; add `mappers/account.mapper.test.ts`.
 - [ ] Update `packages/api/src/features/accounts/{schema,routes,controller,service,repository}.ts` with `PUT /accounts/order`, ordered reads, append-on-create handling, and ownership/duplicate/omission/archived validation through the atomic RPC.
 - [ ] Extend `packages/api/src/features/accounts/accounts.test.ts` for deterministic reads, appended creation, valid reorder, rejected incomplete/duplicate/foreign/archived IDs, and zero partial updates.
