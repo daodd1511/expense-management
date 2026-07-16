@@ -19,7 +19,7 @@ This phase makes zero-Account onboarding safe and proves existing API ownership 
 - [x] Render `FirstAccountState` from `packages/web/src/features/dashboard/components/DesktopDashboard.tsx` and `MobileHome.tsx` when `useAccounts()` resolves empty; cover both in `DesktopDashboard.test.tsx` and new `MobileHome.test.tsx`.
 - [x] Redirect zero-Account `openCreate` calls to Account creation in `packages/web/src/features/transactions/transaction-overlay.tsx`, covering desktop button, mobile FAB, command palette, and keyboard shortcut centrally; add `transaction-overlay.test.tsx`.
 - [x] Make `packages/web/src/features/transactions/components/TransactionForm.tsx` initialize and validate empty Account selections safely; extend `TransactionForm.test.tsx` with zero-Account rendering and submission regressions.
-- [ ] Extend `packages/api/src/features/accounts/accounts.test.ts` and `transactions/transactions.test.ts` with authenticated-user isolation cases proving another User's rows are excluded from reads and cannot be updated or deleted.
+- [x] Extend `packages/api/src/features/accounts/accounts.test.ts` and `transactions/transactions.test.ts` with authenticated-user isolation cases proving another User's rows are excluded from reads and cannot be updated or deleted.
 
 **Agent gate (hard):**
 - [ ] `pnpm --filter @wallet/api typecheck`

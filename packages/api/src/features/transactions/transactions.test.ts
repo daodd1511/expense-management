@@ -105,6 +105,19 @@ function buildClient({ accounts, transactions }: { accounts: unknown[]; transact
   return { from, accountsBuilder, transactionsBuilder };
 }
 
+function buildTransactionMutationClient(method: "update" | "delete") {
+  const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+  const select = vi.fn().mockReturnValue({ maybeSingle });
+  const ownerEq = vi.fn().mockReturnValue({ select });
+  const idEq = vi.fn().mockReturnValue({ eq: ownerEq });
+  const mutation = vi.fn().mockReturnValue({ eq: idEq });
+  const from = vi
+    .fn()
+    .mockReturnValue(method === "update" ? { update: mutation } : { delete: mutation });
+
+  return { client: { from }, idEq, ownerEq };
+}
+
 describe("transactions service listTransactions", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -394,6 +407,40 @@ describe("transactionsRouter", () => {
       ascending: true,
     });
     expect(client.transactionsBuilder.order).toHaveBeenNthCalledWith(4, "id", { ascending: true });
+  });
+
+  it("scopes Transaction reads to the authenticated User", async () => {
+    const client = buildClient({ accounts: [], transactions: [] });
+    getSupabase.mockReturnValue(client);
+
+    const response = await makeApp().request("/transactions");
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ data: [] });
+    expect(client.accountsBuilder.eq).toHaveBeenCalledWith("owner_id", "user-1");
+    expect(client.transactionsBuilder.eq).toHaveBeenCalledWith("owner_id", "user-1");
+  });
+
+  it("cannot update another User's Transaction", async () => {
+    const { client, idEq, ownerEq } = buildTransactionMutationClient("update");
+    getSupabase.mockReturnValue(client);
+
+    await expect(
+      repository.updateTransaction("user-1", "user-2-transaction", { amount: 500 }),
+    ).resolves.toBeNull();
+    expect(idEq).toHaveBeenCalledWith("id", "user-2-transaction");
+    expect(ownerEq).toHaveBeenCalledWith("owner_id", "user-1");
+  });
+
+  it("cannot delete another User's Transaction", async () => {
+    const { client, idEq, ownerEq } = buildTransactionMutationClient("delete");
+    getSupabase.mockReturnValue(client);
+
+    await expect(repository.deleteTransaction("user-1", "user-2-transaction")).resolves.toBe(
+      false,
+    );
+    expect(idEq).toHaveBeenCalledWith("id", "user-2-transaction");
+    expect(ownerEq).toHaveBeenCalledWith("owner_id", "user-1");
   });
 });
 
