@@ -5,9 +5,9 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 2 — done
+- Current phase: 2 — in-progress
 - Phase 1 — Persistence and API: done
-- Phase 2 — Web reordering: done
+- Phase 2 — Web reordering: in-progress
 - Verification debt: none
 
 ## Phase 1 — Persistence and API
@@ -42,10 +42,14 @@ This phase consumes the stable API contract and delivers one shared accessible o
 - [x] Add reusable pointer/touch and keyboard ordering behavior in `packages/web/src/features/accounts/components/AccountReorderList.tsx`, with focus preservation and live announcements; cover it in `AccountReorderList.test.tsx` and add Vietnamese/English copy in `packages/web/src/core/i18n.tsx`.
 - [x] Integrate `AccountReorderList` into `DesktopAccounts.tsx` and `MobileAccounts.tsx` without duplicating ordering state or disturbing existing edit, reconcile, delete, swipe, and transaction-navigation actions.
 - [x] Keep API order unchanged through `AccountList.tsx` and `AccountSelect.tsx`; update `TransactionForm.tsx`, `SubscriptionForm.tsx`, `LoanForm.tsx`, `OriginForm.tsx`, and `RepaymentForm.tsx` so ordered Accounts drive first-Account defaults and Transfers use first-to-second, with focused component tests.
+- [x] (amended 2026-07-16 from review) Replace inline reorder controls with explicit desktop `Modal` and mobile `BottomSheet` reorder flows; use current `@dnd-kit/react` sortable rows with Account names, drag handles, keyboard support, and animated movement, then update focused tests.
 
 **Agent gate (hard):**
 - [x] `pnpm --filter @wallet/web typecheck`
 - [x] (amended 2026-07-16: corrected runner filtering) `pnpm --filter @wallet/web exec vitest run src/features/accounts/queries.test.tsx src/features/accounts/components/AccountReorderList.test.tsx src/features/transactions/components/TransactionForm.test.tsx src/features/subscriptions/components/SubscriptionForm.test.tsx src/features/loans/components/LoanForm.test.tsx src/features/loans/components/OriginForm.test.tsx src/features/loans/components/RepaymentForm.test.tsx`
+- [ ] (amended 2026-07-16 from review) `pnpm --filter @wallet/web typecheck`
+- [ ] (amended 2026-07-16 from review) `pnpm --filter @wallet/web exec vitest run src/features/accounts/queries.test.tsx src/features/accounts/components/AccountReorderList.test.tsx src/features/accounts/components/AccountReorderControl.test.tsx`
+- [ ] (amended 2026-07-16 from review) `pnpm --filter @wallet/web build`
 
 **Review checklist (user, at PR review):**
 - [ ] Reorder Accounts by pointer on desktop and touch on mobile; refetch/sign in again and confirm every list and selector keeps the same order.

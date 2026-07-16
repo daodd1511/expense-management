@@ -13,7 +13,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AccountForm, accountDialogTitle } from "@/features/accounts/components/AccountForm";
-import { AccountReorderList } from "@/features/accounts/components/AccountReorderList";
+import { AccountReorderControl } from "@/features/accounts/components/AccountReorderControl";
 import { ReconcileBalanceForm } from "@/features/accounts/components/ReconcileBalanceForm";
 import { AccountsSkeleton } from "@/shared/components/Skeleton";
 import { Card } from "@/shared/components/ui/card";
@@ -116,14 +116,22 @@ export function DesktopAccounts({
           <h1 className="text-2xl font-semibold tracking-tight">{t("accounts.title")}</h1>
           <p className="text-sm text-muted-foreground">{t("accounts.subtitle")}</p>
         </div>
-        <button
-          type="button"
-          onClick={openAdd}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          <Plus className="size-4" />
-          {t("accounts.add")}
-        </button>
+        <div className="flex items-center gap-2">
+          <AccountReorderControl
+            variant="desktop"
+            accounts={accounts}
+            onReorder={(accountIds) => reorderAcc.mutate(accountIds)}
+            disabled={reorderAcc.isPending}
+          />
+          <button
+            type="button"
+            onClick={openAdd}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            <Plus className="size-4" />
+            {t("accounts.add")}
+          </button>
+        </div>
       </div>
 
       <Card className="p-6">
@@ -131,12 +139,8 @@ export function DesktopAccounts({
         <p className="tabular mt-1 text-3xl font-semibold">{formatVND(total)}</p>
       </Card>
 
-      <AccountReorderList
-        accounts={accounts}
-        onReorder={(accountIds) => reorderAcc.mutate(accountIds)}
-        disabled={reorderAcc.isPending}
-        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
-        renderAccount={(a, { dragHandle, moveButtons }) => {
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {accounts.map((a) => {
           const meta = KIND[a.kind];
           const Icon = meta.icon;
           const bal = a.balance ?? a.openingBalance;
@@ -148,8 +152,6 @@ export function DesktopAccounts({
                   <Icon className="size-5" />
                 </span>
                 <div className="flex items-center gap-2">
-                  {moveButtons}
-                  {dragHandle}
                   <span className="text-xs font-medium text-muted-foreground">{meta.label}</span>
                   <DropdownMenu>
                     <DropdownMenuTrigger
@@ -191,8 +193,8 @@ export function DesktopAccounts({
               </div>
             </Card>
           );
-        }}
-      />
+        })}
+      </div>
 
       <Modal open={modalOpen} onClose={close}>
         <div className="flex items-center justify-between border-b border-border px-5 py-4">

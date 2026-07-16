@@ -1,18 +1,34 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import type { ReactNode } from "react";
+import { act, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Account } from "@/core/types";
 import { AccountReorderList } from "./AccountReorderList";
 
+const dndMocks = vi.hoisted(() => ({
+  onDragEnd: undefined as ((event: unknown) => void) | undefined,
+  isSortable: vi.fn(),
+  useSortable: vi.fn(),
+}));
+
+vi.mock("@dnd-kit/react", () => ({
+  DragDropProvider: ({
+    children,
+    onDragEnd,
+  }: {
+    children: ReactNode;
+    onDragEnd: (event: unknown) => void;
+  }) => {
+    dndMocks.onDragEnd = onDragEnd;
+    return <>{children}</>;
+  },
+}));
+vi.mock("@dnd-kit/react/sortable", () => ({
+  isSortable: dndMocks.isSortable,
+  useSortable: dndMocks.useSortable,
+}));
 vi.mock("@/core/i18n", () => ({
   useLang: () => ({
-    t: (key: string, vars?: Record<string, string | number>) =>
-      ({
-        "accounts.reorderDrag": `Drag ${vars?.account} to reorder`,
-        "accounts.moveUp": `Move ${vars?.account} up`,
-        "accounts.moveDown": `Move ${vars?.account} down`,
-        "accounts.moved": `${vars?.account} moved to position ${vars?.position} of ${vars?.count}`,
-      })[key] ?? key,
+    t: (_key: string, vars?: Record<string, string>) => `Drag ${vars?.account} to reorder`,
   }),
 }));
 
@@ -21,52 +37,47 @@ const accounts: Account[] = [
   { id: "bank", name: "Bank", kind: "bank", openingBalance: 0, displayOrder: 1 },
 ];
 
-function renderList(onReorder: (accountIds: string[]) => void) {
-  return render(
-    <AccountReorderList
-      accounts={accounts}
-      onReorder={onReorder}
-      renderAccount={(account, controls) => (
-        <div>
-          <span>{account.name}</span>
-          {controls.dragHandle}
-          {controls.moveButtons}
-        </div>
-      )}
-    />,
-  );
-}
-
 describe("AccountReorderList", () => {
-  it("moves with keyboard controls, announces position, and preserves focus", async () => {
-    const user = userEvent.setup();
-    const onReorder = vi.fn();
-    renderList(onReorder);
+  beforeEach(() => {
+    dndMocks.onDragEnd = undefined;
+    dndMocks.isSortable.mockReturnValue(true);
+    dndMocks.useSortable.mockReturnValue({
+      ref: vi.fn(),
+      handleRef: vi.fn(),
+      isDragSource: false,
+      isDropping: false,
+    });
+  });
 
-    await user.click(screen.getByRole("button", { name: "Move Bank up" }));
+  it("shows one animated sortable row and drag handle per Account", () => {
+    render(<AccountReorderList accounts={accounts} onReorder={vi.fn()} />);
 
-    expect(onReorder).toHaveBeenCalledWith(["bank", "cash"]);
-    expect(screen.getByText("Bank moved to position 1 of 2")).toBeDefined();
-    await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Move Bank down" })),
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Drag Cash to reorder" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Drag Bank to reorder" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: /Move .* (up|down)/ })).toBeNull();
+    expect(dndMocks.useSortable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transition: {
+          duration: 240,
+          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+          idle: true,
+        },
+      }),
     );
   });
 
-  it("reorders by pointer position through the drag handle", () => {
+  it("persists the final dnd-kit sortable order", () => {
     const onReorder = vi.fn();
-    renderList(onReorder);
-    const bankItem = screen.getByText("Bank").closest("[data-account-reorder-id]");
-    Object.defineProperty(document, "elementFromPoint", {
-      configurable: true,
-      value: vi.fn().mockReturnValue(bankItem),
-    });
-    const handle = screen.getByRole("button", { name: "Drag Cash to reorder" });
+    render(<AccountReorderList accounts={accounts} onReorder={onReorder} />);
 
-    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 0, clientY: 0 });
-    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 0, clientY: 20 });
-    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 0, clientY: 20 });
+    act(() => {
+      dndMocks.onDragEnd?.({
+        canceled: false,
+        operation: { source: { initialIndex: 0, index: 1 } },
+      });
+    });
 
     expect(onReorder).toHaveBeenCalledWith(["bank", "cash"]);
-    expect(screen.getByText("Cash moved to position 2 of 2")).toBeDefined();
   });
 });
