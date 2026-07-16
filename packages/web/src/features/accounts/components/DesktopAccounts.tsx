@@ -120,7 +120,7 @@ export function DesktopAccounts({
           <AccountReorderControl
             variant="desktop"
             accounts={accounts}
-            onReorder={(accountIds) => reorderAcc.mutate(accountIds)}
+            onSave={(accountIds) => reorderAcc.mutateAsync(accountIds)}
             disabled={reorderAcc.isPending}
           />
           <button

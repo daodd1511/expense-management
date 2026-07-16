@@ -8,13 +8,17 @@ import { AccountReorderList } from "./AccountReorderList";
 function ReorderContent({
   accounts,
   onReorder,
+  onSave,
   onClose,
-  disabled,
+  saving,
+  changed,
 }: {
   accounts: readonly Account[];
   onReorder: (accountIds: string[]) => void;
+  onSave: () => void;
   onClose: () => void;
-  disabled: boolean;
+  saving: boolean;
+  changed: boolean;
 }) {
   const { t } = useLang();
 
@@ -26,10 +30,13 @@ function ReorderContent({
           {t("accounts.reorderDescription")}
         </p>
       </div>
-      <AccountReorderList accounts={accounts} onReorder={onReorder} disabled={disabled} />
-      <div className="flex justify-end border-t border-border pt-4">
-        <Button type="button" onClick={onClose}>
-          {t("accounts.reorderDone")}
+      <AccountReorderList accounts={accounts} onReorder={onReorder} disabled={saving} />
+      <div className="flex justify-end gap-2 border-t border-border pt-4">
+        <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+          {t("form.cancel")}
+        </Button>
+        <Button type="button" onClick={onSave} disabled={!changed} loading={saving}>
+          {t("accounts.reorderSave")}
         </Button>
       </div>
     </div>
@@ -40,23 +47,72 @@ function ReorderContent({
 export function AccountReorderControl({
   variant,
   accounts,
-  onReorder,
+  onSave,
   disabled = false,
 }: {
   variant: "desktop" | "mobile";
   accounts: readonly Account[];
-  onReorder: (accountIds: string[]) => void;
+  onSave: (accountIds: string[]) => Promise<unknown>;
   disabled?: boolean;
 }) {
   const { t } = useLang();
   const [open, setOpen] = useState(false);
+  const [draftAccounts, setDraftAccounts] = useState<Account[]>([]);
+  const [initialAccountIds, setInitialAccountIds] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
   const title = t("accounts.reorderTitle");
+
+  const openOverlay = () => {
+    setDraftAccounts([...accounts]);
+    setInitialAccountIds(accounts.map((account) => account.id));
+    setOpen(true);
+  };
+
+  const closeOverlay = () => {
+    if (saving) return;
+    setOpen(false);
+    setDraftAccounts([]);
+    setInitialAccountIds([]);
+  };
+
+  const reorderDraft = (accountIds: string[]) => {
+    const accountsById = new Map(draftAccounts.map((account) => [account.id, account]));
+    const reordered = accountIds.flatMap((id) => {
+      const account = accountsById.get(id);
+      return account ? [account] : [];
+    });
+    if (reordered.length !== draftAccounts.length) return;
+    setDraftAccounts(
+      reordered.map((account, displayOrder) => ({ ...account, displayOrder })),
+    );
+  };
+
+  const draftAccountIds = draftAccounts.map((account) => account.id);
+  const changed = draftAccountIds.some((id, index) => id !== initialAccountIds[index]);
+
+  const saveDraft = async () => {
+    if (!changed || saving) return;
+    setSaving(true);
+    try {
+      await onSave(draftAccountIds);
+      setOpen(false);
+      setDraftAccounts([]);
+      setInitialAccountIds([]);
+    } catch {
+      // The mutation layer reports the error; keep the draft open so the User can retry.
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const content = (
     <ReorderContent
-      accounts={accounts}
-      onReorder={onReorder}
-      onClose={() => setOpen(false)}
-      disabled={disabled}
+      accounts={draftAccounts}
+      onReorder={reorderDraft}
+      onSave={() => void saveDraft()}
+      onClose={closeOverlay}
+      saving={saving}
+      changed={changed}
     />
   );
 
@@ -66,17 +122,17 @@ export function AccountReorderControl({
         type="button"
         variant="outline"
         size={variant === "mobile" ? "sm" : "default"}
-        onClick={() => setOpen(true)}
-        disabled={accounts.length < 2}
+        onClick={openOverlay}
+        disabled={disabled || accounts.length < 2}
       >
         {t("accounts.reorder")}
       </Button>
       {variant === "desktop" ? (
-        <Modal open={open} onClose={() => setOpen(false)} title={title}>
+        <Modal open={open} onClose={closeOverlay} title={title}>
           {content}
         </Modal>
       ) : (
-        <BottomSheet open={open} onClose={() => setOpen(false)} title={title}>
+        <BottomSheet open={open} onClose={closeOverlay} title={title}>
           {content}
         </BottomSheet>
       )}

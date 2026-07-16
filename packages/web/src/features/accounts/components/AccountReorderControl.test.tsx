@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { Account } from "@/core/types";
@@ -11,13 +11,28 @@ vi.mock("@/core/i18n", () => ({
         "accounts.reorder": "Reorder",
         "accounts.reorderTitle": "Reorder accounts",
         "accounts.reorderDescription": "Drag each Account to change its display order.",
-        "accounts.reorderDone": "Done",
+        "accounts.reorderSave": "Save",
+        "form.cancel": "Cancel",
       })[key] ?? key,
   }),
 }));
 vi.mock("./AccountReorderList", () => ({
-  AccountReorderList: ({ accounts }: { accounts: readonly Account[] }) => (
-    <div>{accounts.map((account) => account.name).join(", ")}</div>
+  AccountReorderList: ({
+    accounts,
+    onReorder,
+  }: {
+    accounts: readonly Account[];
+    onReorder: (accountIds: string[]) => void;
+  }) => (
+    <div>
+      <span>{accounts.map((account) => account.name).join(", ")}</span>
+      <button
+        type="button"
+        onClick={() => onReorder([...accounts].reverse().map((account) => account.id))}
+      >
+        Reverse draft
+      </button>
+    </div>
   ),
 }));
 
@@ -27,13 +42,14 @@ const accounts: Account[] = [
 ];
 
 describe("AccountReorderControl", () => {
-  it("opens a desktop dialog from a text-only Reorder button", async () => {
+  it("keeps desktop reordering local until Save", async () => {
     const user = userEvent.setup();
+    const onSave = vi.fn().mockResolvedValue(undefined);
     render(
       <AccountReorderControl
         variant="desktop"
         accounts={accounts}
-        onReorder={vi.fn()}
+        onSave={onSave}
       />,
     );
 
@@ -43,19 +59,46 @@ describe("AccountReorderControl", () => {
 
     expect(screen.getByRole("dialog", { name: "Reorder accounts" })).toBeDefined();
     expect(screen.getByText("Cash, Bank")).toBeDefined();
-    await user.click(screen.getByRole("button", { name: "Done" }));
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reverse draft" }));
+
+    expect(screen.getByText("Bank, Cash")).toBeDefined();
+    expect(onSave).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(onSave).toHaveBeenCalledWith(["bank", "cash"]);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
-  it("opens the mobile reorder flow in a bottom sheet", async () => {
+  it("isolates an open mobile draft from background updates and discards it on Cancel", async () => {
     const user = userEvent.setup();
-    render(
-      <AccountReorderControl variant="mobile" accounts={accounts} onReorder={vi.fn()} />,
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = render(
+      <AccountReorderControl variant="mobile" accounts={accounts} onSave={onSave} />,
     );
 
     await user.click(screen.getByRole("button", { name: "Reorder" }));
 
     const dialog = screen.getByRole("dialog", { name: "Reorder accounts" });
     expect(dialog.className).toContain("rounded-t-3xl");
+    rerender(
+      <AccountReorderControl
+        variant="mobile"
+        accounts={[accounts[1], accounts[0]]}
+        onSave={onSave}
+      />,
+    );
+    expect(screen.getByText("Cash, Bank")).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Reverse draft" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(onSave).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Reorder" }));
+    expect(screen.getByText("Bank, Cash")).toBeDefined();
   });
 });

@@ -192,7 +192,7 @@ export function MobileAccounts() {
           <AccountReorderControl
             variant="mobile"
             accounts={accounts}
-            onReorder={(accountIds) => reorderAcc.mutate(accountIds)}
+            onSave={(accountIds) => reorderAcc.mutateAsync(accountIds)}
             disabled={reorderAcc.isPending}
           />
         </CardContent>
