@@ -296,7 +296,7 @@ export function TransactionForm({
   const [fee, setFee] = useState<string>(initial?.fee ? String(initial.fee) : "");
   const [hasFee, setHasFee] = useState(Boolean(initial?.fee));
   const [categoryId, setCategoryId] = useState<string | null>(initial?.categoryId ?? null);
-  const [accountId, setAccountId] = useState<string>(initial?.accountId ?? accounts[0].id);
+  const [accountId, setAccountId] = useState<string>(initial?.accountId ?? accounts[0]?.id ?? "");
   const [toAccountId, setToAccountId] = useState<string>(
     initial?.toAccountId ?? accounts[1]?.id ?? accounts[0]?.id ?? "",
   );
@@ -317,7 +317,8 @@ export function TransactionForm({
 
   const canSubmit =
     numericAmount > 0 &&
-    (type === "transfer" ? accountId !== toAccountId : true) &&
+    accountId.length > 0 &&
+    (type === "transfer" ? toAccountId.length > 0 && accountId !== toAccountId : true) &&
     (type === "transfer" || !!categoryId);
 
   const { submit: submitForm, isSubmitting, errorMessage } = useFormSubmit(onSubmit);
