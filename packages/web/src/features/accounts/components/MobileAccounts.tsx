@@ -20,6 +20,7 @@ import {
 } from "@/features/accounts/queries";
 import type { Account, AccountKind } from "@/core/types";
 import { cn } from "@/shared/lib/utils";
+import type { AccountCreate } from "@wallet/shared";
 
 const KIND_ICONS: Record<AccountKind, LucideIcon> = {
   cash: Banknote,
@@ -162,7 +163,7 @@ export function MobileAccounts() {
     setReconciling(null);
   };
 
-  const handleSubmit = async (data: Omit<Account, "id" | "balance">) => {
+  const handleSubmit = async (data: AccountCreate) => {
     if (editing) await updateAcc.mutateAsync({ id: editing.id, patch: data });
     else await addAcc.mutateAsync(data);
     close();

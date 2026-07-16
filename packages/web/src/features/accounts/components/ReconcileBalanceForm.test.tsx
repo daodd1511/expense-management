@@ -59,6 +59,7 @@ const account = {
   name: "Checking",
   kind: "bank" as const,
   openingBalance: 500,
+  displayOrder: 0,
   balance: 1_000,
 };
 

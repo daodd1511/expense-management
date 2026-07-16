@@ -34,8 +34,7 @@ import {
 } from "@/features/accounts/queries";
 import type { Account, AccountKind } from "@/core/types";
 import { cn } from "@/shared/lib/utils";
-
-type AccountInput = Omit<Account, "id" | "balance">;
+import type { AccountCreate } from "@wallet/shared";
 
 export function DesktopAccounts({
   createIntentToken,
@@ -92,7 +91,7 @@ export function DesktopAccounts({
     setReconciling(null);
   };
 
-  const handleSubmit = async (data: AccountInput) => {
+  const handleSubmit = async (data: AccountCreate) => {
     if (editing) await updateAcc.mutateAsync({ id: editing.id, patch: data });
     else await addAcc.mutateAsync(data);
     close();

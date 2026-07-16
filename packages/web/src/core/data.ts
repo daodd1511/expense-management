@@ -94,10 +94,22 @@ export const categories: Category[] = [
 ];
 
 export const accounts: Account[] = [
-  { id: "cash", name: "Tiền mặt", kind: "cash", openingBalance: 2_450_000 },
-  { id: "vcb", name: "Vietcombank", kind: "bank", openingBalance: 38_720_000 },
-  { id: "tcb-card", name: "Techcombank Visa", kind: "card", openingBalance: -4_180_000 },
-  { id: "momo", name: "Ví MoMo", kind: "ewallet", openingBalance: 1_065_000 },
+  { id: "cash", name: "Tiền mặt", kind: "cash", openingBalance: 2_450_000, displayOrder: 0 },
+  {
+    id: "vcb",
+    name: "Vietcombank",
+    kind: "bank",
+    openingBalance: 38_720_000,
+    displayOrder: 1,
+  },
+  {
+    id: "tcb-card",
+    name: "Techcombank Visa",
+    kind: "card",
+    openingBalance: -4_180_000,
+    displayOrder: 2,
+  },
+  { id: "momo", name: "Ví MoMo", kind: "ewallet", openingBalance: 1_065_000, displayOrder: 3 },
 ];
 
 export const budgets: Budget[] = [

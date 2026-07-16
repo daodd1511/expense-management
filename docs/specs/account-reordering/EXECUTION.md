@@ -20,9 +20,10 @@ This phase establishes the persistent order and authenticated atomic mutation co
 - [x] Update `packages/shared/src/models/account.model.ts`, `dtos/account.dto.ts`, `mappers/account.mapper.ts`, `database.types.ts`, and `index.ts` for `displayOrder`, the complete-order request, and the RPC; add `mappers/account.mapper.test.ts`.
 - [x] Update `packages/api/src/features/accounts/{schema,routes,controller,service,repository}.ts` with `PUT /accounts/order`, ordered reads, append-on-create handling, and ownership/duplicate/omission/archived validation through the atomic RPC.
 - [x] Extend `packages/api/src/features/accounts/accounts.test.ts` for deterministic reads, appended creation, valid reorder, rejected incomplete/duplicate/foreign/archived IDs, and zero partial updates.
+- [x] (amended 2026-07-16) Use `AccountCreate` instead of `Omit<Account, ...>` in `packages/web/src/features/accounts/{db,queries}.ts` and `{AccountForm,DesktopAccounts,MobileAccounts}.tsx`; add `displayOrder` to typed fixtures in `core/data.ts`, Account form/reconciliation tests, and `RepaymentForm.test.tsx`.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/api typecheck && pnpm --filter @wallet/web typecheck` (the shared Account contract is consumed by both packages)
+- [x] `pnpm --filter @wallet/api typecheck && pnpm --filter @wallet/web typecheck` (the shared Account contract is consumed by both packages)
 - [ ] (amended 2026-07-16: corrected runner filtering) `pnpm --filter @wallet/shared exec vitest run src/mappers/account.mapper.test.ts && pnpm --filter @wallet/api exec vitest run src/features/accounts/accounts.test.ts`
 
 **Review checklist (user, at PR review):**
