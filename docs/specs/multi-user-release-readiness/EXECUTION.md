@@ -15,7 +15,7 @@ Branch: `multi-user-release-readiness/phase-1-automated-readiness` (off `develop
 
 This phase makes zero-Account onboarding safe and proves existing API ownership boundaries before the production walkthrough.
 
-- [ ] Add localized zero-Account copy in `packages/web/src/core/i18n.tsx` and a reusable first-Account CTA in `packages/web/src/features/accounts/components/FirstAccountState.tsx` that navigates to `/accounts` with create intent.
+- [x] Add localized zero-Account copy in `packages/web/src/core/i18n.tsx` and a reusable first-Account CTA in `packages/web/src/features/accounts/components/FirstAccountState.tsx` that navigates to `/accounts` with create intent.
 - [ ] Render `FirstAccountState` from `packages/web/src/features/dashboard/components/DesktopDashboard.tsx` and `MobileHome.tsx` when `useAccounts()` resolves empty; cover both in `DesktopDashboard.test.tsx` and new `MobileHome.test.tsx`.
 - [ ] Redirect zero-Account `openCreate` calls to Account creation in `packages/web/src/features/transactions/transaction-overlay.tsx`, covering desktop button, mobile FAB, command palette, and keyboard shortcut centrally; add `transaction-overlay.test.tsx`.
 - [ ] Make `packages/web/src/features/transactions/components/TransactionForm.tsx` initialize and validate empty Account selections safely; extend `TransactionForm.test.tsx` with zero-Account rendering and submission regressions.
