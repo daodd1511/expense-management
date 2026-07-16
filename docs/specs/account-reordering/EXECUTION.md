@@ -41,7 +41,7 @@ This phase consumes the stable API contract and delivers one shared accessible o
 - [x] Add `reorderAccounts` in `packages/web/src/features/accounts/db.ts` and `useReorderAccounts` in `queries.ts` with optimistic `['accounts', userId]` ordering, rollback, and authoritative invalidation; cover it in new `queries.test.tsx`.
 - [x] Add reusable pointer/touch and keyboard ordering behavior in `packages/web/src/features/accounts/components/AccountReorderList.tsx`, with focus preservation and live announcements; cover it in `AccountReorderList.test.tsx` and add Vietnamese/English copy in `packages/web/src/core/i18n.tsx`.
 - [x] Integrate `AccountReorderList` into `DesktopAccounts.tsx` and `MobileAccounts.tsx` without duplicating ordering state or disturbing existing edit, reconcile, delete, swipe, and transaction-navigation actions.
-- [ ] Keep API order unchanged through `AccountList.tsx` and `AccountSelect.tsx`; update `TransactionForm.tsx`, `SubscriptionForm.tsx`, `LoanForm.tsx`, `OriginForm.tsx`, and `RepaymentForm.tsx` so ordered Accounts drive first-Account defaults and Transfers use first-to-second, with focused component tests.
+- [x] Keep API order unchanged through `AccountList.tsx` and `AccountSelect.tsx`; update `TransactionForm.tsx`, `SubscriptionForm.tsx`, `LoanForm.tsx`, `OriginForm.tsx`, and `RepaymentForm.tsx` so ordered Accounts drive first-Account defaults and Transfers use first-to-second, with focused component tests.
 
 **Agent gate (hard):**
 - [ ] `pnpm --filter @wallet/web typecheck`

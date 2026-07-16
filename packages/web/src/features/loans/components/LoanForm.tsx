@@ -55,7 +55,7 @@ export function LoanForm({
   const [personId, setPersonId] = useState(people[0]?.id ?? "");
   const [personName, setPersonName] = useState("");
   const [amountRaw, setAmountRaw] = useState("");
-  const [accountId, setAccountId] = useState("");
+  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [date, setDate] = useState(today);
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");

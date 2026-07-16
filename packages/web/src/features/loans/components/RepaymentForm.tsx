@@ -31,7 +31,7 @@ export function RepaymentForm({
   const { t } = useLang();
   const today = todayLocalIso();
   const [amountRaw, setAmountRaw] = useState(String(initial?.amount ?? loan.outstandingBalance));
-  const [accountId, setAccountId] = useState("");
+  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [date, setDate] = useState(initial?.date ?? today);
   const amount = Number(amountRaw) || 0;
   const canSubmit =

@@ -25,7 +25,7 @@ export function OriginForm({
   const { t } = useLang();
   const origin = loan.events.find((event) => event.kind === "disbursement");
   const [amountRaw, setAmountRaw] = useState(String(origin?.amount ?? loan.originAmount));
-  const [accountId, setAccountId] = useState("");
+  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [date, setDate] = useState(origin?.date ?? todayLocalIso());
   const amount = Number(amountRaw) || 0;
   const canSubmit = amount > 0 && accountId.length > 0 && date.length > 0;
