@@ -5,8 +5,8 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 1 — in-progress
-- Phase 1 — Automated readiness: in-progress
+- Current phase: 1 — done
+- Phase 1 — Automated readiness: done
 - Verification debt: none
 
 ## Phase 1 — Automated readiness
@@ -25,8 +25,8 @@ This phase makes zero-Account onboarding safe and proves existing API ownership 
 **Agent gate (hard):**
 - [x] `pnpm --filter @wallet/api typecheck`
 - [x] `pnpm --filter @wallet/api exec vitest run src/features/accounts/accounts.test.ts src/features/transactions/transactions.test.ts` *(amended 2026-07-16: remove `--`, which caused an unfiltered full-suite run)*
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web exec vitest run src/features/dashboard/components/DesktopDashboard.test.tsx src/features/dashboard/components/MobileHome.test.tsx src/features/transactions/components/TransactionForm.test.tsx src/features/transactions/transaction-overlay.test.tsx` *(amended 2026-07-16: use runner-native file filters)*
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] `pnpm --filter @wallet/web exec vitest run src/features/dashboard/components/DesktopDashboard.test.tsx src/features/dashboard/components/MobileHome.test.tsx src/features/transactions/components/TransactionForm.test.tsx src/features/transactions/transaction-overlay.test.tsx` *(amended 2026-07-16: use runner-native file filters)*
 
 **Review checklist (user, at PR review):**
 - [ ] In two separate browser profiles, sign up as different Users, create an Account and Transaction for each, then sign out/in and confirm each User sees only their own data.
