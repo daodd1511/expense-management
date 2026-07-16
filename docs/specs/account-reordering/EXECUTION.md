@@ -5,9 +5,9 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 1 — done
+- Current phase: 2 — in-progress
 - Phase 1 — Persistence and API: done
-- Phase 2 — Web reordering: pending
+- Phase 2 — Web reordering: in-progress
 - Verification debt: none
 
 ## Phase 1 — Persistence and API
