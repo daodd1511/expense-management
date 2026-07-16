@@ -1,4 +1,9 @@
-import { computeBalance, type AccountCreate, type AccountPatch } from "@wallet/shared";
+import {
+  computeBalance,
+  type AccountCreate,
+  type AccountPatch,
+  type AccountReorder,
+} from "@wallet/shared";
 import { ApiError } from "../../middleware/error";
 import * as repository from "./repository";
 
@@ -32,4 +37,8 @@ export async function archiveAccount(userId: string, id: string) {
   if (!archived) {
     throw new ApiError(404, "Account not found");
   }
+}
+
+export async function reorderAccounts(userId: string, input: AccountReorder) {
+  await repository.reorderAccounts(userId, input);
 }

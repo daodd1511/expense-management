@@ -1,1 +1,1 @@
-export { accountCreateSchema, accountPatchSchema } from "@wallet/shared";
+export { accountCreateSchema, accountPatchSchema, accountReorderSchema } from "@wallet/shared";
