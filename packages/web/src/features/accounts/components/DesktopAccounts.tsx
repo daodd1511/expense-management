@@ -13,6 +13,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AccountForm, accountDialogTitle } from "@/features/accounts/components/AccountForm";
+import { AccountReorderList } from "@/features/accounts/components/AccountReorderList";
 import { ReconcileBalanceForm } from "@/features/accounts/components/ReconcileBalanceForm";
 import { AccountsSkeleton } from "@/shared/components/Skeleton";
 import { Card } from "@/shared/components/ui/card";
@@ -30,6 +31,7 @@ import {
   useAccounts,
   useAddAccount,
   useDeleteAccount,
+  useReorderAccounts,
   useUpdateAccount,
 } from "@/features/accounts/queries";
 import type { Account, AccountKind } from "@/core/types";
@@ -50,6 +52,7 @@ export function DesktopAccounts({
   const addAcc = useAddAccount();
   const updateAcc = useUpdateAccount();
   const deleteAcc = useDeleteAccount();
+  const reorderAcc = useReorderAccounts();
   const { t } = useLang();
   const total = accounts.reduce(
     (sum, account) => sum + (account.balance ?? account.openingBalance),
@@ -128,8 +131,12 @@ export function DesktopAccounts({
         <p className="tabular mt-1 text-3xl font-semibold">{formatVND(total)}</p>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {accounts.map((a) => {
+      <AccountReorderList
+        accounts={accounts}
+        onReorder={(accountIds) => reorderAcc.mutate(accountIds)}
+        disabled={reorderAcc.isPending}
+        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+        renderAccount={(a, { dragHandle, moveButtons }) => {
           const meta = KIND[a.kind];
           const Icon = meta.icon;
           const bal = a.balance ?? a.openingBalance;
@@ -141,6 +148,8 @@ export function DesktopAccounts({
                   <Icon className="size-5" />
                 </span>
                 <div className="flex items-center gap-2">
+                  {moveButtons}
+                  {dragHandle}
                   <span className="text-xs font-medium text-muted-foreground">{meta.label}</span>
                   <DropdownMenu>
                     <DropdownMenuTrigger
@@ -182,8 +191,8 @@ export function DesktopAccounts({
               </div>
             </Card>
           );
-        })}
-      </div>
+        }}
+      />
 
       <Modal open={modalOpen} onClose={close}>
         <div className="flex items-center justify-between border-b border-border px-5 py-4">

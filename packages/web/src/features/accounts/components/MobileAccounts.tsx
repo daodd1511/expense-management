@@ -1,8 +1,10 @@
 import { Banknote, CreditCard, Landmark, Pencil, Plus, Scale, Trash2, Wallet } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { AccountForm, accountDialogTitle } from "@/features/accounts/components/AccountForm";
+import { AccountReorderList } from "@/features/accounts/components/AccountReorderList";
 import { ReconcileBalanceForm } from "@/features/accounts/components/ReconcileBalanceForm";
 import { AccountsSkeleton } from "@/shared/components/Skeleton";
 import { useSwipeActions } from "@/shared/hooks/useSwipeActions";
@@ -16,6 +18,7 @@ import {
   useAccounts,
   useAddAccount,
   useDeleteAccount,
+  useReorderAccounts,
   useUpdateAccount,
 } from "@/features/accounts/queries";
 import type { Account, AccountKind } from "@/core/types";
@@ -40,6 +43,8 @@ function AccountRow({
   onDelete,
   onViewTransactions,
   reconcileLabel,
+  dragHandle,
+  moveButtons,
 }: {
   account: Account;
   balance: number;
@@ -49,6 +54,8 @@ function AccountRow({
   onDelete: () => void;
   onViewTransactions: () => void;
   reconcileLabel: string;
+  dragHandle: ReactNode;
+  moveButtons: ReactNode;
 }) {
   const { offset, isDragging, bind } = useSwipeActions(SWIPE_ACTION_WIDTH);
   const Icon = KIND_ICONS[account.kind];
@@ -90,6 +97,7 @@ function AccountRow({
         }}
         {...bind}
       >
+        {dragHandle}
         <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
           <Icon className="size-4" />
         </span>
@@ -112,6 +120,7 @@ function AccountRow({
             {formatVND(Math.abs(balance))}
           </span>
         </button>
+        <span onPointerDown={(event) => event.stopPropagation()}>{moveButtons}</span>
       </div>
     </div>
   );
@@ -123,6 +132,7 @@ export function MobileAccounts() {
   const addAcc = useAddAccount();
   const updateAcc = useUpdateAccount();
   const deleteAcc = useDeleteAccount();
+  const reorderAcc = useReorderAccounts();
   const { t } = useLang();
   const net = accounts.reduce(
     (sum, account) => sum + (account.balance ?? account.openingBalance),
@@ -187,10 +197,13 @@ export function MobileAccounts() {
         <CardContent className="px-4 py-3">
           <h2 className="text-sm font-semibold tracking-tight">{t("accounts.list")}</h2>
         </CardContent>
-        <div className="flex flex-col divide-y divide-border px-4">
-          {accounts.map((a) => (
+        <AccountReorderList
+          accounts={accounts}
+          onReorder={(accountIds) => reorderAcc.mutate(accountIds)}
+          disabled={reorderAcc.isPending}
+          className="flex flex-col divide-y divide-border px-4"
+          renderAccount={(a, { dragHandle, moveButtons }) => (
             <AccountRow
-              key={a.id}
               account={a}
               balance={a.balance ?? a.openingBalance}
               kindLabel={KIND_LABELS[a.kind]}
@@ -201,9 +214,11 @@ export function MobileAccounts() {
                 navigate({ to: "/transactions", search: { accountId: a.id } })
               }
               reconcileLabel={t("accounts.reconcile")}
+              dragHandle={dragHandle}
+              moveButtons={moveButtons}
             />
-          ))}
-        </div>
+          )}
+        />
         <div className="pb-1" />
       </Card>
 
