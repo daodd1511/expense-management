@@ -19,11 +19,11 @@ This phase establishes the persistent order and authenticated atomic mutation co
 - [x] Add `supabase/migrations/20260716000000_account_display_order.sql` with `accounts.display_order`, deterministic per-User backfill by `created_at` then `id`, append-on-create behavior, supporting index, and an atomic `reorder_accounts` RPC that accepts exactly the User's active Account IDs.
 - [x] Update `packages/shared/src/models/account.model.ts`, `dtos/account.dto.ts`, `mappers/account.mapper.ts`, `database.types.ts`, and `index.ts` for `displayOrder`, the complete-order request, and the RPC; add `mappers/account.mapper.test.ts`.
 - [x] Update `packages/api/src/features/accounts/{schema,routes,controller,service,repository}.ts` with `PUT /accounts/order`, ordered reads, append-on-create handling, and ownership/duplicate/omission/archived validation through the atomic RPC.
-- [ ] Extend `packages/api/src/features/accounts/accounts.test.ts` for deterministic reads, appended creation, valid reorder, rejected incomplete/duplicate/foreign/archived IDs, and zero partial updates.
+- [x] Extend `packages/api/src/features/accounts/accounts.test.ts` for deterministic reads, appended creation, valid reorder, rejected incomplete/duplicate/foreign/archived IDs, and zero partial updates.
 
 **Agent gate (hard):**
 - [ ] `pnpm --filter @wallet/api typecheck && pnpm --filter @wallet/web typecheck` (the shared Account contract is consumed by both packages)
-- [ ] `pnpm --filter @wallet/shared test -- src/mappers/account.mapper.test.ts && pnpm --filter @wallet/api test -- src/features/accounts/accounts.test.ts`
+- [ ] (amended 2026-07-16: corrected runner filtering) `pnpm --filter @wallet/shared exec vitest run src/mappers/account.mapper.test.ts && pnpm --filter @wallet/api exec vitest run src/features/accounts/accounts.test.ts`
 
 **Review checklist (user, at PR review):**
 - [ ] Existing Accounts retain their creation order after migration/refetch, and a newly created Account appears last.
