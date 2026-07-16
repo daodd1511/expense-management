@@ -7,10 +7,7 @@ their session summary). Delete a line when the item ships or graduates into a
 
 ## Fixes
 ## Features
-- [ ] Export & backup: CSV export, JSON backup/restore (2026-07-04)
 - [ ] Budget rollover + near-limit alerts — deferred until budgets see more actual use (2026-07-07)
-- [ ] Small UX batch: account reorder, currency format preference, per-locale number format (2026-07-04)
-- [ ] Better analytics on spendings (2026-07-05)
 - [ ] Better credit card information: view balance, due date, payment status (2026-07-05)
 - [ ] Do not add to report accounts or transactions (2026-07-16)
 ## Ideas
