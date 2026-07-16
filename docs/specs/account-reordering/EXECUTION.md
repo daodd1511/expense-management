@@ -5,9 +5,9 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 2 — in-progress
+- Current phase: 2 — done
 - Phase 1 — Persistence and API: done
-- Phase 2 — Web reordering: in-progress
+- Phase 2 — Web reordering: done
 - Verification debt: none
 
 ## Phase 1 — Persistence and API
@@ -44,8 +44,8 @@ This phase consumes the stable API contract and delivers one shared accessible o
 - [x] Keep API order unchanged through `AccountList.tsx` and `AccountSelect.tsx`; update `TransactionForm.tsx`, `SubscriptionForm.tsx`, `LoanForm.tsx`, `OriginForm.tsx`, and `RepaymentForm.tsx` so ordered Accounts drive first-Account defaults and Transfers use first-to-second, with focused component tests.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] (amended 2026-07-16: corrected runner filtering) `pnpm --filter @wallet/web exec vitest run src/features/accounts/queries.test.tsx src/features/accounts/components/AccountReorderList.test.tsx src/features/transactions/components/TransactionForm.test.tsx src/features/subscriptions/components/SubscriptionForm.test.tsx src/features/loans/components/LoanForm.test.tsx src/features/loans/components/OriginForm.test.tsx src/features/loans/components/RepaymentForm.test.tsx`
+- [x] `pnpm --filter @wallet/web typecheck`
+- [x] (amended 2026-07-16: corrected runner filtering) `pnpm --filter @wallet/web exec vitest run src/features/accounts/queries.test.tsx src/features/accounts/components/AccountReorderList.test.tsx src/features/transactions/components/TransactionForm.test.tsx src/features/subscriptions/components/SubscriptionForm.test.tsx src/features/loans/components/LoanForm.test.tsx src/features/loans/components/OriginForm.test.tsx src/features/loans/components/RepaymentForm.test.tsx`
 
 **Review checklist (user, at PR review):**
 - [ ] Reorder Accounts by pointer on desktop and touch on mobile; refetch/sign in again and confirm every list and selector keeps the same order.
