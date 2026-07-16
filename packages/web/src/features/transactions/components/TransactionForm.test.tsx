@@ -186,7 +186,9 @@ describe("TransactionForm", () => {
     await user.type(screen.getByPlaceholderText("0"), "100");
     await user.click(screen.getByRole("button", { name: "Food" }));
 
-    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+    expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
