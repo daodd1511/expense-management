@@ -11,6 +11,7 @@ import type { LucideIcon } from "lucide-react";
 import { DATE_LOCALE } from "@/core/i18n";
 import { BalanceTrendChart, CategoryDonut } from "@/shared/components/Charts";
 import { AccountList } from "@/features/accounts/components/AccountList";
+import { FirstAccountState } from "@/features/accounts/components/FirstAccountState";
 import { useBalanceTrend, useDashboardSummary } from "@/features/dashboard/queries";
 import { TransactionRow } from "@/features/transactions/components/TransactionRow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
@@ -45,7 +46,7 @@ export function DesktopDashboard({
   const { data: transactions = [], isPending: transactionsPending } = useTransactions();
   const { data: dashboardSummary, isPending: dashboardSummaryPending } = useDashboardSummary();
   const { data: balanceTrend = [], isPending: balanceTrendPending } = useBalanceTrend();
-  const { isPending: accountsPending } = useAccounts();
+  const { data: accounts = [], isPending: accountsPending } = useAccounts();
   const { data: subscriptions = [], isPending: subscriptionsPending } = useSubscriptions();
   const getCategory = useCategoryLookup();
   const { t, lang } = useLang();
@@ -81,6 +82,10 @@ export function DesktopDashboard({
     !dashboardSummary
   ) {
     return <DashboardSkeleton />;
+  }
+
+  if (accounts.length === 0) {
+    return <FirstAccountState />;
   }
 
   return (
