@@ -45,7 +45,7 @@ This phase consumes the stable API contract and delivers one shared accessible o
 
 **Agent gate (hard):**
 - [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test -- src/features/accounts/queries.test.tsx src/features/accounts/components/AccountReorderList.test.tsx src/features/transactions/components/TransactionForm.test.tsx src/features/subscriptions/components/SubscriptionForm.test.tsx src/features/loans/components/LoanForm.test.tsx src/features/loans/components/OriginForm.test.tsx src/features/loans/components/RepaymentForm.test.tsx`
+- [ ] (amended 2026-07-16: corrected runner filtering) `pnpm --filter @wallet/web exec vitest run src/features/accounts/queries.test.tsx src/features/accounts/components/AccountReorderList.test.tsx src/features/transactions/components/TransactionForm.test.tsx src/features/subscriptions/components/SubscriptionForm.test.tsx src/features/loans/components/LoanForm.test.tsx src/features/loans/components/OriginForm.test.tsx src/features/loans/components/RepaymentForm.test.tsx`
 
 **Review checklist (user, at PR review):**
 - [ ] Reorder Accounts by pointer on desktop and touch on mobile; refetch/sign in again and confirm every list and selector keeps the same order.
