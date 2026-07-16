@@ -5,8 +5,8 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 1 — in-progress
-- Phase 1 — Persistence and API: in-progress
+- Current phase: 1 — done
+- Phase 1 — Persistence and API: done
 - Phase 2 — Web reordering: pending
 - Verification debt: none
 
@@ -24,7 +24,7 @@ This phase establishes the persistent order and authenticated atomic mutation co
 
 **Agent gate (hard):**
 - [x] `pnpm --filter @wallet/api typecheck && pnpm --filter @wallet/web typecheck` (the shared Account contract is consumed by both packages)
-- [ ] (amended 2026-07-16: corrected runner filtering) `pnpm --filter @wallet/shared exec vitest run src/mappers/account.mapper.test.ts && pnpm --filter @wallet/api exec vitest run src/features/accounts/accounts.test.ts`
+- [x] (amended 2026-07-16: corrected runner filtering) `pnpm --filter @wallet/shared exec vitest run src/mappers/account.mapper.test.ts && pnpm --filter @wallet/api exec vitest run src/features/accounts/accounts.test.ts`
 
 **Review checklist (user, at PR review):**
 - [ ] Existing Accounts retain their creation order after migration/refetch, and a newly created Account appears last.
