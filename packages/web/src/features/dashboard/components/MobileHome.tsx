@@ -2,6 +2,7 @@ import { ArrowDownLeft, ArrowUpRight, ChevronRight, HandCoins, TrendingUp } from
 import { DATE_LOCALE } from "@/core/i18n";
 import { BalanceTrendChart, CategoryDonut } from "@/shared/components/Charts";
 import { AccountList } from "@/features/accounts/components/AccountList";
+import { FirstAccountState } from "@/features/accounts/components/FirstAccountState";
 import { useBalanceTrend, useDashboardSummary } from "@/features/dashboard/queries";
 import { TransactionRow } from "@/features/transactions/components/TransactionRow";
 import { Card, CardContent } from "@/shared/components/ui/card";
@@ -36,7 +37,7 @@ export function MobileHome({
   const { data: transactions = [], isPending: transactionsPending } = useTransactions();
   const { data: dashboardSummary, isPending: dashboardSummaryPending } = useDashboardSummary();
   const { data: balanceTrend = [], isPending: balanceTrendPending } = useBalanceTrend();
-  const { isPending: accountsPending } = useAccounts();
+  const { data: accounts = [], isPending: accountsPending } = useAccounts();
   const { data: subscriptions = [], isPending: subscriptionsPending } = useSubscriptions();
   const getCategory = useCategoryLookup();
   const { t, lang } = useLang();
@@ -71,6 +72,14 @@ export function MobileHome({
     !dashboardSummary
   ) {
     return <DashboardSkeleton mobile />;
+  }
+
+  if (accounts.length === 0) {
+    return (
+      <MobilePageContainer>
+        <FirstAccountState />
+      </MobilePageContainer>
+    );
   }
 
   return (

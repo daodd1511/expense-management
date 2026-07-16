@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useLang } from "@/core/i18n";
+import { useAccounts } from "@/features/accounts/queries";
 import { BottomSheet, Drawer } from "@/shared/components/ui/overlay";
 import { todayLocalMonthIso } from "@/shared/lib/date";
 import { useAddTransaction, useTransactions, useUpdateTransaction } from "./queries";
@@ -20,14 +22,23 @@ const StateContext = createContext<TransactionOverlayState | null>(null);
 
 export function TransactionOverlayProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<TransactionOverlayState | null>(null);
+  const { data: accounts = [] } = useAccounts();
+  const navigate = useNavigate();
 
   const actions = useMemo<TransactionOverlayActions>(
     () => ({
-      openCreate: (month = todayLocalMonthIso()) => setState({ mode: "create", month }),
+      openCreate: (month = todayLocalMonthIso()) => {
+        if (accounts.length === 0) {
+          navigate({ to: "/accounts", search: { create: String(Date.now()) } });
+          return;
+        }
+
+        setState({ mode: "create", month });
+      },
       openEdit: (transactionId, month) => setState({ mode: "edit", transactionId, month }),
       close: () => setState(null),
     }),
-    [],
+    [accounts.length, navigate],
   );
 
   return (
