@@ -55,6 +55,7 @@ export {
 export {
   accountCreateSchema,
   accountPatchSchema,
+  accountReorderSchema,
   accountRowSchema,
   balanceTrendPointSchema,
   balanceTrendResponseSchema,
@@ -106,6 +107,7 @@ export {
   transactionRowSchema,
   type AccountCreate,
   type AccountPatch,
+  type AccountReorder,
   type AccountRow,
   type BalanceTrendPoint,
   type BalanceTrendResponse,

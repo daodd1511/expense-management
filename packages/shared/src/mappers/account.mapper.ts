@@ -1,5 +1,5 @@
 import type { Account } from "../models";
-import type { AccountPatch, AccountRow } from "../dtos";
+import type { AccountCreate, AccountPatch, AccountRow } from "../dtos";
 
 export function toAccount(row: AccountRow): Account {
   return {
@@ -7,10 +7,11 @@ export function toAccount(row: AccountRow): Account {
     name: row.name,
     kind: row.kind,
     openingBalance: row.opening_balance,
+    displayOrder: row.display_order,
   };
 }
 
-export function fromAccount(params: { account: Omit<Account, "id">; ownerId: string }) {
+export function fromAccount(params: { account: AccountCreate; ownerId: string }) {
   const { account, ownerId } = params;
   return {
     owner_id: ownerId,

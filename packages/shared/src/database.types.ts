@@ -43,6 +43,7 @@ export type Database = {
         Row: {
           archived: boolean
           created_at: string
+          display_order: number
           id: string
           kind: string
           name: string
@@ -52,6 +53,7 @@ export type Database = {
         Insert: {
           archived?: boolean
           created_at?: string
+          display_order?: number
           id?: string
           kind: string
           name: string
@@ -61,6 +63,7 @@ export type Database = {
         Update: {
           archived?: boolean
           created_at?: string
+          display_order?: number
           id?: string
           kind?: string
           name?: string
@@ -681,6 +684,13 @@ export type Database = {
           tx_tx_date: string
           tx_type: string
         }[]
+      }
+      reorder_accounts: {
+        Args: {
+          p_account_ids: string[]
+          p_owner_id: string
+        }
+        Returns: undefined
       }
       update_loan_disbursement: {
         Args: {

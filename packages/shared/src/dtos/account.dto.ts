@@ -8,6 +8,7 @@ export const accountRowSchema = z.object({
   name: z.string(),
   kind: accountKindSchema,
   opening_balance: z.number(),
+  display_order: z.number().int().nonnegative(),
   archived: z.boolean(),
   created_at: z.string(),
 });
@@ -24,6 +25,11 @@ export const accountPatchSchema = atLeastOneKey({
   openingBalance: z.number(),
 });
 
+export const accountReorderSchema = z.object({
+  accountIds: z.array(z.string().min(1)),
+});
+
 export type AccountRow = z.infer<typeof accountRowSchema>;
 export type AccountCreate = z.infer<typeof accountCreateSchema>;
 export type AccountPatch = z.infer<typeof accountPatchSchema>;
+export type AccountReorder = z.infer<typeof accountReorderSchema>;
