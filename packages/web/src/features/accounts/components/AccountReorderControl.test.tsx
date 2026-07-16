@@ -100,5 +100,13 @@ describe("AccountReorderControl", () => {
     expect(onSave).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Reorder" }));
     expect(screen.getByText("Bank, Cash")).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Reverse draft" }));
+    const backdrop = document.querySelector<HTMLDivElement>('div[aria-hidden="true"]');
+    expect(backdrop).not.toBeNull();
+    await user.click(backdrop as HTMLDivElement);
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(onSave).not.toHaveBeenCalled();
   });
 });
