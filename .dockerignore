@@ -1,0 +1,16 @@
+# Keep the build context small and reproducible. Source under packages/* is
+# copied explicitly by the Dockerfiles; everything below is noise or stale output.
+**/node_modules
+**/dist
+.git
+.github
+.claude
+.agents
+.codex
+docs
+presentation
+supabase
+scripts
+*.tsbuildinfo
+.pnpm-store
+.DS_Store

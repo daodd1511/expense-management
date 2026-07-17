@@ -1,0 +1,42 @@
+# Wallet self-host stack (Portainer GitOps). Build happens on the laptop from this
+# repo; no image registry. Secrets are supplied as Portainer stack environment
+# variables (never committed): SUPABASE_URL, SUPABASE_SECRET_KEY, VITE_SUPABASE_URL,
+# VITE_SUPABASE_PUBLISHABLE_KEY, TUNNEL_TOKEN.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    image: wallet-api:local
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY}
+    restart: unless-stopped
+    networks: [wallet]
+
+  web:
+    build:
+      context: .
+      dockerfile: packages/web/Dockerfile
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
+        VITE_API_BASE: /api
+    image: wallet-web:local
+    depends_on: [api]
+    restart: unless-stopped
+    networks: [wallet]
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    restart: unless-stopped
+    networks: [wallet]
+
+networks:
+  wallet:
+    driver: bridge
