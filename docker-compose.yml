@@ -25,6 +25,7 @@ services:
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
         VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
         VITE_API_BASE: /api
+        APP_COMMIT: ${APP_COMMIT:-}
     image: wallet-web:local
     pull_policy: build
     depends_on: [api]

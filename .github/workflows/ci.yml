@@ -26,12 +26,28 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
 
-  # Quality gate passed on main → tell Portainer to git-pull + rebuild the stack.
-  # Swap this for Portainer polling if you prefer zero inbound (see docs).
+  # Quality gate passed on main → build + deploy ON the laptop via the self-hosted
+  # runner. The full `docker compose build` output streams to this job's log, so the
+  # Actions run IS the server build console (history + truthful pass/fail).
   deploy:
     needs: check
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    env:
+      # Manage the SAME stack Portainer created (same project name → same containers,
+      # network, and cloudflared connector), not a duplicate under the checkout dir name.
+      COMPOSE_PROJECT_NAME: wallet
+      # Secrets live in GitHub, injected here for compose interpolation / build args.
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
+      # Baked into the web bundle so VersionPage shows exactly what's live.
+      APP_COMMIT: ${{ github.sha }}
     steps:
-      - name: Trigger Portainer redeploy
-        run: curl -fsS --max-time 600 -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}"
+      - uses: actions/checkout@v4
+      - name: Build and deploy stack
+        run: docker compose up -d --build --remove-orphans
+      - name: Show running containers
+        run: docker compose ps
