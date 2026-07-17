@@ -1,7 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DesktopDashboard } from "./DesktopDashboard";
+
+const navigate = vi.fn();
+let accounts = [{ id: "acc-1", name: "Cash", kind: "cash", openingBalance: 0, balance: 0 }];
+
+vi.mock("@tanstack/react-router", () => ({
+  useNavigate: () => navigate,
+}));
 
 vi.mock("@/features/dashboard/queries", () => ({
   useDashboardSummary: () => ({
@@ -37,7 +44,7 @@ vi.mock("@/features/transactions/queries", () => ({
 }));
 
 vi.mock("@/features/accounts/queries", () => ({
-  useAccounts: () => ({ data: [], isPending: false }),
+  useAccounts: () => ({ data: accounts, isPending: false }),
 }));
 
 vi.mock("@/features/categories/queries", () => ({
@@ -83,11 +90,19 @@ vi.mock("@/core/i18n", () => ({
         "loans.owedToUser": "Owed to you",
         "loans.userOwes": "You owe",
         "loans.overdueCountValue": `${vars?.n ?? 0} overdue`,
+        "accounts.firstTitle": "Start with your first account",
+        "accounts.firstDescription": "Create an account before adding transactions.",
+        "accounts.firstAction": "Create your first Account",
       })[key] ?? key,
   }),
 }));
 
 describe("DesktopDashboard", () => {
+  beforeEach(() => {
+    navigate.mockReset();
+    accounts = [{ id: "acc-1", name: "Cash", kind: "cash", openingBalance: 0, balance: 0 }];
+  });
+
   it("shows the balance trend and compact loan summary without net worth", async () => {
     const user = userEvent.setup();
     const onNavigate = vi.fn();
@@ -102,5 +117,20 @@ describe("DesktopDashboard", () => {
 
     await user.click(screen.getAllByRole("button", { name: "View all" })[0]!);
     expect(onNavigate).toHaveBeenCalledWith("loans");
+  });
+
+  it("guides a user without accounts to Account creation", async () => {
+    const user = userEvent.setup();
+    accounts = [];
+
+    render(<DesktopDashboard onNavigate={vi.fn()} onEdit={vi.fn()} />);
+
+    expect(screen.getByRole("heading", { name: "Start with your first account" })).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Create your first Account" }));
+
+    expect(navigate).toHaveBeenCalledWith({
+      to: "/accounts",
+      search: { create: expect.any(String) },
+    });
   });
 });

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TransactionForm } from "./TransactionForm";
 
 const MOCK_CATEGORIES = [
@@ -34,6 +34,12 @@ const MOCK_CATEGORIES = [
   },
 ];
 
+const DEFAULT_ACCOUNTS = [
+  { id: "cash", name: "Cash" },
+  { id: "bank", name: "Bank" },
+];
+let mockAccounts = DEFAULT_ACCOUNTS;
+
 vi.mock("@/features/categories/queries", () => ({
   useCategories: () => ({ data: MOCK_CATEGORIES }),
   useCategoryLookup: () => (id: string | null | undefined) =>
@@ -51,10 +57,7 @@ vi.mock("@/shared/hooks/useIsDesktop", () => ({
 
 vi.mock("@/features/accounts/queries", () => ({
   useAccounts: () => ({
-    data: [
-      { id: "cash", name: "Cash" },
-      { id: "bank", name: "Bank" },
-    ],
+    data: mockAccounts,
   }),
 }));
 
@@ -128,6 +131,10 @@ vi.mock("@/components/ui/switch", () => ({
 }));
 
 describe("TransactionForm", () => {
+  beforeEach(() => {
+    mockAccounts = DEFAULT_ACCOUNTS;
+  });
+
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -165,6 +172,24 @@ describe("TransactionForm", () => {
 
     const amountInput = screen.getByPlaceholderText("0") as HTMLInputElement;
     expect(document.activeElement).not.toBe(amountInput);
+  });
+
+  it("renders safely and prevents submission when no Account exists", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    mockAccounts = [];
+
+    expect(() =>
+      render(<TransactionForm variant="desktop" onSubmit={onSubmit} onCancel={vi.fn()} />),
+    ).not.toThrow();
+
+    await user.type(screen.getByPlaceholderText("0"), "100");
+    await user.click(screen.getByRole("button", { name: "Food" }));
+
+    expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it("submits a date-only ISO string", async () => {

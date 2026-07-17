@@ -12,6 +12,7 @@ vi.mock("../../config/supabase", () => ({
 }));
 
 import { accountsRouter } from "./routes";
+import * as repository from "./repository";
 
 function buildAccountsSelectResult(accountData: unknown[], transactionData: unknown[] = []) {
   const order = vi.fn().mockResolvedValue({ data: accountData, error: null });
@@ -31,7 +32,24 @@ function buildAccountsSelectResult(accountData: unknown[], transactionData: unkn
     client: {
       from,
     },
+    accountOwnerEq: firstEq,
+    transactionOwnerEq: transactionEq,
   };
+}
+
+function buildAccountMutationClient(method: "update" | "archive") {
+  const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+  const select = vi.fn().mockReturnValue({ maybeSingle });
+  const ownerEq = vi.fn().mockReturnValue({ select });
+  const idEq = vi.fn().mockReturnValue({ eq: ownerEq });
+  const mutation = vi.fn().mockReturnValue({ eq: idEq });
+  const from = vi.fn().mockReturnValue(
+    method === "update"
+      ? { update: mutation }
+      : { update: vi.fn().mockReturnValue({ eq: idEq }) },
+  );
+
+  return { client: { from }, idEq, ownerEq };
 }
 
 describe("accountsRouter", () => {
@@ -109,5 +127,43 @@ describe("accountsRouter", () => {
         },
       ],
     });
+  });
+
+  it("scopes Account reads to the authenticated User", async () => {
+    const { client, accountOwnerEq, transactionOwnerEq } = buildAccountsSelectResult([], []);
+    getSupabase.mockReturnValue(client);
+
+    const response = await new Hono<AuthEnv>()
+      .use("*", async (c, next) => {
+        c.set("userId", "user-1");
+        await next();
+      })
+      .route("/accounts", accountsRouter)
+      .request("/accounts");
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ data: [] });
+    expect(accountOwnerEq).toHaveBeenCalledWith("owner_id", "user-1");
+    expect(transactionOwnerEq).toHaveBeenCalledWith("owner_id", "user-1");
+  });
+
+  it("cannot update another User's Account", async () => {
+    const { client, idEq, ownerEq } = buildAccountMutationClient("update");
+    getSupabase.mockReturnValue(client);
+
+    await expect(
+      repository.updateAccount("user-1", "user-2-account", { name: "Changed" }),
+    ).resolves.toBeNull();
+    expect(idEq).toHaveBeenCalledWith("id", "user-2-account");
+    expect(ownerEq).toHaveBeenCalledWith("owner_id", "user-1");
+  });
+
+  it("cannot archive another User's Account", async () => {
+    const { client, idEq, ownerEq } = buildAccountMutationClient("archive");
+    getSupabase.mockReturnValue(client);
+
+    await expect(repository.archiveAccount("user-1", "user-2-account")).resolves.toBe(false);
+    expect(idEq).toHaveBeenCalledWith("id", "user-2-account");
+    expect(ownerEq).toHaveBeenCalledWith("owner_id", "user-1");
   });
 });

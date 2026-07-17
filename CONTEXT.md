@@ -37,6 +37,11 @@ A single movement of money: an income, an expense, a transfer, or a
 loan-linked transaction.
 _Avoid_: entry, record, payment
 
+**Spending**:
+The total of expense Transactions over a period, excluding Transfers,
+loan-linked Transactions, and Unexplained adjustments.
+_Avoid_: outflow, money leaving Accounts, all expenses
+
 **Ledger order**:
 The chronological order in which transactions are applied to derive balances.
 _Avoid_: display order, row order, sort order
@@ -210,6 +215,23 @@ _Avoid_: duplicate payment
 The add/edit transaction form, opened on top of whatever page the user is on
 without navigating away, so their place is preserved.
 _Avoid_: transaction modal, transaction route, add screen
+
+## Data Portability
+
+**Data export**:
+A human-readable copy of the user's Transactions for use outside the app. It is
+not a source for recreating app data.
+_Avoid_: backup, restore file
+
+**Backup**:
+A versioned copy of all user-owned financial data, independent of the User
+identity that created it, from which that financial state can be recreated.
+_Avoid_: export, database dump
+
+**Restore**:
+Recreating the user's complete financial state from a Backup by atomically
+replacing the financial state currently in the app.
+_Avoid_: import, merge, partial restore
 
 ## Conventions
 

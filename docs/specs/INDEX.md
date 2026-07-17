@@ -5,10 +5,12 @@ _git and `EXECUTION.md` STATUS blocks win._
 
 | Spec | Status | Phases | Debt | Description |
 |------|--------|--------|------|-------------|
-| [multi-user-release-readiness](multi-user-release-readiness/PLAN.md) | Not started | — | — | Produced via /grill-with-docs. This is a small friends-and-family readiness check for an… |
+| [account-reordering](account-reordering/PLAN.md) | Not started | — | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed. |
+| [data-portability](data-portability/PLAN.md) | Not started | — | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed. Depends on… |
+| [spending-analytics](spending-analytics/PLAN.md) | Not started | — | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed. |
 | [api-restructure](api-restructure/PLAN.md) | Done | 4/4 | — | Fourth and final spec of the batch. A behavior-preserving migration of packages/api from flat… |
 | [auth-routing](auth-routing/PLAN.md) | Done | 3/3 | — | Add email/password auth alongside the existing Google OAuth flow, and replace the app's… |
-| [balance-adjustment](balance-adjustment/PLAN.md) | Done | 3/3 | — | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
+| [balance-adjustment](balance-adjustment/PLAN.md) | Done | 3/3 | — | Produced via /grill-with-docs. This plan supersedes the original fixed income/expense… |
 | [be-integration](be-integration/PLAN.md) | Done | — | — |  FE (browser) 1. Google OAuth via Supabase Auth → receives access_token (JWT) 2. Stores token in… |
 | [category-redesign](category-redesign/PLAN.md) | Done | 3/3 | ⚠ manual browser checks (2 items) deferred; review checklist incomplete | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
 | [category-ux](category-ux/PLAN.md) | Done | 3/3 | ⚠ manual browser checks (2 items) deferred; review checklist incomplete | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
@@ -18,6 +20,7 @@ _git and `EXECUTION.md` STATUS blocks win._
 | [foundation](foundation/PLAN.md) | Done | 3/3 | — | Backend correctness, date-handling, and the store.tsx architecture refactor. First of three… |
 | [kanagawa-theme](kanagawa-theme/PLAN.md) | Done | 2/2 | — | Recolor the app to a Kanagawa-inspired "pigment on paper" palette: Washi (softened cream paper)… |
 | [mobile-ux](mobile-ux/PLAN.md) | Done | 5/5 | — | Produced via /grill-me. All decisions below were explicitly confirmed; do not reinterpret or… |
+| [multi-user-release-readiness](multi-user-release-readiness/PLAN.md) | Done | 1/1 | — | Produced via /grill-with-docs. This is a small friends-and-family readiness check for an… |
 | [personal-loans](personal-loans/PLAN.md) | Done | 5/5 | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed; do not… |
 | [polish](polish/PLAN.md) | Done | 3/3 | — | Third of three sibling specs from the "all Fixes + Features 7–13" batch. Builds on Spec 1… |
 | [pwa](pwa/PLAN.md) | Done | 2/2 | ⚠ manual browser checks (2 items) deferred; review checklist incomplete | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
