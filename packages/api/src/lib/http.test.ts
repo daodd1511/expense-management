@@ -98,7 +98,7 @@ describe("handleError", () => {
 
     await respond(error);
 
-    expect(spy).toHaveBeenCalledWith({ error }, "database unexpected error");
+    expect(spy).toHaveBeenCalledWith({ err: error }, "database unexpected error");
     spy.mockRestore();
   });
 });
