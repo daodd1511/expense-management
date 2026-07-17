@@ -152,7 +152,6 @@ export function DesktopApp() {
         <SidebarHeader className="p-2">
           <div className="flex min-h-11 items-center gap-2.5 overflow-hidden rounded-xl px-1">
             <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              Test
               <CreditCard className="size-5" />
             </span>
             <div className="min-w-0 leading-tight">
