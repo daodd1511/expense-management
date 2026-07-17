@@ -27,28 +27,28 @@ const isDev = process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== 
 
 function mapDbError(c: Context, error: DbError) {
   if (error.code === "23505") {
-    logger.error({ error }, "database unique constraint violation");
+    logger.error({ err: error }, "database unique constraint violation");
     return jsonError(c, 409, "This item already exists");
   }
 
   if (error.code === "23503") {
-    logger.error({ error }, "database foreign key violation");
+    logger.error({ err: error }, "database foreign key violation");
     return jsonError(c, 409, "This action conflicts with related data");
   }
 
   // Raised deliberately by our own plpgsql functions (loan lifecycle RPCs) with clean,
   // user-facing messages — unlike the generic fallback below, always safe to pass through.
   if (error.code === "P0002") {
-    logger.error({ error }, "database not found");
+    logger.error({ err: error }, "database not found");
     return jsonError(c, 404, error.message);
   }
 
   if (error.code === "22023") {
-    logger.error({ error }, "database domain validation error");
+    logger.error({ err: error }, "database domain validation error");
     return jsonError(c, 400, error.message);
   }
 
-  logger.error({ error }, "database unexpected error");
+  logger.error({ err: error }, "database unexpected error");
   return jsonError(
     c,
     500,
@@ -61,7 +61,7 @@ function mapDbError(c: Context, error: DbError) {
 export function handleError(error: unknown, c: Context) {
   if (error instanceof ApiError) {
     if (error.status >= 500) {
-      logger.error({ error }, "application error");
+      logger.error({ err: error }, "application error");
     }
 
     return jsonError(c, error.status, error.clientMessage, error.details);
@@ -71,7 +71,7 @@ export function handleError(error: unknown, c: Context) {
     return mapDbError(c, error);
   }
 
-  logger.error({ error }, "uncaught application error");
+  logger.error({ err: error }, "uncaught application error");
   const message = isDev && error instanceof Error ? error.message : "Internal server error";
   return jsonError(c, 500, message);
 }
