@@ -290,11 +290,34 @@ presentation
    > keeps the service target as the in-network name `http://web:80` — never a host LAN IP:port, since
    > this stack publishes no host ports. Leave your other tunnels/hostnames untouched.
 2. **Portainer stack from Git.** Portainer → Stacks → Add stack → **Git repository**. Point at this
-   repo, branch `main`, compose path `docker-compose.yml`. Enable the **webhook** (copy its URL →
-   GitHub secret `PORTAINER_WEBHOOK_URL`) *or* enable **automatic updates / polling** for zero-inbound.
-   Add the five environment variables listed above.
-3. **GitHub.** Add repo secret `PORTAINER_WEBHOOK_URL`. Delete the old `deploy.yml` and its `VPS_*`
-   secrets. Add `ci.yml`.
+   repo, branch `main`, compose path `docker-compose.yml`. The redeploy trigger lives under
+   **GitOps updates** (Portainer CE UI; not a separate "Webhook" section) — enable the **Webhook**
+   mechanism there and copy its URL, or enable **Polling** instead for zero-inbound. Add the five
+   environment variables listed above.
+
+   > **Portainer's admin UI/API is LAN-only — GitHub's hosted runners cannot reach it directly.**
+   > A webhook POST from CI needs a public path. Don't expose the whole Portainer UI to do this —
+   > publish **only the webhook path** as its own Cloudflare Tunnel route (reuse any tunnel already
+   > running on the box; a brand-new tunnel is not required):
+   > - Public hostname: `ops.thomasduong.info.vn` (or similar — distinct from the app's own hostname)
+   > - **Path**: `api/stacks/webhooks/*`
+   > - Origin: `https://<laptop-lan-ip>:9443` (Portainer's HTTPS port)
+   > - Origin TLS: enable **"No TLS Verify"** — Portainer's cert on 9443 is self-signed; this only
+   >   affects the tunnel→origin hop inside the LAN, the public leg (client↔Cloudflare) stays fully
+   >   verified TLS. Safe specifically because that hop never leaves the LAN.
+   >
+   > Anything hitting that hostname outside the exact path falls through to the tunnel's default
+   > 404 — the Portainer login/UI/API stay unreachable from the internet, only the one webhook
+   > endpoint is public. Use this full path in `PORTAINER_WEBHOOK_URL`, e.g.
+   > `https://ops.thomasduong.info.vn/api/stacks/webhooks/<uuid>`. Re-copy the UUID fresh if the
+   > stack was ever deleted/recreated or the webhook toggled off/on — it regenerates each time and a
+   > stale one 404s with `"Unable to find the stack by webhook ID"` even though routing is correct.
+3. **GitHub.** Add repo secret `PORTAINER_WEBHOOK_URL` (the public path-scoped URL above, not the
+   LAN address). Delete the old `deploy.yml` and its `VPS_*` secrets. Add `ci.yml` — its `check` job
+   needs `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` as env too, since
+   `packages/web/src/core/supabase.ts` calls `createClient()` at import time and tests fail without
+   a URL even though nothing hits the network. The `deploy` job's curl caps at `--max-time 600` so a
+   stuck build fails the Action instead of hanging for hours.
 4. **uptime-kuma.** Add an HTTP monitor for `https://wallet.thomasduong.info.vn/health` (expects
    `{"ok":true}`), alerting to your channel of choice.
 
