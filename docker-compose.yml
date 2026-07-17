@@ -8,6 +8,7 @@ services:
       context: .
       dockerfile: packages/api/Dockerfile
     image: wallet-api:local
+    pull_policy: build
     environment:
       NODE_ENV: production
       PORT: "3000"
@@ -25,6 +26,7 @@ services:
         VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
         VITE_API_BASE: /api
     image: wallet-web:local
+    pull_policy: build
     depends_on: [api]
     restart: unless-stopped
     networks: [wallet]
