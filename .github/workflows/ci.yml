@@ -34,4 +34,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Portainer redeploy
-        run: curl -fsS -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}"
+        run: curl -fsS --max-time 600 -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}"
