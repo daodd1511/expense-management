@@ -357,6 +357,7 @@ describe("transactionsRouter", () => {
           name: "Cash",
           kind: "cash",
           opening_balance: 1000,
+          display_order: 0,
           archived: false,
           created_at: "2026-01-01T00:00:00.000Z",
         },
