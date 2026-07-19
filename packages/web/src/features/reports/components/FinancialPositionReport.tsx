@@ -13,12 +13,11 @@ import { useIsDesktop } from "@/shared/hooks/useIsDesktop";
 import { formatVND } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 import { useFinancialPosition } from "../queries";
-import { monthRangeFromMonth } from "../report-date";
+import type { ReportRange } from "../report-date";
 
-export function FinancialPositionReport({ month }: { month: string }) {
+export function FinancialPositionReport({ range }: { range: ReportRange }) {
   const { t } = useLang();
   const isDesktop = useIsDesktop();
-  const range = monthRangeFromMonth(month);
   const { data, isPending } = useFinancialPosition(range);
 
   if (isPending || !data) return <ReportsSkeleton mobile={!isDesktop} />;

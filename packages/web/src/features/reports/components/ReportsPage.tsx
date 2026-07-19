@@ -12,15 +12,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import { TransactionsMonthSwitcher } from "@/features/transactions/components/TransactionsMonthSwitcher";
 import { MobilePageContainer } from "@/shared/components/MobilePageContainer";
 import { useIsDesktop } from "@/shared/hooks/useIsDesktop";
+import type { ReportsSearch } from "@/routing/reports-search";
 import { DEFAULT_REPORT_TYPE_ID, REPORT_TYPES, type ReportTypeId } from "../report-types";
-import { currentReportMonth } from "../report-date";
+import { resolveReportRange, type ReportRange, type ReportRangePreset } from "../report-date";
 import { IncomeExpenseReport } from "./IncomeExpenseReport";
 import { FinancialPositionReport } from "./FinancialPositionReport";
+import { ReportRangeSelector } from "./ReportRangeSelector";
 
 const REPORT_TYPE_OPTIONS = Object.values(REPORT_TYPES);
+const DEFAULT_RANGE_PRESET: ReportRangePreset = "this-month";
+
+type ReportRangeState = ReportRange & { preset: ReportRangePreset };
+
+function defaultRangeState(): ReportRangeState {
+  return { preset: DEFAULT_RANGE_PRESET, ...resolveReportRange(DEFAULT_RANGE_PRESET) };
+}
+
+function isFullSearch(search: ReportsSearch): search is Required<ReportsSearch> {
+  return Boolean(search.preset && search.from && search.to);
+}
 
 export function ReportsPage() {
   const { t } = useLang();
@@ -31,26 +43,36 @@ export function ReportsPage() {
   const activeReportType = REPORT_TYPES[activeType];
 
   const isReportsRoute = location.pathname === "/reports";
-  const searchMonth = isReportsRoute
-    ? getSearchMonth(location.search as Record<string, unknown>)
-    : undefined;
-  const [selectedMonth, setSelectedMonth] = useState(() => currentReportMonth(searchMonth));
+  const search = isReportsRoute ? (location.search as ReportsSearch) : {};
+  const [range, setRange] = useState<ReportRangeState>(() =>
+    isFullSearch(search) ? search : defaultRangeState(),
+  );
 
+  // Bare `/reports` visit (no preset/from/to/month at all) — write the resolved default
+  // into the URL so it's bookmarkable, same as the prior month-only behavior.
   useEffect(() => {
-    if (isReportsRoute && !searchMonth) {
-      void navigate({ to: "/reports", search: { month: selectedMonth }, replace: true });
+    if (isReportsRoute && !search.preset && !search.from && !search.to) {
+      void navigate({ to: "/reports", search: range, replace: true });
     }
-  }, [isReportsRoute, navigate, searchMonth, selectedMonth]);
+  }, [isReportsRoute, search.preset, search.from, search.to, navigate, range]);
 
+  // External navigation (back/forward, a shared link) changed the URL's range — sync state.
+  const { preset: searchPreset, from: searchFrom, to: searchTo } = search;
   useEffect(() => {
-    if (isReportsRoute && searchMonth && searchMonth !== selectedMonth) {
-      setSelectedMonth(searchMonth);
+    if (
+      isReportsRoute &&
+      searchPreset &&
+      searchFrom &&
+      searchTo &&
+      (searchPreset !== range.preset || searchFrom !== range.from || searchTo !== range.to)
+    ) {
+      setRange({ preset: searchPreset, from: searchFrom, to: searchTo });
     }
-  }, [isReportsRoute, searchMonth, selectedMonth]);
+  }, [isReportsRoute, searchPreset, searchFrom, searchTo, range.preset, range.from, range.to]);
 
-  const handleMonthChange = (nextMonth: string) => {
-    setSelectedMonth(nextMonth);
-    void navigate({ to: "/reports", search: { month: nextMonth }, replace: true });
+  const handleRangeChange = (next: ReportRangeState) => {
+    setRange(next);
+    void navigate({ to: "/reports", search: next, replace: true });
   };
 
   return (
@@ -64,7 +86,7 @@ export function ReportsPage() {
 
           <div className="flex flex-wrap items-center gap-3">
             <ReportTypeSelect value={activeType} onChange={setActiveType} className="w-56" />
-            <TransactionsMonthSwitcher month={selectedMonth} onChange={handleMonthChange} />
+            <ReportRangeSelector range={range} onChange={handleRangeChange} />
           </div>
         </>
       ) : (
@@ -81,25 +103,19 @@ export function ReportsPage() {
           <CardContent className="grid gap-3">
             <p className="text-sm font-medium">{t(activeReportType.labelKey)}</p>
             <p className="text-sm text-muted-foreground">{t(activeReportType.descriptionKey)}</p>
-            <TransactionsMonthSwitcher
-              month={selectedMonth}
-              onChange={handleMonthChange}
+            <ReportRangeSelector
+              range={range}
+              onChange={handleRangeChange}
               className="justify-between sm:justify-start sm:self-start"
             />
           </CardContent>
         </Card>
       )}
 
-      {activeType === "income-expense" && <IncomeExpenseReport month={selectedMonth} />}
-      {activeType === "financial-position" && <FinancialPositionReport month={selectedMonth} />}
+      {activeType === "income-expense" && <IncomeExpenseReport range={range} />}
+      {activeType === "financial-position" && <FinancialPositionReport range={range} />}
     </MobilePageContainer>
   );
-}
-
-function getSearchMonth(search: Record<string, unknown>) {
-  return typeof search.month === "string" && /^\d{4}-\d{2}$/.test(search.month)
-    ? search.month
-    : undefined;
 }
 
 function ReportTypeSelect({
