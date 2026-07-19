@@ -9,8 +9,7 @@ Integration branch: `develop`. Branch model: stacked (default).
 - Phase 1 — Shared contract & API: done
 - Phase 2 — Report range model (web): done
 - Phase 3 — Spending analysis UI (web): pending
-- Verification debt: none (manual in-browser check moved to PR review checklist per
-  project convention — see Phase 2 amendments)
+- Verification debt: none (manual in-browser check moved to PR review checklist — see Phase 2 amendments)
 
 ## Phase 1 — Shared contract & API
 
