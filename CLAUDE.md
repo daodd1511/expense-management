@@ -226,9 +226,11 @@ grilling should also maintain the glossary and ADRs (see "Domain Model & Decisio
 - Gate pass → one ask: "push + open PR?". Remote actions are never bundled with anything
   else (see Hard Stops below).
 - A phase is complete only when its **agent gate** (typecheck, tests, build) actually
-  passed — checking boxes doesn't substitute for running it. Manual verification scenarios
-  are the **review checklist**, listed in the PR description for the user to walk through
-  before merging — they are the user's, not agent debt.
+  passed — checking boxes doesn't substitute for running it — **and the phase PR's CI is
+  green**. The local gate is a pre-PR smoke check; CI's full run is authoritative, and red
+  CI on a phase PR is the agent's to fix before the phase is done. Manual verification
+  scenarios are the **review checklist**, listed in the PR description for the user to walk
+  through before merging — they are the user's, not agent debt.
 - **One spec in flight at a time.** Do not start or resume a different spec's phase while
   another has an unfinished phase. Finish the current phase, or explicitly **park** it with
   the user's go-ahead: a `WIP: parked <date>` commit on the phase branch plus a STATUS note
