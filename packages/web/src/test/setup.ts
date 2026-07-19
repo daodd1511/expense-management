@@ -4,3 +4,15 @@ if (!window.PointerEvent) {
     value: MouseEvent,
   });
 }
+
+if (!window.ResizeObserver) {
+  class ResizeObserverStub {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  Object.defineProperty(window, "ResizeObserver", {
+    configurable: true,
+    value: ResizeObserverStub,
+  });
+}
