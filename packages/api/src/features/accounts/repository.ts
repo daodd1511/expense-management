@@ -8,6 +8,7 @@ import {
   type Account,
   type AccountCreate,
   type AccountPatch,
+  type AccountReorder,
   type Transaction,
 } from "@wallet/shared";
 import { getSupabase } from "../../config/supabase";
@@ -30,7 +31,9 @@ export async function listActiveAccounts(userId: string): Promise<Account[]> {
     .select("*")
     .eq("owner_id", userId)
     .eq("archived", false)
-    .order("created_at", { ascending: true });
+    .order("display_order", { ascending: true })
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
 
   if (error) {
     throw error;
@@ -105,4 +108,16 @@ export async function archiveAccount(userId: string, id: string): Promise<boolea
   }
 
   return Boolean(data);
+}
+
+export async function reorderAccounts(userId: string, input: AccountReorder): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc("reorder_accounts", {
+    p_owner_id: userId,
+    p_account_ids: input.accountIds,
+  });
+
+  if (error) {
+    throw error;
+  }
 }

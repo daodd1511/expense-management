@@ -41,6 +41,7 @@ describe("AccountForm", () => {
           name: "Checking",
           kind: "bank",
           openingBalance: 1_000,
+          displayOrder: 0,
           balance: 1_200,
         }}
         onSubmit={onSubmit}

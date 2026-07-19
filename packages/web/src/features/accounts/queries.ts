@@ -4,8 +4,7 @@ import { useAuth } from "@/features/auth/auth";
 import { archiveAccount, fetchAccounts, insertAccount, patchAccount } from "@/features/accounts/db";
 import { invalidateAccountDependentQueries } from "@/core/query-invalidation";
 import type { Account } from "@/core/types";
-
-type AccountInput = Omit<Account, "id" | "balance">;
+import type { AccountCreate } from "@wallet/shared";
 
 export function useAccounts() {
   const { user } = useAuth();
@@ -29,7 +28,7 @@ export function useAddAccount() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (account: AccountInput) => insertAccount(account),
+    mutationFn: (account: AccountCreate) => insertAccount(account),
     onSuccess: () => invalidateAccountDependentQueries(qc, user?.id),
   });
 }
@@ -38,7 +37,7 @@ export function useUpdateAccount() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: Partial<AccountInput> }) =>
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<AccountCreate> }) =>
       patchAccount(id, patch),
     onSuccess: () => invalidateAccountDependentQueries(qc, user?.id),
   });

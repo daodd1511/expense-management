@@ -5,7 +5,7 @@ _git and `EXECUTION.md` STATUS blocks win._
 
 | Spec | Status | Phases | Debt | Description |
 |------|--------|--------|------|-------------|
-| [account-reordering](account-reordering/PLAN.md) | Not started | — | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed. |
+| [account-reordering](account-reordering/PLAN.md) | In progress | 1/2 | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed. |
 | [data-portability](data-portability/PLAN.md) | Not started | — | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed. Depends on… |
 | [spending-analytics](spending-analytics/PLAN.md) | Not started | — | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed. |
 | [api-restructure](api-restructure/PLAN.md) | Done | 4/4 | — | Fourth and final spec of the batch. A behavior-preserving migration of packages/api from flat… |

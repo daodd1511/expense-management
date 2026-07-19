@@ -17,9 +17,11 @@ export {
 export {
   accountCreateSchema,
   accountPatchSchema,
+  accountReorderSchema,
   accountRowSchema,
   type AccountCreate,
   type AccountPatch,
+  type AccountReorder,
   type AccountRow,
 } from "./account.dto";
 export {

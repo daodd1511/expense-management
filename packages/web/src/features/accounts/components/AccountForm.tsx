@@ -9,8 +9,7 @@ import { formatVND } from "@/shared/lib/format";
 import { useLang } from "@/core/i18n";
 import type { Account, AccountKind } from "@/core/types";
 import { cn } from "@/shared/lib/utils";
-
-type AccountInput = Omit<Account, "id" | "balance">;
+import type { AccountCreate } from "@wallet/shared";
 
 export function accountDialogTitle({
   reconciling,
@@ -39,7 +38,7 @@ export function AccountForm({
   onCancel,
 }: {
   initial?: Account;
-  onSubmit: (data: AccountInput) => Promise<void>;
+  onSubmit: (data: AccountCreate) => Promise<void>;
   onCancel: () => void;
 }) {
   const { t } = useLang();

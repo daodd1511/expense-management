@@ -6,6 +6,7 @@ export const accountSchema = z.object({
   name: z.string(),
   kind: accountKindSchema,
   openingBalance: z.number(),
+  displayOrder: z.number().int().nonnegative(),
   balance: z.number().optional(),
 });
 

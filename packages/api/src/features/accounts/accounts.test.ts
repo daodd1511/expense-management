@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthEnv } from "../../middleware/auth";
-import { handleError } from "../../middleware/error";
+import { errorMiddleware, handleError } from "../../middleware/error";
 
 const { getSupabase } = vi.hoisted(() => ({
   getSupabase: vi.fn(),
@@ -15,8 +15,10 @@ import { accountsRouter } from "./routes";
 import * as repository from "./repository";
 
 function buildAccountsSelectResult(accountData: unknown[], transactionData: unknown[] = []) {
-  const order = vi.fn().mockResolvedValue({ data: accountData, error: null });
-  const secondEq = vi.fn().mockReturnValue({ order });
+  const idOrder = vi.fn().mockResolvedValue({ data: accountData, error: null });
+  const createdAtOrder = vi.fn().mockReturnValue({ order: idOrder });
+  const displayOrder = vi.fn().mockReturnValue({ order: createdAtOrder });
+  const secondEq = vi.fn().mockReturnValue({ order: displayOrder });
   const firstEq = vi.fn().mockReturnValue({ eq: secondEq });
   const accountSelect = vi.fn().mockReturnValue({ eq: firstEq });
 
@@ -34,7 +36,24 @@ function buildAccountsSelectResult(accountData: unknown[], transactionData: unkn
     },
     accountOwnerEq: firstEq,
     transactionOwnerEq: transactionEq,
+    displayOrder,
+    createdAtOrder,
+    idOrder,
   };
+}
+
+function buildAccountCreateResult(accountData: unknown) {
+  const single = vi.fn().mockResolvedValue({ data: accountData, error: null });
+  const select = vi.fn().mockReturnValue({ single });
+  const insert = vi.fn().mockReturnValue({ select });
+  const from = vi.fn().mockReturnValue({ insert });
+  return { client: { from }, insert };
+}
+
+function buildReorderResult(error: unknown = null) {
+  const rpc = vi.fn().mockResolvedValue({ data: null, error });
+  const from = vi.fn();
+  return { client: { rpc, from }, rpc, from };
 }
 
 function buildAccountMutationClient(method: "update" | "archive") {
@@ -52,6 +71,18 @@ function buildAccountMutationClient(method: "update" | "archive") {
   return { client: { from }, idEq, ownerEq };
 }
 
+function buildApp() {
+  const app = new Hono<AuthEnv>();
+  app.use("*", errorMiddleware);
+  app.onError(handleError);
+  app.use("*", async (c, next) => {
+    c.set("userId", "user-1");
+    await next();
+  });
+  app.route("/accounts", accountsRouter);
+  return app;
+}
+
 describe("accountsRouter", () => {
   beforeEach(() => {
     getSupabase.mockReset();
@@ -66,6 +97,7 @@ describe("accountsRouter", () => {
           name: "Cash",
           kind: "cash",
           opening_balance: 1000,
+          display_order: 0,
           archived: false,
           created_at: "2026-07-01T00:00:00.000Z",
         },
@@ -105,15 +137,7 @@ describe("accountsRouter", () => {
     );
     getSupabase.mockReturnValue(client);
 
-    const app = new Hono<AuthEnv>();
-    app.onError(handleError);
-    app.use("*", async (c, next) => {
-      c.set("userId", "user-1");
-      await next();
-    });
-    app.route("/accounts", accountsRouter);
-
-    const response = await app.request("/accounts");
+    const response = await buildApp().request("/accounts");
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
@@ -123,6 +147,7 @@ describe("accountsRouter", () => {
           name: "Cash",
           kind: "cash",
           openingBalance: 1000,
+          displayOrder: 0,
           balance: 1300,
         },
       ],
@@ -130,21 +155,106 @@ describe("accountsRouter", () => {
   });
 
   it("scopes Account reads to the authenticated User", async () => {
-    const { client, accountOwnerEq, transactionOwnerEq } = buildAccountsSelectResult([], []);
+    const {
+      client,
+      accountOwnerEq,
+      transactionOwnerEq,
+      displayOrder,
+      createdAtOrder,
+      idOrder,
+    } = buildAccountsSelectResult([], []);
     getSupabase.mockReturnValue(client);
 
-    const response = await new Hono<AuthEnv>()
-      .use("*", async (c, next) => {
-        c.set("userId", "user-1");
-        await next();
-      })
-      .route("/accounts", accountsRouter)
-      .request("/accounts");
+    const response = await buildApp().request("/accounts");
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ data: [] });
     expect(accountOwnerEq).toHaveBeenCalledWith("owner_id", "user-1");
     expect(transactionOwnerEq).toHaveBeenCalledWith("owner_id", "user-1");
+    expect(displayOrder).toHaveBeenCalledWith("display_order", { ascending: true });
+    expect(createdAtOrder).toHaveBeenCalledWith("created_at", { ascending: true });
+    expect(idOrder).toHaveBeenCalledWith("id", { ascending: true });
+  });
+
+  it("leaves append order assignment to persistence when creating an Account", async () => {
+    const { client, insert } = buildAccountCreateResult({
+      id: "acc-2",
+      owner_id: "user-1",
+      name: "Bank",
+      kind: "bank",
+      opening_balance: 500,
+      display_order: 1,
+      archived: false,
+      created_at: "2026-07-02T00:00:00.000Z",
+    });
+    getSupabase.mockReturnValue(client);
+
+    const response = await buildApp().request("/accounts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Bank", kind: "bank", openingBalance: 500 }),
+    });
+
+    expect(response.status).toBe(201);
+    expect(insert).toHaveBeenCalledWith({
+      owner_id: "user-1",
+      name: "Bank",
+      kind: "bank",
+      opening_balance: 500,
+    });
+    await expect(response.json()).resolves.toEqual({
+      data: {
+        id: "acc-2",
+        name: "Bank",
+        kind: "bank",
+        openingBalance: 500,
+        displayOrder: 1,
+      },
+    });
+  });
+
+  it("reorders the authenticated User's complete active Account set atomically", async () => {
+    const { client, rpc, from } = buildReorderResult();
+    getSupabase.mockReturnValue(client);
+
+    const response = await buildApp().request("/accounts/order", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accountIds: ["acc-2", "acc-1"] }),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ ok: true });
+    expect(rpc).toHaveBeenCalledWith("reorder_accounts", {
+      p_owner_id: "user-1",
+      p_account_ids: ["acc-2", "acc-1"],
+    });
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["incomplete", ["acc-1"]],
+    ["duplicate", ["acc-1", "acc-1"]],
+    ["foreign", ["acc-1", "user-2-account"]],
+    ["archived", ["acc-1", "archived-account"]],
+  ])("rejects a %s Account order without partial table updates", async (_case, accountIds) => {
+    const databaseError = {
+      code: "22023",
+      message: "Account order must contain every active Account exactly once",
+    };
+    const { client, rpc, from } = buildReorderResult(databaseError);
+    getSupabase.mockReturnValue(client);
+
+    const response = await buildApp().request("/accounts/order", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accountIds }),
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: databaseError.message });
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(from).not.toHaveBeenCalled();
   });
 
   it("cannot update another User's Account", async () => {

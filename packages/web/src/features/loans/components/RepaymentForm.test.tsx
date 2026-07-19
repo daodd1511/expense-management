@@ -46,7 +46,14 @@ const loan: LoanDetail = {
   events: [],
 };
 const accounts: Account[] = [
-  { id: "account-1", name: "Cash", kind: "cash", openingBalance: 0, balance: 0 },
+  {
+    id: "account-1",
+    name: "Cash",
+    kind: "cash",
+    openingBalance: 0,
+    displayOrder: 0,
+    balance: 0,
+  },
 ];
 const repayment: LoanEvent = {
   id: "repayment-1",

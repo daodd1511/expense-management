@@ -1,4 +1,4 @@
-import type { AccountCreate, AccountPatch } from "@wallet/shared";
+import type { AccountCreate, AccountPatch, AccountReorder } from "@wallet/shared";
 import type { Context } from "hono";
 import * as service from "./service";
 import type { AccountsEnv } from "./routes";
@@ -29,4 +29,8 @@ export async function archiveAccount(c: Context<AccountsEnv>) {
   const userId = c.get("userId");
   await service.archiveAccount(userId, requireId(c.req.param("id")));
   return c.json({ ok: true });
+}
+
+export async function reorderAccounts(userId: string, input: AccountReorder) {
+  await service.reorderAccounts(userId, input);
 }
