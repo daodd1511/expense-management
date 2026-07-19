@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildSpendingTrendBuckets,
   computeBalance,
   computeBalanceTrend,
   computeFinancialPosition,
@@ -11,6 +12,9 @@ import {
   computeNetWorthSnapshot,
   computeNetWorthTrend,
   computeRunningBalances,
+  computeSpendingChange,
+  computeSpendingComparisonRange,
+  resolveSpendingTrendGranularity,
 } from "./finance";
 import type { Loan, LoanEvent, Transaction } from "./models";
 
@@ -691,5 +695,109 @@ describe("computeFinancialPosition", () => {
     expect(report.opening.lendingOutstanding).toBe(100_000);
     expect(report.closing.lendingOutstanding).toBe(0);
     expect(report.reconciliation.netWorth.matches).toBe(true);
+  });
+});
+
+describe("computeSpendingComparisonRange", () => {
+  it("shifts custom ranges back by the same inclusive day count", () => {
+    expect(computeSpendingComparisonRange("2026-07-10", "2026-07-19", "custom")).toEqual({
+      from: "2026-06-30",
+      to: "2026-07-09",
+    });
+  });
+
+  it("caps this-month comparison at the previous (shorter) month's last day", () => {
+    // Jul 1-31 (31 elapsed days) vs Jun, which only has 30 days.
+    expect(computeSpendingComparisonRange("2026-07-01", "2026-07-31", "this-month")).toEqual({
+      from: "2026-06-01",
+      to: "2026-06-30",
+    });
+  });
+
+  it("keeps this-month comparison at the equivalent day-of-month when it fits", () => {
+    expect(computeSpendingComparisonRange("2026-07-01", "2026-07-19", "this-month")).toEqual({
+      from: "2026-06-01",
+      to: "2026-06-19",
+    });
+  });
+
+  it("resolves previous-month to the single preceding whole calendar month", () => {
+    expect(computeSpendingComparisonRange("2026-07-01", "2026-07-31", "previous-month")).toEqual({
+      from: "2026-06-01",
+      to: "2026-06-30",
+    });
+  });
+
+  it("resolves last-3-months to the 3 whole calendar months before the range, at a year boundary", () => {
+    expect(computeSpendingComparisonRange("2026-01-01", "2026-03-31", "last-3-months")).toEqual({
+      from: "2025-10-01",
+      to: "2025-12-31",
+    });
+  });
+
+  it("correctly closes the previous month at its own last day across a leap-year February", () => {
+    // Range starts Mar 1 2028 (leap year); the preceding whole month is Feb 2028 (29 days).
+    expect(computeSpendingComparisonRange("2028-03-01", "2028-03-31", "previous-month")).toEqual({
+      from: "2028-02-01",
+      to: "2028-02-29",
+    });
+  });
+});
+
+describe("resolveSpendingTrendGranularity", () => {
+  it("is daily through 31 inclusive days", () => {
+    expect(resolveSpendingTrendGranularity("2026-07-01", "2026-07-31")).toBe("day");
+  });
+
+  it("is weekly for 32-180 days", () => {
+    expect(resolveSpendingTrendGranularity("2026-07-01", "2026-08-01")).toBe("week");
+    expect(resolveSpendingTrendGranularity("2026-01-01", "2026-06-29")).toBe("week");
+  });
+
+  it("is monthly beyond 180 days", () => {
+    expect(resolveSpendingTrendGranularity("2026-01-01", "2026-12-31")).toBe("month");
+  });
+});
+
+describe("buildSpendingTrendBuckets", () => {
+  it("produces one bucket per day at day granularity, covering the full range", () => {
+    const buckets = buildSpendingTrendBuckets("2026-07-01", "2026-07-03", "day");
+    expect(buckets).toEqual([
+      { start: "2026-07-01", end: "2026-07-01" },
+      { start: "2026-07-02", end: "2026-07-02" },
+      { start: "2026-07-03", end: "2026-07-03" },
+    ]);
+  });
+
+  it("chunks into 7-day buckets from the range start, with a shorter trailing bucket", () => {
+    const buckets = buildSpendingTrendBuckets("2026-07-01", "2026-07-10", "week");
+    expect(buckets).toEqual([
+      { start: "2026-07-01", end: "2026-07-07" },
+      { start: "2026-07-08", end: "2026-07-10" },
+    ]);
+  });
+
+  it("produces identical bucket counts for two equal-length ranges regardless of start weekday", () => {
+    const currentBuckets = buildSpendingTrendBuckets("2026-07-01", "2026-08-30", "week");
+    const previousBuckets = buildSpendingTrendBuckets("2026-05-02", "2026-07-01", "week");
+    expect(currentBuckets).toHaveLength(previousBuckets.length);
+  });
+});
+
+describe("computeSpendingChange", () => {
+  it("returns a null percentage for a positive change from a zero baseline", () => {
+    expect(computeSpendingChange(1000, 0)).toEqual({ change: 1000, changePercentage: null });
+  });
+
+  it("returns a zero percentage when both values are zero (unchanged)", () => {
+    expect(computeSpendingChange(0, 0)).toEqual({ change: 0, changePercentage: 0 });
+  });
+
+  it("computes a normal percentage change against a non-zero baseline", () => {
+    expect(computeSpendingChange(1500, 1000)).toEqual({ change: 500, changePercentage: 0.5 });
+  });
+
+  it("computes a negative percentage change", () => {
+    expect(computeSpendingChange(500, 1000)).toEqual({ change: -500, changePercentage: -0.5 });
   });
 });
