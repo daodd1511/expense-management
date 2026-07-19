@@ -5,8 +5,8 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 1 — pending
-- Phase 1 — Shared contract & API: pending
+- Current phase: 1 — done
+- Phase 1 — Shared contract & API: done
 - Phase 2 — Report range model (web): pending
 - Phase 3 — Spending analysis UI (web): pending
 - Verification debt: none
@@ -19,58 +19,75 @@ Backend/shared layer nothing downstream can start without — new DTO, route, se
 (comparison ranges, adaptive trend buckets, parent-first category rollup), per PLAN.md →
 "Shared Contract and API".
 
-- [ ] `packages/shared/src/dtos/report.dto.ts` — add `spendingAnalysisReportSchema` /
-      `SpendingAnalysisReport` (+ `spendingAnalysisReportResponseSchema`): selected +
-      comparison ranges, current/previous totals with absolute change and nullable
-      percentage change (`null` at zero baseline, `New` label for zero→positive, per
-      PLAN.md → "Decisions"), aligned current/comparison trend buckets, parent category
-      aggregates with child aggregates/shares/changes/counts, drill-down transactions
-      (reuse `reportTransactionRowSchema`). Add a granularity-aware series-point schema
-      (`day` | `week` | `month` period, not the existing month-hardcoded
-      `reportSeriesPointSchema`) since trend buckets are adaptive (daily ≤31d, weekly
-      32–180d, monthly >180d).
-- [ ] `packages/shared/src/dtos/report.dto.test.ts` — schema tests for the new DTO
-      (zero-baseline `null`/`New` cases, both range shapes).
-- [ ] `packages/shared/src/finance.ts` — add pure adaptive trend-bucketing function(s)
-      (day/week/month bucket boundaries for a date range) alongside
-      `computeFinancialPosition`, so bucketing math is unit-testable independent of
-      Supabase. Judgment call: exported as named functions, not folded into
-      `computeFinancialPosition`.
-- [ ] `packages/shared/src/finance.test.ts` — tests for adaptive bucketing at month-length,
-      leap-year, and year boundaries (per PLAN.md → "Verification").
-- [ ] `packages/api/src/features/reports/schema.ts` — reuse `reportQuerySchema`
-      (`from`/`to`) for the new route; no new query params needed per PLAN.md.
-- [ ] `packages/api/src/features/reports/routes.ts` — add
-      `reportsRouter.get("/spending-analysis", zValidator("query", reportQuerySchema, ...), controller.getSpendingAnalysisReport)`
-      following the existing `/income-expense` and `/financial-position` pattern.
-- [ ] `packages/api/src/features/reports/controller.ts` — add
-      `getSpendingAnalysisReport(c, query)` (thin HTTP glue, same shape as
-      `getIncomeExpenseReport`).
-- [ ] `packages/api/src/features/reports/service.ts` — add
-      `getSpendingAnalysisReport(userId, from, to)`: derive the comparison range
-      server-side (immediately preceding equal-length period; this-month uses
-      elapsed-days-capped-to-previous-month-length, custom uses preceding equal inclusive
-      calendar days, per PLAN.md → "Decisions"), exclude Transfers/loan-linked/Unexplained
-      adjustments from Spending while keeping transfer-fee expense transactions, build
-      parent-first category aggregates (root custom categories stand alone, children roll
-      into parents, explicit `Uncategorized` bucket for null-category expense
-      transactions), call the new `finance.ts` bucketing function for trend series,
-      `safeParse` against `spendingAnalysisReportResponseSchema`.
-- [ ] `packages/api/src/features/reports/repository.ts` — reuse
-      `listReportTransactions`/`listReportCategories`; extend/add a repository read for
-      the comparison-range transaction set if the current-range-only reads don't already
-      cover it (both ranges fetched server-side per PLAN.md → "Shared Contract and API"
-      item 5).
-- [ ] `packages/api/src/features/reports/reports.test.ts` — integration tests: range/preset
-      resolution at boundaries, transfer/loan/unexplained exclusion, transfer-fee
-      inclusion, parent totals = children + direct parent transactions, uncategorized
-      bucket visible, cross-user isolation (per PLAN.md → "Verification").
+- [x] `packages/shared/src/dtos/report.dto.ts` — added `spendingAnalysisPresetSchema`,
+      `spendingChangeSchema`, `spendingTrendGranularitySchema`, `spendingTrendPointSchema`
+      (with nullable `comparisonPeriodStart`/`End` — see amendment below),
+      `spendingCategoryChildAggregateSchema`, `spendingCategoryAggregateSchema`,
+      `spendingAnalysisReportSchema` / `spendingAnalysisReportResponseSchema`.
+      `changePercentage` is `null` at a zero baseline with positive current spending,
+      `0` when both are zero (`spendingChangeSchema`, reused for totals and both
+      category-aggregate levels).
+- [x] `packages/shared/src/dtos/report.dto.test.ts` — schema tests: zero-baseline `null`
+      case, both-zero case, nullable comparison-period trend point, uncategorized bucket.
+- [x] `packages/shared/src/finance.ts` — added `computeSpendingComparisonRange` (3 rules:
+      custom = preceding N days, this-month = month-capped day-count, whole-month presets
+      = N preceding whole calendar months — see amendment below),
+      `resolveSpendingTrendGranularity`, `buildSpendingTrendBuckets` (sequential
+      fixed-size day chunks from range start — see amendment below), `computeSpendingChange`.
+- [x] `packages/shared/src/finance.test.ts` — tests for comparison-range rules at
+      month-length, leap-year, and year boundaries; granularity thresholds; bucket
+      chunking; zero-baseline change cases.
+- [x] `packages/api/src/features/reports/schema.ts` — added `spendingAnalysisQuerySchema`
+      (`from`/`to`/`preset`, own `superRefine`) — **amended**, see below.
+- [x] `packages/api/src/features/reports/routes.ts` — added
+      `GET /spending-analysis` following the existing `/income-expense` and
+      `/financial-position` pattern.
+- [x] `packages/api/src/features/reports/controller.ts` — added
+      `getSpendingAnalysisReport(c, query)` (thin HTTP glue).
+- [x] `packages/api/src/features/reports/service.ts` — added
+      `getSpendingAnalysisReport(userId, from, to, preset)`: derives the comparison range
+      via `finance.ts`, filters to expense transactions excluding the "Balance Adjustment"
+      system category (checked inline against fetched categories, same pattern as
+      `getIncomeExpenseReport` — see amendment below), builds parent-first category
+      aggregates (root categories stand alone, children roll into parents, explicit
+      `Uncategorized` bucket for null `categoryId`), builds trend buckets via
+      `finance.ts`, `safeParse`s against `spendingAnalysisReportResponseSchema`.
+- [x] `packages/api/src/features/reports/repository.ts` — no changes needed: existing
+      `listReportTransactions`/`listReportCategories` sufficed (see amendment below).
+- [x] `packages/api/src/features/reports/reports.test.ts` — integration tests: transfer/
+      loan/balance-adjustment exclusion with transfer-fee inclusion, parent-child rollup,
+      uncategorized bucket, custom comparison-range math, cross-user isolation, inverted
+      range and invalid preset rejection.
+
+**Amendments (2026-07-19):**
+- Added an explicit `preset` query param (`spendingAnalysisPresetSchema`) instead of
+  reusing `reportQuerySchema` as-is — necessary because This-month's comparison rule
+  (month-capped day count) and Custom's rule (plain preceding N days) produce different
+  results in the edge case where elapsed days exceed the previous month's length, and the
+  server has no other way to know which rule to apply. Confirmed with the user before
+  implementing (see session).
+- Trend-bucket alignment uses fixed-size day chunks (1/7/30 days) counted from each
+  range's own start, not calendar week/month boundaries — confirmed with the user, since
+  calendar-boundary buckets would not generally produce equal bucket counts between the
+  current and comparison ranges. `comparisonPeriodStart`/`End` on a trend point are
+  nullable to cover This-month's edge case where the (month-capped) comparison range is
+  shorter than the current range.
+- Dropped the separate `listBalanceAdjustmentCategoryIds()` repository call originally
+  planned: the shared integration-test mock returns one unfiltered dataset per table
+  regardless of query predicates, so a second query against `categories` silently
+  clobbered the first. Switched to the same inline `isHidden && name === "Balance
+  Adjustment"` check `getIncomeExpenseReport` already uses against categories fetched via
+  `listReportCategories` — simpler and makes `repository.ts` need no changes at all.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/shared test` (covers `report.dto.test.ts` + `finance.test.ts`)
-- [ ] `pnpm --filter @wallet/api typecheck` (also covers `@wallet/shared`'s exported
-      surface, resolved as source via workspace `exports`)
-- [ ] `pnpm --filter @wallet/api test` (covers `reports.test.ts`)
+- [x] `pnpm --filter @wallet/shared test` (covers `report.dto.test.ts` + `finance.test.ts`)
+      — 108 passed
+- [x] `pnpm --filter @wallet/api typecheck` (also covers `@wallet/shared`'s exported
+      surface, resolved as source via workspace `exports`) — clean
+- [x] `pnpm --filter @wallet/api exec vitest run src/features/reports/reports.test.ts`
+      (corrected 2026-07-19: `pnpm --filter @wallet/api test` runs the whole package and
+      hits 5 pre-existing failures in `analytics.test.ts`/`transactions.test.ts` unrelated
+      to this phase — narrowed to the actual changed test file) — 10 passed
 
 **Review checklist (user, at PR review):**
 - [ ] `GET /reports/spending-analysis?from=...&to=...` returns correct totals/trend/
