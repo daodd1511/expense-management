@@ -13,6 +13,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AccountForm, accountDialogTitle } from "@/features/accounts/components/AccountForm";
+import { AccountReorderControl } from "@/features/accounts/components/AccountReorderControl";
 import { ReconcileBalanceForm } from "@/features/accounts/components/ReconcileBalanceForm";
 import { AccountsSkeleton } from "@/shared/components/Skeleton";
 import { Card } from "@/shared/components/ui/card";
@@ -30,6 +31,7 @@ import {
   useAccounts,
   useAddAccount,
   useDeleteAccount,
+  useReorderAccounts,
   useUpdateAccount,
 } from "@/features/accounts/queries";
 import type { Account, AccountKind } from "@/core/types";
@@ -50,6 +52,7 @@ export function DesktopAccounts({
   const addAcc = useAddAccount();
   const updateAcc = useUpdateAccount();
   const deleteAcc = useDeleteAccount();
+  const reorderAcc = useReorderAccounts();
   const { t } = useLang();
   const total = accounts.reduce(
     (sum, account) => sum + (account.balance ?? account.openingBalance),
@@ -113,14 +116,22 @@ export function DesktopAccounts({
           <h1 className="text-2xl font-semibold tracking-tight">{t("accounts.title")}</h1>
           <p className="text-sm text-muted-foreground">{t("accounts.subtitle")}</p>
         </div>
-        <button
-          type="button"
-          onClick={openAdd}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          <Plus className="size-4" />
-          {t("accounts.add")}
-        </button>
+        <div className="flex items-center gap-2">
+          <AccountReorderControl
+            variant="desktop"
+            accounts={accounts}
+            onSave={(accountIds) => reorderAcc.mutateAsync(accountIds)}
+            disabled={reorderAcc.isPending}
+          />
+          <button
+            type="button"
+            onClick={openAdd}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            <Plus className="size-4" />
+            {t("accounts.add")}
+          </button>
+        </div>
       </div>
 
       <Card className="p-6">

@@ -94,11 +94,13 @@ export function Modal({
   onClose,
   children,
   className,
+  title,
 }: {
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
   className?: string;
+  title?: string;
 }) {
   useDismiss(open, onClose);
   if (!open) return null;
@@ -109,6 +111,7 @@ export function Modal({
         <div
           role="dialog"
           aria-modal="true"
+          aria-label={title}
           className={cn(
             "max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-card shadow-sm animate-in fade-in zoom-in-95 duration-200",
             className,

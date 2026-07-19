@@ -254,7 +254,13 @@ describe("TransactionForm", () => {
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "transfer", amount: 100, fee: 10 }),
+      expect.objectContaining({
+        type: "transfer",
+        amount: 100,
+        fee: 10,
+        accountId: "cash",
+        toAccountId: "bank",
+      }),
     );
   });
 
