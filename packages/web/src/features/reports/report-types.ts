@@ -1,6 +1,10 @@
 import type { TranslationKey } from "@/core/i18n";
 
-export const REPORT_TYPE_IDS = ["income-expense", "financial-position"] as const;
+export const REPORT_TYPE_IDS = [
+  "income-expense",
+  "financial-position",
+  "spending-analysis",
+] as const;
 
 export type ReportTypeId = (typeof REPORT_TYPE_IDS)[number];
 
@@ -20,6 +24,11 @@ export const REPORT_TYPES: Record<ReportTypeId, ReportTypeConfig> = {
     id: "financial-position",
     labelKey: "reports.typeFinancialPosition",
     descriptionKey: "reports.typeFinancialPositionDesc",
+  },
+  "spending-analysis": {
+    id: "spending-analysis",
+    labelKey: "reports.typeSpendingAnalysis",
+    descriptionKey: "reports.typeSpendingAnalysisDesc",
   },
 } as const;
 
