@@ -1,0 +1,87 @@
+name: build
+
+# Public repo. NO self-hosted runner is ever registered here — a fork PR would
+# execute on the server. This job only builds images and pushes them to GHCR, then
+# asks daodd1511/deploy (private, where the runner lives) to roll them out.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One publish at a time; never cancel a half-pushed set of images.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/api/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/daodd1511/wallet-api:${{ github.sha }}
+            ghcr.io/daodd1511/wallet-api:latest
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # VITE_* are compiled into the browser bundle and are public by design, so they
+      # are Actions *variables*, not secrets. A secret must never acquire a VITE_ prefix.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/web/Dockerfile
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
+            VITE_SUPABASE_PUBLISHABLE_KEY=${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+            VITE_API_BASE=/api
+            APP_COMMIT=${{ github.sha }}
+          tags: |
+            ghcr.io/daodd1511/wallet-web:${{ github.sha }}
+            ghcr.io/daodd1511/wallet-web:latest
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
+  dispatch:
+    needs: [api, web]
+    runs-on: ubuntu-latest
+    # Forks that push to their own main must not poke the deploy repo.
+    if: github.repository == 'daodd1511/expense-management'
+    # A deploy-side outage should never mark a successful publish as failed.
+    continue-on-error: true
+    steps:
+      - name: Trigger deploy
+        env:
+          GH_TOKEN: ${{ secrets.DEPLOY_TRIGGER_TOKEN }}
+        run: |
+          gh api repos/daodd1511/deploy/dispatches \
+            -f event_type=deploy \
+            -f 'client_payload[app]=wallet' \
+            -f 'client_payload[tag]=${{ github.sha }}'

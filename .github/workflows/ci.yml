@@ -10,9 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     # packages/web/src/core/supabase.ts calls createClient() at import time, so
     # tests need a URL even though nothing actually hits the network.
+    #
+    # Actions *variables*, not secrets: these are compiled into the public browser
+    # bundle anyway, and secrets are withheld from fork PRs — which would break CI
+    # for outside contributors now that this repo is public.
     env:
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -26,28 +30,6 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
 
-  # Quality gate passed on main → build + deploy ON the laptop via the self-hosted
-  # runner. The full `docker compose build` output streams to this job's log, so the
-  # Actions run IS the server build console (history + truthful pass/fail).
-  deploy:
-    needs: check
-    if: github.ref == 'refs/heads/main'
-    runs-on: self-hosted
-    env:
-      # Manage the SAME stack Portainer created (same project name → same containers,
-      # network, and cloudflared connector), not a duplicate under the checkout dir name.
-      COMPOSE_PROJECT_NAME: wallet
-      # Secrets live in GitHub, injected here for compose interpolation / build args.
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-      TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
-      # Baked into the web bundle so VersionPage shows exactly what's live.
-      APP_COMMIT: ${{ github.sha }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build and deploy stack
-        run: docker compose up -d --build --remove-orphans
-      - name: Show running containers
-        run: docker compose ps
+# Deploying is not this workflow's job. Pushes to main are picked up by build.yml,
+# which publishes images to GHCR and dispatches daodd1511/deploy — the private repo
+# where the self-hosted runner lives. No runner is registered here.

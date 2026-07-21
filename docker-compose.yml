@@ -1,7 +1,10 @@
-# Wallet self-host stack (Portainer GitOps). Build happens on the laptop from this
-# repo; no image registry. Secrets are supplied as Portainer stack environment
-# variables (never committed): SUPABASE_URL, SUPABASE_SECRET_KEY, VITE_SUPABASE_URL,
-# VITE_SUPABASE_PUBLISHABLE_KEY, TUNNEL_TOKEN.
+# LOCAL / MANUAL RUNS ONLY — this builds from source and is not what production uses.
+#
+# Production compose lives in the private daodd1511/deploy repo at apps/wallet/compose.yml:
+# pulled GHCR images (`ghcr.io/daodd1511/wallet-{web,api}:<sha>`), health-gated, with
+# rollback. Images are published by .github/workflows/build.yml on push to main.
+#
+# Values here come from a local, gitignored `.env` (see .env.example).
 services:
   api:
     build:
