@@ -13,6 +13,7 @@ export function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      weekStartsOn={1}
       className={cn("p-3", className)}
       components={{
         Chevron: ({ orientation }) =>
