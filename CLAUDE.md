@@ -9,7 +9,7 @@ Run from the repo root (pnpm workspace):
 ```bash
 pnpm dev                     # parallel: api (Node) + web (Vite, http://localhost:5173)
 pnpm dev:web                 # web only
-pnpm dev:api                 # api only (builds then runs dist/index.js)
+pnpm dev:api                 # api only (tsx watch src/index.ts)
 pnpm build                   # web build → packages/web/dist/
 pnpm preview                 # serve web build locally
 pnpm typecheck               # recursive: tsc --noEmit across all packages
@@ -23,6 +23,10 @@ pnpm docs:dashboard          # generate docs/dashboard.html and open it locally
 
 Scoped equivalents: `pnpm --filter @wallet/web <script>`, `--filter @wallet/api`, `--filter @wallet/shared`.
 
+Env: one `.env` at the repo root (copy from `.env.example`) feeds everything — the
+api loads it via dotenv, Vite reads its `VITE_*` vars (`envDir` points at the root),
+and `docker compose` interpolates it. There are no per-package env files.
+
 Linting is [oxlint](https://oxc.rs), formatting is [oxfmt](https://oxc.rs) (same
 Oxidation Compiler project) — config at `.oxlintrc.json` / `.oxfmtrc.json` at the repo
 root. No existing source was reformatted when this was wired up; the codebase does not
@@ -34,7 +38,7 @@ Tests exist (vitest, colocated `*.test.ts(x)`) but coverage is partial. Never ru
 ## Stack
 
 - **pnpm monorepo** — `packages/web`, `packages/api`, `packages/shared`, plus `supabase/` (migrations)
-- **packages/web** — Vite + React 19 + TypeScript SPA, no SSR, no client-side routing (nav is tab/screen state, no react-router)
+- **packages/web** — Vite + React 19 + TypeScript SPA, no SSR; client-side routing via **TanStack Router** (`src/routing/router.tsx`)
 - **packages/api** — Hono on Node (`@hono/node-server`), Supabase as the database
 - **packages/shared** — Zod DTOs, row↔model mappers, plain TS models shared by web and api
 - **Tailwind v4** via `@tailwindcss/vite` plugin (no `postcss.config`)
@@ -55,11 +59,16 @@ older doc/memory describing "no backend" or "resets on refresh" as historical.
 ### `packages/web/src` layout
 
 - `core/` — cross-cutting concerns: `api.ts` (`apiJson`/`apiFetch` fetch client with
-  Zod response validation, `ApiError`), `data.ts` (legacy seed data), `i18n.tsx`,
-  `types.ts`, `supabase.ts`, `mutationErrorHandler.ts`, `ErrorBoundary.tsx`. There is
-  no store/facade — components call each feature's `queries.ts` hooks directly.
+  Zod response validation, `ApiError`), `i18n.tsx`, `types.ts`, `supabase.ts`,
+  `mutationErrorHandler.ts` / `queryErrorHandler.ts`, `query-invalidation.ts`
+  (cross-feature invalidation helpers, e.g. `invalidateTransactionDependentQueries`),
+  `ErrorBoundary.tsx`, `PwaUpdateProvider.tsx`, `useOnlineStatus.ts`. There is no
+  store/facade — components call each feature's `queries.ts` hooks directly.
+- `routing/` — TanStack Router setup: `router.tsx` (route tree, auth redirects),
+  `app-pages.tsx` (page components), `navigation.ts`, `app-route-state.ts`
 - `features/<name>/` — one folder per domain feature (`accounts`, `auth`, `budgets`,
-  `categories`, `dashboard`, `settings`, `subscriptions`, `transactions`), each with
+  `categories`, `dashboard`, `loans`, `reports`, `settings`, `subscriptions`,
+  `transactions`, `version`), each with
   `queries.ts` (TanStack Query hooks: `useX`/`useAddX`/`useUpdateX`/`useDeleteX`, plus
   the odd lookup hook like `useCategoryLookup`/`useAccountLookup`/
   `useFavoriteCategoryIds` for id→entity resolution), `db.ts` (`apiJson` calls),
@@ -73,7 +82,8 @@ older doc/memory describing "no backend" or "resets on refresh" as historical.
     dense data tables
 - `shared/` — `components/` (incl. `ui/` shadcn wrappers, `ThemeProvider.tsx`,
   `Charts.tsx`, `CategoryIcon.tsx`, `FormErrorBanner.tsx`, `OfflineBanner.tsx`),
-  `hooks/` (`useFormSubmit`, `useAppDataLoading`), `lib/` (`format.ts`, `date.ts`,
+  `hooks/` (`useFormSubmit`, `useAppDataLoading`, `useIsDesktop`,
+  `useKeyboardShortcuts`, `useSwipeActions`), `lib/` (`format.ts`, `date.ts`,
   `derive.ts`, `utils.ts`), `styles/globals.css`
 
 Path alias `@/` → `packages/web/src`.
@@ -81,32 +91,53 @@ Path alias `@/` → `packages/web/src`.
 ### Data flow (the standard anatomy for a feature slice)
 
 Component → `features/<f>/queries.ts` (TanStack Query hooks: `useX`, `useAddX`,
-`useUpdateX`, `useDeleteX`; queryKey `['<entity>', user?.id]`, invalidated on
-mutation success) → `features/<f>/db.ts` (`apiJson('/path', zodResponseSchema, init)`)
+`useUpdateX`, `useDeleteX`; queryKey `['<entity>', user?.id]` — plus extra segments
+where the query is parameterized, e.g. transactions by month. Mutations invalidate on
+success via `core/query-invalidation.ts` when the entity affects others — transactions
+touch accounts, reports, and analytics) → `features/<f>/db.ts`
+(`apiJson('/path', zodResponseSchema, init)`)
 → `packages/api/src/features/<domain>/routes.ts` (Hono route wiring; auth middleware
-sets `userId`) → `controller.ts` (HTTP-only request/response handling and validation) →
+sets `userId`; api domains: `accounts`, `analytics`, `budgets`, `categories`,
+`favorites`, `loans`, `reports`, `subscriptions`, `transactions` — the web
+`dashboard` feature is served by `analytics`) → `controller.ts` (HTTP-only request/response handling and validation) →
 `service.ts` (business rules/orchestration) → `repository.ts` (Supabase access via
 shared mappers) → Supabase Postgres, with `packages/shared/src/mappers/*` converting
 rows↔models (`toX` row→model, `fromX` model→row, `xPatchToRow`).
 
 ### Data model
 
+Zod schemas in `packages/shared/src/models/` are the source of truth. Key shapes:
+
 ```
-Transaction  { id, type, amount, categoryId, accountId, toAccountId?, merchant, note?, date, receipt?, subscriptionId? }
-Account      { id, name, kind, balance }
+Transaction  { id, type, amount, categoryId (nullable), accountId, toAccountId?, merchant, note?,
+               date, time?, balanceAfter?, toAccountBalanceAfter?, receipt?, subscriptionId?,
+               linkedTransferId?, fee?, cashFlowDirection?, loanEventId? }
+Account      { id, name, kind, openingBalance, displayOrder, balance? }
 Category     { id, name, icon, color, type, parentId, isSystem }
 Budget       { categoryId, limit }
 Subscription { id, name, amount, type, categoryId, accountId, cadence, dayOfMonth, monthOfYear, nextDueDate, note?, active }
+Loan         { id, personId, direction, description?, note?, dueDate?, originalDate? }  + LoanEvent
 ```
 
 Amount is VND integer. Categories: 2-level nesting cap, a child's `type` must match
-its parent's, `isSystem` categories have no owner (shared across users). Favorites
-are a separate join tracked via `features/categories/favorites-queries.ts` and the
-API's `favorites` route. `subscriptionId` on Transaction links logged payments back
-to their Subscription for double-log detection. `Account.balance` is a static
-opening balance; computed balance = `opening + Σincome − Σexpense ± transfers` via
-`computeBalance` in `shared/lib/derive.ts` (client-computed; consumers fetch all
-transactions and reduce locally — no server-side balance endpoint yet).
+its parent's, `isSystem` categories have no owner (shared across users); system
+category display names are localized by the API (ADR-0005) and each system category
+has an immutable semantic key independent of its UUID (ADR-0007). Favorites are a
+separate join tracked via `features/categories/favorites-queries.ts` and the API's
+`favorites` route. `subscriptionId` on Transaction links logged payments back to
+their Subscription for double-log detection.
+
+**Balances are backend-computed** (ADR-0004, superseding ADR-0001's client-only
+fold): transaction list responses carry `balanceAfter`/`toAccountBalanceAfter`, and
+`Account.balance` is the server-computed balance over the static `openingBalance`.
+`computeBalance` in `shared/lib/derive.ts` is the legacy client fold with no
+remaining consumers — do not build new features on it.
+
+**Loans** (ADR-0006): loan events are authoritative for loan balances and
+create/update their linked transactions atomically. A loan-linked transaction has
+`type: 'loan'`, an explicit `cashFlowDirection`, a `loanEventId`, and no
+category/destination account (enforced by `superRefine` on the schema); it shows in
+the ledger but cannot be mutated through generic transaction operations.
 
 ### i18n
 
@@ -123,9 +154,11 @@ class on `<html>`. `useTheme()` exposes `{ theme, resolvedTheme, setTheme }`.
 ### Auth
 
 `packages/web/src/features/auth/auth.tsx` (`AuthProvider`, `useAuth`) +
-`features/auth/components/{AuthGate,SignIn}.tsx` on the web side, backed by
-Supabase Auth. `packages/api/src/middleware/auth.ts` verifies the JWT (via `jose`)
-and sets `userId` on the Hono context (`AuthEnv`); every `/api/*` route requires it.
+`features/auth/components/` (`SignIn`, `SignUp`, `ForgotPassword`, `ResetPassword`)
+on the web side, backed by Supabase Auth; route gating lives in the router
+(`routing/auth-redirect.ts`), not a wrapper component. `packages/api/src/middleware/auth.ts`
+verifies the JWT (via `jose`) and sets `userId` on the Hono context (`AuthEnv`);
+every `/api/*` route requires it.
 
 ### Dates
 
