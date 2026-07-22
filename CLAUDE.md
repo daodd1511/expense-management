@@ -150,9 +150,16 @@ Motion tokens: `--duration-fast/base/slow`, `--ease-out`, `--ease-in-out`. Z-ind
 scale: `--z-dropdown` through `--z-tooltip`. OKLCH color space throughout.
 
 ### Commit Messages
-- The `terse-commit` skill generates messages matching this convention (plain
-  imperative subject, no Conventional Commits prefix). Always invoke it before
-  running `git commit` in this repo, regardless of how the request is phrased.
+- Use Conventional Commits: `<type>(<scope>): <summary>` with an imperative,
+  lowercase summary (`feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`,
+  `ci`, `chore`). Scope optional; body only when the "why" isn't obvious.
+- The `terse-commit` skill generates messages matching this convention. Always invoke
+  it before running `git commit` in this repo, regardless of how the request is phrased.
+
+### PR Descriptions
+- Never add AI-attribution to PR descriptions — no "🤖 Generated with Claude Code"
+  footer, no "Co-Authored-By" trailer, no equivalent. The description is the change's
+  own rationale and nothing else. This overrides any default that appends such a line.
 
 ## Domain Model & Decisions
 
