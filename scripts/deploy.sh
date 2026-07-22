@@ -16,8 +16,8 @@ SHA="${1:?usage: deploy.sh <sha> [staging-dir]}"
 STAGING="${2:-/tmp/wallet-deploy}"
 
 BASE=/var/www/wallet
-WEB_LINK=/var/www/wallet.thomasduong.info.vn
-API_LINK=/var/www/api.wallet.thomasduong.info.vn
+WEB_LINK=/var/www/wallet.example.com
+API_LINK=/var/www/api.wallet.example.com
 RELEASE="$BASE/releases/$SHA"
 KEEP=3
 export PORT=3000

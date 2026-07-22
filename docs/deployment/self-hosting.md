@@ -1,6 +1,6 @@
 # Self-Hosting Deployment (as built)
 
-The app runs on a home-lab laptop (`thomas-Modern-14-B10MW`, Linux x86_64) instead of a
+The app runs on a home-lab laptop (`homelab`, Linux x86_64) instead of a
 paid VPS. Web + API are Docker containers behind a Cloudflare Tunnel; Supabase stays in
 Supabase Cloud. Deploys run on a **self-hosted GitHub Actions runner on the laptop** — a
 push to `main` builds and redeploys on the box, with the full build streaming to the
@@ -22,7 +22,7 @@ Actions log.
 
 ```
 Internet ──HTTPS──► Cloudflare edge (TLS) ──tunnel──► cloudflared (container)
-                                                          │  routes wallet.thomasduong.info.vn
+                                                          │  routes wallet.example.com
                                                           ▼        → web:80
                               ┌──────────── laptop / Docker ────────────┐
                               │  web  (nginx, static SPA)               │
@@ -40,7 +40,7 @@ Internet ──HTTPS──► Cloudflare edge (TLS) ──tunnel──► cloudf
 
 **Single public hostname.** The SPA calls the API same-origin (`VITE_API_BASE=/api`) and Hono
 serves `/api/*`, so nginx proxies `/api/` to the api container. The old
-`api.wallet.thomasduong.info.vn` subdomain is redundant and should be retired.
+`api.wallet.example.com` subdomain is redundant and should be retired.
 
 ## Deploy flow (push to `main`)
 
@@ -117,7 +117,7 @@ code on the laptop. Fine for a private repo.
 
 The `cloudflared` container in the stack connects the tunnel; its token is `TUNNEL_TOKEN`.
 In the Cloudflare Zero Trust dashboard, add a public hostname (published application route):
-`wallet.thomasduong.info.vn` → `http://web:80`. cloudflared shares the `wallet` Docker network,
+`wallet.example.com` → `http://web:80`. cloudflared shares the `wallet` Docker network,
 so it reaches `web` by name.
 
 > **Use a DEDICATED tunnel for this stack — do not reuse an existing tunnel's token.** Reusing a
@@ -161,7 +161,7 @@ The deploy job injects these; they are **not** committed. Set via `gh secret set
 ## Cutover & cleanup
 
 1. Confirm a deploy goes green end to end; `docker ps` shows fresh timestamps and `api` healthy;
-   `https://wallet.thomasduong.info.vn` loads with data (a real API call, not just `/health`).
+   `https://wallet.example.com` loads with data (a real API call, not just `/health`).
 2. Point/verify the Cloudflare hostname → `web:80`; sign-in works end to end.
 3. Keep the VPS as instant rollback for a few days (revert the Cloudflare hostname). Then:
    - Disable Portainer's GitOps auto-update on the `wallet` stack (avoid double-deploys).
@@ -178,7 +178,7 @@ The deploy job injects these; they are **not** committed. Set via `gh secret set
 - **Build load on the laptop** each deploy (`pnpm install` + build in Docker). First build is slow;
   later ones reuse cached layers while `pnpm-lock.yaml`/manifests are unchanged.
 - **Deploys only run when the laptop is on** — the runner *is* the laptop; jobs queue if it's off.
-- **uptime-kuma** monitors `https://wallet.thomasduong.info.vn/health`, but `/health` doesn't touch
+- **uptime-kuma** monitors `https://wallet.example.com/health`, but `/health` doesn't touch
   Supabase — add a monitor on a real data endpoint too to catch DB/key failures.
 
 ## Why not the Portainer webhook

@@ -20,6 +20,12 @@ dist
 execution/
 docs/dashboard.html
 
+# Supabase CLI local state (project ref, org id — machine-local)
+supabase/.temp/
+
+# Agent session baton — advisory, machine-local, not repo state
+HANDOFF.md
+
 # Claude Code — track skills/config, but never worktrees or local settings
 .claude/worktrees/
 .claude/settings.local.json
