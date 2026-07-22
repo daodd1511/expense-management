@@ -21,6 +21,7 @@ import {
   TransactionsPage,
 } from "@/routing/app-pages";
 import { LoadingScreen } from "@/shared/components/LoadingScreen";
+import { AppDataBoundary } from "@/core/ErrorBoundary";
 import { ResponsiveApp } from "@/layouts/ResponsiveApp";
 import { VersionPage } from "@/features/version/components/VersionPage";
 import { useAuth, type AuthContextValue } from "@/features/auth/auth";
@@ -53,7 +54,11 @@ function ProtectedAppRouteComponent() {
     return <Navigate to="/auth/sign-in" search={{ redirect: currentRedirectPath() }} replace />;
   }
 
-  return <ResponsiveApp />;
+  return (
+    <AppDataBoundary>
+      <ResponsiveApp />
+    </AppDataBoundary>
+  );
 }
 
 function EmptyRouteComponent() {

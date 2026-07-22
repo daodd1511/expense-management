@@ -29,6 +29,15 @@ export function isClientError(error: unknown): boolean {
   return error instanceof ApiError && error.status < 500;
 }
 
+/**
+ * Server/network failures (5xx, or non-`ApiError` like a network drop) are surfaced
+ * through the app error boundary rather than inline. The inverse of `isClientError`,
+ * named for the decision it drives so query config reads clearly.
+ */
+export function isServerError(error: unknown): boolean {
+  return !isClientError(error);
+}
+
 /** Returns the first field-level API validation message when one is available. */
 export function getFieldErrorMessage(error: unknown): string | null {
   if (!(error instanceof ApiError) || !error.details || typeof error.details !== "object") {

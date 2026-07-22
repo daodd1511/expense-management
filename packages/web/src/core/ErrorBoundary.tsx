@@ -1,8 +1,15 @@
 import { Component, type ReactNode } from "react";
+import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import { useLang } from "@/core/i18n";
 
-class ErrorBoundaryImpl extends Component<
-  { children: ReactNode; title: string; reloadLabel: string },
+/**
+ * Generic render-error boundary. Renders `fallback(retry)` when a descendant throws
+ * during render — including data queries that `throwOnError` (see main.tsx) propagates
+ * here. `retry` clears the boundary and, when `onReset` is supplied, resets the failed
+ * queries so the subtree re-renders and refetches instead of staying dead.
+ */
+class RenderErrorBoundary extends Component<
+  { children: ReactNode; fallback: (retry: () => void) => ReactNode; onReset?: () => void },
   { hasError: boolean }
 > {
   state = { hasError: false };
@@ -15,35 +22,93 @@ class ErrorBoundaryImpl extends Component<
     console.error("[render]", error);
   }
 
-  render() {
-    if (!this.state.hasError) return this.props.children;
+  retry = () => {
+    this.props.onReset?.();
+    this.setState({ hasError: false });
+  };
 
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
-        <p className="text-base font-semibold text-foreground">{this.props.title}</p>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-        >
-          {this.props.reloadLabel}
-        </button>
-      </div>
-    );
+  render() {
+    return this.state.hasError ? this.props.fallback(this.retry) : this.props.children;
   }
 }
 
+function Fallback({
+  title,
+  description,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  description: string;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
+      <div className="space-y-1">
+        <p className="text-base font-semibold text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onAction}
+        className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+      >
+        {actionLabel}
+      </button>
+    </div>
+  );
+}
+
 /**
- * Top-level render-error safety net. React error boundaries must be class
- * components (no hook equivalent), so this wraps the class in a function
- * component that supplies i18n'd copy via props.
+ * Top-level render-error safety net for unexpected crashes. Recovery is a full reload
+ * (state is unknown, so re-rendering in place is not trusted).
  */
 export function ErrorBoundary({ children }: { children: ReactNode }) {
   const { t } = useLang();
 
   return (
-    <ErrorBoundaryImpl title={t("error.boundary.title")} reloadLabel={t("error.boundary.reload")}>
+    <RenderErrorBoundary
+      fallback={() => (
+        <Fallback
+          title={t("error.boundary.title")}
+          description={t("error.boundary.description")}
+          actionLabel={t("error.boundary.reload")}
+          onAction={() => window.location.reload()}
+        />
+      )}
+    >
       {children}
-    </ErrorBoundaryImpl>
+    </RenderErrorBoundary>
+  );
+}
+
+/**
+ * Boundary for the authenticated app's data screens. A failed server/network query
+ * (thrown via `throwOnError`) unmounts the failing screen and shows a fallback, so it
+ * stops re-rendering and re-firing its queries. Retry resets the failed queries and
+ * re-renders in place — no full reload, auth and routing stay intact.
+ */
+export function AppDataBoundary({ children }: { children: ReactNode }) {
+  const { t } = useLang();
+
+  return (
+    <QueryErrorResetBoundary>
+      {({ reset }) => (
+        <RenderErrorBoundary
+          onReset={reset}
+          fallback={(retry) => (
+            <Fallback
+              title={t("error.boundary.title")}
+              description={t("error.boundary.description")}
+              actionLabel={t("error.boundary.retry")}
+              onAction={retry}
+            />
+          )}
+        >
+          {children}
+        </RenderErrorBoundary>
+      )}
+    </QueryErrorResetBoundary>
   );
 }
