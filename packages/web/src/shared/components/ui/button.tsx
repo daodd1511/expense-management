@@ -59,18 +59,22 @@ function Button({
     <ButtonPrimitive
       data-slot="button"
       aria-busy={loading || undefined}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, className }), loading && "relative")}
       disabled={disabled || loading}
       {...props}
     >
-      {loading ? (
-        <>
-          <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-          {loadingLabel ?? children}
-        </>
-      ) : (
-        children
+      {loading && (
+        <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center">
+          <LoaderCircle className="size-4 animate-spin" />
+        </span>
       )}
+      {/* Keep the label in flow but hidden so the button width never shifts; the spinner
+          overlays it. `contents` leaves children as the button's own flex items. While
+          loading it's aria-hidden so the sr-only label alone names the button. */}
+      <span aria-hidden={loading || undefined} className={cn("contents", loading && "invisible")}>
+        {children}
+      </span>
+      {loading && <span className="sr-only">{loadingLabel ?? children}</span>}
     </ButtonPrimitive>
   );
 }
