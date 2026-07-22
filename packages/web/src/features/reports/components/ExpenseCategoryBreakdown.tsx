@@ -25,7 +25,7 @@ export function ExpenseCategoryBreakdown({
   categories: ReportCategoryAggregate[];
   getCategory: (id: string | null | undefined) => Category | undefined;
   getAccount: (id: string | null | undefined) => Account | undefined;
-  onTransactionClick: (transactionId: string) => void;
+  onTransactionClick: (transactionId: string, date: string) => void;
   titleKey?: TranslationKey;
   emptyTitleKey?: TranslationKey;
   emptyDescriptionKey?: TranslationKey;
@@ -109,7 +109,7 @@ export function ExpenseCategoryBreakdown({
                       key={transaction.id}
                       transaction={transaction}
                       accountName={getAccount(transaction.accountId)?.name ?? transaction.accountId}
-                      onClick={() => onTransactionClick(transaction.id)}
+                      onClick={() => onTransactionClick(transaction.id, transaction.date)}
                     />
                   ))}
                 </div>

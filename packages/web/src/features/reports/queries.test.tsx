@@ -2,10 +2,13 @@ import type { ReactNode } from "react";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
-import type { FinancialPositionResponse } from "@wallet/shared";
-import { reportQueryKeys, useFinancialPosition } from "./queries";
+import type { FinancialPositionResponse, SpendingAnalysisReportResponse } from "@wallet/shared";
+import { reportQueryKeys, useFinancialPosition, useSpendingAnalysis } from "./queries";
 
-const reportDbMocks = vi.hoisted(() => ({ fetchFinancialPosition: vi.fn() }));
+const reportDbMocks = vi.hoisted(() => ({
+  fetchFinancialPosition: vi.fn(),
+  fetchSpendingAnalysis: vi.fn(),
+}));
 
 vi.mock("@/features/auth/auth", () => ({
   useAuth: () => ({ user: { id: "user-1" } }),
@@ -52,6 +55,17 @@ const RESPONSE: FinancialPositionResponse = {
   },
 };
 
+const SPENDING_RESPONSE: SpendingAnalysisReportResponse = {
+  data: {
+    range: { from: "2026-07-01", to: "2026-07-19" },
+    comparisonRange: { from: "2026-06-01", to: "2026-06-19" },
+    trendGranularity: "day",
+    totals: { current: 1000, previous: 500, change: 500, changePercentage: 1 },
+    trend: [],
+    categories: [],
+  },
+};
+
 function createWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
@@ -71,6 +85,21 @@ describe("report queries", () => {
     expect(reportDbMocks.fetchFinancialPosition).toHaveBeenCalledWith(range);
     expect(queryClient.getQueryData(reportQueryKeys.financialPosition("user-1", range))).toEqual(
       RESPONSE,
+    );
+  });
+
+  it("fetches Spending analysis with a user-scoped preset+range key", async () => {
+    reportDbMocks.fetchSpendingAnalysis.mockResolvedValueOnce(SPENDING_RESPONSE);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = createWrapper(queryClient);
+    const params = { from: "2026-07-01", to: "2026-07-19", preset: "this-month" as const };
+
+    const { result } = renderHook(() => useSpendingAnalysis(params), { wrapper });
+
+    await waitFor(() => expect(result.current.data).toEqual(SPENDING_RESPONSE));
+    expect(reportDbMocks.fetchSpendingAnalysis).toHaveBeenCalledWith(params);
+    expect(queryClient.getQueryData(reportQueryKeys.spendingAnalysis("user-1", params))).toEqual(
+      SPENDING_RESPONSE,
     );
   });
 });

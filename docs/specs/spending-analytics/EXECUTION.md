@@ -5,11 +5,11 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 1 — done
+- Current phase: 3 — done
 - Phase 1 — Shared contract & API: done
-- Phase 2 — Report range model (web): pending
-- Phase 3 — Spending analysis UI (web): pending
-- Verification debt: none
+- Phase 2 — Report range model (web): done
+- Phase 3 — Spending analysis UI (web): done
+- Verification debt: none (manual in-browser checks moved to PR review checklists — see Phase 2/3 amendments)
 
 ## Phase 1 — Shared contract & API
 
@@ -106,41 +106,60 @@ Frontend URL-backed range infra nothing in Phase 3's UI can start without; also 
 the shared Reports shell used by the two existing report types, per PLAN.md → "Report
 Range Model".
 
-- [ ] `packages/web/src/routing/reports-search.ts` — replace/extend
-      `reportsSearchSchema` (`{ month }`) with a range-capable schema carrying
-      `preset` (`this-month` | `previous-month` | `last-3-months` | `last-6-months` |
-      `last-12-months` | `custom`) and `from`/`to` (`isoDateSchema`, required together for
-      `custom`). Update `validateReportsSearch` to normalize a legacy `month=YYYY-MM`
-      search into the equivalent range (backwards compatibility per PLAN.md → "Report
-      Range Model" item 2).
-- [ ] `packages/web/src/features/reports/report-date.ts` — add range-resolution helpers
-      (preset → `{from,to}`, comparison-range derivation mirroring the server logic from
-      Phase 1 for client-side display) alongside the existing `monthRangeFromMonth`/
-      `currentReportMonth`/`formatReportMonth` (keep the latter for month-only legacy
-      paths if still referenced).
-- [ ] `packages/web/src/features/reports/components/ReportsPage.tsx` — replace the
-      `selectedMonth` `useState` + `getSearchMonth`/`handleMonthChange` (lines ~33–54)
-      with the new range state synced to the router search param; keep `activeType` state
-      and range selection stable across `Report type` switches (per PLAN.md → "Web
-      Changes" item 1, "Verification" → "Switching Report types preserves the selected
-      range").
-- [ ] `packages/web/src/routing/router.tsx` (`reportsRoute`, ~line 164) —
-      `validateSearch` continues to point at the updated `validateReportsSearch`.
-- [ ] `packages/web/src/features/reports/queries.ts` — update
-      `useIncomeExpenseReport`/`useFinancialPosition` param shape if the range model
-      changes what `ReportsPage` passes down (from `month` to `{from,to}` — these hooks
-      already accept `from`/`to` per the existing API contract, so this is likely a
-      call-site change only).
-- [ ] Add the range selector UI (desktop + mobile) to `ReportsPage.tsx` or a new
-      `components/ReportRangeSelector.tsx`: preset dropdown/tabs + custom local-date
-      inputs (reuse `packages/web/src/shared/lib/date.ts` local-date helpers, never
-      `new Date(iso)` per `CLAUDE.md` → "Dates").
-- [ ] `packages/web/src/core/i18n.tsx` — add range-preset labels to both `VI` and `EN`.
+- [x] `packages/web/src/routing/reports-search.ts` — replaced `reportsSearchSchema`
+      (`{ month }`) with `{ preset?, from?, to? }` (reusing `spendingAnalysisPresetSchema`
+      from `@wallet/shared`). `validateReportsSearch` normalizes a legacy `month=YYYY-MM`
+      search into `{preset: "custom", from, to}` via `monthRangeFromMonth`; a bare search
+      with none of preset/from/to/month returns `{}` (`ReportsPage` resolves the default).
+- [x] `packages/web/src/features/reports/report-date.ts` — added `resolveReportRange`
+      (preset → `{from,to}` as of "today") and `ReportRangePreset`/`ReportRange` types.
+      Removed `currentReportMonth`/`formatReportMonth` — both became dead code once
+      `ReportsPage` no longer tracks a bare month (confirmed no other callers).
+- [x] `packages/web/src/features/reports/components/ReportsPage.tsx` — replaced
+      `selectedMonth` state with `range: ReportRange & {preset}` state, synced to the
+      router search param via two effects (default-on-bare-visit, sync-on-external-nav);
+      `activeType` state unchanged, so range survives report-type switches for free.
+- [x] `packages/web/src/routing/router.tsx` — unchanged; `validateSearch` already points
+      at `validateReportsSearch`, whose return shape changed but call site didn't.
+- [x] `packages/web/src/features/reports/queries.ts` — no changes needed: already typed
+      as `{from, to}`, confirmed no callers passed `month`.
+- [x] `packages/web/src/features/reports/components/ReportRangeSelector.tsx` — new
+      component: preset `Select` + two `DatePicker` instances (reused
+      `shared/components/ui/date-picker.tsx`, not a new date input) shown only for
+      `custom`, clamping `to >= from` in the parent's own `onChange`.
+- [x] `packages/web/src/core/i18n.tsx` — added `reports.range*` keys to both `VI`/`EN`.
+
+**Amendments (2026-07-19):**
+- `packages/web/src/features/reports/components/IncomeExpenseReport.tsx` and
+  `ExpenseCategoryBreakdown.tsx` — necessary-but-unplanned: `onTransactionClick` only
+  passed a transaction id, and the transaction-edit overlay looks the transaction up
+  within *its own date's* month (`useTransactions(month)`). That was safe when the
+  Reports shell only ever showed a single month; a multi-month preset (e.g. "last 3
+  months") would pass the *report's* month instead of the clicked transaction's own
+  month, and the overlay would silently fail to find it and close itself. Widened
+  `onTransactionClick` to `(transactionId, date)` and derive the overlay month from the
+  clicked row's own `date`.
+- `packages/web/src/features/reports/components/{IncomeExpenseReport,FinancialPositionReport}.tsx`
+  — prop renamed `month: string` → `range: ReportRange`, since `ReportsPage` now resolves
+  a range (not a month) — required for both report types to keep working under the new
+  shared range-selector shell, per PLAN.md → "Pass the resolved from/to range to all
+  Report queries."
+- Added `packages/web/src/features/reports/report-date.test.ts` and
+  `packages/web/src/routing/reports-search.test.ts` — no test files previously existed
+  for either changed file; added coverage for the new range-resolution and
+  legacy-month-normalization logic (month-length/leap-year/year-boundary cases).
+- Manual in-browser verification of the range selector was not performed: the app is
+  gated behind Supabase Auth and no login credentials were available in this session.
+  Confirmed only that the dev server boots and serves the SPA shell (`200` on `/` and
+  `/reports`). Per this project's own spec-workflow, interactive UI verification is the
+  PR review checklist's job (the user's, at review time) — moved there rather than
+  treated as agent debt.
 
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test -- reports-search report-date ReportsPage` (filtered
-      to changed test files/areas; extend the filter list if new test files are added)
+- [x] `pnpm --filter @wallet/web typecheck` — clean
+- [x] `pnpm --filter @wallet/web exec vitest run reports-search report-date.test IncomeExpenseReport FinancialPositionReport`
+      (corrected: package has no `test -- <pattern>` passthrough script; ran vitest
+      directly with the equivalent file filter) — 16 passed
 
 **Review checklist (user, at PR review):**
 - [ ] Each preset (This month, Previous month, last 3/6/12 months, Custom) resolves to
@@ -148,6 +167,8 @@ Range Model".
 - [ ] A legacy `?month=YYYY-MM` URL still loads the equivalent range.
 - [ ] Switching between Income vs Expense / Financial position preserves the selected
       range.
+- [ ] Custom range: picking a "from" after the current "to" (or vice versa) clamps
+      sensibly rather than producing an inverted range.
 
 **On completion:** run agent gate, update STATUS + checkboxes, stop and ask before
 push/PR. Review checklist goes into the PR description.
@@ -160,35 +181,49 @@ Branch: `spending-analytics/phase-3-spending-ui` (off
 User-visible report type, depends on Phase 1's API and Phase 2's range model both
 existing, per PLAN.md → "Web Changes".
 
-- [ ] `packages/web/src/features/reports/report-types.ts` — add `"spending-analysis"` to
-      `REPORT_TYPE_IDS` and `REPORT_TYPES` (new `labelKey`/`descriptionKey`).
-- [ ] `packages/web/src/core/i18n.tsx` — add `reports.typeSpendingAnalysis` /
-      `reports.typeSpendingAnalysisDesc` (+ any in-report copy: `New`, `Uncategorized`,
-      change labels) to both `VI` and `EN`.
-- [ ] `packages/web/src/features/reports/db.ts` — add `fetchSpendingAnalysis` (`apiJson`
-      wrapper against `spendingAnalysisReportResponseSchema` from Phase 1, GET
-      `/reports/spending-analysis`).
-- [ ] `packages/web/src/features/reports/queries.ts` — add
-      `reportQueryKeys.spendingAnalysis` + `useSpendingAnalysis(params)`.
-- [ ] `packages/web/src/features/reports/components/SpendingAnalysisReport.tsx` — new
-      component: headline spending + absolute/percentage change (`New`/`null%` display
-      per Phase 1's DTO), adaptive current-vs-previous trend chart (reuse
-      `packages/web/src/shared/components/Charts.tsx` per `CLAUDE.md` → Stack →
-      Recharts), parent category share/change list with expand-to-children, wired to
-      `packages/web/src/features/transactions/transaction-overlay.tsx`
-      `useTransactionOverlay().openEdit(...)` for drill-down (same pattern as
-      `IncomeExpenseReport.tsx`).
-- [ ] `packages/web/src/features/reports/components/ExpenseCategoryBreakdown.tsx` /
-      `ReportTransactionRow.tsx` — reuse as-is or extend minimally for the
-      parent-then-children-then-transactions drill-down shape; note any divergence
-      inline if a variant is needed rather than forking wholesale.
-- [ ] `packages/web/src/features/reports/components/ReportsPage.tsx` — render
+- [x] `packages/web/src/features/reports/report-types.ts` — added `"spending-analysis"` to
+      `REPORT_TYPE_IDS` and `REPORT_TYPES`.
+- [x] `packages/web/src/core/i18n.tsx` — added `reports.typeSpendingAnalysis`,
+      `reports.spendingTotal/VsPrevious/New/Unchanged/Uncategorized/TrendTitle/
+      CategoriesTitle/EmptyTitle/EmptyDesc/CurrentLabel/PreviousLabel` to both `VI`/`EN`.
+- [x] `packages/web/src/features/reports/db.ts` — added `fetchSpendingAnalysis` (`from`,
+      `to`, `preset` query params; validates against `spendingAnalysisReportResponseSchema`).
+- [x] `packages/web/src/features/reports/queries.ts` — added
+      `reportQueryKeys.spendingAnalysis` (keyed by preset+from+to) + `useSpendingAnalysis`.
+- [x] `packages/web/src/features/reports/components/SpendingAnalysisReport.tsx` — new
+      component: headline card (`SpendingChangeBadge` for change/`New`/`Unchanged`),
+      `SpendingTrendChart` (new, in `Charts.tsx`), `SpendingCategoryBreakdown`; drill-down
+      via `useTransactionOverlay().openEdit`, deriving the overlay month from the clicked
+      row's own date (same fix as Phase 2, not the report's range).
+- [x] `packages/web/src/features/reports/components/SpendingCategoryBreakdown.tsx` — new
+      component, **not** a reuse/extension of `ExpenseCategoryBreakdown` — see amendment.
+- [x] `packages/web/src/features/reports/components/ReportsPage.tsx` — renders
       `SpendingAnalysisReport` when `activeType === "spending-analysis"`.
 
+**Amendments (2026-07-19):**
+- `ExpenseCategoryBreakdown`/`ReportTransactionRow` were **not** extended in place: the
+  Spending data shape nests children under each parent and carries
+  current/previous/change/share instead of a flat amount/percentage, with `categoryId`
+  nullable for the explicit Uncategorized bucket — none of which the existing single-
+  level component's props express. Built `SpendingCategoryBreakdown.tsx` +
+  `SpendingChildCategoryRow` (private, same file) instead, reusing `ReportTransactionRow`
+  as-is for leaf rows (the one piece that *did* fit unchanged) plus the same
+  `Card`/`Collapsible`/`CategoryIcon` primitives for visual consistency.
+- Added `SpendingChangeBadge.tsx` (new, feature-local — no existing delta/trend-badge
+  component was found anywhere in the app to reuse) and `SpendingTrendChart` in
+  `shared/components/Charts.tsx` (new `ComposedChart`: filled area for the current
+  period, dashed line for the comparison period, `connectNulls` so a shorter comparison
+  range — the this-month month-capping edge case from Phase 1 — doesn't break the line).
+- Manual in-browser verification was again not performed (Supabase-auth-gated, no
+  credentials this session) — moved to the review checklist below, consistent with
+  Phase 1/2.
+
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test -- SpendingAnalysisReport queries report-types`
-      (filtered to new/changed test files)
+- [x] `pnpm --filter @wallet/web typecheck` — clean
+- [x] `pnpm --filter @wallet/web exec vitest run src/features/reports src/routing/reports-search.test.ts`
+      (corrected: package has no `test -- <pattern>` passthrough script, same correction
+      as Phase 2; widened to the whole `reports` feature since this phase's diff touches
+      `report-types.ts`/`queries.ts`/`ReportsPage.tsx`, not just the new files) — 22 passed
 
 **Review checklist (user, at PR review):**
 - [ ] Spending analysis shows correct headline/trend/category data against real
@@ -198,6 +233,9 @@ existing, per PLAN.md → "Web Changes".
 - [ ] Category names remain localized through the existing category cache.
 - [ ] Another user's data never leaks into the report (spot-check via two test accounts
       if available).
+- [ ] The trend chart's dashed comparison line handles a this-month range where the
+      comparison period is shorter (e.g. viewing on the 31st of a month whose previous
+      month only has 30 days) without visually breaking.
 
 **On completion:** run agent gate, update STATUS + checkboxes, stop and ask before
 push/PR. Review checklist goes into the PR description.

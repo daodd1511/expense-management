@@ -11,18 +11,17 @@ import { useIsDesktop } from "@/shared/hooks/useIsDesktop";
 import { amountColorClass, formatSigned, formatVND } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 import { useIncomeExpenseReport } from "../queries";
-import { monthRangeFromMonth } from "../report-date";
+import type { ReportRange } from "../report-date";
 import { ExpenseCategoryBreakdown } from "./ExpenseCategoryBreakdown";
 
-export function IncomeExpenseReport({ month }: { month: string }) {
+export function IncomeExpenseReport({ range }: { range: ReportRange }) {
   const { t } = useLang();
   const isDesktop = useIsDesktop();
   const categoryLookup = useCategoryLookup();
   const accountLookup = useAccountLookup();
   const { openEdit } = useTransactionOverlay();
   const [activeCategoryType, setActiveCategoryType] = useState<"expense" | "income">("expense");
-  const { from, to } = monthRangeFromMonth(month);
-  const { data, isPending } = useIncomeExpenseReport({ from, to });
+  const { data, isPending } = useIncomeExpenseReport(range);
 
   if (isPending || !data) {
     return <ReportsSkeleton mobile={!isDesktop} />;
@@ -58,8 +57,11 @@ export function IncomeExpenseReport({ month }: { month: string }) {
   const activeEmptyDescriptionKey =
     activeCategoryType === "expense" ? "reports.expenseEmptyDesc" : "reports.incomeEmptyDesc";
 
-  const handleTransactionClick = (transactionId: string) => {
-    openEdit(transactionId, month);
+  // The overlay looks the transaction up within its own date's month (useTransactions(month)
+  // in transaction-overlay.tsx), not the report's selected range — a multi-month range
+  // (e.g. "last 3 months") would otherwise fetch the wrong month and silently fail to find it.
+  const handleTransactionClick = (transactionId: string, date: string) => {
+    openEdit(transactionId, date.slice(0, 7));
   };
 
   return (
