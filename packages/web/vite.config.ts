@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -24,6 +25,9 @@ const appCommitDate =
   process.env.APP_COMMIT_DATE ?? readGitValue("git log -1 --format=%cd --date=short");
 
 export default defineConfig({
+  // VITE_* vars come from the single .env at the repo root (docker builds pass
+  // them as build args instead).
+  envDir: fileURLToPath(new URL("../../", import.meta.url)),
   define: {
     __APP_COMMIT__: JSON.stringify(appCommit),
     __APP_COMMIT_DATE__: JSON.stringify(appCommitDate),
