@@ -26,7 +26,9 @@ describe("transactionCreateSchema", () => {
     expect(result.date).toBe("2026-07-01");
   });
 
-  it("rejects future transaction dates", () => {
+  it("accepts a future date at the DTO level (future-guard lives in the API layer)", () => {
+    // The "not in the future" rule is enforced server-side against the client's
+    // timezone (rejectFutureDates middleware); the DTO only checks shape.
     const result = transactionCreateSchema.safeParse({
       type: "expense",
       amount: 1213,
@@ -37,12 +39,7 @@ describe("transactionCreateSchema", () => {
       receipt: null,
     });
 
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      // Narrows the safeParse union; expect(result.success).toBe(false) above already guarantees this branch runs.
-      // oxlint-disable-next-line vitest/no-conditional-expect
-      expect(result.error.issues[0]?.message).toBe("Transaction date cannot be in the future");
-    }
+    expect(result.success).toBe(true);
   });
 
   it("accepts local HH:MM transaction time", () => {

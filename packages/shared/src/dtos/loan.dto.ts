@@ -48,17 +48,10 @@ export const loanMetadataPatchSchema = atLeastOneKey({
   dueDate: isoDateSchema.nullable(),
 });
 
-function isoTodayForValidation() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-const loanFutureDateSchema = isoDateSchema.refine((value) => value <= isoTodayForValidation(), {
-  message: "Loan financial event dates cannot be in the future",
-});
+// Loan event dates are guarded against the future server-side, against the client's
+// timezone (`rejectFutureDates` middleware in packages/api). A DTO-level `new Date()`
+// check drifts a day for zones ahead of UTC, so these stay plain date validators.
+const loanFutureDateSchema = isoDateSchema;
 
 export const disbursedLoanCreateSchema = z.object({
   personId: z.string().min(1),

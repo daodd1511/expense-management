@@ -58,10 +58,10 @@ describe("disbursedLoanCreateSchema", () => {
     expect(disbursedLoanCreateSchema.safeParse(baseInput({ amount: 0 })).success).toBe(false);
   });
 
-  it("rejects a future event date", () => {
+  it("accepts a future date at the DTO level (future-guard lives in the API layer)", () => {
     expect(
       disbursedLoanCreateSchema.safeParse(baseInput({ date: tomorrowIsoDate() })).success,
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("rejects an invalid direction", () => {
@@ -113,13 +113,13 @@ describe("loanRepaymentCreateSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects a future date", () => {
+  it("accepts a future date at the DTO level (future-guard lives in the API layer)", () => {
     const result = loanRepaymentCreateSchema.safeParse({
       amount: 1000,
       accountId: "acc-1",
       date: tomorrowIsoDate(),
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 });
 

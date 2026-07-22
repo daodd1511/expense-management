@@ -69,6 +69,9 @@ export async function apiFetch(path: string, init?: RequestInit) {
     headers: {
       ...(init?.body !== undefined ? { "Content-Type": "application/json" } : {}),
       Authorization: `Bearer ${session.access_token}`,
+      // The server has no reliable local calendar date of its own (it runs in UTC),
+      // so "not in the future" checks are validated against the client's IANA zone.
+      "X-Client-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
       ...init?.headers,
     },
   });

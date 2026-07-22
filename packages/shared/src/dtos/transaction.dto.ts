@@ -2,17 +2,10 @@ import { z } from "zod";
 import { loanCashFlowDirectionSchema, txTypeSchema } from "../models";
 import { isoDateSchema, localTimeSchema } from "./common.dto";
 
-function todayIsoDate() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-const transactionDateSchema = isoDateSchema.refine((value) => value <= todayIsoDate(), {
-  message: "Transaction date cannot be in the future",
-});
+// "Not in the future" is validated server-side against the client's timezone
+// (`rejectFutureDates` middleware in packages/api), not here — the DTO can only
+// see a server-local `new Date()`, which drifts a day for zones ahead of UTC.
+const transactionDateSchema = isoDateSchema;
 
 export const transactionRowSchema = z.object({
   id: z.string(),

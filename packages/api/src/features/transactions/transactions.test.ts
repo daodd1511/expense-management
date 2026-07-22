@@ -322,10 +322,15 @@ describe("transactionsRouter", () => {
     getSupabase.mockReset();
   });
 
-  it("rejects future transaction dates", async () => {
+  it("rejects future transaction dates against the client timezone", async () => {
     const response = await makeApp().request("/transactions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        // tomorrowIsoDate() is computed in the runner's local zone; sending that
+        // same zone makes the "future" comparison deterministic across machines.
+        "X-Client-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
       body: JSON.stringify({
         type: "expense",
         amount: 1213,

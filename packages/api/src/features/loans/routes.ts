@@ -2,7 +2,12 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AuthEnv } from "../../middleware/auth";
+import { rejectFutureDates } from "../../middleware/futureDate";
 import { jsonError } from "../../lib/response";
+
+const rejectFutureLoanDate = rejectFutureDates({
+  date: "Loan financial event dates cannot be in the future",
+});
 import * as controller from "./controller";
 import {
   closeLoanSchema,
@@ -63,6 +68,7 @@ loansRouter.post(
   "/disbursed",
   validateQuery(loanListQuerySchema),
   validateJson(disbursedLoanCreateSchema),
+  rejectFutureLoanDate,
   async (c) => {
     const data = await controller.createDisbursedLoan(
       c.get("userId"),
@@ -106,6 +112,7 @@ loansRouter.patch(
   "/:id/disbursement",
   validateQuery(loanListQuerySchema),
   validateJson(loanDisbursementPatchSchema),
+  rejectFutureLoanDate,
   async (c) => {
     const data = await controller.updateLoanDisbursement(
       c.get("userId"),
@@ -121,6 +128,7 @@ loansRouter.post(
   "/:id/repayments",
   validateQuery(loanListQuerySchema),
   validateJson(loanRepaymentCreateSchema),
+  rejectFutureLoanDate,
   async (c) => {
     const data = await controller.createLoanRepayment(
       c.get("userId"),
@@ -135,6 +143,7 @@ loansRouter.patch(
   "/:id/repayments/:eventId",
   validateQuery(loanListQuerySchema),
   validateJson(loanRepaymentPatchSchema),
+  rejectFutureLoanDate,
   async (c) => {
     const data = await controller.updateLoanRepayment(
       c.get("userId"),
@@ -151,6 +160,7 @@ loansRouter.post(
   "/:id/close",
   validateQuery(loanListQuerySchema),
   validateJson(closeLoanSchema),
+  rejectFutureLoanDate,
   async (c) => {
     const data = await controller.closeLoan(
       c.get("userId"),

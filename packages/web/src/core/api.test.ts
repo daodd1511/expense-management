@@ -48,6 +48,7 @@ describe("apiFetch", () => {
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer token-123",
+        "X-Client-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
     });
   });
