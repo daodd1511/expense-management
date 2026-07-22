@@ -5,11 +5,11 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 2 — done
+- Current phase: 3 — done
 - Phase 1 — Shared contract & API: done
 - Phase 2 — Report range model (web): done
-- Phase 3 — Spending analysis UI (web): pending
-- Verification debt: none (manual in-browser check moved to PR review checklist — see Phase 2 amendments)
+- Phase 3 — Spending analysis UI (web): done
+- Verification debt: none (manual in-browser checks moved to PR review checklists — see Phase 2/3 amendments)
 
 ## Phase 1 — Shared contract & API
 
@@ -181,35 +181,49 @@ Branch: `spending-analytics/phase-3-spending-ui` (off
 User-visible report type, depends on Phase 1's API and Phase 2's range model both
 existing, per PLAN.md → "Web Changes".
 
-- [ ] `packages/web/src/features/reports/report-types.ts` — add `"spending-analysis"` to
-      `REPORT_TYPE_IDS` and `REPORT_TYPES` (new `labelKey`/`descriptionKey`).
-- [ ] `packages/web/src/core/i18n.tsx` — add `reports.typeSpendingAnalysis` /
-      `reports.typeSpendingAnalysisDesc` (+ any in-report copy: `New`, `Uncategorized`,
-      change labels) to both `VI` and `EN`.
-- [ ] `packages/web/src/features/reports/db.ts` — add `fetchSpendingAnalysis` (`apiJson`
-      wrapper against `spendingAnalysisReportResponseSchema` from Phase 1, GET
-      `/reports/spending-analysis`).
-- [ ] `packages/web/src/features/reports/queries.ts` — add
-      `reportQueryKeys.spendingAnalysis` + `useSpendingAnalysis(params)`.
-- [ ] `packages/web/src/features/reports/components/SpendingAnalysisReport.tsx` — new
-      component: headline spending + absolute/percentage change (`New`/`null%` display
-      per Phase 1's DTO), adaptive current-vs-previous trend chart (reuse
-      `packages/web/src/shared/components/Charts.tsx` per `CLAUDE.md` → Stack →
-      Recharts), parent category share/change list with expand-to-children, wired to
-      `packages/web/src/features/transactions/transaction-overlay.tsx`
-      `useTransactionOverlay().openEdit(...)` for drill-down (same pattern as
-      `IncomeExpenseReport.tsx`).
-- [ ] `packages/web/src/features/reports/components/ExpenseCategoryBreakdown.tsx` /
-      `ReportTransactionRow.tsx` — reuse as-is or extend minimally for the
-      parent-then-children-then-transactions drill-down shape; note any divergence
-      inline if a variant is needed rather than forking wholesale.
-- [ ] `packages/web/src/features/reports/components/ReportsPage.tsx` — render
+- [x] `packages/web/src/features/reports/report-types.ts` — added `"spending-analysis"` to
+      `REPORT_TYPE_IDS` and `REPORT_TYPES`.
+- [x] `packages/web/src/core/i18n.tsx` — added `reports.typeSpendingAnalysis`,
+      `reports.spendingTotal/VsPrevious/New/Unchanged/Uncategorized/TrendTitle/
+      CategoriesTitle/EmptyTitle/EmptyDesc/CurrentLabel/PreviousLabel` to both `VI`/`EN`.
+- [x] `packages/web/src/features/reports/db.ts` — added `fetchSpendingAnalysis` (`from`,
+      `to`, `preset` query params; validates against `spendingAnalysisReportResponseSchema`).
+- [x] `packages/web/src/features/reports/queries.ts` — added
+      `reportQueryKeys.spendingAnalysis` (keyed by preset+from+to) + `useSpendingAnalysis`.
+- [x] `packages/web/src/features/reports/components/SpendingAnalysisReport.tsx` — new
+      component: headline card (`SpendingChangeBadge` for change/`New`/`Unchanged`),
+      `SpendingTrendChart` (new, in `Charts.tsx`), `SpendingCategoryBreakdown`; drill-down
+      via `useTransactionOverlay().openEdit`, deriving the overlay month from the clicked
+      row's own date (same fix as Phase 2, not the report's range).
+- [x] `packages/web/src/features/reports/components/SpendingCategoryBreakdown.tsx` — new
+      component, **not** a reuse/extension of `ExpenseCategoryBreakdown` — see amendment.
+- [x] `packages/web/src/features/reports/components/ReportsPage.tsx` — renders
       `SpendingAnalysisReport` when `activeType === "spending-analysis"`.
 
+**Amendments (2026-07-19):**
+- `ExpenseCategoryBreakdown`/`ReportTransactionRow` were **not** extended in place: the
+  Spending data shape nests children under each parent and carries
+  current/previous/change/share instead of a flat amount/percentage, with `categoryId`
+  nullable for the explicit Uncategorized bucket — none of which the existing single-
+  level component's props express. Built `SpendingCategoryBreakdown.tsx` +
+  `SpendingChildCategoryRow` (private, same file) instead, reusing `ReportTransactionRow`
+  as-is for leaf rows (the one piece that *did* fit unchanged) plus the same
+  `Card`/`Collapsible`/`CategoryIcon` primitives for visual consistency.
+- Added `SpendingChangeBadge.tsx` (new, feature-local — no existing delta/trend-badge
+  component was found anywhere in the app to reuse) and `SpendingTrendChart` in
+  `shared/components/Charts.tsx` (new `ComposedChart`: filled area for the current
+  period, dashed line for the comparison period, `connectNulls` so a shorter comparison
+  range — the this-month month-capping edge case from Phase 1 — doesn't break the line).
+- Manual in-browser verification was again not performed (Supabase-auth-gated, no
+  credentials this session) — moved to the review checklist below, consistent with
+  Phase 1/2.
+
 **Agent gate (hard):**
-- [ ] `pnpm --filter @wallet/web typecheck`
-- [ ] `pnpm --filter @wallet/web test -- SpendingAnalysisReport queries report-types`
-      (filtered to new/changed test files)
+- [x] `pnpm --filter @wallet/web typecheck` — clean
+- [x] `pnpm --filter @wallet/web exec vitest run src/features/reports src/routing/reports-search.test.ts`
+      (corrected: package has no `test -- <pattern>` passthrough script, same correction
+      as Phase 2; widened to the whole `reports` feature since this phase's diff touches
+      `report-types.ts`/`queries.ts`/`ReportsPage.tsx`, not just the new files) — 22 passed
 
 **Review checklist (user, at PR review):**
 - [ ] Spending analysis shows correct headline/trend/category data against real
@@ -219,6 +233,9 @@ existing, per PLAN.md → "Web Changes".
 - [ ] Category names remain localized through the existing category cache.
 - [ ] Another user's data never leaks into the report (spot-check via two test accounts
       if available).
+- [ ] The trend chart's dashed comparison line handles a this-month range where the
+      comparison period is shorter (e.g. viewing on the 31st of a month whose previous
+      month only has 30 days) without visually breaking.
 
 **On completion:** run agent gate, update STATUS + checkboxes, stop and ask before
 push/PR. Review checklist goes into the PR description.

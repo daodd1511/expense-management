@@ -19,6 +19,7 @@ import { DEFAULT_REPORT_TYPE_ID, REPORT_TYPES, type ReportTypeId } from "../repo
 import { resolveReportRange, type ReportRange, type ReportRangePreset } from "../report-date";
 import { IncomeExpenseReport } from "./IncomeExpenseReport";
 import { FinancialPositionReport } from "./FinancialPositionReport";
+import { SpendingAnalysisReport } from "./SpendingAnalysisReport";
 import { ReportRangeSelector } from "./ReportRangeSelector";
 
 const REPORT_TYPE_OPTIONS = Object.values(REPORT_TYPES);
@@ -114,6 +115,9 @@ export function ReportsPage() {
 
       {activeType === "income-expense" && <IncomeExpenseReport range={range} />}
       {activeType === "financial-position" && <FinancialPositionReport range={range} />}
+      {activeType === "spending-analysis" && (
+        <SpendingAnalysisReport range={range} preset={range.preset} />
+      )}
     </MobilePageContainer>
   );
 }
