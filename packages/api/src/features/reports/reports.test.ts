@@ -525,4 +525,198 @@ describe("reportsRouter", () => {
       expect(response.status).toBe(400);
     });
   });
+
+  describe("GET /spending-analysis", () => {
+    const categories = [
+      {
+        id: "cat-food",
+        owner_id: "user-1",
+        name: "Food",
+        icon: "Utensils",
+        color: "chart-2",
+        is_hidden: false,
+        type: "expense",
+        parent_id: null,
+        created_at: "2020-01-01T00:00:00.000Z",
+      },
+      {
+        id: "cat-coffee",
+        owner_id: "user-1",
+        name: "Coffee",
+        icon: "Coffee",
+        color: "chart-3",
+        is_hidden: false,
+        type: "expense",
+        parent_id: "cat-food",
+        created_at: "2020-01-01T00:00:00.000Z",
+      },
+      {
+        id: "cat-adjustment-expense",
+        owner_id: null,
+        name: "Balance Adjustment",
+        icon: "Scale",
+        color: "chart-12",
+        is_hidden: true,
+        type: "expense",
+        parent_id: null,
+        created_at: "2020-01-01T00:00:00.000Z",
+      },
+      {
+        id: "fee",
+        owner_id: null,
+        name: "Transfer Fee",
+        icon: "ArrowRightLeft",
+        color: "chart-12",
+        is_hidden: true,
+        type: "expense",
+        parent_id: null,
+        created_at: "2020-01-01T00:00:00.000Z",
+      },
+    ];
+
+    function makeTxRow(overrides: Record<string, unknown> = {}) {
+      return {
+        id: "tx",
+        owner_id: "user-1",
+        type: "expense",
+        amount: 100,
+        category_id: null,
+        account_id: "acc-1",
+        to_account_id: null,
+        merchant: "Merchant",
+        note: null,
+        tx_date: "2026-07-10",
+        receipt_url: null,
+        subscription_id: null,
+        created_at: "2026-07-10T00:00:00.000Z",
+        ...overrides,
+      };
+    }
+
+    it("excludes transfers, loans, and balance adjustments while keeping transfer-fee expenses", async () => {
+      getSupabase.mockReturnValue(
+        buildClient({
+          categories,
+          transactions: [
+            makeTxRow({ id: "food", category_id: "cat-food", amount: 1000, tx_date: "2026-07-05" }),
+            makeTxRow({ id: "coffee", category_id: "cat-coffee", amount: 300, tx_date: "2026-07-06" }),
+            makeTxRow({ id: "uncategorized", category_id: null, amount: 50, tx_date: "2026-07-07" }),
+            makeTxRow({
+              id: "transfer",
+              type: "transfer",
+              category_id: null,
+              to_account_id: "acc-2",
+              amount: 9999,
+              tx_date: "2026-07-08",
+            }),
+            makeTxRow({
+              id: "loan",
+              type: "loan",
+              category_id: null,
+              amount: 9999,
+              cash_flow_direction: "outflow",
+              loan_event_id: "event-1",
+              tx_date: "2026-07-08",
+            }),
+            makeTxRow({
+              id: "adjustment",
+              category_id: "cat-adjustment-expense",
+              amount: 9999,
+              tx_date: "2026-07-08",
+            }),
+            makeTxRow({ id: "fee-tx", category_id: "fee", amount: 10, tx_date: "2026-07-09" }),
+          ],
+        }),
+      );
+
+      const response = await makeApp().request(
+        "/reports/spending-analysis?from=2026-07-01&to=2026-07-31&preset=this-month",
+      );
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as {
+        data: {
+          totals: { current: number; previous: number; changePercentage: number | null };
+          categories: { categoryId: string | null; current: number; children: unknown[] }[];
+        };
+      };
+
+      expect(body.data.totals.current).toBe(1000 + 300 + 50 + 10);
+      expect(body.data.totals.previous).toBe(0);
+      expect(body.data.totals.changePercentage).toBeNull();
+
+      const foodEntry = body.data.categories.find((entry) => entry.categoryId === "cat-food");
+      // Parent total rolls up its children by default: 1000 direct + 300 from Coffee.
+      expect(foodEntry?.current).toBe(1300);
+      expect(foodEntry?.children).toEqual([
+        expect.objectContaining({ categoryId: "cat-coffee", current: 300 }),
+      ]);
+
+      const uncategorizedEntry = body.data.categories.find((entry) => entry.categoryId === null);
+      expect(uncategorizedEntry?.current).toBe(50);
+    });
+
+    it("computes the comparison range against the previous custom-length window", async () => {
+      getSupabase.mockReturnValue(
+        buildClient({
+          categories,
+          transactions: [
+            makeTxRow({ id: "current", category_id: "cat-food", amount: 400, tx_date: "2026-07-15" }),
+            makeTxRow({ id: "previous", category_id: "cat-food", amount: 200, tx_date: "2026-07-04" }),
+          ],
+        }),
+      );
+
+      const response = await makeApp().request(
+        "/reports/spending-analysis?from=2026-07-10&to=2026-07-19&preset=custom",
+      );
+
+      const body = (await response.json()) as {
+        data: { comparisonRange: { from: string; to: string }; totals: { current: number; previous: number } };
+      };
+
+      expect(body.data.comparisonRange).toEqual({ from: "2026-06-30", to: "2026-07-09" });
+      expect(body.data.totals).toMatchObject({ current: 400, previous: 200 });
+    });
+
+    it("never mixes in another user's transactions or custom categories", async () => {
+      getSupabase.mockReturnValue(
+        buildClient({
+          categories,
+          transactions: [
+            makeTxRow({ id: "mine", category_id: "cat-food", amount: 100, tx_date: "2026-07-05" }),
+          ],
+        }),
+      );
+
+      const response = await makeApp().request(
+        "/reports/spending-analysis?from=2026-07-01&to=2026-07-31&preset=this-month",
+      );
+
+      const client = getSupabase();
+      expect(response.status).toBe(200);
+      expect(client.transactionsBuilder.eq).toHaveBeenCalledWith("owner_id", "user-1");
+      expect(client.categoriesBuilder.or).toHaveBeenCalledWith("owner_id.eq.user-1,owner_id.is.null");
+    });
+
+    it("rejects an inverted date range", async () => {
+      getSupabase.mockReturnValue(buildClient({ categories: [], transactions: [] }));
+
+      const response = await makeApp().request(
+        "/reports/spending-analysis?from=2026-08-31&to=2026-07-01&preset=custom",
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("rejects an unknown preset", async () => {
+      getSupabase.mockReturnValue(buildClient({ categories: [], transactions: [] }));
+
+      const response = await makeApp().request(
+        "/reports/spending-analysis?from=2026-07-01&to=2026-07-31&preset=not-a-preset",
+      );
+
+      expect(response.status).toBe(400);
+    });
+  });
 });

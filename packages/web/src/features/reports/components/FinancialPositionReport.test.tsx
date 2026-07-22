@@ -70,7 +70,7 @@ vi.mock("@/core/i18n", () => ({
 
 describe("FinancialPositionReport", () => {
   it("renders opening and closing positions with reconciliation status", () => {
-    render(<FinancialPositionReport month="2026-07" />);
+    render(<FinancialPositionReport range={{ from: "2026-07-01", to: "2026-07-31" }} />);
 
     expect(screen.getByText("Opening position")).toBeDefined();
     expect(screen.getByText("Closing position")).toBeDefined();

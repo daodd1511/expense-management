@@ -1,4 +1,10 @@
-import type { BalanceTrendPoint, LoansSummary, NetWorthTrendPoint } from "./dtos";
+import type {
+  BalanceTrendPoint,
+  LoansSummary,
+  NetWorthTrendPoint,
+  SpendingAnalysisPreset,
+  SpendingTrendGranularity,
+} from "./dtos";
 import type { Loan, LoanDirection, LoanEvent, LoanStatus, Transaction } from "./models";
 
 function getBalance(balanceByAccountId: Map<string, number>, accountId: string) {
@@ -483,4 +489,142 @@ export function computeFinancialPosition(input: {
       },
     },
   };
+}
+
+function pad2(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+function daysInMonthUtc(year: number, month1based: number): number {
+  return new Date(Date.UTC(year, month1based, 0)).getUTCDate();
+}
+
+/** Normalizes a (year, 1-based month + delta) pair, carrying year over on overflow. */
+function shiftMonthIndex(year: number, month1based: number, delta: number): { year: number; month: number } {
+  const totalIndex = month1based - 1 + delta;
+  const targetYear = year + Math.floor(totalIndex / 12);
+  const targetMonth = (((totalIndex % 12) + 12) % 12) + 1;
+  return { year: targetYear, month: targetMonth };
+}
+
+function addDaysUtc(iso: string, delta: number): string {
+  const [year, month, day] = iso.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + delta));
+  return `${date.getUTCFullYear()}-${pad2(date.getUTCMonth() + 1)}-${pad2(date.getUTCDate())}`;
+}
+
+/** Shifts a date by whole months, clamping the day into the target month's length
+ * (e.g. Jul 31 shifted -1 month -> Jun 30, not Jul 1). Only correct for the this-month
+ * comparison rule below, which wants exactly that clamp — do not reuse for whole-month
+ * ranges (see computeSpendingComparisonRange), where it would corrupt a true last-day-
+ * of-month boundary whenever the target month is longer than the source month. */
+function addMonthsClampedUtc(iso: string, deltaMonths: number): string {
+  const [year, month, day] = iso.split("-").map(Number);
+  const target = shiftMonthIndex(year, month, deltaMonths);
+  const clampedDay = Math.min(day, daysInMonthUtc(target.year, target.month));
+  return `${target.year}-${pad2(target.month)}-${pad2(clampedDay)}`;
+}
+
+function inclusiveDayCount(fromIso: string, toIso: string): number {
+  return diffDaysUtc(fromIso, toIso) + 1;
+}
+
+const WHOLE_MONTH_PRESET_COUNTS: Record<
+  Exclude<SpendingAnalysisPreset, "this-month" | "custom">,
+  number
+> = {
+  "previous-month": 1,
+  "last-3-months": 3,
+  "last-6-months": 6,
+  "last-12-months": 12,
+};
+
+/**
+ * Immediately-preceding comparison range for a Spending-analysis period, per PLAN.md ->
+ * "Decisions". Three distinct rules, not one generic day-count shift:
+ * - `custom`: preceding equal number of inclusive calendar days.
+ * - `this-month`: same elapsed-day count from the previous month, capped at that
+ *   month's last day — can yield a comparison range *shorter* than the current range
+ *   (e.g. Jul 1-31 vs Jun 1-30).
+ * - whole-month presets (`previous-month`, `last-N-months`): the N whole calendar
+ *   months immediately before the current range's first month, not a day-count shift
+ *   (which would misalign month boundaries whenever month lengths differ).
+ */
+export function computeSpendingComparisonRange(
+  from: string,
+  to: string,
+  preset: SpendingAnalysisPreset,
+): { from: string; to: string } {
+  if (preset === "custom") {
+    const days = inclusiveDayCount(from, to);
+    return { from: addDaysUtc(from, -days), to: addDaysUtc(from, -1) };
+  }
+
+  if (preset === "this-month") {
+    return { from: addMonthsClampedUtc(from, -1), to: addMonthsClampedUtc(to, -1) };
+  }
+
+  const monthCount = WHOLE_MONTH_PRESET_COUNTS[preset];
+  const [fromYear, fromMonth] = from.split("-").map(Number);
+  const prevEnd = shiftMonthIndex(fromYear, fromMonth, -1);
+  const prevStart = shiftMonthIndex(fromYear, fromMonth, -monthCount);
+  return {
+    from: `${prevStart.year}-${pad2(prevStart.month)}-01`,
+    to: `${prevEnd.year}-${pad2(prevEnd.month)}-${pad2(daysInMonthUtc(prevEnd.year, prevEnd.month))}`,
+  };
+}
+
+/** Adaptive trend granularity per PLAN.md -> "Decisions": daily through 31 days,
+ * weekly for 32-180 days, monthly beyond that — based on the current range's length. */
+export function resolveSpendingTrendGranularity(from: string, to: string): SpendingTrendGranularity {
+  const days = inclusiveDayCount(from, to);
+  if (days <= 31) return "day";
+  if (days <= 180) return "week";
+  return "month";
+}
+
+export type SpendingTrendBucketBounds = { start: string; end: string };
+
+/**
+ * Chunks [from, to] into consecutive buckets of `granularity`'s day-length (1/7/30),
+ * counted from the range's own start rather than snapped to calendar week/month
+ * boundaries. This guarantees identical bucket count and per-bucket length between two
+ * equal-length ranges regardless of which weekday/day-of-month they start on — true
+ * calendar-boundary buckets would not, since the current and comparison ranges rarely
+ * share a start weekday or month-start alignment.
+ */
+export function buildSpendingTrendBuckets(
+  from: string,
+  to: string,
+  granularity: SpendingTrendGranularity,
+): SpendingTrendBucketBounds[] {
+  const stepDays = granularity === "day" ? 1 : granularity === "week" ? 7 : 30;
+  const totalDays = inclusiveDayCount(from, to);
+  const buckets: SpendingTrendBucketBounds[] = [];
+
+  let cursor = 0;
+  while (cursor < totalDays) {
+    const bucketLength = Math.min(stepDays, totalDays - cursor);
+    buckets.push({
+      start: addDaysUtc(from, cursor),
+      end: addDaysUtc(from, cursor + bucketLength - 1),
+    });
+    cursor += bucketLength;
+  }
+
+  return buckets;
+}
+
+/** Absolute + percentage change from a possibly-zero baseline, per PLAN.md ->
+ * "Decisions": percentage is null at a zero baseline (client labels positive current
+ * spending "New"), and two zero values yield changePercentage 0 ("unchanged"). */
+export function computeSpendingChange(
+  current: number,
+  previous: number,
+): { change: number; changePercentage: number | null } {
+  const change = current - previous;
+  if (previous === 0) {
+    return { change, changePercentage: current === 0 ? 0 : null };
+  }
+  return { change, changePercentage: change / previous };
 }

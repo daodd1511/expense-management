@@ -4,7 +4,12 @@ import { z } from "zod";
 import type { AuthEnv } from "../../middleware/auth";
 import { jsonError } from "../../lib/response";
 import * as controller from "./controller";
-import { reportQuerySchema, type ReportQuery } from "./schema";
+import {
+  reportQuerySchema,
+  spendingAnalysisQuerySchema,
+  type ReportQuery,
+  type SpendingAnalysisQuery,
+} from "./schema";
 
 export const reportsRouter = new Hono<AuthEnv>();
 
@@ -25,4 +30,13 @@ reportsRouter.get(
     }
   }),
   (c) => controller.getFinancialPosition(c, c.req.valid("query") as ReportQuery),
+);
+reportsRouter.get(
+  "/spending-analysis",
+  zValidator("query", spendingAnalysisQuerySchema, (result, c) => {
+    if (!result.success) {
+      return jsonError(c, 400, "Invalid request query", z.flattenError(result.error));
+    }
+  }),
+  (c) => controller.getSpendingAnalysisReport(c, c.req.valid("query") as SpendingAnalysisQuery),
 );

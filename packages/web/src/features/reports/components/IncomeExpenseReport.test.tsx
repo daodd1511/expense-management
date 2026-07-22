@@ -126,7 +126,7 @@ describe("IncomeExpenseReport", () => {
       },
     };
 
-    render(<IncomeExpenseReport month="2026-07" />);
+    render(<IncomeExpenseReport range={{ from: "2026-07-01", to: "2026-07-31" }} />);
 
     expect(screen.getByText("No expense categories yet")).toBeTruthy();
   });
@@ -134,7 +134,7 @@ describe("IncomeExpenseReport", () => {
   it("sorts categories descending, expands rows, and opens the edit overlay", async () => {
     const user = userEvent.setup();
 
-    render(<IncomeExpenseReport month="2026-07" />);
+    render(<IncomeExpenseReport range={{ from: "2026-07-01", to: "2026-07-31" }} />);
 
     const categoryButtons = Array.from(document.querySelectorAll("button")).filter(
       (button) => button.textContent?.includes("Transport") || button.textContent?.includes("Food"),
@@ -154,7 +154,7 @@ describe("IncomeExpenseReport", () => {
     const user = userEvent.setup();
     mockedReport = makeReportWithIncomeCategories();
 
-    render(<IncomeExpenseReport month="2026-07" />);
+    render(<IncomeExpenseReport range={{ from: "2026-07-01", to: "2026-07-31" }} />);
 
     return user.click(screen.getByRole("tab", { name: "Income" })).then(() => {
       expect(screen.getByText("Income by category")).toBeTruthy();

@@ -99,3 +99,70 @@ export type IncomeExpenseReport = z.infer<typeof incomeExpenseReportSchema>;
 export type IncomeExpenseReportResponse = z.infer<typeof incomeExpenseReportResponseSchema>;
 export type FinancialPosition = z.infer<typeof financialPositionSchema>;
 export type FinancialPositionResponse = z.infer<typeof financialPositionResponseSchema>;
+
+export const spendingAnalysisPresetSchema = z.enum([
+  "this-month",
+  "previous-month",
+  "last-3-months",
+  "last-6-months",
+  "last-12-months",
+  "custom",
+]);
+
+export const spendingChangeSchema = z.object({
+  current: z.number(),
+  previous: z.number(),
+  change: z.number(),
+  changePercentage: z.number().nullable(),
+});
+
+export const spendingTrendGranularitySchema = z.enum(["day", "week", "month"]);
+
+export const spendingTrendPointSchema = z.object({
+  index: z.number(),
+  periodStart: isoDateSchema,
+  periodEnd: isoDateSchema,
+  comparisonPeriodStart: isoDateSchema.nullable(),
+  comparisonPeriodEnd: isoDateSchema.nullable(),
+  current: z.number(),
+  previous: z.number(),
+});
+
+export const spendingCategoryChildAggregateSchema = z.object({
+  categoryId: z.string(),
+  ...spendingChangeSchema.shape,
+  share: z.number(),
+  transactionCount: z.number(),
+  transactions: z.array(reportTransactionRowSchema),
+});
+
+export const spendingCategoryAggregateSchema = z.object({
+  categoryId: z.string().nullable(),
+  ...spendingChangeSchema.shape,
+  share: z.number(),
+  transactionCount: z.number(),
+  transactions: z.array(reportTransactionRowSchema),
+  children: z.array(spendingCategoryChildAggregateSchema),
+});
+
+export const spendingAnalysisReportSchema = z.object({
+  range: z.object({ from: isoDateSchema, to: isoDateSchema }),
+  comparisonRange: z.object({ from: isoDateSchema, to: isoDateSchema }),
+  trendGranularity: spendingTrendGranularitySchema,
+  totals: spendingChangeSchema,
+  trend: z.array(spendingTrendPointSchema),
+  categories: z.array(spendingCategoryAggregateSchema),
+});
+
+export const spendingAnalysisReportResponseSchema = z.object({
+  data: spendingAnalysisReportSchema,
+});
+
+export type SpendingAnalysisPreset = z.infer<typeof spendingAnalysisPresetSchema>;
+export type SpendingChange = z.infer<typeof spendingChangeSchema>;
+export type SpendingTrendGranularity = z.infer<typeof spendingTrendGranularitySchema>;
+export type SpendingTrendPoint = z.infer<typeof spendingTrendPointSchema>;
+export type SpendingCategoryChildAggregate = z.infer<typeof spendingCategoryChildAggregateSchema>;
+export type SpendingCategoryAggregate = z.infer<typeof spendingCategoryAggregateSchema>;
+export type SpendingAnalysisReport = z.infer<typeof spendingAnalysisReportSchema>;
+export type SpendingAnalysisReportResponse = z.infer<typeof spendingAnalysisReportResponseSchema>;

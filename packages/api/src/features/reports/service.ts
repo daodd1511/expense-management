@@ -1,11 +1,21 @@
 import {
+  buildSpendingTrendBuckets,
   computeFinancialPosition,
+  computeSpendingChange,
+  computeSpendingComparisonRange,
   financialPositionResponseSchema,
   incomeExpenseReportResponseSchema,
+  resolveSpendingTrendGranularity,
+  spendingAnalysisReportResponseSchema,
   type FinancialPositionResponse,
   type IncomeExpenseReportResponse,
   type ReportCategoryAggregate,
   type ReportTransactionRow,
+  type SpendingAnalysisPreset,
+  type SpendingAnalysisReportResponse,
+  type SpendingCategoryAggregate,
+  type SpendingCategoryChildAggregate,
+  type Transaction,
 } from "@wallet/shared";
 import { ApiError } from "../../middleware/error";
 import * as repository from "./repository";
@@ -237,6 +247,238 @@ export async function getFinancialPosition(
       "Financial position report failed validation",
       response.error.flatten(),
     );
+  }
+
+  return response.data;
+}
+
+function toReportTransactionRow(transaction: Transaction): ReportTransactionRow {
+  return {
+    id: transaction.id,
+    date: transaction.date,
+    merchant: transaction.merchant,
+    note: transaction.note,
+    amount: transaction.amount,
+    accountId: transaction.accountId,
+  };
+}
+
+type SpendingCategoryDraft = {
+  categoryId: string | null;
+  current: number;
+  previous: number;
+  transactionCount: number;
+  transactions: ReportTransactionRow[];
+  children: Map<string, SpendingCategoryChildDraft>;
+};
+
+type SpendingCategoryChildDraft = {
+  categoryId: string;
+  current: number;
+  previous: number;
+  transactionCount: number;
+  transactions: ReportTransactionRow[];
+};
+
+export async function getSpendingAnalysisReport(
+  userId: string,
+  from: string,
+  to: string,
+  preset: SpendingAnalysisPreset,
+): Promise<SpendingAnalysisReportResponse> {
+  const comparisonRange = computeSpendingComparisonRange(from, to, preset);
+
+  // A single query spans both windows (and the gap between them, for presets whose
+  // comparison range isn't adjacent to the current range) — cheaper than two round
+  // trips; transactions outside both windows are simply dropped below.
+  const transactions = await repository.listReportTransactions(userId, comparisonRange.from, to);
+  const expenseTransactions = transactions.filter((transaction) => transaction.type === "expense");
+
+  const categoryIds = [
+    ...new Set(
+      expenseTransactions
+        .map((transaction) => transaction.categoryId)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const categories = await repository.listReportCategories(userId, categoryIds);
+  const categoryById = new Map(categories.map((category) => [category.id, category]));
+
+  // Same "Balance Adjustment" exclusion as getIncomeExpenseReport: checked inline
+  // against categories already fetched above, rather than a second repository call.
+  const spendingTransactions = expenseTransactions.filter((transaction) => {
+    const category = transaction.categoryId ? categoryById.get(transaction.categoryId) : undefined;
+    return !(category?.isHidden && category.name === "Balance Adjustment");
+  });
+
+  const currentTransactions = spendingTransactions.filter(
+    (transaction) => transaction.date >= from && transaction.date <= to,
+  );
+  const previousTransactions = spendingTransactions.filter(
+    (transaction) => transaction.date >= comparisonRange.from && transaction.date <= comparisonRange.to,
+  );
+
+  const draftsByKey = new Map<string, SpendingCategoryDraft>();
+
+  function getOrCreateDraft(key: string, categoryId: string | null): SpendingCategoryDraft {
+    const existing = draftsByKey.get(key);
+    if (existing) return existing;
+
+    const draft: SpendingCategoryDraft = {
+      categoryId,
+      current: 0,
+      previous: 0,
+      transactionCount: 0,
+      transactions: [],
+      children: new Map(),
+    };
+    draftsByKey.set(key, draft);
+    return draft;
+  }
+
+  function resolveDraftKey(transaction: Transaction): {
+    key: string;
+    categoryId: string | null;
+    childCategoryId: string | null;
+  } {
+    if (!transaction.categoryId) {
+      return { key: "uncategorized", categoryId: null, childCategoryId: null };
+    }
+
+    const category = categoryById.get(transaction.categoryId);
+    const parentCategoryId = category?.parentId ?? null;
+    if (!parentCategoryId) {
+      return { key: transaction.categoryId, categoryId: transaction.categoryId, childCategoryId: null };
+    }
+
+    return { key: parentCategoryId, categoryId: parentCategoryId, childCategoryId: transaction.categoryId };
+  }
+
+  for (const transaction of currentTransactions) {
+    const { key, categoryId, childCategoryId } = resolveDraftKey(transaction);
+    const draft = getOrCreateDraft(key, categoryId);
+    draft.current += transaction.amount;
+
+    if (childCategoryId) {
+      const childDraft = draft.children.get(childCategoryId) ?? {
+        categoryId: childCategoryId,
+        current: 0,
+        previous: 0,
+        transactionCount: 0,
+        transactions: [],
+      };
+      childDraft.current += transaction.amount;
+      childDraft.transactionCount += 1;
+      childDraft.transactions.push(toReportTransactionRow(transaction));
+      draft.children.set(childCategoryId, childDraft);
+    } else {
+      draft.transactionCount += 1;
+      draft.transactions.push(toReportTransactionRow(transaction));
+    }
+  }
+
+  for (const transaction of previousTransactions) {
+    const { key, categoryId, childCategoryId } = resolveDraftKey(transaction);
+    const draft = getOrCreateDraft(key, categoryId);
+    draft.previous += transaction.amount;
+
+    if (childCategoryId) {
+      const childDraft = draft.children.get(childCategoryId) ?? {
+        categoryId: childCategoryId,
+        current: 0,
+        previous: 0,
+        transactionCount: 0,
+        transactions: [],
+      };
+      childDraft.previous += transaction.amount;
+      draft.children.set(childCategoryId, childDraft);
+    }
+  }
+
+  const currentTotal = currentTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+  const previousTotal = previousTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+
+  function shareOf(amount: number, total: number): number {
+    return total === 0 ? 0 : amount / total;
+  }
+
+  const categorySummaries: SpendingCategoryAggregate[] = [...draftsByKey.values()]
+    .map((draft): SpendingCategoryAggregate => {
+      const children: SpendingCategoryChildAggregate[] = [...draft.children.values()]
+        .map((child) => ({
+          categoryId: child.categoryId,
+          current: child.current,
+          previous: child.previous,
+          ...computeSpendingChange(child.current, child.previous),
+          share: shareOf(child.current, draft.current),
+          transactionCount: child.transactionCount,
+          transactions: sortCategoryTransactions(child.transactions),
+        }))
+        .sort((left, right) => right.current - left.current);
+
+      return {
+        categoryId: draft.categoryId,
+        current: draft.current,
+        previous: draft.previous,
+        ...computeSpendingChange(draft.current, draft.previous),
+        share: shareOf(draft.current, currentTotal),
+        transactionCount: draft.transactionCount,
+        transactions: sortCategoryTransactions(draft.transactions),
+        children,
+      };
+    })
+    .sort((left, right) => right.current - left.current);
+
+  const trendGranularity = resolveSpendingTrendGranularity(from, to);
+  const currentBuckets = buildSpendingTrendBuckets(from, to, trendGranularity);
+  const previousBuckets = buildSpendingTrendBuckets(
+    comparisonRange.from,
+    comparisonRange.to,
+    trendGranularity,
+  );
+
+  const trend = currentBuckets.map((bucket, index) => {
+    const previousBucket = previousBuckets[index];
+    const current = currentTransactions
+      .filter((transaction) => transaction.date >= bucket.start && transaction.date <= bucket.end)
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+    const previousAmount = previousBucket
+      ? previousTransactions
+          .filter(
+            (transaction) =>
+              transaction.date >= previousBucket.start && transaction.date <= previousBucket.end,
+          )
+          .reduce((sum, transaction) => sum + transaction.amount, 0)
+      : 0;
+
+    return {
+      index,
+      periodStart: bucket.start,
+      periodEnd: bucket.end,
+      comparisonPeriodStart: previousBucket?.start ?? null,
+      comparisonPeriodEnd: previousBucket?.end ?? null,
+      current,
+      previous: previousAmount,
+    };
+  });
+
+  const response = spendingAnalysisReportResponseSchema.safeParse({
+    data: {
+      range: { from, to },
+      comparisonRange,
+      trendGranularity,
+      totals: {
+        current: currentTotal,
+        previous: previousTotal,
+        ...computeSpendingChange(currentTotal, previousTotal),
+      },
+      trend,
+      categories: categorySummaries,
+    },
+  });
+
+  if (!response.success) {
+    throw new ApiError(500, "Spending analysis report failed validation", response.error.flatten());
   }
 
   return response.data;
