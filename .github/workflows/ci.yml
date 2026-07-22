@@ -30,6 +30,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
 
-# Deploying is not this workflow's job. Pushes to main are picked up by build.yml,
-# which publishes images to GHCR and dispatches daodd1511/deploy — the private repo
-# where the self-hosted runner lives. No runner is registered here.
+# Deploying is not this workflow's job. When this workflow succeeds on a push to
+# main, build.yml (workflow_run-triggered) publishes images to GHCR and dispatches
+# daodd1511/deploy — the private repo where the self-hosted runner lives. A red run
+# here blocks the build. No runner is registered here.

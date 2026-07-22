@@ -3,14 +3,26 @@ name: build
 # Public repo. NO self-hosted runner is ever registered here — a fork PR would
 # execute on the server. This job only builds images and pushes them to GHCR, then
 # asks daodd1511/deploy (private, where the runner lives) to roll them out.
+#
+# Gated on CI: this runs only after the CI workflow completes successfully for a
+# push to main. A red or in-progress CI never publishes images. Manual runs
+# (workflow_dispatch) bypass the gate and build the current main HEAD.
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
   workflow_dispatch:
+
+# The commit to build. Under workflow_run, github.sha is main's HEAD at trigger
+# time — which may be newer than the commit CI tested — so pin to the triggering
+# run's head_sha. workflow_dispatch has no workflow_run context, so fall back to
+# github.sha (the ref the run was dispatched from).
+env:
+  BUILD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
 
 # One publish at a time; never cancel a half-pushed set of images.
 concurrency:
-  group: build-${{ github.ref }}
+  group: build-${{ github.event.workflow_run.head_sha || github.sha }}
   cancel-in-progress: false
 
 permissions:
@@ -18,10 +30,25 @@ permissions:
   packages: write
 
 jobs:
+  # Proceed only for a successful CI run on a push to main. workflow_run also fires
+  # for PR CI completions and for failed/cancelled runs — those must not publish.
+  gate:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.conclusion == 'success')
+    steps:
+      - run: echo "CI green on main (${BUILD_SHA}); building"
+
   api:
+    needs: gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BUILD_SHA }}
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -35,15 +62,18 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ghcr.io/daodd1511/wallet-api:${{ github.sha }}
+            ghcr.io/daodd1511/wallet-api:${{ env.BUILD_SHA }}
             ghcr.io/daodd1511/wallet-api:latest
           cache-from: type=gha,scope=api
           cache-to: type=gha,scope=api,mode=max
 
   web:
+    needs: gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BUILD_SHA }}
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -62,9 +92,9 @@ jobs:
             VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
             VITE_SUPABASE_PUBLISHABLE_KEY=${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
             VITE_API_BASE=/api
-            APP_COMMIT=${{ github.sha }}
+            APP_COMMIT=${{ env.BUILD_SHA }}
           tags: |
-            ghcr.io/daodd1511/wallet-web:${{ github.sha }}
+            ghcr.io/daodd1511/wallet-web:${{ env.BUILD_SHA }}
             ghcr.io/daodd1511/wallet-web:latest
           cache-from: type=gha,scope=web
           cache-to: type=gha,scope=web,mode=max
@@ -84,4 +114,4 @@ jobs:
           gh api repos/daodd1511/deploy/dispatches \
             -f event_type=deploy \
             -f 'client_payload[app]=wallet' \
-            -f 'client_payload[tag]=${{ github.sha }}'
+            -f 'client_payload[tag]=${{ env.BUILD_SHA }}'
