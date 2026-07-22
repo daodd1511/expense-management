@@ -1019,6 +1019,11 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
     if (stored === "vi" || stored === "en") setLangState(stored);
   }, []);
 
+  // Keep the document title (browser tab) in sync with the active language.
+  useEffect(() => {
+    document.title = `${TRANSLATIONS[lang]["app.name"]} — ${TRANSLATIONS[lang]["app.tagline"]}`;
+  }, [lang]);
+
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
     localStorage.setItem("lang", l);
