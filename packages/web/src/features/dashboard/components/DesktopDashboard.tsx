@@ -167,7 +167,7 @@ export function DesktopDashboard({
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle>{t("dashboard.loans")}</CardTitle>
