@@ -1,6 +1,6 @@
-# Sổ Chi Tiêu (Wallet)
+# Quản Lý Tài Chính (Wallet)
 
-Personal expense manager for Vietnamese users: track income, expenses, and
+Personal finance manager for Vietnamese users: track income, expenses, and
 transfers across accounts, with budgets, subscriptions, loans, and reports.
 Amounts are VND integers; UI is Vietnamese-first (English secondary).
 Installable as an online-only PWA with purpose-built mobile and desktop

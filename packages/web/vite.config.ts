@@ -40,7 +40,7 @@ export default defineConfig({
       registerType: "prompt",
       injectRegister: false,
       manifest: {
-        name: "Sổ Chi Tiêu",
+        name: "Quản Lý Tài Chính",
         short_name: "Wallet",
         theme_color: "#F4EFDD",
         background_color: "#F4EFDD",
