@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { BudgetForm } from "@/features/budgets/components/BudgetForm";
-import { budgetState } from "@/features/budgets/components/BudgetBars";
+import { budgetState, coversSubcategories } from "@/features/budgets/components/BudgetBars";
 import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
 import { BudgetsSkeleton } from "@/shared/components/Skeleton";
 import { Button } from "@/shared/components/ui/button";
@@ -11,14 +11,14 @@ import { Drawer } from "@/shared/components/ui/overlay";
 import { Progress } from "@/shared/components/ui/progress";
 import { formatVND, monthLabel } from "@/shared/lib/format";
 import { useLang } from "@/core/i18n";
-import { spentForCategory } from "@/shared/lib/derive";
 import {
   useAddBudget,
   useBudgets,
+  useBudgetSpend,
   useDeleteBudget,
   useUpdateBudget,
 } from "@/features/budgets/queries";
-import { useCategoryLookup } from "@/features/categories/queries";
+import { useCategories, useCategoryLookup } from "@/features/categories/queries";
 import { useTransactions } from "@/features/transactions/queries";
 import type { Budget } from "@/core/types";
 
@@ -32,7 +32,9 @@ export function DesktopBudgets({
   const budgetsQuery = useBudgets();
   const transactionsQuery = useTransactions();
   const { data: budgets = [], isPending: budgetsPending } = budgetsQuery;
-  const { data: transactions = [], isPending: transactionsPending } = transactionsQuery;
+  const { isPending: transactionsPending } = transactionsQuery;
+  const { data: categories = [] } = useCategories();
+  const spentFor = useBudgetSpend();
   const getCategory = useCategoryLookup();
   const addBud = useAddBudget();
   const updateBud = useUpdateBudget();
@@ -43,11 +45,9 @@ export function DesktopBudgets({
   const [handledCreateIntent, setHandledCreateIntent] = useState<string | null>(null);
 
   const totalLimit = budgets.reduce((s, b) => s + b.limit, 0);
-  const totalSpent = budgets.reduce((s, b) => s + spentForCategory(transactions, b.categoryId), 0);
+  const totalSpent = budgets.reduce((s, b) => s + spentFor(b), 0);
   const pct = totalLimit > 0 ? Math.round((totalSpent / totalLimit) * 100) : 0;
-  const over = budgets.filter(
-    (b) => spentForCategory(transactions, b.categoryId) >= b.limit,
-  ).length;
+  const over = budgets.filter((b) => spentFor(b) >= b.limit).length;
 
   const handleSubmit = async (b: Budget) => {
     if (editing === "add") await addBud.mutateAsync(b);
@@ -123,7 +123,7 @@ export function DesktopBudgets({
           <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
             {budgets.map((b) => {
               const cat = getCategory(b.categoryId);
-              const spent = spentForCategory(transactions, b.categoryId);
+              const spent = spentFor(b);
               const p = Math.round((spent / b.limit) * 100);
               const state = budgetState(p);
               return (
@@ -143,6 +143,11 @@ export function DesktopBudgets({
                         />
                       </span>
                       {cat?.name}
+                      {coversSubcategories(b, categories) && (
+                        <span className="text-xs font-normal text-muted-foreground">
+                          · {t("budget.inclSubcategories")}
+                        </span>
+                      )}
                     </span>
                     <div className="flex items-center gap-1">
                       <span className={`text-xs font-medium ${state.tone}`}>{p}%</span>
