@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Budget } from "@/core/types";
 import { apiJson } from "@/core/api";
-import { budgetSchema } from "@wallet/shared";
+import { budgetSchema, type BudgetPatch } from "@wallet/shared";
 
 const budgetsResponseSchema = z.object({
   data: z.array(budgetSchema),
@@ -27,10 +27,10 @@ export async function insertBudget(budget: Budget): Promise<void> {
   });
 }
 
-export async function updateBudget(categoryId: string, limit: number): Promise<void> {
+export async function updateBudget(categoryId: string, patch: BudgetPatch): Promise<void> {
   await apiJson(`/budgets/${categoryId}`, budgetResponseSchema, {
     method: "PATCH",
-    body: JSON.stringify({ limit }),
+    body: JSON.stringify(patch),
   });
 }
 
