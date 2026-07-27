@@ -8,6 +8,7 @@ their session summary). Delete a line when the item ships or graduates into a
 ## Fixes
 - [ ] HIGHEST PRIORITY: move `presentation/` out of this repo into its own folder — a general home for sharable content, not one project's (2026-07-22)
 - [ ] `scripts/deploy.sh` is a stale legacy VPS/pm2 script that contradicts the current Docker/cloudflared deployment in `docs/deployment/self-hosting.md` — delete or reconcile before it confuses public readers (2026-07-22)
+- [ ] Fix budget category selection: handle two modes — parent budgeted separately vs. parent including its children (2026-07-27)
 ## Features
 - [ ] Budget rollover + near-limit alerts — deferred until budgets see more actual use (2026-07-07)
 - [ ] Better credit card information: view balance, due date, payment status (2026-07-05)
@@ -19,3 +20,5 @@ their session summary). Delete a line when the item ships or graduates into a
 - Maybe add a guide to install the app on mobile (2026-07-10)
 - Update the presentation with grill-with-docs and it's related skills (2026-07-10)
   - Talk about simplifying the Claude.md file to not bloat the context every message.
+- [ ] Grill about itel subscription (2026-07-27)
+- [ ] Replace the 6-month trend on the dashboard with something more useful (2026-07-27)
