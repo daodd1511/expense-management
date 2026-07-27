@@ -54,7 +54,7 @@ export async function updateBudget(userId: string, categoryId: string, patch: Bu
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("budgets")
-    .update(budgetPatchToRow(patch.limit))
+    .update(budgetPatchToRow(patch))
     .eq("category_id", categoryId)
     .eq("owner_id", userId)
     .select("*")
