@@ -5,9 +5,9 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 1 — in-progress
+- Current phase: 2 — in-progress
 - Phase 1 — Schema, shared model, API: in-progress
-- Phase 2 — Web spend, form, display: pending
+- Phase 2 — Web spend, form, display: in-progress
 - Verification debt: none
 
 ## Phase 1 — Schema, shared model, API
@@ -50,19 +50,20 @@ Everything the user sees, in one phase: the rollup, the control that sets it, an
 that explains it. Splitting the form from the display would ship a scope the user can set
 but cannot see.
 
-- [ ] `packages/web/src/features/budgets/queries.ts`: add `useBudgetSpend()` returning `(budget: Budget) => number`, built on `useTransactions()` + `useCategories()` and `budgetCoverage` from shared.
-- [ ] Switch to `useBudgetSpend()` in `features/budgets/components/BudgetBars.tsx`, `MobileBudgets.tsx`, `DesktopBudgets.tsx`, and `features/dashboard/components/MobilePlanningOverview.tsx`. Leave `spentForCategory` in `shared/lib/derive.ts` for any non-budget caller.
-- [ ] `features/budgets/components/BudgetForm.tsx`: delete `conflictsWithExistingBudget`, use shared `conflictingBudget`; picker excludes only exact matches and descendants of a `tree` budget, so a parent with a budgeted child stays selectable.
-- [ ] `BudgetForm.tsx`: scope control rendered only when the selected category has children, defaulting to `tree`; `tree` disabled with a hint naming the child when a child is budgeted; leaves submit `scope: 'tree'` with no control. Edit mode keeps the category locked and shows the control under the same rules.
-- [ ] `BudgetForm.tsx`: surface the API 409 through the existing `FormErrorBanner` path.
-- [ ] Delete `features/budgets/components/BudgetForm.test.ts` — superseded by the shared coverage test from phase 1.
-- [ ] Muted `· incl. subcategories` suffix in `BudgetBars.tsx`, `MobileBudgets.tsx`, `DesktopBudgets.tsx`, shown only when `scope === 'tree'` **and** the category has children.
-- [ ] `packages/web/src/core/i18n.tsx`: add `budget.scope`, `budget.scopeSelf`, `budget.scopeTree`, `budget.scopeTreeBlocked`, `budget.inclSubcategories`, `budget.conflict` to both `VI` and `EN`.
+- [x] `packages/web/src/features/budgets/queries.ts`: add `useBudgetSpend()` returning `(budget: Budget) => number`, built on `useTransactions()` + `useCategories()` and `budgetCoverage` from shared.
+- [x] (amended 2026-07-27) `packages/web/src/features/budgets/db.ts` + `queries.ts`'s `useUpdateBudget`: PLAN.md's "editable scope" decision requires PATCH to carry `scope`, not just `limit` — `updateBudget(categoryId, limit)` becomes `updateBudget(categoryId, patch: BudgetPatch)`. Not called out in the original checklist; required for the edit-form scope toggle to reach the API at all.
+- [x] Switch to `useBudgetSpend()` in `features/budgets/components/BudgetBars.tsx`, `MobileBudgets.tsx`, `DesktopBudgets.tsx`, and `features/dashboard/components/MobilePlanningOverview.tsx`. Leave `spentForCategory` in `shared/lib/derive.ts` for any non-budget caller.
+- [x] `features/budgets/components/BudgetForm.tsx`: delete `conflictsWithExistingBudget`, use shared `conflictingBudget`; picker excludes only exact matches and descendants of a `tree` budget, so a parent with a budgeted child stays selectable.
+- [x] `BudgetForm.tsx`: scope control rendered only when the selected category has children, defaulting to `tree`; `tree` disabled with a hint naming the child when a child is budgeted; leaves submit `scope: 'tree'` with no control. Edit mode keeps the category locked and shows the control under the same rules.
+- [x] `BudgetForm.tsx`: surface the API 409 through the existing `FormErrorBanner` path. (Wrapped `onSubmit` to reshape a 409 `ApiError` into the `fieldErrors` shape `getFieldErrorMessage` already knows how to read, rather than changing that shared helper.)
+- [x] Delete `features/budgets/components/BudgetForm.test.ts` — superseded by the shared coverage test from phase 1.
+- [x] Muted `· incl. subcategories` suffix in `BudgetBars.tsx`, `MobileBudgets.tsx`, `DesktopBudgets.tsx`, shown only when `scope === 'tree'` **and** the category has children. (Done via a shared `coversSubcategories()` helper exported from `BudgetBars.tsx` and reused by the other two, rather than duplicating the condition three times.)
+- [x] `packages/web/src/core/i18n.tsx`: add `budget.scope`, `budget.scopeSelf`, `budget.scopeTree`, `budget.scopeTreeBlocked`, `budget.inclSubcategories`, `budget.conflict` to both `VI` and `EN`.
 
 **Agent gate (hard):**
-- [ ] `pnpm typecheck` (project-wide, unscoped)
-- [ ] `pnpm test` (full local suite; this phase consumes the shared budget surfaces changed in phase 1)
-- [ ] `pnpm build`
+- [x] `pnpm typecheck` (project-wide, unscoped)
+- [x] `pnpm test` (full local suite; this phase consumes the shared budget surfaces changed in phase 1)
+- [x] `pnpm build`
 - [ ] CI green on the phase PR
 
 **Review checklist (user, at PR review):**
