@@ -5,9 +5,9 @@ Integration branch: `develop`. Branch model: stacked (default).
 
 ## STATUS
 
-- Current phase: 2 — in-progress
-- Phase 1 — Schema, shared model, API: in-progress
-- Phase 2 — Web spend, form, display: in-progress
+- Current phase: All phases complete
+- Phase 1 — Schema, shared model, API: done
+- Phase 2 — Web spend, form, display: done
 - Verification debt: none
 
 ## Phase 1 — Schema, shared model, API
@@ -36,7 +36,7 @@ Ships alone safely — `default 'self'` reproduces today's behavior.
 - [x] `pnpm typecheck` (project-wide, unscoped — this phase changes an exported shared model)
 - [x] `pnpm test` (full local suite; escalated per rulebook because `budgetSchema`/`budgetPatchToRow` are shared surfaces whose consumers carry no reliable import edge)
 - [x] `pnpm build`
-- [ ] CI green on the phase PR
+- [x] CI green on the phase PR
 
 **Review checklist (user, at PR review):**
 - [ ] Migration applied against existing data: every budget row reads `scope = 'self'` and every budget's displayed spend/percentage is unchanged from before.
@@ -64,7 +64,7 @@ but cannot see.
 - [x] `pnpm typecheck` (project-wide, unscoped)
 - [x] `pnpm test` (full local suite; this phase consumes the shared budget surfaces changed in phase 1)
 - [x] `pnpm build`
-- [ ] CI green on the phase PR
+- [x] CI green on the phase PR
 
 **Review checklist (user, at PR review):**
 - [ ] Selecting a leaf shows no scope control; the created budget covers that category.
