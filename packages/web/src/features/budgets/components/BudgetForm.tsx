@@ -57,7 +57,7 @@ export function BudgetForm({ initial, onSubmit, onCancel }: BudgetFormProps) {
 
   const handleSubmit = () => {
     if (!categoryId) return;
-    submit({ categoryId, limit: numericAmount });
+    submit({ categoryId, limit: numericAmount, scope: "self" });
   };
 
   return (

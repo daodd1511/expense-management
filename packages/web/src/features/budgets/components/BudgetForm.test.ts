@@ -37,19 +37,19 @@ const categories = [food, restaurant, coffee];
 describe("conflictsWithExistingBudget", () => {
   it("blocks a category that already has a direct budget", () => {
     expect(
-      conflictsWithExistingBudget(food, categories, [{ categoryId: "food", limit: 100 }]),
+      conflictsWithExistingBudget(food, categories, [{ categoryId: "food", limit: 100, scope: "self" }]),
     ).toBe(true);
   });
 
   it("blocks a child when its parent already has a budget", () => {
     expect(
-      conflictsWithExistingBudget(restaurant, categories, [{ categoryId: "food", limit: 100 }]),
+      conflictsWithExistingBudget(restaurant, categories, [{ categoryId: "food", limit: 100, scope: "self" }]),
     ).toBe(true);
   });
 
   it("blocks a parent when any of its children already has a budget", () => {
     expect(
-      conflictsWithExistingBudget(food, categories, [{ categoryId: "coffee", limit: 50 }]),
+      conflictsWithExistingBudget(food, categories, [{ categoryId: "coffee", limit: 50, scope: "self" }]),
     ).toBe(true);
   });
 
@@ -59,7 +59,7 @@ describe("conflictsWithExistingBudget", () => {
 
   it("excludes the budget being edited so editing does not self-block", () => {
     expect(
-      conflictsWithExistingBudget(food, categories, [{ categoryId: "food", limit: 100 }], "food"),
+      conflictsWithExistingBudget(food, categories, [{ categoryId: "food", limit: 100, scope: "self" }], "food"),
     ).toBe(false);
   });
 });
