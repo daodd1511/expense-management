@@ -5,6 +5,7 @@ _git and `EXECUTION.md` STATUS blocks win._
 
 | Spec | Status | Phases | Debt | Description |
 |------|--------|--------|------|-------------|
+| [budget-scope](budget-scope/PLAN.md) | In progress | 0/2 | — | Produced via /grill-me. Resolves the rollup semantics of a budget placed on a parent category,… |
 | [data-portability](data-portability/PLAN.md) | Not started | — | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed. Depends on… |
 | [account-reordering](account-reordering/PLAN.md) | Done | 2/2 | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed. |
 | [api-restructure](api-restructure/PLAN.md) | Done | 4/4 | — | Fourth and final spec of the batch. A behavior-preserving migration of packages/api from flat… |
