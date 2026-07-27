@@ -1,5 +1,6 @@
 export type { Database, Json } from "./database.types";
 export { secureParse } from "./secure-parse";
+export { budgetCoverage, conflictingBudget } from "./budget-coverage";
 export {
   buildSpendingTrendBuckets,
   computeBalance,
@@ -25,6 +26,7 @@ export {
   accountKindSchema,
   accountSchema,
   budgetSchema,
+  budgetScopeSchema,
   categorySchema,
   favoriteSchema,
   langSchema,
@@ -42,6 +44,7 @@ export {
   type Account,
   type AccountKind,
   type Budget,
+  type BudgetScope,
   type Category,
   type Favorite,
   type Lang,
