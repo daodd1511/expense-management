@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { BudgetForm } from "@/features/budgets/components/BudgetForm";
-import { budgetState } from "@/features/budgets/components/BudgetBars";
+import { budgetState, coversSubcategories } from "@/features/budgets/components/BudgetBars";
 import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
 import { BudgetsSkeleton } from "@/shared/components/Skeleton";
 import { Card, CardContent } from "@/shared/components/ui/card";
@@ -12,14 +12,14 @@ import { MobilePageContainer } from "@/shared/components/MobilePageContainer";
 import { useSwipeActions } from "@/shared/hooks/useSwipeActions";
 import { formatVND, monthLabel } from "@/shared/lib/format";
 import { useLang } from "@/core/i18n";
-import { spentForCategory } from "@/shared/lib/derive";
 import {
   useAddBudget,
   useBudgets,
+  useBudgetSpend,
   useDeleteBudget,
   useUpdateBudget,
 } from "@/features/budgets/queries";
-import { useCategoryLookup } from "@/features/categories/queries";
+import { useCategories, useCategoryLookup } from "@/features/categories/queries";
 import { useTransactions } from "@/features/transactions/queries";
 import type { Budget, Category } from "@/core/types";
 
@@ -30,6 +30,8 @@ function BudgetRow({
   category,
   spent,
   percent,
+  showsSubcategories,
+  inclSubcategoriesLabel,
   onEdit,
   onDelete,
   editLabel,
@@ -39,6 +41,8 @@ function BudgetRow({
   category: Category | undefined;
   spent: number;
   percent: number;
+  showsSubcategories: boolean;
+  inclSubcategoriesLabel: string;
   onEdit: () => void;
   onDelete: () => void;
   editLabel: string;
@@ -95,6 +99,11 @@ function BudgetRow({
               />
             </span>
             {category?.name}
+            {showsSubcategories && (
+              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                · {inclSubcategoriesLabel}
+              </span>
+            )}
           </span>
           <span className={`text-xs font-medium ${state.tone}`}>{percent}%</span>
         </button>
@@ -110,7 +119,9 @@ function BudgetRow({
 
 export function MobileBudgets() {
   const { data: budgets = [], isPending: budgetsPending } = useBudgets();
-  const { data: transactions = [], isPending: transactionsPending } = useTransactions();
+  const { data: categories = [] } = useCategories();
+  const { isPending: transactionsPending } = useTransactions();
+  const spentFor = useBudgetSpend();
   const getCategory = useCategoryLookup();
   const addBud = useAddBudget();
   const updateBud = useUpdateBudget();
@@ -120,7 +131,7 @@ export function MobileBudgets() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const totalLimit = budgets.reduce((s, b) => s + b.limit, 0);
-  const totalSpent = budgets.reduce((s, b) => s + spentForCategory(transactions, b.categoryId), 0);
+  const totalSpent = budgets.reduce((s, b) => s + spentFor(b), 0);
   const pct = totalLimit > 0 ? Math.round((totalSpent / totalLimit) * 100) : 0;
 
   const handleSubmit = async (b: Budget) => {
@@ -157,7 +168,7 @@ export function MobileBudgets() {
           <div className="flex flex-col divide-y divide-border px-4">
             {budgets.map((b) => {
               const cat = getCategory(b.categoryId);
-              const spent = spentForCategory(transactions, b.categoryId);
+              const spent = spentFor(b);
               const percent = Math.round((spent / b.limit) * 100);
               return (
                 <BudgetRow
@@ -166,6 +177,8 @@ export function MobileBudgets() {
                   category={cat}
                   spent={spent}
                   percent={percent}
+                  showsSubcategories={coversSubcategories(b, categories)}
+                  inclSubcategoriesLabel={t("budget.inclSubcategories")}
                   onEdit={() => setSheet(b)}
                   onDelete={() => setPendingDeleteId(b.categoryId)}
                   editLabel={t("budget.edit")}

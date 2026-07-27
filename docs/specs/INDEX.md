@@ -5,13 +5,13 @@ _git and `EXECUTION.md` STATUS blocks win._
 
 | Spec | Status | Phases | Debt | Description |
 |------|--------|--------|------|-------------|
-| [budget-scope](budget-scope/PLAN.md) | In progress | 0/2 | — | Produced via /grill-me. Resolves the rollup semantics of a budget placed on a parent category,… |
 | [data-portability](data-portability/PLAN.md) | Not started | — | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed. Depends on… |
 | [account-reordering](account-reordering/PLAN.md) | Done | 2/2 | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed. |
 | [api-restructure](api-restructure/PLAN.md) | Done | 4/4 | — | Fourth and final spec of the batch. A behavior-preserving migration of packages/api from flat… |
 | [auth-routing](auth-routing/PLAN.md) | Done | 3/3 | — | Add email/password auth alongside the existing Google OAuth flow, and replace the app's… |
 | [balance-adjustment](balance-adjustment/PLAN.md) | Done | 3/3 | — | Produced via /grill-with-docs. This plan supersedes the original fixed income/expense… |
 | [be-integration](be-integration/PLAN.md) | Done | — | — |  FE (browser) 1. Google OAuth via Supabase Auth → receives access_token (JWT) 2. Stores token in… |
+| [budget-scope](budget-scope/PLAN.md) | Done | 2/2 | — | Produced via /grill-me. Resolves the rollup semantics of a budget placed on a parent category,… |
 | [category-redesign](category-redesign/PLAN.md) | Done | 3/3 | ⚠ manual browser checks (2 items) deferred; review checklist incomplete | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
 | [category-ux](category-ux/PLAN.md) | Done | 3/3 | ⚠ manual browser checks (2 items) deferred; review checklist incomplete | Produced via /grill-me interview. All decisions below were explicitly confirmed; do not… |
 | [docs-dashboard](docs-dashboard/PLAN.md) | Done | — | — | Produced via /grill-me interview, prompted by… |
