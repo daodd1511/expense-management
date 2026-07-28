@@ -195,23 +195,15 @@ scale: `--z-dropdown` through `--z-tooltip`. OKLCH color space throughout.
   own rationale and nothing else. This overrides any default that appends such a line.
 
 ## Domain Model & Decisions
+<!-- domain-rulebook v1 -->
 
-Three homes for terminology and decisions — keep them from bleeding into each
-other. The `domain-modeling` skill (and `grill-with-docs`, which folds it into a
-grilling session) maintains the first two.
+`CONTEXT.md` (repo root) is the project's glossary. Use its canonical terms — and avoid the
+synonyms it marks `_Avoid_` — in code, docs, specs, and UI copy. It is a glossary only:
+never add schema, file references, or implementation detail to it.
 
-- **`CONTEXT.md`** (repo root) — the ubiquitous-language glossary, and nothing
-  else. Use its canonical terms (and avoid the `_Avoid_` synonyms) in code,
-  docs, specs, and UI copy. It is devoid of implementation detail: no schema, no
-  file references, no "how it works". Add or sharpen a term the moment grilling
-  resolves one; never let it become a spec or scratchpad.
-- **`docs/adr/`** — one short ADR per **app-wide** decision that is hard to
-  reverse, surprising without context, and the result of a real trade-off (all
-  three, or it is not an ADR). A handful, ever. Numbered `NNNN-slug.md`, 1–3
-  sentences.
-- **`docs/specs/<feature>/PLAN.md` "Decisions"** — feature-scoped choices that live
-  and die with the spec. The default home. If a decision only matters inside one
-  feature, it stays here and does **not** become an ADR.
+Recording a new term, or a decision worth keeping? Read `docs/DOMAIN-RULEBOOK.md` first — it
+routes between `CONTEXT.md`, `docs/adr/`, and a spec's `PLAN.md`, and defines what does and
+doesn't qualify as an ADR.
 
 ## Backlog
 
@@ -223,62 +215,24 @@ Never auto-commit a capture. Delete a line only when the item ships or graduates
 `docs/specs/<feature>/` plan.
 
 ## Spec-Driven Execution Workflow
+<!-- rulebook v3 -->
 
-Large/architectural changes flow: `/grill-me` → `docs/specs/<feature>/PLAN.md` →
-`docs/specs/<feature>/EXECUTION.md` (via the `spec-plan` skill) → phased implementation (via the
-`spec-phase` skill). These rules bind even when neither skill is invoked. Design rationale:
-`docs/specs/spec-workflow-v2/PLAN.md`. Use `/grill-with-docs` instead of `/grill-me` when the
-grilling should also maintain the glossary and ADRs (see "Domain Model & Decisions").
+Specs live in `docs/specs/<feature>/`. Flow: `/grill-me` → `PLAN.md` → `/spec-plan` →
+`EXECUTION.md` → `/spec-phase` per phase.
 
-### State model
-- **Git is the authoritative state store**: branch name encodes spec+phase
-  (`<feature-slug>/phase-<n>-<desc>`), commits encode progress. Each `EXECUTION.md` opens
-  with a **STATUS block** (current phase, per-phase state, verification debt) — the only
-  prose trusted as state. **On any conflict, git wins silently** for mechanical facts
-  (branch, commits, merged-or-not); STATUS is trusted only for what git can't express
-  (debt, park reasons). `HANDOFF.md` is a session baton from `/handoff` — advisory context,
-  never authority; do not resume from it.
-- Phase states: `pending` / `in-progress` / `done` / `done-with-debt`. Gate items are
-  `[ ]`/`[x]`; an item may be `[~]` (deferred) only when environment-blocked (missing
-  tool/credentials, not effort), with substitute evidence inline and a mirrored STATUS debt
-  entry. A phase is in-progress iff it has unchecked **non-deferred** items.
-- `docs/specs/INDEX.md` is a **generated report** (`pnpm specs:index`), never hand-edited.
-  After touching any STATUS block, rerun it and commit the regenerated INDEX.md in the
-  same commit. STATUS blocks must keep the canonical format the script enforces (see
-  `docs/specs/spec-index/PLAN.md`); the script fails loudly on drift. On conflict, git and
-  STATUS win — INDEX.md is advisory, like `HANDOFF.md`.
+Binding on all work in this repo, spec skill or not:
 
-### Branch model — stacked by default
-- **Default: stacked.** Each phase branches off the **previous phase's branch** (phase 1
-  off the integration branch, currently `develop`; resolve at plan time, never hardcode).
-  Push → PR to the previous phase's branch (or to the integration branch if the previous
-  phase already merged) → continue to the next phase without waiting for review/merge.
-  Rebase onto the integration branch after an earlier phase's PR merges.
-- **Sequential (off develop, wait for merge) is opt-in only** — use it only when the user
-  explicitly says so for this spec (e.g. "do phases sequentially" / "wait for merge before
-  the next phase"). When opted in: each phase branches off the integration branch → push →
-  PR → user reviews & merges → pull → next phase branches off the updated integration
-  branch.
-- After a phase's PR merges, ask before deleting the merged phase branch (local + remote).
+- **Git is the authoritative state store.** Branch `<feature-slug>/phase-<n>-<desc>` encodes
+  spec + phase and commits encode progress. Never infer spec state from prose, and never
+  rewrite history to make it tidy.
+- **One spec in flight.** Do not start or resume a second spec's phase while another has an
+  unfinished one.
+- **Never push, open a PR, or merge without a separate explicit ask** — regardless of what
+  earlier work in the session was authorized.
 
-### Checkpoints
-- Starting a phase authorizes its commits — nothing else.
-- Gate pass → one ask: "push + open PR?". Remote actions are never bundled with anything
-  else (see Hard Stops below).
-- A phase is complete only when its **agent gate** (typecheck, tests, build) actually
-  passed — checking boxes doesn't substitute for running it — **and the phase PR's CI is
-  green**. The local gate is a pre-PR smoke check; CI's full run is authoritative, and red
-  CI on a phase PR is the agent's to fix before the phase is done. Manual verification
-  scenarios are the **review checklist**, listed in the PR description for the user to walk
-  through before merging — they are the user's, not agent debt.
-- **One spec in flight at a time.** Do not start or resume a different spec's phase while
-  another has an unfinished phase. Finish the current phase, or explicitly **park** it with
-  the user's go-ahead: a `WIP: parked <date>` commit on the phase branch plus a STATUS note
-  (never `git stash` — stashes are invisible to a cold agent and easy to orphan).
-
-Procedure lives in the skills — planning in `.claude/skills/spec-plan/SKILL.md`, execution
-and resume in `.claude/skills/spec-phase/SKILL.md` — invoke the relevant one rather than
-re-deriving it.
+Doing spec work? Read `docs/specs/RULEBOOK.md` first — the state model (`done-with-debt`,
+`[~]`, verification debt), gate lanes, branch model, checkpoints, and capability baseline are
+defined there, not here. Don't improvise substitutes for those terms from this summary.
 
 ## Coding Standards
 - Always use `react-frontend-developer` skill for frontend code generation.
