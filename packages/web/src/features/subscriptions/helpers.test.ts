@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Subscription, Transaction } from "@/core/types";
+import type { Account, Subscription, Transaction } from "@/core/types";
 import {
   buildNextDueDate,
   daysUntilDue,
   isAlreadyLoggedThisCycle,
   isDue,
   isDueSoon,
+  underfundedAccounts,
 } from "./helpers";
 
 function makeSub(overrides: Partial<Subscription> = {}): Subscription {
@@ -35,6 +36,18 @@ function makeTx(overrides: Partial<Transaction> = {}): Transaction {
     merchant: "Netflix",
     date: "2026-07-05",
     subscriptionId: "sub-1",
+    ...overrides,
+  };
+}
+
+function makeAccount(overrides: Partial<Account> = {}): Account {
+  return {
+    id: "acc-1",
+    name: "Itel",
+    kind: "ewallet",
+    openingBalance: 0,
+    displayOrder: 0,
+    balance: 14_102,
     ...overrides,
   };
 }
@@ -112,6 +125,79 @@ describe("isAlreadyLoggedThisCycle", () => {
     const sub = makeSub({ nextDueDate: "2026-07-05", cadence: "yearly" });
     const tx = makeTx({ subscriptionId: "sub-1", date: "2026-01-15" });
     expect(isAlreadyLoggedThisCycle(sub, [tx])).toBe(true);
+  });
+});
+
+describe("underfundedAccounts", () => {
+  it("reports the exact shortfall when the balance is below the horizon sum", () => {
+    const account = makeAccount({ balance: 14_102 });
+    const sub = makeSub({ amount: 79_000, nextDueDate: "2026-08-01" });
+    expect(underfundedAccounts([account], [sub])).toEqual([{ account, shortfall: 64_898 }]);
+  });
+
+  it("reports nothing when the balance exactly meets the horizon sum", () => {
+    const account = makeAccount({ balance: 79_000 });
+    const sub = makeSub({ amount: 79_000, nextDueDate: "2026-08-01" });
+    expect(underfundedAccounts([account], [sub])).toEqual([]);
+  });
+
+  it("never reports a card account, whatever its balance", () => {
+    const account = makeAccount({ kind: "card", balance: -5_000_000 });
+    const sub = makeSub({ amount: 79_000, nextDueDate: "2026-08-01" });
+    expect(underfundedAccounts([account], [sub])).toEqual([]);
+  });
+
+  it("reports nothing for an account with no subscription charging it", () => {
+    const account = makeAccount({ id: "acc-2", balance: 0 });
+    const sub = makeSub({ accountId: "acc-1", nextDueDate: "2026-08-01" });
+    expect(underfundedAccounts([account], [sub])).toEqual([]);
+  });
+
+  it("excludes inactive subscriptions from the horizon sum", () => {
+    const account = makeAccount({ balance: 0 });
+    const sub = makeSub({ amount: 79_000, nextDueDate: "2026-08-01", active: false });
+    expect(underfundedAccounts([account], [sub])).toEqual([]);
+  });
+
+  it("excludes a yearly charge falling outside the horizon", () => {
+    const account = makeAccount({ balance: 0 });
+    const sub = makeSub({ cadence: "yearly", amount: 900_000, nextDueDate: "2026-12-01" });
+    expect(underfundedAccounts([account], [sub])).toEqual([]);
+  });
+
+  it("includes a yearly charge once it enters the horizon", () => {
+    const account = makeAccount({ balance: 0 });
+    const sub = makeSub({ cadence: "yearly", amount: 900_000, nextDueDate: "2026-08-01" });
+    expect(underfundedAccounts([account], [sub])).toEqual([{ account, shortfall: 900_000 }]);
+  });
+
+  it("includes an overdue, unlogged charge", () => {
+    const account = makeAccount({ balance: 0 });
+    const sub = makeSub({ amount: 79_000, nextDueDate: "2026-06-20" });
+    expect(underfundedAccounts([account], [sub])).toEqual([{ account, shortfall: 79_000 }]);
+  });
+
+  it("sums multiple subscriptions charging the same account", () => {
+    const account = makeAccount({ balance: 100_000 });
+    const subs = [
+      makeSub({ id: "sub-1", amount: 79_000, nextDueDate: "2026-07-20" }),
+      makeSub({ id: "sub-2", amount: 50_000, nextDueDate: "2026-08-01" }),
+    ];
+    expect(underfundedAccounts([account], subs)).toEqual([{ account, shortfall: 29_000 }]);
+  });
+
+  it("treats the thirtieth day as inside the horizon and the thirty-first as outside", () => {
+    const account = makeAccount({ balance: 0 });
+    const inside = makeSub({ amount: 79_000, nextDueDate: "2026-08-04" });
+    const outside = makeSub({ amount: 79_000, nextDueDate: "2026-08-05" });
+    expect(underfundedAccounts([account], [inside])).toEqual([{ account, shortfall: 79_000 }]);
+    expect(underfundedAccounts([account], [outside])).toEqual([]);
+  });
+
+  it("falls back to the opening balance when no computed balance is present", () => {
+    const account = makeAccount({ balance: undefined, openingBalance: 10_000 });
+    const sub = makeSub({ amount: 79_000, nextDueDate: "2026-08-01" });
+    expect(underfundedAccounts([account], [sub])).toEqual([{ account, shortfall: 69_000 }]);
   });
 });
 

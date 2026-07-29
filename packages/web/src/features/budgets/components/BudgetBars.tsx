@@ -1,11 +1,11 @@
+import { budgetCoverage } from "@wallet/shared";
 import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
 import { Progress } from "@/shared/components/ui/progress";
 import { formatVND } from "@/shared/lib/format";
 import { useLang } from "@/core/i18n";
-import { spentForCategory } from "@/shared/lib/derive";
-import { useBudgets } from "@/features/budgets/queries";
-import { useCategoryLookup } from "@/features/categories/queries";
-import { useTransactions } from "@/features/transactions/queries";
+import { useBudgets, useBudgetSpend } from "@/features/budgets/queries";
+import { useCategories, useCategoryLookup } from "@/features/categories/queries";
+import type { Budget, Category } from "@/core/types";
 
 export function budgetState(pct: number) {
   if (pct >= 100) return { tone: "text-expense", bar: "bg-expense" };
@@ -19,9 +19,15 @@ function budgetStateLabelKey(pct: number) {
   return "budget.stateOk" as const;
 }
 
+/** True when a `tree` budget actually spans more than its own category — never for a leaf. */
+export function coversSubcategories(budget: Budget, categories: Category[]): boolean {
+  return budget.scope === "tree" && budgetCoverage(budget, categories).size > 1;
+}
+
 export function BudgetBars({ limit }: { limit?: number }) {
   const { data: budgets = [] } = useBudgets();
-  const { data: transactions = [] } = useTransactions();
+  const { data: categories = [] } = useCategories();
+  const spentFor = useBudgetSpend();
   const getCategory = useCategoryLookup();
   const { t } = useLang();
   const list = limit ? budgets.slice(0, limit) : budgets;
@@ -30,7 +36,7 @@ export function BudgetBars({ limit }: { limit?: number }) {
     <ul className="flex flex-col gap-4">
       {list.map((b) => {
         const cat = getCategory(b.categoryId);
-        const spent = spentForCategory(transactions, b.categoryId);
+        const spent = spentFor(b);
         const pct = Math.round((spent / b.limit) * 100);
         const state = budgetState(pct);
         const remaining = b.limit - spent;
@@ -55,7 +61,14 @@ export function BudgetBars({ limit }: { limit?: number }) {
                     style={{ color: colorVar(cat?.color ?? "chart-1") }}
                   />
                 </span>
-                <span className="text-sm font-medium">{cat?.name}</span>
+                <span className="text-sm font-medium">
+                  {cat?.name}
+                  {coversSubcategories(b, categories) && (
+                    <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                      · {t("budget.inclSubcategories")}
+                    </span>
+                  )}
+                </span>
               </div>
               <span className={`text-xs font-medium ${state.tone}`}>
                 {stateLabel} · {pct}%

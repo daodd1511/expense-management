@@ -172,7 +172,7 @@ The deploy job injects these; they are **not** committed. Set via `gh secret set
 
 ## Trade-offs & watch-outs
 
-- **No health-gated auto-rollback** like the old VPS `deploy.sh`. Mitigations: CI test gate,
+- **No health-gated auto-rollback** like the old VPS deploy script. Mitigations: CI test gate,
   Docker `HEALTHCHECK` on the api image, uptime-kuma alerting. Rollback is manual: `git revert` +
   push, or redeploy a previous commit.
 - **Build load on the laptop** each deploy (`pnpm install` + build in Docker). First build is slow;

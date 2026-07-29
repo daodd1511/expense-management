@@ -1,6 +1,20 @@
 import { buildNextDueDate as buildNextDueDateShared } from "@wallet/shared";
 import { diffDays, parseLocalDate, todayLocalIso } from "@/shared/lib/date";
-import type { Subscription, SubscriptionCadence, Transaction } from "@/core/types";
+import type { Account, Subscription, SubscriptionCadence, Transaction } from "@/core/types";
+
+/**
+ * Window over which upcoming Subscription charges are summed when deciding whether an
+ * Account is underfunded. Deliberately distinct from the seven-day _Due soon_ window:
+ * the two answer different questions and must not be merged.
+ */
+export const FUNDING_HORIZON_DAYS = 30;
+
+/** An Account whose Computed balance falls short of its charges inside the funding horizon. */
+export type UnderfundedAccount = {
+  account: Account;
+  /** Positive Đồng amount by which the balance falls short of the horizon sum. */
+  shortfall: number;
+};
 
 export function monthlyEquivalent(s: Subscription): number {
   return s.cadence === "yearly" ? Math.round(s.amount / 12) : s.amount;
@@ -21,6 +35,38 @@ export function isDue(sub: Subscription): boolean {
 export function isDueSoon(sub: Subscription): boolean {
   const days = daysUntilDue(sub);
   return sub.active && days >= 0 && days <= 7;
+}
+
+/**
+ * Accounts that cannot cover the active Subscriptions charged to them inside the funding
+ * horizon, each with its shortfall.
+ *
+ * A `card` Account is never underfunded — its balance represents debt, not available funds.
+ * A charge whose `nextDueDate` has already passed still counts: an unlogged Subscription's
+ * `nextDueDate` does not advance, so the money is still owed.
+ *
+ * @param today date-only `'YYYY-MM-DD'`; defaults to the client's local calendar date.
+ */
+export function underfundedAccounts(
+  accounts: Account[],
+  subscriptions: Subscription[],
+  today: string = todayLocalIso(),
+): UnderfundedAccount[] {
+  const horizonSumByAccount = new Map<string, number>();
+  for (const sub of subscriptions) {
+    if (!sub.active) continue;
+    if (diffDays(sub.nextDueDate, today) > FUNDING_HORIZON_DAYS) continue;
+    horizonSumByAccount.set(sub.accountId, (horizonSumByAccount.get(sub.accountId) ?? 0) + sub.amount);
+  }
+
+  return accounts.flatMap((account) => {
+    if (account.kind === "card") return [];
+    const horizonSum = horizonSumByAccount.get(account.id);
+    if (horizonSum === undefined) return [];
+    const balance = account.balance ?? account.openingBalance;
+    if (balance >= horizonSum) return [];
+    return [{ account, shortfall: horizonSum - balance }];
+  });
 }
 
 export function isAlreadyLoggedThisCycle(sub: Subscription, transactions: Transaction[]): boolean {

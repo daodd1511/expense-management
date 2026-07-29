@@ -79,6 +79,7 @@ export type Database = {
           created_at: string
           id: string
           owner_id: string
+          scope: string
         }
         Insert: {
           amount: number
@@ -86,6 +87,7 @@ export type Database = {
           created_at?: string
           id?: string
           owner_id: string
+          scope?: string
         }
         Update: {
           amount?: number
@@ -93,6 +95,7 @@ export type Database = {
           created_at?: string
           id?: string
           owner_id?: string
+          scope?: string
         }
         Relationships: [
           {

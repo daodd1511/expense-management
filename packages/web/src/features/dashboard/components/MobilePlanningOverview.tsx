@@ -2,27 +2,22 @@ import { Link } from "@tanstack/react-router";
 import { CalendarClock, ChevronRight, Target } from "lucide-react";
 import { useLang } from "@/core/i18n";
 import { BudgetBars } from "@/features/budgets/components/BudgetBars";
-import { useBudgets } from "@/features/budgets/queries";
+import { useBudgets, useBudgetSpend } from "@/features/budgets/queries";
 import { useSubscriptions } from "@/features/subscriptions/queries";
 import { isDue, isDueSoon, totalMonthlyCost } from "@/features/subscriptions/helpers";
-import { useTransactions } from "@/features/transactions/queries";
 import { MobilePageContainer } from "@/shared/components/MobilePageContainer";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Progress } from "@/shared/components/ui/progress";
-import { spentForCategory } from "@/shared/lib/derive";
 import { formatShortDate, formatVND } from "@/shared/lib/format";
 
 export function MobilePlanningOverview() {
   const { data: budgets = [] } = useBudgets();
-  const { data: transactions = [] } = useTransactions();
+  const spentFor = useBudgetSpend();
   const { data: subscriptions = [] } = useSubscriptions();
   const { t } = useLang();
 
   const totalLimit = budgets.reduce((sum, budget) => sum + budget.limit, 0);
-  const totalSpent = budgets.reduce(
-    (sum, budget) => sum + spentForCategory(transactions, budget.categoryId),
-    0,
-  );
+  const totalSpent = budgets.reduce((sum, budget) => sum + spentFor(budget), 0);
   const usedPercent = totalLimit > 0 ? Math.round((totalSpent / totalLimit) * 100) : 0;
   const activeSubscriptions = subscriptions.filter((subscription) => subscription.active);
   const dueSoon = activeSubscriptions

@@ -2,6 +2,7 @@ export type {
   Account,
   AccountKind,
   Budget,
+  BudgetScope,
   Category,
   Lang,
   Subscription,

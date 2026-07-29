@@ -113,13 +113,13 @@ export const accounts: Account[] = [
 ];
 
 export const budgets: Budget[] = [
-  { categoryId: "food", limit: 5_000_000 },
-  { categoryId: "transport", limit: 1_500_000 },
-  { categoryId: "home", limit: 7_000_000 },
-  { categoryId: "bills", limit: 2_500_000 },
-  { categoryId: "fun", limit: 1_500_000 },
-  { categoryId: "shopping", limit: 3_000_000 },
-  { categoryId: "health", limit: 1_000_000 },
+  { categoryId: "food", limit: 5_000_000, scope: "tree" },
+  { categoryId: "transport", limit: 1_500_000, scope: "tree" },
+  { categoryId: "home", limit: 7_000_000, scope: "tree" },
+  { categoryId: "bills", limit: 2_500_000, scope: "tree" },
+  { categoryId: "fun", limit: 1_500_000, scope: "tree" },
+  { categoryId: "shopping", limit: 3_000_000, scope: "tree" },
+  { categoryId: "health", limit: 1_000_000, scope: "tree" },
 ];
 
 // Today's date parts for seed nextDueDate

@@ -1,7 +1,7 @@
 // Generates docs/specs/INDEX.md from every docs/specs/*/PLAN.md + EXECUTION.md.
 // Contract: EXECUTION.md STATUS blocks must match the canonical format documented in
-// docs/specs/spec-index/PLAN.md — this parser is deliberately strict and exits nonzero
-// naming the offending file rather than rendering a silently wrong board.
+// docs/specs/archive/2026-07-29-spec-index/PLAN.md — this parser is deliberately strict and
+// exits nonzero naming the offending file rather than rendering a silently wrong board.
 //
 // Usage: node scripts/spec-index.mjs   (or: pnpm specs:index)
 

@@ -9,7 +9,12 @@ export {
   type TxType,
 } from "./common.model";
 export { accountSchema, type Account } from "./account.model";
-export { budgetSchema, type Budget } from "./budget.model";
+export {
+  budgetSchema,
+  budgetScopeSchema,
+  type Budget,
+  type BudgetScope,
+} from "./budget.model";
 export {
   categorySchema,
   categoryTypeSchema,
