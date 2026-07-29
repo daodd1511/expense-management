@@ -5,8 +5,8 @@ Integration branch: `develop`. Branch model: stacked (default; single phase, so 
 
 ## STATUS
 
-- Current phase: 1 — pending
-- Phase 1 — Underfunded account warning: pending
+- Current phase: 1 — in-progress
+- Phase 1 — Underfunded account warning: in-progress
 - Verification debt: none
 
 ## Phase 1 — Underfunded account warning
@@ -20,11 +20,11 @@ Consumes: `useAccounts()` (`features/accounts/queries.ts:25`, Accounts carry ser
 `daysUntilDue` (`features/subscriptions/helpers.ts`).
 Produces: nothing — no later phase.
 
-- [ ] Add `underfundedAccounts(accounts, subscriptions, today)` to
+- [x] Add `underfundedAccounts(accounts, subscriptions, today)` to
   `packages/web/src/features/subscriptions/helpers.ts`, beside `isDue`/`isDueSoon`,
   returning `{ account, shortfall }[]` per PLAN.md → "The Rule". Export the 30-day horizon
   as a named constant; do not inline the literal.
-- [ ] Cover the rule in `packages/web/src/features/subscriptions/helpers.test.ts`: card
+- [x] Cover the rule in `packages/web/src/features/subscriptions/helpers.test.ts`: card
   exclusion, inactive Subscriptions, yearly outside vs inside horizon, overdue-unlogged
   inclusion, multiple Subscriptions summing on one Account, at-threshold boundary.
 - [ ] Add banner strings to both `VI` and `EN` in `packages/web/src/core/i18n.tsx`
