@@ -16,6 +16,8 @@ _(empty)_
 - [ ] Do not add to report accounts or transactions (2026-07-16)
 - [ ] Move users to a local DB on the home server instead of Supabase; handle Google OAuth there too, not via Supabase (2026-07-21)
 - [ ] Add a demo page (2026-07-22)
+- [ ] Grill the foreign-currency subscription: amount unknown until the bank statement posts (2026-07-29)
+- [ ] Split TransactionForm's `initial` prop into edit-vs-seed so new transactions can be prefilled (2026-07-29)
 
 ## Ideas
 
