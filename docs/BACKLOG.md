@@ -7,8 +7,7 @@ their session summary). Delete a line when the item ships or graduates into a
 
 ## Fixes
 
-- [ ] `scripts/deploy.sh` is a stale legacy VPS/pm2 script that contradicts the current Docker/cloudflared deployment in `docs/deployment/self-hosting.md` — delete or reconcile before it confuses public readers (2026-07-22)
-- [ ] Fix budget category selection: handle two modes — parent budgeted separately vs. parent including its children (2026-07-27)
+_(empty)_
 
 ## Features
 
