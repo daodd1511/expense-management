@@ -7,7 +7,7 @@ Integration branch: `develop`. Branch model: stacked (default; single phase, so 
 
 - Current phase: 1 — in-progress
 - Phase 1 — Underfunded account warning: in-progress
-- Verification debt: none
+- Verification debt: none (local gate passed; CI gate open until the phase PR runs)
 
 ## Phase 1 — Underfunded account warning
 
@@ -27,25 +27,25 @@ Produces: nothing — no later phase.
 - [x] Cover the rule in `packages/web/src/features/subscriptions/helpers.test.ts`: card
   exclusion, inactive Subscriptions, yearly outside vs inside horizon, overdue-unlogged
   inclusion, multiple Subscriptions summing on one Account, at-threshold boundary.
-- [ ] Add banner strings to both `VI` and `EN` in `packages/web/src/core/i18n.tsx`
+- [x] Add banner strings to both `VI` and `EN` in `packages/web/src/core/i18n.tsx`
   (`TranslationKey` is inferred from `VI`, so both objects must stay in parity).
-- [ ] Create `packages/web/src/features/subscriptions/components/LowBalanceBanner.tsx`:
+- [x] Create `packages/web/src/features/subscriptions/components/LowBalanceBanner.tsx`:
   reads the two hooks, names each underfunded Account and its shortfall via `formatVND`,
   hand-rolled markup against `SubscriptionDueBanner.tsx`'s existing classes, **no dismiss
   control**, renders `null` when empty.
-- [ ] Add `LowBalanceBanner.test.tsx`: renders for an underfunded Account, renders nothing
+- [x] Add `LowBalanceBanner.test.tsx`: renders for an underfunded Account, renders nothing
   when funded, exposes no dismiss control.
-- [ ] Mount it above `SubscriptionDueBanner` in `packages/web/src/routing/app-pages.tsx` and
+- [x] Mount it above `SubscriptionDueBanner` in `packages/web/src/routing/app-pages.tsx` and
   `packages/web/src/features/subscriptions/components/DesktopSubscriptions.tsx`. Share no
   state between the two banners.
-- [ ] Add **Underfunded** and **Funding horizon** to `CONTEXT.md` (glossary only — no schema,
+- [x] Add **Underfunded** and **Funding horizon** to `CONTEXT.md` (glossary only — no schema,
   no file references). Keep _Funding horizon_ distinct from the existing seven-day
   _Due soon_.
 
 **Agent gate (hard):**
-- [ ] `pnpm typecheck` — project-wide, not scoped; catches `TranslationKey` parity breakage
+- [x] `pnpm typecheck` — project-wide, not scoped; catches `TranslationKey` parity breakage
   across packages.
-- [ ] `pnpm test` — full local suite, not `vitest related`. This phase edits
+- [x] `pnpm test` — full local suite, not `vitest related`. This phase edits
   `helpers.ts` and `i18n.tsx`, both shared surfaces whose consumers the import graph
   understates. Matches what CI runs (`.github/workflows/ci.yml:31`).
 - [ ] CI green on the phase PR
