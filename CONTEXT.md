@@ -209,6 +209,18 @@ Recording the same subscription occurrence as a transaction more than once in a
 single cycle. The app detects and warns against it.
 _Avoid_: duplicate payment
 
+**Funding horizon**:
+The thirty-day window ahead over which the subscription charges against an
+account are summed to judge whether that account can cover them. Distinct from
+_due soon_, whose seven days answer a different question.
+_Avoid_: warning window, lookahead, forecast period
+
+**Underfunded**:
+An account whose balance is less than the subscription charges due against it
+inside the funding horizon. A card account is never underfunded — its balance is
+debt, not available funds. Being underfunded warns; it never blocks logging.
+_Avoid_: overdrawn, insufficient funds, low balance
+
 ## Surfaces
 
 **Transaction overlay**:
