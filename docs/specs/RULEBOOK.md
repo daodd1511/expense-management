@@ -5,7 +5,7 @@ Large/architectural changes flow: `/grill-me` → `docs/specs/<feature>/PLAN.md`
 `docs/specs/<feature>/EXECUTION.md` (via the `spec-plan` skill) → phased implementation
 (via the `spec-phase` skill). Use `/grill-with-docs` instead of `/grill-me` when the
 grilling should also maintain the glossary and ADRs (see `docs/DOMAIN-RULEBOOK.md`).
-Design rationale for this workflow: `docs/specs/spec-workflow-v2/PLAN.md`.
+Design rationale for this workflow: `docs/specs/archive/2026-07-29-spec-workflow-v2/PLAN.md`.
 
 This is the full rulebook. The spec skills read it when they run; it is deliberately kept
 out of `CLAUDE.md` so sessions doing ordinary work don't carry it. The few invariants that
@@ -27,8 +27,8 @@ Execution Workflow", which points here for everything else.
 - `docs/specs/INDEX.md` is a **generated report** (`pnpm specs:index`), never hand-edited.
   After touching any STATUS block, rerun it and commit the regenerated INDEX.md in the same
   commit. STATUS blocks must keep the canonical format the script enforces (see
-  `docs/specs/spec-index/PLAN.md`); the script fails loudly on drift. On conflict, git and
-  STATUS win — INDEX.md is advisory, like `HANDOFF.md`.
+  `docs/specs/archive/2026-07-29-spec-index/PLAN.md`); the script fails loudly on drift. On
+  conflict, git and STATUS win — INDEX.md is advisory, like `HANDOFF.md`.
 
 ## Branch model — stacked by default
 - **Default: stacked.** Each phase branches off the **previous phase's branch** (phase 1
@@ -83,6 +83,16 @@ Execution Workflow", which points here for everything else.
   → draft it and get the user's confirmation; **requires inferring intent** → out of scope,
   leave it out. Never a bulk pass over the codebase.
 
+## Archiving
+- A finished spec moves to `docs/specs/archive/<YYYY-MM-DD>-<feature-slug>/` (date = the day
+  it was archived), by `git mv`, via the `spec-archive` skill. Keeping finished specs in the
+  glob path slows every later `rg` for in-flight work.
+- Archived specs drop out of `docs/specs/INDEX.md` — the generator reads one level deep, so
+  the index stays a view of in-flight work only. Git history is where finished specs live.
+- Nothing is exempt. A spec whose phases are done is archived even when it documents tooling
+  that still runs or carries a `reference` marker — cite it by its archive path.
+  `docs/specs/` holds in-flight work only.
+
 Procedure lives in the skills — planning in the `spec-plan` skill, execution and resume in
-the `spec-phase` skill, baseline application in the `spec-archive` skill — invoke the
-relevant one rather than re-deriving it.
+the `spec-phase` skill, baseline application and archiving in the `spec-archive` skill —
+invoke the relevant one rather than re-deriving it.
