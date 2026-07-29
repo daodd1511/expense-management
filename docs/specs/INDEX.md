@@ -5,4 +5,5 @@ _git and `EXECUTION.md` STATUS blocks win._
 
 | Spec | Status | Phases | Debt | Description |
 |------|--------|--------|------|-------------|
+| [low-balance-warning](low-balance-warning/PLAN.md) | Pending | 0/1 | — | Produced via /grill-me. All product decisions below were explicitly confirmed. |
 | [data-portability](data-portability/PLAN.md) | Not started | — | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed. Depends on… |

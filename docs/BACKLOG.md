@@ -21,5 +21,4 @@ _(empty)_
 
 - Improving backlog managements, should act like a kanban board, should have status to track, maybe build a simple task management tool like trello to work on local(2026-07-10)
 - Maybe add a guide to install the app on mobile (2026-07-10)
-- [ ] Grill about itel subscription (2026-07-27)
 - [ ] Replace the 6-month trend on the dashboard with something more useful (2026-07-27)
