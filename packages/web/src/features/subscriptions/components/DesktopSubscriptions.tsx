@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { SubscriptionLogConfirm } from "@/features/subscriptions/components/SubscriptionLogConfirm";
 import { SubscriptionsSkeleton } from "@/shared/components/Skeleton";
 import { CategoryIcon, colorVar } from "@/shared/components/CategoryIcon";
+import { LowBalanceBanner } from "@/features/subscriptions/components/LowBalanceBanner";
 import { SubscriptionDueBanner } from "@/features/subscriptions/components/SubscriptionDueBanner";
 import { SubscriptionForm } from "@/features/subscriptions/components/SubscriptionForm";
 import { Button } from "@/shared/components/ui/button";
@@ -260,8 +261,9 @@ export function DesktopSubscriptions({
         </Button>
       </div>
 
-      {/* Due banner */}
+      {/* Banners */}
       <div className="rounded-xl">
+        <LowBalanceBanner />
         <SubscriptionDueBanner confirmVariant="modal" />
       </div>
 

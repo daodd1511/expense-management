@@ -1,5 +1,6 @@
 import { startTransition } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
+import { LowBalanceBanner } from "@/features/subscriptions/components/LowBalanceBanner";
 import { SubscriptionDueBanner } from "@/features/subscriptions/components/SubscriptionDueBanner";
 import { useTransactionOverlay } from "@/features/transactions/transaction-overlay";
 import { MobileAccounts } from "@/features/accounts/components/MobileAccounts";
@@ -78,6 +79,7 @@ export function DashboardPage() {
 
   return (
     <div className="h-full overflow-y-auto overscroll-contain">
+      <LowBalanceBanner />
       <SubscriptionDueBanner confirmVariant="sheet" />
       <MobileHome
         onNavigate={(section, search) => {
