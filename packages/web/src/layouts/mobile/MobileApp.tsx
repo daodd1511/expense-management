@@ -4,7 +4,10 @@ import {
   TransactionOverlaySheet,
   useTransactionOverlay,
 } from "@/features/transactions/transaction-overlay";
-import { monthFromHref } from "@/features/transactions/view-state";
+import {
+  monthFromHref,
+  selectedAccountIdFromHref,
+} from "@/features/transactions/view-state";
 import { LoadingScreen } from "@/shared/components/LoadingScreen";
 import { useLang } from "@/core/i18n";
 import type { TranslationKey } from "@/core/i18n";
@@ -41,6 +44,12 @@ export function MobileApp() {
   const activeArea = navigationAreaFromSection(section);
 
   const title = t(TITLE_KEY_BY_SECTION[section]);
+  const openNewTransaction = () => {
+    const month = monthFromHref(location.href);
+    const accountId = selectedAccountIdFromHref(location.href);
+    if (accountId) openCreate(month, accountId);
+    else openCreate(month);
+  };
 
   const NAV: {
     href: "/" | "/transactions" | "/planning" | "/position";
@@ -124,7 +133,7 @@ export function MobileApp() {
             <div className="flex justify-center">
               <button
                 type="button"
-                onClick={() => openCreate(monthFromHref(location.href))}
+                onClick={openNewTransaction}
                 aria-label={t("app.addTransaction")}
                 className="-mt-7 inline-flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground ring-4 ring-background transition-transform active:scale-95"
               >

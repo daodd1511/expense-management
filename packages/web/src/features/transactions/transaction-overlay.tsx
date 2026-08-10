@@ -8,11 +8,11 @@ import { useAddTransaction, useTransactions, useUpdateTransaction } from "./quer
 import { TransactionForm } from "./components/TransactionForm";
 
 type TransactionOverlayState =
-  | { mode: "create"; month: string }
+  | { mode: "create"; month: string; accountId?: string }
   | { mode: "edit"; transactionId: string; month: string };
 
 type TransactionOverlayActions = {
-  openCreate: (month?: string) => void;
+  openCreate: (month?: string, accountId?: string) => void;
   openEdit: (transactionId: string, month: string) => void;
   close: () => void;
 };
@@ -27,18 +27,22 @@ export function TransactionOverlayProvider({ children }: { children: ReactNode }
 
   const actions = useMemo<TransactionOverlayActions>(
     () => ({
-      openCreate: (month = todayLocalMonthIso()) => {
+      openCreate: (month = todayLocalMonthIso(), accountId) => {
         if (accounts.length === 0) {
           navigate({ to: "/accounts", search: { create: String(Date.now()) } });
           return;
         }
 
-        setState({ mode: "create", month });
+        setState({
+          mode: "create",
+          month,
+          accountId: accounts.some((account) => account.id === accountId) ? accountId : undefined,
+        });
       },
       openEdit: (transactionId, month) => setState({ mode: "edit", transactionId, month }),
       close: () => setState(null),
     }),
-    [accounts.length, navigate],
+    [accounts, navigate],
   );
 
   return (
@@ -91,6 +95,7 @@ export function TransactionOverlaySheet({ variant }: { variant: "mobile" | "desk
     <TransactionForm
       variant={variant}
       initial={editing}
+      initialAccountId={state.mode === "create" ? state.accountId : undefined}
       onCancel={close}
       onSubmit={async (transaction) => {
         if (editing) {

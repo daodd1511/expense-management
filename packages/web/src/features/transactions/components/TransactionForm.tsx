@@ -278,11 +278,13 @@ function TimePicker({
 export function TransactionForm({
   variant,
   initial,
+  initialAccountId,
   onSubmit,
   onCancel,
 }: {
   variant: "mobile" | "desktop";
   initial?: Transaction;
+  initialAccountId?: string;
   onSubmit: (tx: TransactionCreate) => Promise<void>;
   onCancel: () => void;
 }) {
@@ -296,7 +298,9 @@ export function TransactionForm({
   const [fee, setFee] = useState<string>(initial?.fee ? String(initial.fee) : "");
   const [hasFee, setHasFee] = useState(Boolean(initial?.fee));
   const [categoryId, setCategoryId] = useState<string | null>(initial?.categoryId ?? null);
-  const [accountId, setAccountId] = useState<string>(initial?.accountId ?? accounts[0]?.id ?? "");
+  const [accountId, setAccountId] = useState<string>(
+    initial?.accountId ?? initialAccountId ?? accounts[0]?.id ?? "",
+  );
   const [toAccountId, setToAccountId] = useState<string>(
     initial?.toAccountId ?? accounts[1]?.id ?? accounts[0]?.id ?? "",
   );

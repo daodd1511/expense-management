@@ -219,6 +219,26 @@ describe("TransactionForm", () => {
     expect(date.includes("T")).toBe(false);
   });
 
+  it("uses the supplied Account as the default for a new transaction", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <TransactionForm
+        variant="desktop"
+        initialAccountId="bank"
+        onSubmit={onSubmit}
+        onCancel={() => undefined}
+      />,
+    );
+
+    await user.type(screen.getByPlaceholderText("0"), "1213");
+    await user.click(screen.getByRole("button", { name: "Food" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ accountId: "bank" }));
+  });
+
   it("filters hidden categories as well as categories of another type", async () => {
     const user = userEvent.setup();
 

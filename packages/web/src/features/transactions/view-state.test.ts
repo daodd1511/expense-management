@@ -4,6 +4,7 @@ import {
   buildTransactionsSearch,
   matchesTransactionSelection,
   parseTransactionsViewState,
+  selectedAccountIdFromHref,
 } from "./view-state";
 
 const expense: Transaction = {
@@ -58,5 +59,12 @@ describe("transaction view state", () => {
     expect(matchesTransactionSelection(transfer, [], ["bank"])).toBe(true);
     expect(matchesTransactionSelection(expense, ["transport"], ["cash"])).toBe(false);
     expect(matchesTransactionSelection(expense, ["food"], ["bank"])).toBe(false);
+  });
+
+  it("returns a prefilled Account only when exactly one Account is filtered", () => {
+    expect(selectedAccountIdFromHref("/transactions?accountId=bank")).toBe("bank");
+    expect(selectedAccountIdFromHref("/transactions?accountId=cash&accountId=cash")).toBe("cash");
+    expect(selectedAccountIdFromHref("/transactions?accountId=cash,bank")).toBeUndefined();
+    expect(selectedAccountIdFromHref("/transactions")).toBeUndefined();
   });
 });

@@ -21,7 +21,10 @@ import {
   useTransactionOverlay,
 } from "@/features/transactions/transaction-overlay";
 import { useTransactions } from "@/features/transactions/queries";
-import { monthFromHref } from "@/features/transactions/view-state";
+import {
+  monthFromHref,
+  selectedAccountIdFromHref,
+} from "@/features/transactions/view-state";
 import { sectionFromPath } from "@/routing/app-route-state";
 import type { AppSection } from "@/routing/app-route-state";
 import { DESKTOP_NAVIGATION } from "@/routing/navigation";
@@ -69,7 +72,12 @@ export function DesktopApp() {
   const dueCount = dueBanner(subscriptions, transactions).length;
   const navigationItems = DESKTOP_NAVIGATION.flatMap((group) => group.items);
 
-  const openNewTransaction = () => openCreate(monthFromHref(location.href));
+  const openNewTransaction = () => {
+    const month = monthFromHref(location.href);
+    const accountId = selectedAccountIdFromHref(location.href);
+    if (accountId) openCreate(month, accountId);
+    else openCreate(month);
+  };
 
   const focusTransactionsSearch = () => {
     if (section === "transactions") {

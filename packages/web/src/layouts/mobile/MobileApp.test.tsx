@@ -6,6 +6,11 @@ import { MobileApp } from "./MobileApp";
 
 const navigate = vi.fn();
 const openCreate = vi.fn();
+const location = {
+  pathname: "/",
+  search: {},
+  href: "/?month=2026-07",
+};
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({
@@ -21,11 +26,7 @@ vi.mock("@tanstack/react-router", () => ({
     </a>
   ),
   Outlet: () => <div>outlet</div>,
-  useLocation: () => ({
-    pathname: "/",
-    search: {},
-    href: "/?month=2026-07",
-  }),
+  useLocation: () => location,
   useNavigate: () => navigate,
 }));
 
@@ -74,6 +75,8 @@ describe("MobileApp", () => {
     const user = userEvent.setup();
     openCreate.mockClear();
     navigate.mockReset();
+    location.pathname = "/";
+    location.href = "/?month=2026-07";
 
     render(<MobileApp />);
 
@@ -90,5 +93,18 @@ describe("MobileApp", () => {
 
     expect(openCreate).toHaveBeenCalledWith("2026-07");
     expect(navigate).not.toHaveBeenCalledWith(expect.objectContaining({ to: "/transactions/new" }));
+  });
+
+  it("prefills the single Account filter when creating from the transaction list", async () => {
+    const user = userEvent.setup();
+    openCreate.mockClear();
+    location.pathname = "/transactions";
+    location.href = "/transactions?month=2026-07&accountId=bank";
+
+    render(<MobileApp />);
+
+    await user.click(screen.getByRole("button", { name: "Add transaction" }));
+
+    expect(openCreate).toHaveBeenCalledWith("2026-07", "bank");
   });
 });

@@ -26,7 +26,9 @@ vi.mock("./queries", () => ({
 }));
 
 vi.mock("./components/TransactionForm", () => ({
-  TransactionForm: () => <div>transaction-form</div>,
+  TransactionForm: ({ initialAccountId }: { initialAccountId?: string }) => (
+    <div>{initialAccountId ? `transaction-form:${initialAccountId}` : "transaction-form"}</div>
+  ),
 }));
 
 vi.mock("@/shared/components/ui/overlay", () => ({
@@ -40,7 +42,12 @@ vi.mock("@/core/i18n", () => ({
 
 function OpenTransactionButton() {
   const { openCreate } = useTransactionOverlay();
-  return <button onClick={() => openCreate("2026-07")}>Open transaction</button>;
+  return (
+    <>
+      <button onClick={() => openCreate("2026-07")}>Open transaction</button>
+      <button onClick={() => openCreate("2026-07", "acc-1")}>Open filtered transaction</button>
+    </>
+  );
 }
 
 function renderOverlay() {
@@ -80,5 +87,15 @@ describe("TransactionOverlayProvider", () => {
 
     expect(await screen.findByText("transaction-form")).toBeDefined();
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("passes a filtered Account into transaction creation", async () => {
+    const user = userEvent.setup();
+    accounts = [{ id: "acc-1" }];
+    renderOverlay();
+
+    await user.click(screen.getByRole("button", { name: "Open filtered transaction" }));
+
+    expect(await screen.findByText("transaction-form:acc-1")).toBeDefined();
   });
 });

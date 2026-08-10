@@ -99,3 +99,14 @@ export function monthFromHref(href: string): string {
     return defaults.month;
   }
 }
+
+/** Returns the selected Account only when the transaction list has one Account filter. */
+export function selectedAccountIdFromHref(href: string): string | undefined {
+  try {
+    const url = new URL(href, "http://local");
+    const accountIds = parseIdList(url.searchParams.getAll("accountId"));
+    return accountIds.length === 1 ? accountIds[0] : undefined;
+  } catch {
+    return undefined;
+  }
+}
