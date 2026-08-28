@@ -1,10 +1,12 @@
 packages:
   - "packages/*"
 
-overrides:
-  hono: 4.12.25
-
 allowBuilds:
+  '@prisma/client': false
+  better-sqlite3: false
   esbuild: true
   msw: true
   sharp: true
+
+overrides:
+  hono: 4.12.25
