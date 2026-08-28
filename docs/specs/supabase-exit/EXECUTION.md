@@ -5,8 +5,8 @@ Integration branch: `develop`. Branch model: stacked via `gh stack` (default).
 
 ## STATUS
 
-- Current phase: 1 — pending
-- Phase 1 — database baseline and access boundary: pending
+- Current phase: 1 — done
+- Phase 1 — database baseline and access boundary: done
 - Phase 2 — API repositories and authorization: pending
 - Phase 3 — session authentication and web client: pending
 - Phase 4 — migration, validation, and recovery tooling: pending
@@ -20,21 +20,26 @@ Branch: `supabase-exit/phase-1-database-baseline` (stacked: `gh stack add` — s
 Establish the schema, roles, RLS, and atomic-function contract that every runtime and cutover path consumes.
 
 Consumes: none.
-Produces: `db/migrations/*.sql`; `packages/api/src/db/database.ts` exports `Database`, `AppDb`, `withAppTransaction<T>(userId: string, work: (trx: AppDb) => Promise<T>): Promise<T>`; PostgreSQL functions `reorder_accounts`, `create_transfer_with_fee`, `log_subscription`, `create_disbursed_loan`, `create_opening_loan`, `create_loan_repayment`, `update_loan_repayment`, `update_loan_disbursement`, and `close_loan`.
+Produces: `db/migrations/*.sql`; `packages/api/src/db/database.ts` exports `Database`, `AppDb`, `withAppTransaction<T>(userId: string, work: (trx: AppDb) => Promise<T>): Promise<T>`, `getAuthPool(): Pool`, and `createAppDatabase(connectionString: string): AppDatabase` (the factory both `withAppTransaction` and the integration tests are built on); PostgreSQL functions `reorder_accounts`, `create_transfer_with_fee`, `log_subscription`, `create_disbursed_loan`, `create_opening_loan`, `create_loan_repayment`, `update_loan_repayment`, `update_loan_disbursement`, and `close_loan`.
 
 Fresh review: required — persistent-data migration, financial operations, and RLS authorization.
 
-- [ ] Add `db/migrations/` Dbmate baseline SQL from the reviewed live schema, preserving application tables, System-category seeds, constraints, indexes, triggers, timestamps, and all nine named atomic functions; remove Supabase roles, PostgREST/JWT helpers, and `auth.users` references.
-- [ ] Add the reviewed Better Auth `auth`-schema migration with UUID identifiers and grants for `wallet_migrator`, `wallet_auth`, and non-bypass-RLS `wallet_app`.
-- [ ] Add RLS policies and transaction-local `wallet.user_id` access helpers that fail closed, preserve shared System-category reads, and prohibit runtime mutation of System rows.
-- [ ] Add `packages/api/src/db/database.ts`, `packages/api/src/db/types.ts`, and their tests with separate `wallet_auth` and `wallet_app` pools, explicit search paths, and `withAppTransaction` using transaction-local `set_config`.
-- [ ] Replace `packages/shared/src/database.types.ts` and `packages/web/src/core/database.types.ts` only where their Supabase-generated types prevent the reviewed Kysely schema contract; do not change shared DTO/model response shapes.
-- [ ] Update `packages/api/package.json`, root `package.json`, and `pnpm-lock.yaml` to pin Better Auth, Kysely, `pg`, and Dbmate; remove no Supabase package until its runtime replacement is used.
-- [ ] Add PostgreSQL 17 integration tests under `packages/api/src/db/` proving clean Dbmate bootstrap, idempotent second migration run, RLS cross-User denial with omitted repository owner predicates, missing transaction identity denial, and transaction-local context cleanup on connection reuse.
+- [x] Add `db/migrations/` Dbmate baseline SQL from the reviewed live schema, preserving application tables, System-category seeds, constraints, indexes, triggers, timestamps, and all nine named atomic functions; remove Supabase roles, PostgREST/JWT helpers, and `auth.users` references.
+- [x] Add the reviewed Better Auth `auth`-schema migration with UUID identifiers and grants for `wallet_migrator`, `wallet_auth`, and non-bypass-RLS `wallet_app`.
+- [x] Add RLS policies and transaction-local `wallet.user_id` access helpers that fail closed, preserve shared System-category reads, and prohibit runtime mutation of System rows.
+- [x] Add `packages/api/src/db/database.ts`, `packages/api/src/db/types.ts`, and their tests with separate `wallet_auth` and `wallet_app` pools, explicit search paths, and `withAppTransaction` using transaction-local `set_config`.
+- [x] Replace `packages/shared/src/database.types.ts` and `packages/web/src/core/database.types.ts` only where their Supabase-generated types prevent the reviewed Kysely schema contract; do not change shared DTO/model response shapes. — no change needed: neither file is consumed by anything outside its own package's re-export yet, so nothing currently prevents the new Kysely contract in `packages/api/src/db/types.ts`; Phase 2's repository migration is what will actually retire them.
+- [x] Update `packages/api/package.json`, root `package.json`, and `pnpm-lock.yaml` to pin Better Auth, Kysely, `pg`, and Dbmate; remove no Supabase package until its runtime replacement is used. — pinned `better-auth` to `1.4.22` (not the `1.7.2` "latest"): the standalone `@better-auth/cli` package's stable release line lags the core library's, and `1.4.22`/`1.4.21` is the newest mutually-compatible stable pair (see `db/migrations/20260828000002_better_auth_schema.sql`).
+- [x] Add PostgreSQL 17 integration tests under `packages/api/src/db/` proving clean Dbmate bootstrap, idempotent second migration run, RLS cross-User denial with omitted repository owner predicates, missing transaction identity denial, and transaction-local context cleanup on connection reuse.
 
 **Phase gate (hard):**
-- [ ] `pnpm typecheck`
-- [ ] `pnpm exec vitest related --run <files changed in this phase>`
+- [x] `pnpm typecheck`
+- [x] `pnpm exec vitest related --run <files changed in this phase>` — ran as `vitest related --run src/db/database.ts src/db/types.ts src/db/test-helpers.ts` against a throwaway local `postgres:17-bookworm` container (`TEST_DATABASE_URL`); 12/12 passed, twice in a row (no flakiness), ~5.6-7.9s each. These tests `describe.skipIf(!TEST_DATABASE_URL)` — confirmed they skip (not fail) in the normal `pnpm test` run everywhere else. Full workspace `pnpm test`: 118 passed (shared) + 79 passed/11 skipped (api) + 237 passed (web), zero regressions.
+
+**Fresh review:** ran twice (initial + one re-review, per the rulebook's cap).
+- Initial review found 2 P1s and 2 P2s: (1) `migrate:down`'s DROP order in `20260828000003_application_schema.sql` would fail (`budgets` referenced `categories` but dropped after it); (2) the same file's `migrate:down` never dropped its two trigger functions; (3) `withAppTransaction` — the interface this phase is supposed to produce — was never exercised against a live database, only a hand-rolled reimplementation of its `set_config` logic; (4) an FK `ON DELETE CASCADE`/`RESTRICT` asymmetry across owner columns looked like an unintentional slip.
+- Fixed 1-3 as corrections; verified 4 was not a bug (faithfully reproduces the reviewed source, confirmed against the captured FK section) and documented it in the migration instead of changing it. Fixing #1 via a new automated `dbmate down`/`up` round-trip test (`migrations.test.ts`) surfaced a *second*, distinct DROP-order bug (trigger functions dropped before the tables whose triggers depend on them) and a pre-existing test-harness bug (`withMigratedDatabase` was silently swallowing every `dbmate drop` failure, because every ephemeral test database's connection was still open when drop ran — the entire session's test runs had been leaking databases and their `wallet_app`/`wallet_auth` grants cluster-wide without any visible failure). Fixed both: corrected DROP order, closed each test's connection inside its own `work` callback instead of an external `afterEach`, and replaced the silent catch with visible logging.
+- Re-review: no P0/P1 findings; confirmed all four original findings fixed with no regressions. Found 2 more P2s (both latent/inert, zero live callers yet): `closeDatabase()` didn't clear its singletons after closing them, and the new `pg_terminate_backend` safety net was silent even when it did find something to terminate. Fixed both directly (one allowed re-review is exhausted; these were trivial, non-behavior-changing corrections, not a design question needing a third pass) — `pnpm typecheck` and the full DB-integration suite re-run clean afterward.
 
 **Review checklist (user, at PR review):**
 - [ ] Inspect the reviewed baseline to confirm User UUID foreign keys, all nine function signatures, System category seeds, grants, and RLS policies match the frozen source behavior.
