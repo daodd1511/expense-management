@@ -14,10 +14,10 @@ _(empty)_
 - [ ] Budget rollover + near-limit alerts — deferred until budgets see more actual use (2026-07-07)
 - [ ] Better credit card information: view balance, due date, payment status (2026-07-05)
 - [ ] Do not add to report accounts or transactions (2026-07-16)
-- [ ] Move users to a local DB on the home server instead of Supabase; handle Google OAuth there too, not via Supabase (2026-07-21)
 - [ ] Add a demo page (2026-07-22)
 - [ ] Grill the foreign-currency subscription: amount unknown until the bank statement posts (2026-07-29)
 - [ ] Split TransactionForm's `initial` prop into edit-vs-seed so new transactions can be prefilled (2026-07-29)
+- [ ] Add Google OAuth to Better Auth after the Supabase migration (2026-08-28)
 
 ## Ideas
 

@@ -5,5 +5,6 @@ _git and `EXECUTION.md` STATUS blocks win._
 
 | Spec | Status | Phases | Debt | Description |
 |------|--------|--------|------|-------------|
-| [low-balance-warning](low-balance-warning/PLAN.md) | In progress | 0/1 | — | Produced via /grill-me. All product decisions below were explicitly confirmed. |
+| [supabase-exit](supabase-exit/PLAN.md) | Pending | 0/5 | — | Produced via /grill-with-docs. All migration decisions below were explicitly confirmed. |
 | [data-portability](data-portability/PLAN.md) | Not started | — | — | Produced via /grill-with-docs. All product decisions below were explicitly confirmed. Depends on… |
+| [low-balance-warning](low-balance-warning/PLAN.md) | Done | 1/1 | — | Produced via /grill-me. All product decisions below were explicitly confirmed. |
