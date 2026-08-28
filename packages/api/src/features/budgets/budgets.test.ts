@@ -1,130 +1,111 @@
-import { Hono } from "hono";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AuthEnv } from "../../middleware/auth";
-import { errorMiddleware, handleError } from "../../middleware/error";
+import { describe, expect, it, vi } from "vitest";
+import { hasTestDatabase } from "../../db/test-helpers";
+import {
+  USER_A,
+  createTestCategory,
+  jsonRequest,
+  withApiTestDatabase,
+} from "../../test/postgres-fixture";
 
-const { listBudgets, createBudget, updateBudget } = vi.hoisted(() => ({
-  listBudgets: vi.fn(),
-  createBudget: vi.fn(),
-  updateBudget: vi.fn(),
-}));
+vi.setConfig({ testTimeout: 30_000 });
 
-vi.mock("./repository", () => ({
-  listBudgets,
-  createBudget,
-  updateBudget,
-  deleteBudget: vi.fn(),
-}));
+describe.skipIf(!hasTestDatabase)("budgets API with PostgreSQL", () => {
+  it("rejects parent-tree coverage that conflicts with a budgeted child", async () => {
+    await withApiTestDatabase(async (context) => {
+      const parent = await createTestCategory(context, USER_A, { name: "Parent" });
+      const child = await createTestCategory(context, USER_A, {
+        name: "Child",
+        parentId: parent.id,
+      });
+      const childBudget = await context.request(
+        USER_A,
+        "/api/budgets",
+        jsonRequest("POST", { categoryId: child.id, limit: 100, scope: "self" }),
+      );
+      expect(childBudget.status).toBe(201);
 
-const { listCategories } = vi.hoisted(() => ({
-  listCategories: vi.fn(),
-}));
+      const conflict = await context.request(
+        USER_A,
+        "/api/budgets",
+        jsonRequest("POST", { categoryId: parent.id, limit: 500, scope: "tree" }),
+      );
 
-vi.mock("../categories/service", () => ({ listCategories }));
-
-import { budgetsRouter } from "./routes";
-
-function buildApp() {
-  const app = new Hono<AuthEnv>();
-  app.use("*", errorMiddleware);
-  app.onError(handleError);
-  app.use("*", async (c, next) => {
-    c.set("userId", "user-1");
-    await next();
-  });
-  app.route("/budgets", budgetsRouter);
-  return app;
-}
-
-const food = { id: "food", name: "Food", parentId: null };
-const coffee = { id: "coffee", name: "Coffee", parentId: "food" };
-
-describe("budgetsRouter", () => {
-  beforeEach(() => {
-    listBudgets.mockReset();
-    createBudget.mockReset();
-    updateBudget.mockReset();
-    listCategories.mockReset();
-    listCategories.mockResolvedValue([food, coffee]);
-  });
-
-  it("rejects POST when a tree budget on the parent would conflict with a budgeted child", async () => {
-    listBudgets.mockResolvedValue([{ categoryId: "coffee", limit: 500_000, scope: "self" }]);
-
-    const app = buildApp();
-    const response = await app.request("/budgets", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ categoryId: "food", limit: 5_000_000, scope: "tree" }),
-    });
-
-    expect(response.status).toBe(409);
-    await expect(response.json()).resolves.toMatchObject({ error: "Budget conflict" });
-    expect(createBudget).not.toHaveBeenCalled();
-  });
-
-  it("creates the budget when its coverage does not conflict with any existing budget", async () => {
-    listBudgets.mockResolvedValue([]);
-    createBudget.mockResolvedValue({ categoryId: "food", limit: 5_000_000, scope: "tree" });
-
-    const app = buildApp();
-    const response = await app.request("/budgets", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ categoryId: "food", limit: 5_000_000, scope: "tree" }),
-    });
-
-    expect(response.status).toBe(201);
-    expect(createBudget).toHaveBeenCalledWith("user-1", {
-      categoryId: "food",
-      limit: 5_000_000,
-      scope: "tree",
+      expect(conflict.status).toBe(409);
+      await expect(conflict.json()).resolves.toMatchObject({ error: "Budget conflict" });
     });
   });
 
-  it("rejects PATCH that changes scope into a conflict, without mutating anything", async () => {
-    listBudgets.mockResolvedValue([
-      { categoryId: "food", limit: 5_000_000, scope: "self" },
-      { categoryId: "coffee", limit: 500_000, scope: "self" },
-    ]);
+  it("creates compatible budgets and allows a limit-only patch", async () => {
+    await withApiTestDatabase(async (context) => {
+      const parent = await createTestCategory(context, USER_A, { name: "Parent" });
+      const child = await createTestCategory(context, USER_A, {
+        name: "Child",
+        parentId: parent.id,
+      });
 
-    const app = buildApp();
-    const response = await app.request("/budgets/food", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ limit: 5_000_000, scope: "tree" }),
+      expect(
+        (
+          await context.request(
+            USER_A,
+            "/api/budgets",
+            jsonRequest("POST", { categoryId: parent.id, limit: 500, scope: "self" }),
+          )
+        ).status,
+      ).toBe(201);
+      expect(
+        (
+          await context.request(
+            USER_A,
+            "/api/budgets",
+            jsonRequest("POST", { categoryId: child.id, limit: 100, scope: "self" }),
+          )
+        ).status,
+      ).toBe(201);
+
+      const patched = await context.request(
+        USER_A,
+        `/api/budgets/${parent.id}`,
+        jsonRequest("PATCH", { limit: 750 }),
+      );
+      expect(patched.status).toBe(200);
+      await expect(patched.json()).resolves.toEqual({
+        data: { categoryId: parent.id, limit: 750, scope: "self" },
+      });
     });
-
-    expect(response.status).toBe(409);
-    expect(updateBudget).not.toHaveBeenCalled();
   });
 
-  it("allows a limit-only PATCH while a self parent and its child budget coexist", async () => {
-    updateBudget.mockResolvedValue({ categoryId: "food", limit: 6_000_000, scope: "self" });
+  it("rejects a scope patch that introduces a conflict without mutating the budget", async () => {
+    await withApiTestDatabase(async (context) => {
+      const parent = await createTestCategory(context, USER_A, { name: "Parent" });
+      const child = await createTestCategory(context, USER_A, {
+        name: "Child",
+        parentId: parent.id,
+      });
+      await context.request(
+        USER_A,
+        "/api/budgets",
+        jsonRequest("POST", { categoryId: parent.id, limit: 500, scope: "self" }),
+      );
+      await context.request(
+        USER_A,
+        "/api/budgets",
+        jsonRequest("POST", { categoryId: child.id, limit: 100, scope: "self" }),
+      );
 
-    const app = buildApp();
-    const response = await app.request("/budgets/food", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ limit: 6_000_000 }),
+      const conflict = await context.request(
+        USER_A,
+        `/api/budgets/${parent.id}`,
+        jsonRequest("PATCH", { limit: 999, scope: "tree" }),
+      );
+      expect(conflict.status).toBe(409);
+
+      const list = await context.request(USER_A, "/api/budgets");
+      await expect(list.json()).resolves.toEqual({
+        data: expect.arrayContaining([
+          { categoryId: parent.id, limit: 500, scope: "self" },
+          { categoryId: child.id, limit: 100, scope: "self" },
+        ]),
+      });
     });
-
-    expect(response.status).toBe(200);
-    expect(listCategories).not.toHaveBeenCalled();
-    expect(updateBudget).toHaveBeenCalledWith("user-1", "food", { limit: 6_000_000 });
-  });
-
-  it("maps a unique-constraint violation from the DB to 409", async () => {
-    listBudgets.mockResolvedValue([]);
-    createBudget.mockRejectedValue({ code: "23505", message: "duplicate key value" });
-
-    const app = buildApp();
-    const response = await app.request("/budgets", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ categoryId: "food", limit: 5_000_000, scope: "tree" }),
-    });
-
-    expect(response.status).toBe(409);
   });
 });

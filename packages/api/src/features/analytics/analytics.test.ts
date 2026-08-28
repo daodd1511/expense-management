@@ -1,87 +1,85 @@
+import type { Account, Loan, LoanEvent, Transaction } from "@wallet/shared";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { hasTestDatabase } from "../../db/test-helpers";
 import type { AuthEnv } from "../../middleware/auth";
 import { handleError } from "../../middleware/error";
-
-const { getSupabase } = vi.hoisted(() => ({
-  getSupabase: vi.fn(),
-}));
-
-vi.mock("../../config/supabase", () => ({
-  getSupabase,
-}));
-
+import {
+  DUMMY_DB,
+  USER_A,
+  USER_B,
+  createTestAccount,
+  jsonRequest,
+  withApiTestDatabase,
+} from "../../test/postgres-fixture";
+import * as repository from "./repository";
 import { analyticsRouter } from "./routes";
 
-function buildClient({
-  accounts,
-  transactions,
-  loans = [],
-  loanEvents = [],
-}: {
-  accounts: unknown[];
-  transactions: unknown[];
-  loans?: unknown[];
-  loanEvents?: unknown[];
-}) {
-  const from = vi.fn((table: string) => {
-    if (table === "accounts") {
-      const eqArchived = vi.fn().mockResolvedValue({ data: accounts, error: null });
-      const eqOwner = vi.fn().mockReturnValue({ eq: eqArchived });
-      return { select: vi.fn().mockReturnValue({ eq: eqOwner }) };
-    }
-    if (table === "transactions") {
-      const eqOwner = vi.fn().mockResolvedValue({ data: transactions, error: null });
-      return { select: vi.fn().mockReturnValue({ eq: eqOwner }) };
-    }
-    if (table === "loans") {
-      const eqOwner = vi.fn().mockResolvedValue({ data: loans, error: null });
-      return { select: vi.fn().mockReturnValue({ eq: eqOwner }) };
-    }
-    if (table === "loan_events") {
-      const inLoanIds = vi.fn().mockResolvedValue({ data: loanEvents, error: null });
-      const eqOwner = vi.fn().mockReturnValue({ in: inLoanIds });
-      return { select: vi.fn().mockReturnValue({ eq: eqOwner }) };
-    }
-    throw new Error(`Unexpected table: ${table}`);
-  });
-
-  return { from };
+function account(overrides: Partial<Account> = {}): Account {
+  return {
+    id: "cash",
+    name: "Cash",
+    kind: "cash",
+    openingBalance: 1_000_000,
+    displayOrder: 0,
+    ...overrides,
+  };
 }
 
-function makeLoanRow(overrides: Record<string, unknown> = {}) {
+function transaction(overrides: Partial<Transaction> = {}): Transaction {
+  return {
+    id: "tx-1",
+    type: "income",
+    amount: 500,
+    categoryId: null,
+    accountId: "cash",
+    toAccountId: null,
+    merchant: "Salary",
+    date: "2026-07-01",
+    ...overrides,
+  };
+}
+
+function loan(overrides: Partial<Loan> = {}): Loan {
   return {
     id: "loan-1",
-    owner_id: "user-1",
-    person_id: "person-1",
+    personId: "person-1",
     direction: "lending",
-    description: null,
-    note: null,
-    due_date: null,
-    original_date: null,
-    created_at: "2026-07-01T00:00:00.000Z",
+    description: undefined,
+    note: undefined,
+    dueDate: undefined,
+    originalDate: undefined,
     ...overrides,
   };
 }
 
-function makeLoanEventRow(overrides: Record<string, unknown> = {}) {
+function event(overrides: Partial<LoanEvent> = {}): LoanEvent {
   return {
     id: "event-1",
-    owner_id: "user-1",
-    loan_id: "loan-1",
+    loanId: "loan-1",
     kind: "disbursement",
     amount: 200_000,
-    event_date: "2026-07-01",
-    created_at: "2026-07-01T00:00:00.000Z",
+    date: "2026-07-01",
     ...overrides,
   };
+}
+
+function mockData(input: {
+  accounts?: Account[];
+  transactions?: Transaction[];
+  loansWithEvents?: { loan: Loan; events: LoanEvent[] }[];
+}) {
+  vi.spyOn(repository, "listActiveAccounts").mockResolvedValue(input.accounts ?? []);
+  vi.spyOn(repository, "listTransactions").mockResolvedValue(input.transactions ?? []);
+  vi.spyOn(repository, "listLoansWithEvents").mockResolvedValue(input.loansWithEvents ?? []);
 }
 
 function makeApp() {
   const app = new Hono<AuthEnv>();
   app.onError(handleError);
   app.use("*", async (c, next) => {
-    c.set("userId", "user-1");
+    c.set("userId", USER_A);
+    c.set("db", DUMMY_DB);
     await next();
   });
   app.route("/analytics", analyticsRouter);
@@ -89,256 +87,148 @@ function makeApp() {
 }
 
 describe("analyticsRouter", () => {
-  beforeEach(() => {
-    getSupabase.mockReset();
-  });
+  beforeEach(() => vi.restoreAllMocks());
 
   it("computes a zero-filled 6-month balance trend ending at referenceMonth", async () => {
-    getSupabase.mockReturnValue(
-      buildClient({
-        accounts: [
-          {
-            id: "acc-1",
-            owner_id: "user-1",
-            name: "Checking",
-            kind: "bank",
-            opening_balance: 1000,
-            display_order: 0,
-            archived: false,
-            created_at: "2020-01-01T00:00:00.000Z",
-          },
-        ],
-        transactions: [
-          {
-            id: "tx-1",
-            owner_id: "user-1",
-            type: "income",
-            amount: 500,
-            category_id: null,
-            account_id: "acc-1",
-            to_account_id: null,
-            merchant: "Salary",
-            note: null,
-            tx_date: "2026-07-01",
-            receipt_url: null,
-            subscription_id: null,
-            created_at: "2026-07-01T08:00:00.000Z",
-          },
-          {
-            id: "tx-2",
-            owner_id: "user-1",
-            type: "expense",
-            amount: 200,
-            category_id: null,
-            account_id: "acc-1",
-            to_account_id: null,
-            merchant: "Groceries",
-            note: null,
-            tx_date: "2026-07-02",
-            receipt_url: null,
-            subscription_id: null,
-            created_at: "2026-07-02T08:00:00.000Z",
-          },
-        ],
-      }),
-    );
+    mockData({
+      accounts: [account({ openingBalance: 1_000 })],
+      transactions: [transaction(), transaction({ id: "expense", type: "expense", amount: 200 })],
+    });
 
     const response = await makeApp().request("/analytics/balance-trend?referenceMonth=2026-07");
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       data: [
-        { month: "2026-02", balance: 1000 },
-        { month: "2026-03", balance: 1000 },
-        { month: "2026-04", balance: 1000 },
-        { month: "2026-05", balance: 1000 },
-        { month: "2026-06", balance: 1000 },
-        { month: "2026-07", balance: 1300 },
+        { month: "2026-02", balance: 1_000 },
+        { month: "2026-03", balance: 1_000 },
+        { month: "2026-04", balance: 1_000 },
+        { month: "2026-05", balance: 1_000 },
+        { month: "2026-06", balance: 1_000 },
+        { month: "2026-07", balance: 1_300 },
       ],
     });
   });
 
-  it("excludes archived accounts and their transactions from the trend", async () => {
-    getSupabase.mockReturnValue(
-      buildClient({
-        accounts: [
-          {
-            id: "acc-1",
-            owner_id: "user-1",
-            name: "Checking",
-            kind: "bank",
-            opening_balance: 500,
-            display_order: 0,
-            archived: false,
-            created_at: "2020-01-01T00:00:00.000Z",
-          },
-        ],
-        transactions: [
-          {
-            id: "tx-1",
-            owner_id: "user-1",
-            type: "income",
-            amount: 9999,
-            category_id: null,
-            account_id: "acc-archived",
-            to_account_id: null,
-            merchant: "Old salary",
-            note: null,
-            tx_date: "2026-07-01",
-            receipt_url: null,
-            subscription_id: null,
-            created_at: "2026-07-01T08:00:00.000Z",
-          },
-        ],
-      }),
-    );
+  it("excludes transactions whose accounts are not active", async () => {
+    mockData({
+      accounts: [account({ id: "active", openingBalance: 500 })],
+      transactions: [transaction({ accountId: "archived", amount: 9_999 })],
+    });
 
     const response = await makeApp().request("/analytics/balance-trend?referenceMonth=2026-07");
     const body = (await response.json()) as { data: { month: string; balance: number }[] };
-
     expect(body.data.at(-1)).toEqual({ month: "2026-07", balance: 500 });
   });
 
-  it("rejects an invalid referenceMonth", async () => {
-    getSupabase.mockReturnValue(buildClient({ accounts: [], transactions: [] }));
-
-    const response = await makeApp().request("/analytics/balance-trend?referenceMonth=not-a-month");
-
-    expect(response.status).toBe(400);
+  it("rejects invalid or missing date query parameters", async () => {
+    mockData({});
+    expect(
+      (await makeApp().request("/analytics/balance-trend?referenceMonth=not-a-month")).status,
+    ).toBe(400);
+    expect((await makeApp().request("/analytics/dashboard-summary")).status).toBe(400);
   });
 
-  describe("GET /dashboard-summary", () => {
-    it("derives net worth and loans summary from account, transaction, and loan-event state", async () => {
-      getSupabase.mockReturnValue(
-        buildClient({
-          accounts: [
-            {
-              id: "cash",
-              owner_id: "user-1",
-              name: "Cash",
-              kind: "cash",
-              opening_balance: 1_000_000,
-              display_order: 0,
-              archived: false,
-              created_at: "2020-01-01T00:00:00.000Z",
-            },
-          ],
-          transactions: [
-            {
-              id: "lend-tx",
-              owner_id: "user-1",
-              type: "loan",
-              amount: 200_000,
-              category_id: null,
-              account_id: "cash",
-              to_account_id: null,
-              cash_flow_direction: "outflow",
-              loan_event_id: "lend-event",
-              merchant: "Loan",
-              note: null,
-              tx_date: "2026-07-01",
-              receipt_url: null,
-              subscription_id: null,
-              created_at: "2026-07-01T00:00:00.000Z",
-            },
-          ],
-          loans: [
-            makeLoanRow({ id: "loan-lend", direction: "lending", due_date: "2026-07-01" }),
-            makeLoanRow({ id: "loan-borrow", direction: "borrowing", person_id: "person-2" }),
-          ],
-          loanEvents: [
-            makeLoanEventRow({
-              id: "lend-event",
-              loan_id: "loan-lend",
-              amount: 200_000,
-              event_date: "2026-07-01",
-            }),
-            makeLoanEventRow({
-              id: "borrow-event",
-              loan_id: "loan-borrow",
-              amount: 30_000,
-              event_date: "2026-07-01",
-            }),
-          ],
+  it("derives dashboard net worth and loan summary", async () => {
+    mockData({
+      accounts: [account()],
+      transactions: [
+        transaction({
+          id: "lend-tx",
+          type: "loan",
+          amount: 200_000,
+          cashFlowDirection: "outflow",
+          loanEventId: "lend-event",
         }),
-      );
-
-      const response = await makeApp().request("/analytics/dashboard-summary?today=2026-07-13");
-      await expect(response.json()).resolves.toEqual({
-        data: {
-          netWorth: {
-            // 1,000,000 opening − 200,000 loan disbursement outflow.
-            accountTotal: 800_000,
-            lendingOutstanding: 200_000,
-            borrowingOutstanding: 30_000,
-            netWorth: 970_000,
-          },
-          loans: {
-            owedToUser: 200_000,
-            userOwes: 30_000,
-            netPosition: 170_000,
-            // loan-lend is due 2026-07-01, before "today" 2026-07-13.
-            overdueCount: 1,
-          },
+      ],
+      loansWithEvents: [
+        {
+          loan: loan({ id: "loan-lend", dueDate: "2026-07-01" }),
+          events: [event({ id: "lend-event", loanId: "loan-lend" })],
         },
-      });
+        {
+          loan: loan({ id: "loan-borrow", personId: "person-2", direction: "borrowing" }),
+          events: [event({ id: "borrow-event", loanId: "loan-borrow", amount: 30_000 })],
+        },
+      ],
     });
 
-    it("rejects a missing today query param", async () => {
-      getSupabase.mockReturnValue(buildClient({ accounts: [], transactions: [] }));
-
-      const response = await makeApp().request("/analytics/dashboard-summary");
-      expect(response.status).toBe(400);
+    const response = await makeApp().request("/analytics/dashboard-summary?today=2026-07-13");
+    await expect(response.json()).resolves.toEqual({
+      data: {
+        netWorth: {
+          accountTotal: 800_000,
+          lendingOutstanding: 200_000,
+          borrowingOutstanding: 30_000,
+          netWorth: 970_000,
+        },
+        loans: {
+          owedToUser: 200_000,
+          userOwes: 30_000,
+          netPosition: 170_000,
+          overdueCount: 1,
+        },
+      },
     });
   });
 
-  describe("GET /net-worth-trend", () => {
-    it("folds a loan event into net worth from its event month onward", async () => {
-      getSupabase.mockReturnValue(
-        buildClient({
-          accounts: [
-            {
-              id: "cash",
-              owner_id: "user-1",
-              name: "Cash",
-              kind: "cash",
-              opening_balance: 1_000_000,
-              display_order: 0,
-              archived: false,
-              created_at: "2020-01-01T00:00:00.000Z",
-            },
-          ],
-          transactions: [],
-          loans: [makeLoanRow({ id: "loan-lend", direction: "lending" })],
-          loanEvents: [
-            makeLoanEventRow({ loan_id: "loan-lend", amount: 200_000, event_date: "2026-06-10" }),
-          ],
+  it("folds a loan event into net worth from its event month onward", async () => {
+    mockData({
+      accounts: [account()],
+      loansWithEvents: [
+        {
+          loan: loan({ id: "loan-lend" }),
+          events: [event({ loanId: "loan-lend", date: "2026-06-10" })],
+        },
+      ],
+    });
+
+    const response = await makeApp().request("/analytics/net-worth-trend?referenceMonth=2026-07");
+    const body = (await response.json()) as { data: { month: string; netWorth: number }[] };
+    expect(body.data.find((point) => point.month === "2026-05")?.netWorth).toBe(1_000_000);
+    expect(body.data.find((point) => point.month === "2026-06")?.netWorth).toBe(1_200_000);
+  });
+});
+
+describe.skipIf(!hasTestDatabase)("analytics PostgreSQL isolation", () => {
+  vi.setConfig({ testTimeout: 30_000 });
+  beforeEach(() => vi.restoreAllMocks());
+
+  it("never includes another User's accounts or transactions", async () => {
+    await withApiTestDatabase(async (context) => {
+      const own = await createTestAccount(context, USER_A, "Own");
+      const other = await createTestAccount(context, USER_B, "Other");
+      await context.request(
+        USER_A,
+        "/api/transactions",
+        jsonRequest("POST", {
+          type: "income",
+          amount: 100,
+          categoryId: null,
+          accountId: own.id,
+          merchant: "Own income",
+          date: "2026-07-01",
+        }),
+      );
+      await context.request(
+        USER_B,
+        "/api/transactions",
+        jsonRequest("POST", {
+          type: "income",
+          amount: 9_999,
+          categoryId: null,
+          accountId: other.id,
+          merchant: "Private income",
+          date: "2026-07-01",
         }),
       );
 
-      const response = await makeApp().request(
-        "/analytics/net-worth-trend?referenceMonth=2026-07",
+      const response = await context.request(
+        USER_A,
+        "/api/analytics/balance-trend?referenceMonth=2026-07",
       );
-      const body = (await response.json()) as {
-        data: { month: string; netWorth: number; accountTotal: number }[];
-      };
-      const june = body.data.find((point) => point.month === "2026-06");
-      const may = body.data.find((point) => point.month === "2026-05");
-
-      expect(may).toEqual({
-        month: "2026-05",
-        netWorth: 1_000_000,
-        accountTotal: 1_000_000,
-        lendingOutstanding: 0,
-        borrowingOutstanding: 0,
-      });
-      expect(june).toEqual({
-        month: "2026-06",
-        netWorth: 1_200_000,
-        accountTotal: 1_000_000,
-        lendingOutstanding: 200_000,
-        borrowingOutstanding: 0,
-      });
+      const body = (await response.json()) as { data: { balance: number }[] };
+      expect(body.data.at(-1)?.balance).toBe(1_100);
     });
   });
 });

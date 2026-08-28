@@ -1,255 +1,182 @@
-import { Hono } from "hono";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AuthEnv } from "../../middleware/auth";
-import { errorMiddleware, handleError } from "../../middleware/error";
+import { describe, expect, it, vi } from "vitest";
+import { hasTestDatabase } from "../../db/test-helpers";
+import {
+  USER_A,
+  USER_B,
+  createTestAccount,
+  jsonRequest,
+  readJson,
+  withApiTestDatabase,
+  type ApiTestContext,
+} from "../../test/postgres-fixture";
 
-const { getSupabase } = vi.hoisted(() => ({
-  getSupabase: vi.fn(),
-}));
+vi.setConfig({ testTimeout: 30_000 });
 
-vi.mock("../../config/supabase", () => ({
-  getSupabase,
-}));
-
-import { loansRouter, peopleRouter } from "./routes";
-
-type StubResult = { data?: unknown; error?: unknown };
-
-function createSupabaseStub(results: StubResult[]) {
-  let call = 0;
-  const next = () => results[call++] ?? { data: null, error: null };
-
-  const builder: Record<string, unknown> = {
-    from: vi.fn(() => builder),
-    select: vi.fn(() => builder),
-    eq: vi.fn(() => builder),
-    in: vi.fn(() => builder),
-    not: vi.fn(() => builder),
-    order: vi.fn(() => builder),
-    update: vi.fn(() => builder),
-    insert: vi.fn(() => builder),
-    delete: vi.fn(() => builder),
-    rpc: vi.fn(() => builder),
-    maybeSingle: vi.fn(() => Promise.resolve(next())),
-    single: vi.fn(() => Promise.resolve(next())),
-    then: (resolve: (value: StubResult) => void, reject: (reason: unknown) => void) =>
-      Promise.resolve(next()).then(resolve, reject),
-  };
-
-  return builder;
+async function createPerson(context: ApiTestContext, userId = USER_A) {
+  const response = await context.request(
+    userId,
+    "/api/people",
+    jsonRequest("POST", { name: "Alex", note: "Friend" }),
+  );
+  expect(response.status).toBe(201);
+  const body = await readJson<{ data: { id: string } }>(response);
+  return body.data;
 }
 
-function buildApp() {
-  const app = new Hono<AuthEnv>();
-  app.use("*", errorMiddleware);
-  app.onError(handleError);
-  app.use("*", async (c, next) => {
-    c.set("userId", "user-1");
-    await next();
-  });
-  app.route("/loans", loansRouter);
-  app.route("/people", peopleRouter);
-  return app;
-}
+describe.skipIf(!hasTestDatabase)("loans API with PostgreSQL", () => {
+  it("lists and creates People while validating missing rows and input", async () => {
+    await withApiTestDatabase(async (context) => {
+      const person = await createPerson(context);
+      const list = await context.request(USER_A, "/api/people");
+      await expect(list.json()).resolves.toEqual({
+        data: [{ id: person.id, name: "Alex", note: "Friend" }],
+      });
 
-const personRow = {
-  id: "person-1",
-  owner_id: "user-1",
-  name: "Alex",
-  note: null,
-  created_at: "2026-07-01T00:00:00.000Z",
-};
-
-const loanRow = {
-  id: "loan-1",
-  owner_id: "user-1",
-  person_id: "person-1",
-  direction: "lending",
-  description: null,
-  note: null,
-  due_date: null,
-  original_date: null,
-  created_at: "2026-07-01T00:00:00.000Z",
-};
-
-const eventRow = {
-  id: "event-1",
-  owner_id: "user-1",
-  loan_id: "loan-1",
-  kind: "disbursement",
-  amount: 100_000,
-  event_date: "2026-07-01",
-  created_at: "2026-07-01T00:00:00.000Z",
-};
-
-describe("peopleRouter", () => {
-  beforeEach(() => {
-    getSupabase.mockReset();
-  });
-
-  it("lists people", async () => {
-    getSupabase.mockReturnValue(createSupabaseStub([{ data: [personRow], error: null }]));
-    const response = await buildApp().request("/people");
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({
-      data: [{ id: "person-1", name: "Alex" }],
+      expect(
+        (await context.request(USER_A, "/api/people", jsonRequest("POST", { name: "" }))).status,
+      ).toBe(400);
+      expect(
+        (
+          await context.request(USER_A, "/api/people/00000000-0000-0000-0000-000000000000", {
+            method: "DELETE",
+          })
+        ).status,
+      ).toBe(404);
     });
   });
 
-  it("creates a person", async () => {
-    getSupabase.mockReturnValue(createSupabaseStub([{ data: personRow, error: null }]));
-    const response = await buildApp().request("/people", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Alex" }),
-    });
-    expect(response.status).toBe(201);
-  });
-
-  it("rejects an empty name", async () => {
-    const response = await buildApp().request("/people", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "" }),
-    });
-    expect(response.status).toBe(400);
-  });
-
-  it("404s deleting a person that doesn't exist", async () => {
-    getSupabase.mockReturnValue(createSupabaseStub([{ data: null, error: null }]));
-    const response = await buildApp().request("/people/missing", { method: "DELETE" });
-    expect(response.status).toBe(404);
-  });
-});
-
-describe("loansRouter", () => {
-  beforeEach(() => {
-    getSupabase.mockReset();
-  });
-
-  it("requires the today query param", async () => {
-    const response = await buildApp().request("/loans");
-    expect(response.status).toBe(400);
-  });
-
-  it("lists lightweight event links for transaction deep links", async () => {
-    getSupabase.mockReturnValue(
-      createSupabaseStub([
-        { data: [loanRow], error: null },
-        { data: [personRow], error: null },
-        { data: [eventRow], error: null },
-      ]),
-    );
-
-    const response = await buildApp().request("/loans/event-links");
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({
-      data: [
-        {
-          eventId: "event-1",
-          loanId: "loan-1",
-          kind: "disbursement",
+  it("executes disbursement, repayment, update, close, reopen, and delete atomically", async () => {
+    await withApiTestDatabase(async (context) => {
+      const person = await createPerson(context);
+      const account = await createTestAccount(context, USER_A, "Cash");
+      const created = await context.request(
+        USER_A,
+        "/api/loans/disbursed?today=2026-07-10",
+        jsonRequest("POST", {
+          personId: person.id,
           direction: "lending",
-          personName: "Alex",
-        },
-      ],
+          amount: 1_000,
+          accountId: account.id,
+          date: "2026-07-01",
+        }),
+      );
+      expect(created.status).toBe(201);
+      const loan = (
+        await readJson<{
+          data: { id: string; events: { id: string; kind: string; amount: number }[] };
+        }>(created)
+      ).data;
+
+      const disbursement = await context.request(
+        USER_A,
+        `/api/loans/${loan.id}/disbursement?today=2026-07-10`,
+        jsonRequest("PATCH", { amount: 1_200, accountId: account.id, date: "2026-07-02" }),
+      );
+      expect(disbursement.status).toBe(200);
+
+      const repayment = await context.request(
+        USER_A,
+        `/api/loans/${loan.id}/repayments?today=2026-07-10`,
+        jsonRequest("POST", { amount: 200, accountId: account.id, date: "2026-07-03" }),
+      );
+      expect(repayment.status).toBe(201);
+      const repaymentBody = (
+        await readJson<{ data: { events: { id: string; kind: string }[] } }>(repayment)
+      ).data;
+      const repaymentEvent = repaymentBody.events.find((event) => event.kind === "repayment");
+      if (!repaymentEvent) throw new Error("repayment event missing from response");
+
+      const repaymentUpdate = await context.request(
+        USER_A,
+        `/api/loans/${loan.id}/repayments/${repaymentEvent.id}?today=2026-07-10`,
+        jsonRequest("PATCH", { amount: 250, accountId: account.id, date: "2026-07-04" }),
+      );
+      expect(repaymentUpdate.status).toBe(200);
+
+      const overpay = await context.request(
+        USER_A,
+        `/api/loans/${loan.id}/repayments?today=2026-07-10`,
+        jsonRequest("POST", { amount: 2_000, accountId: account.id, date: "2026-07-05" }),
+      );
+      expect(overpay.status).toBe(400);
+
+      const closed = await context.request(
+        USER_A,
+        `/api/loans/${loan.id}/close?today=2026-07-10`,
+        jsonRequest("POST", { kind: "write_off", date: "2026-07-06" }),
+      );
+      expect(closed.status).toBe(200);
+      const reopened = await context.request(
+        USER_A,
+        `/api/loans/${loan.id}/reopen?today=2026-07-10`,
+        { method: "POST" },
+      );
+      expect(reopened.status).toBe(200);
+
+      const links = await context.request(USER_A, "/api/loans/event-links");
+      const linksBody = (await links.json()) as { data: { eventId: string }[] };
+      expect(linksBody.data.some((link) => link.eventId === repaymentEvent.id)).toBe(true);
+
+      expect(
+        (
+          await context.request(USER_A, `/api/loans/${loan.id}/repayments/${repaymentEvent.id}`, {
+            method: "DELETE",
+          })
+        ).status,
+      ).toBe(200);
+      expect(
+        (await context.request(USER_A, `/api/loans/${loan.id}`, { method: "DELETE" })).status,
+      ).toBe(200);
     });
   });
 
-  it("creates a disbursed loan through the RPC", async () => {
-    getSupabase.mockReturnValue(
-      createSupabaseStub([
-        {
-          data: {
-            loan_id: loanRow.id,
-            loan_owner_id: loanRow.owner_id,
-            loan_person_id: loanRow.person_id,
-            loan_direction: loanRow.direction,
-            loan_description: loanRow.description,
-            loan_note: loanRow.note,
-            loan_due_date: loanRow.due_date,
-            loan_original_date: loanRow.original_date,
-            loan_created_at: loanRow.created_at,
-            event_id: eventRow.id,
-            event_owner_id: eventRow.owner_id,
-            event_loan_id: eventRow.loan_id,
-            event_kind: eventRow.kind,
-            event_amount: eventRow.amount,
-            event_event_date: eventRow.event_date,
-            event_created_at: eventRow.created_at,
-          },
-          error: null,
-        },
-        { data: personRow, error: null }, // loadPerson for the response's personName
-      ]),
-    );
+  it("creates opening loans and rejects cross-User account identifiers without mutation", async () => {
+    await withApiTestDatabase(async (context) => {
+      const person = await createPerson(context);
+      const opening = await context.request(
+        USER_A,
+        "/api/loans/opening?today=2026-07-10",
+        jsonRequest("POST", {
+          personId: person.id,
+          direction: "borrowing",
+          amount: 500,
+          balanceAsOf: "2026-07-01",
+        }),
+      );
+      expect(opening.status).toBe(201);
 
-    const response = await buildApp().request("/loans/disbursed?today=2026-07-13", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        personId: "person-1",
-        direction: "lending",
-        amount: 100_000,
-        accountId: "acc-1",
-        date: "2026-07-01",
-      }),
-    });
+      const otherAccount = await createTestAccount(context, USER_B, "Private");
+      const rejected = await context.request(
+        USER_A,
+        "/api/loans/disbursed?today=2026-07-10",
+        jsonRequest("POST", {
+          personId: person.id,
+          direction: "lending",
+          amount: 1_000,
+          accountId: otherAccount.id,
+          date: "2026-07-01",
+        }),
+      );
+      expect(rejected.status).toBe(404);
 
-    expect(response.status).toBe(201);
-    const body = (await response.json()) as { data: Record<string, unknown>; error?: string };
-    expect(body.data).toMatchObject({
-      id: "loan-1",
-      personName: "Alex",
-      originAmount: 100_000,
-      outstandingBalance: 100_000,
-      status: "open",
+      const summaries = await context.request(USER_A, "/api/loans?today=2026-07-10");
+      const body = (await summaries.json()) as { data: unknown[] };
+      expect(body.data).toHaveLength(1);
     });
   });
 
-  it("maps a repayment overpay domain error to 400", async () => {
-    getSupabase.mockReturnValue(
-      createSupabaseStub([
-        {
-          data: null,
-          error: {
-            code: "22023",
-            message: "Repayment amount must be positive and not exceed the outstanding balance",
-          },
-        },
-      ]),
-    );
-
-    const response = await buildApp().request("/loans/loan-1/repayments?today=2026-07-13", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: 999_999, accountId: "acc-1", date: "2026-07-05" }),
+  it("requires today and validates close kind", async () => {
+    await withApiTestDatabase(async (context) => {
+      expect((await context.request(USER_A, "/api/loans")).status).toBe(400);
+      expect(
+        (
+          await context.request(
+            USER_A,
+            "/api/loans/00000000-0000-0000-0000-000000000000/close?today=2026-07-10",
+            jsonRequest("POST", { kind: "cancelled", date: "2026-07-01" }),
+          )
+        ).status,
+      ).toBe(400);
     });
-
-    expect(response.status).toBe(400);
-    const body = (await response.json()) as { data: Record<string, unknown>; error?: string };
-    expect(body.error).toMatch(/outstanding balance/);
-  });
-
-  it("404s a not-found loan detail lookup", async () => {
-    getSupabase.mockReturnValue(createSupabaseStub([{ data: null, error: null }]));
-    const response = await buildApp().request("/loans/missing?today=2026-07-13");
-    expect(response.status).toBe(404);
-  });
-
-  it("rejects a close request with an invalid kind", async () => {
-    const response = await buildApp().request("/loans/loan-1/close?today=2026-07-13", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kind: "cancelled", date: "2026-07-13" }),
-    });
-    expect(response.status).toBe(400);
-  });
-
-  it("deletes a loan", async () => {
-    getSupabase.mockReturnValue(createSupabaseStub([{ data: { id: "loan-1" }, error: null }]));
-    const response = await buildApp().request("/loans/loan-1", { method: "DELETE" });
-    expect(response.status).toBe(200);
   });
 });

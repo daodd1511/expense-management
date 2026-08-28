@@ -1,239 +1,122 @@
-import { Hono } from "hono";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AuthEnv } from "../../middleware/auth";
-import { handleError } from "../../middleware/error";
+import { describe, expect, it, vi } from "vitest";
+import { hasTestDatabase } from "../../db/test-helpers";
+import {
+  USER_A,
+  USER_B,
+  createTestCategory,
+  jsonRequest,
+  withApiTestDatabase,
+} from "../../test/postgres-fixture";
 
-const { getSupabase } = vi.hoisted(() => ({
-  getSupabase: vi.fn(),
-}));
+vi.setConfig({ testTimeout: 30_000 });
 
-vi.mock("../../config/supabase", () => ({
-  getSupabase,
-}));
+describe.skipIf(!hasTestDatabase)("categories API with PostgreSQL", () => {
+  it("enforces the two-level same-type hierarchy", async () => {
+    await withApiTestDatabase(async (context) => {
+      const expenseParent = await createTestCategory(context, USER_A, { name: "Expense parent" });
+      const incomeParent = await createTestCategory(context, USER_A, {
+        name: "Income parent",
+        type: "income",
+      });
+      const child = await createTestCategory(context, USER_A, {
+        name: "Child",
+        parentId: expenseParent.id,
+      });
 
-import { categoriesRouter } from "./routes";
+      const mismatched = await context.request(
+        USER_A,
+        "/api/categories",
+        jsonRequest("POST", {
+          name: "Mismatch",
+          icon: "Circle",
+          color: "chart-1",
+          type: "expense",
+          parentId: incomeParent.id,
+        }),
+      );
+      expect(mismatched.status).toBe(400);
 
-type StubResult = { data?: unknown; error?: unknown; count?: number };
-
-function createSupabaseStub(results: StubResult[]) {
-  let call = 0;
-  const next = () => results[call++] ?? { data: null, error: null };
-
-  const builder: Record<string, unknown> = {
-    from: vi.fn(() => builder),
-    select: vi.fn(() => builder),
-    eq: vi.fn(() => builder),
-    in: vi.fn(() => builder),
-    or: vi.fn(() => builder),
-    order: vi.fn(() => builder),
-    update: vi.fn(() => builder),
-    insert: vi.fn(() => builder),
-    delete: vi.fn(() => builder),
-    maybeSingle: vi.fn(() => Promise.resolve(next())),
-    single: vi.fn(() => Promise.resolve(next())),
-    then: (resolve: (value: StubResult) => void, reject: (reason: unknown) => void) =>
-      Promise.resolve(next()).then(resolve, reject),
-  };
-
-  return builder;
-}
-
-function buildApp() {
-  const app = new Hono<AuthEnv>();
-  app.onError(handleError);
-  app.use("*", async (c, next) => {
-    c.set("userId", "user-1");
-    await next();
-  });
-  app.route("/categories", categoriesRouter);
-  return app;
-}
-
-describe("categoriesRouter", () => {
-  beforeEach(() => {
-    getSupabase.mockReset();
-  });
-
-  it("rejects POST with a parentId whose type does not match", async () => {
-    getSupabase.mockReturnValue(
-      createSupabaseStub([
-        {
-          data: { id: "parent-1", type: "income", parent_id: null, owner_id: null },
-          error: null,
-        },
-      ]),
-    );
-
-    const app = buildApp();
-    const response = await app.request("/categories", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: "Groceries",
-        icon: "Utensils",
-        color: "chart-1",
-        type: "expense",
-        parentId: "parent-1",
-      }),
-    });
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({
-      error: "type must match parentId category type",
+      const nested = await context.request(
+        USER_A,
+        "/api/categories",
+        jsonRequest("POST", {
+          name: "Nested",
+          icon: "Circle",
+          color: "chart-1",
+          type: "expense",
+          parentId: child.id,
+        }),
+      );
+      expect(nested.status).toBe(400);
     });
   });
 
-  it("rejects POST with a parentId that is itself a child", async () => {
-    getSupabase.mockReturnValue(
-      createSupabaseStub([
-        {
-          data: { id: "parent-1", type: "expense", parent_id: "grandparent-1", owner_id: null },
-          error: null,
-        },
-      ]),
-    );
+  it("prohibits System-category mutation and type patches", async () => {
+    await withApiTestDatabase(async (context) => {
+      const list = await context.request(USER_A, "/api/categories?locale=en");
+      const body = (await list.json()) as { data: { id: string; isSystem: boolean }[] };
+      const system = body.data.find((category) => category.isSystem);
+      if (!system) throw new Error("System category fixture missing");
 
-    const app = buildApp();
-    const response = await app.request("/categories", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: "Groceries",
-        icon: "Utensils",
-        color: "chart-1",
-        type: "expense",
-        parentId: "parent-1",
-      }),
-    });
+      const systemPatch = await context.request(
+        USER_A,
+        `/api/categories/${system.id}`,
+        jsonRequest("PATCH", { name: "Changed" }),
+      );
+      expect(systemPatch.status).toBe(403);
 
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({
-      error: "parentId target is itself a child; nesting is capped at 2 levels",
-    });
-  });
+      const systemDelete = await context.request(USER_A, `/api/categories/${system.id}`, {
+        method: "DELETE",
+      });
+      expect(systemDelete.status).toBe(403);
 
-  it("returns 403 when patching a system-owned category", async () => {
-    getSupabase.mockReturnValue(
-      createSupabaseStub([
-        { data: { id: "cat-1", type: "expense", parent_id: null, owner_id: null }, error: null },
-      ]),
-    );
-
-    const app = buildApp();
-    const response = await app.request("/categories/cat-1", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Renamed" }),
-    });
-
-    expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toMatchObject({
-      error: "System categories cannot be edited",
+      const owned = await createTestCategory(context, USER_A, { name: "Owned" });
+      const typePatch = await context.request(
+        USER_A,
+        `/api/categories/${owned.id}`,
+        jsonRequest("PATCH", { type: "income" }),
+      );
+      expect(typePatch.status).toBe(400);
     });
   });
 
-  it("rejects PATCH bodies that attempt to change type", async () => {
-    getSupabase.mockReturnValue(createSupabaseStub([]));
+  it("blocks conflicting re-parenting, parent deletion, and cross-User mutation", async () => {
+    await withApiTestDatabase(async (context) => {
+      const parent = await createTestCategory(context, USER_A, { name: "Parent" });
+      const child = await createTestCategory(context, USER_A, {
+        name: "Child",
+        parentId: parent.id,
+      });
+      const otherParent = await createTestCategory(context, USER_A, { name: "Other parent" });
+      await context.request(
+        USER_A,
+        "/api/budgets",
+        jsonRequest("POST", { categoryId: child.id, limit: 100, scope: "self" }),
+      );
+      await context.request(
+        USER_A,
+        "/api/budgets",
+        jsonRequest("POST", { categoryId: otherParent.id, limit: 100, scope: "self" }),
+      );
 
-    const app = buildApp();
-    const response = await app.request("/categories/cat-1", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "income" }),
-    });
+      const reparent = await context.request(
+        USER_A,
+        `/api/categories/${child.id}`,
+        jsonRequest("PATCH", { parentId: otherParent.id }),
+      );
+      expect(reparent.status).toBe(400);
 
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({
-      error: "type is immutable and cannot be patched",
-    });
-  });
+      const deleteParent = await context.request(USER_A, `/api/categories/${parent.id}`, {
+        method: "DELETE",
+      });
+      expect(deleteParent.status).toBe(409);
 
-  it("rejects re-parenting onto a category of a different type", async () => {
-    getSupabase.mockReturnValue(
-      createSupabaseStub([
-        {
-          data: { id: "cat-1", type: "expense", parent_id: null, owner_id: "user-1" },
-          error: null,
-        },
-        {
-          data: { id: "parent-2", type: "income", parent_id: null, owner_id: null },
-          error: null,
-        },
-      ]),
-    );
-
-    const app = buildApp();
-    const response = await app.request("/categories/cat-1", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ parentId: "parent-2" }),
-    });
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({
-      error: "parentId target type does not match category type",
-    });
-  });
-
-  it("rejects re-parenting a budgeted category under an already-budgeted parent", async () => {
-    getSupabase.mockReturnValue(
-      createSupabaseStub([
-        {
-          data: { id: "cat-1", type: "expense", parent_id: null, owner_id: "user-1" },
-          error: null,
-        },
-        { data: { id: "parent-2", type: "expense", parent_id: null, owner_id: null }, error: null },
-        { data: null, error: null, count: 0 },
-        { data: [{ category_id: "cat-1" }, { category_id: "parent-2" }], error: null },
-      ]),
-    );
-
-    const app = buildApp();
-    const response = await app.request("/categories/cat-1", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ parentId: "parent-2" }),
-    });
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({
-      error: "both category and parentId already have budgets; remove one first",
-    });
-  });
-
-  it("returns 403 when deleting a system-owned category", async () => {
-    getSupabase.mockReturnValue(
-      createSupabaseStub([
-        { data: { id: "cat-1", owner_id: null, type: "expense", parent_id: null }, error: null },
-      ]),
-    );
-
-    const app = buildApp();
-    const response = await app.request("/categories/cat-1", { method: "DELETE" });
-
-    expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toMatchObject({
-      error: "System categories cannot be deleted",
-    });
-  });
-
-  it("returns 409 when deleting a category that has children", async () => {
-    getSupabase.mockReturnValue(
-      createSupabaseStub([
-        {
-          data: { id: "cat-1", owner_id: "user-1", type: "expense", parent_id: null },
-          error: null,
-        },
-        { data: null, error: null, count: 2 },
-      ]),
-    );
-
-    const app = buildApp();
-    const response = await app.request("/categories/cat-1", { method: "DELETE" });
-
-    expect(response.status).toBe(409);
-    await expect(response.json()).resolves.toMatchObject({
-      error: "Category has children; delete or reassign them first",
+      const crossUser = await context.request(
+        USER_B,
+        `/api/categories/${child.id}`,
+        jsonRequest("PATCH", { name: "Leaked" }),
+      );
+      expect(crossUser.status).toBe(404);
     });
   });
 });
