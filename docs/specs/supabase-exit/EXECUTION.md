@@ -5,9 +5,9 @@ Integration branch: `develop`. Branch model: stacked via `gh stack` (default).
 
 ## STATUS
 
-- Current phase: 1 — done
+- Current phase: 2 — in-progress
 - Phase 1 — database baseline and access boundary: done
-- Phase 2 — API repositories and authorization: pending
+- Phase 2 — API repositories and authorization: in-progress
 - Phase 3 — session authentication and web client: pending
 - Phase 4 — migration, validation, and recovery tooling: pending
 - Phase 5 — local runtime and integration verification: pending
