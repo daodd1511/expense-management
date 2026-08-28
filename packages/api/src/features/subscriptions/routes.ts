@@ -21,7 +21,11 @@ subscriptionsRouter.post(
     }
   }),
   async (c) => {
-    const data = await controller.createSubscription(c.get("userId"), c.req.valid("json"));
+    const data = await controller.createSubscription(
+      c.get("db"),
+      c.get("userId"),
+      c.req.valid("json"),
+    );
     return c.json({ data }, 201);
   },
 );
@@ -34,6 +38,7 @@ subscriptionsRouter.post(
   }),
   async (c) => {
     const data = await controller.logSubscription(
+      c.get("db"),
       c.get("userId"),
       c.req.param("id"),
       c.req.valid("json").today,
@@ -50,6 +55,7 @@ subscriptionsRouter.patch(
   }),
   async (c) => {
     const data = await controller.updateSubscription(
+      c.get("db"),
       c.get("userId"),
       c.req.param("id"),
       c.req.valid("json"),

@@ -1,5 +1,5 @@
 import { Kysely, PostgresDialect, sql, type Transaction } from "kysely";
-import { Pool } from "pg";
+import { Pool, types as defaultPgTypes } from "pg";
 import type { DB } from "./types";
 
 export type Database = DB;
@@ -11,6 +11,17 @@ export type Database = DB;
 export type AppDb = Kysely<Database> | Transaction<Database>;
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const REQUIRED_MIGRATION_VERSION = "20260828000004";
+
+const APP_PG_TYPES = {
+  getTypeParser(typeId: number, format?: "text" | "binary") {
+    if (typeId === 20 || typeId === 1700) return Number;
+    if (typeId === 1082 || typeId === 1083 || typeId === 1114 || typeId === 1184) {
+      return (value: string) => value;
+    }
+    return defaultPgTypes.getTypeParser(typeId, format);
+  },
+};
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -41,10 +52,17 @@ export interface AppDatabase {
  * exercising a hand-rolled reimplementation of its `set_config` logic.
  */
 export function createAppDatabase(connectionString: string): AppDatabase {
-  const pool = new Pool({ connectionString, options: "-c search_path=public" });
+  const pool = new Pool({
+    connectionString,
+    options: "-c search_path=public",
+    types: APP_PG_TYPES,
+  });
   const db = new Kysely<Database>({ dialect: new PostgresDialect({ pool }) });
 
-  async function withAppTransaction<T>(userId: string, work: (trx: AppDb) => Promise<T>): Promise<T> {
+  async function withAppTransaction<T>(
+    userId: string,
+    work: (trx: AppDb) => Promise<T>,
+  ): Promise<T> {
     if (!UUID_PATTERN.test(userId)) {
       throw new Error(`withAppTransaction: userId is not a UUID: ${userId}`);
     }
@@ -88,8 +106,25 @@ function getAppDatabase(): AppDatabase {
  *   closed at the database layer too.
  * @param work - Repository/service logic to run with `trx` as the executor.
  */
-export function withAppTransaction<T>(userId: string, work: (trx: AppDb) => Promise<T>): Promise<T> {
+export function withAppTransaction<T>(
+  userId: string,
+  work: (trx: AppDb) => Promise<T>,
+): Promise<T> {
   return getAppDatabase().withAppTransaction(userId, work);
+}
+
+/** Verifies that PostgreSQL responds and the Dbmate baseline required by this API is applied. */
+export async function checkDatabaseReadiness(): Promise<void> {
+  const result = await sql<{ version: string | null }>`
+    select max(version) as version from public.schema_migrations
+  `.execute(getAppDatabase().db);
+  const version = result.rows[0]?.version;
+
+  if (!version || version < REQUIRED_MIGRATION_VERSION) {
+    throw new Error(
+      `Database migration ${REQUIRED_MIGRATION_VERSION} is required; current version is ${version ?? "none"}`,
+    );
+  }
 }
 
 let defaultAuthPool: Pool | undefined;

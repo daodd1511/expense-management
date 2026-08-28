@@ -1,4 +1,5 @@
 import type { CategoryCreate, CategoryPatch, Lang } from "@wallet/shared";
+import type { AppDb } from "../../db/database";
 import { ApiError } from "../../middleware/error";
 import * as repository from "./repository";
 
@@ -15,24 +16,29 @@ function assertValidParent(
   }
 }
 
-export async function listCategories(userId: string, locale?: Lang) {
-  return repository.listCategories(userId, locale);
+export async function listCategories(db: AppDb, userId: string, locale?: Lang) {
+  return repository.listCategories(db, userId, locale);
 }
 
-export async function createCategory(userId: string, category: CategoryCreate) {
+export async function createCategory(db: AppDb, userId: string, category: CategoryCreate) {
   if (category.parentId) {
-    const parent = await repository.loadParentCandidate(category.parentId, userId);
+    const parent = await repository.loadParentCandidate(db, category.parentId, userId);
     if (!parent) {
       throw new ApiError(400, "parentId does not exist");
     }
     assertValidParent(parent, category.type, "type must match parentId category type");
   }
 
-  return repository.createCategory(userId, category);
+  return repository.createCategory(db, userId, category);
 }
 
-export async function updateCategory(userId: string, categoryId: string, patch: CategoryPatch) {
-  const existing = await repository.loadOwnedCategory(categoryId);
+export async function updateCategory(
+  db: AppDb,
+  userId: string,
+  categoryId: string,
+  patch: CategoryPatch,
+) {
+  const existing = await repository.loadOwnedCategory(db, categoryId);
   if (!existing) {
     throw new ApiError(404, "Category not found");
   }
@@ -44,18 +50,18 @@ export async function updateCategory(userId: string, categoryId: string, patch: 
   }
 
   if (patch.parentId !== undefined && patch.parentId !== null) {
-    const parent = await repository.loadParentCandidate(patch.parentId, userId);
+    const parent = await repository.loadParentCandidate(db, patch.parentId, userId);
     if (!parent) {
       throw new ApiError(400, "parentId does not exist");
     }
     assertValidParent(parent, existing.type, "parentId target type does not match category type");
 
-    const childCount = await repository.countChildren(categoryId);
+    const childCount = await repository.countChildren(db, categoryId);
     if (childCount > 0) {
       throw new ApiError(400, "category has children and cannot be re-parented");
     }
 
-    const budgetedIds = await repository.listBudgetedCategoryIds(userId, [
+    const budgetedIds = await repository.listBudgetedCategoryIds(db, userId, [
       categoryId,
       patch.parentId,
     ]);
@@ -64,7 +70,7 @@ export async function updateCategory(userId: string, categoryId: string, patch: 
     }
   }
 
-  const category = await repository.updateCategory(userId, categoryId, patch);
+  const category = await repository.updateCategory(db, userId, categoryId, patch);
   if (!category) {
     throw new ApiError(404, "Category not found");
   }
@@ -72,8 +78,8 @@ export async function updateCategory(userId: string, categoryId: string, patch: 
   return category;
 }
 
-export async function deleteCategory(userId: string, categoryId: string) {
-  const existing = await repository.loadOwnedCategory(categoryId);
+export async function deleteCategory(db: AppDb, userId: string, categoryId: string) {
+  const existing = await repository.loadOwnedCategory(db, categoryId);
   if (!existing) {
     throw new ApiError(404, "Category not found");
   }
@@ -84,16 +90,16 @@ export async function deleteCategory(userId: string, categoryId: string) {
     throw new ApiError(404, "Category not found");
   }
 
-  const childCount = await repository.countChildren(categoryId);
+  const childCount = await repository.countChildren(db, categoryId);
   if (childCount > 0) {
     throw new ApiError(409, "Category has children; delete or reassign them first");
   }
 
-  await repository.clearTransactionsCategory(userId, categoryId);
-  await repository.clearSubscriptionsCategory(userId, categoryId);
-  await repository.deleteBudget(userId, categoryId);
+  await repository.clearTransactionsCategory(db, userId, categoryId);
+  await repository.clearSubscriptionsCategory(db, userId, categoryId);
+  await repository.deleteBudget(db, userId, categoryId);
 
-  const deleted = await repository.deleteCategory(userId, categoryId);
+  const deleted = await repository.deleteCategory(db, userId, categoryId);
   if (!deleted) {
     throw new ApiError(404, "Category not found");
   }

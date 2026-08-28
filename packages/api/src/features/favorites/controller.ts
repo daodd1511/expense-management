@@ -1,5 +1,6 @@
 import type { FavoriteCreate } from "@wallet/shared";
 import type { Context } from "hono";
+import type { AppDb } from "../../db/database";
 import type { AuthEnv } from "../../middleware/auth";
 import * as service from "./service";
 
@@ -12,15 +13,19 @@ function requireCategoryId(categoryId: string | undefined) {
 }
 
 export async function listFavorites(c: Context<AuthEnv>) {
-  const data = await service.listFavorites(c.get("userId"));
+  const data = await service.listFavorites(c.get("db"), c.get("userId"));
   return c.json({ data });
 }
 
-export async function createFavorite(userId: string, input: FavoriteCreate) {
-  return service.createFavorite(userId, input);
+export async function createFavorite(db: AppDb, userId: string, input: FavoriteCreate) {
+  return service.createFavorite(db, userId, input);
 }
 
 export async function deleteFavorite(c: Context<AuthEnv>) {
-  await service.deleteFavorite(c.get("userId"), requireCategoryId(c.req.param("categoryId")));
+  await service.deleteFavorite(
+    c.get("db"),
+    c.get("userId"),
+    requireCategoryId(c.req.param("categoryId")),
+  );
   return c.json({ ok: true });
 }

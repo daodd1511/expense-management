@@ -10,7 +10,8 @@ import {
   type TransactionPatch,
   type TransactionRow,
 } from "@wallet/shared";
-import { getSupabase } from "../../config/supabase";
+import { sql } from "kysely";
+import type { AppDb } from "../../db/database";
 import { parseRows } from "../../lib/response";
 import { ApiError } from "../../middleware/error";
 
@@ -38,195 +39,215 @@ function compareLedgerRows(a: TransactionRow, b: TransactionRow) {
   return a.id.localeCompare(b.id);
 }
 
-export async function listAccountOpeningBalances(userId: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase.from("accounts").select("*").eq("owner_id", userId);
+export async function listAccountOpeningBalances(db: AppDb, userId: string) {
+  const rows = await db.selectFrom("accounts").selectAll().where("owner_id", "=", userId).execute();
 
-  if (error) {
-    throw error;
-  }
-
-  const accounts = parseRows(data, accountRowSchema, (row: AccountRow) => row);
+  const accounts = parseRows(rows, accountRowSchema, (row: AccountRow) => row);
   return Object.fromEntries(accounts.map((account) => [account.id, account.opening_balance]));
 }
 
-export async function listTransactionsForBalance(params: {
-  userId: string;
-  throughExclusive?: string;
-}) {
-  const supabase = getSupabase();
-  let query = supabase
-    .from("transactions")
-    .select("*")
-    .eq("owner_id", params.userId)
-    .order("tx_date", { ascending: true })
-    .order("tx_time", { ascending: true })
-    .order("created_at", { ascending: true })
-    .order("id", { ascending: true });
+export async function listTransactionsForBalance(
+  db: AppDb,
+  params: { userId: string; throughExclusive?: string },
+) {
+  let query = db
+    .selectFrom("transactions")
+    .selectAll()
+    .where("owner_id", "=", params.userId)
+    .orderBy("tx_date", "asc")
+    .orderBy("tx_time", "asc")
+    .orderBy("created_at", "asc")
+    .orderBy("id", "asc");
 
   if (params.throughExclusive !== undefined) {
-    query = query.lt("tx_date", params.throughExclusive);
+    query = query.where("tx_date", "<", params.throughExclusive);
   }
 
-  const { data, error } = await query;
-  if (error) {
-    throw error;
-  }
+  const rows = await query.execute();
 
-  return parseRows(data, transactionRowSchema, (row) => row)
+  return parseRows(rows, transactionRowSchema, (row) => row)
     .sort(compareLedgerRows)
     .map(toTransaction);
 }
 
-export async function createTransaction(userId: string, transaction: TransactionCreate) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("transactions")
-    .insert(fromTransaction({ transaction, ownerId: userId }))
-    .select("*")
-    .single();
-
-  if (error) {
-    throw error;
+export async function referencesAreAccessible(
+  db: AppDb,
+  userId: string,
+  references: {
+    accountId?: string;
+    toAccountId?: string | null;
+    categoryId?: string | null;
+    subscriptionId?: string | null;
+  },
+) {
+  const accountIds = [references.accountId, references.toAccountId].filter(
+    (id): id is string => typeof id === "string",
+  );
+  if (accountIds.length > 0) {
+    const accounts = await db
+      .selectFrom("accounts")
+      .select("id")
+      .where("id", "in", accountIds)
+      .where("owner_id", "=", userId)
+      .execute();
+    if (new Set(accounts.map((account) => account.id)).size !== new Set(accountIds).size) {
+      return false;
+    }
   }
 
-  return parseTransactionRow(data, "Inserted transaction failed validation");
+  if (references.categoryId !== undefined && references.categoryId !== null) {
+    const category = await db
+      .selectFrom("categories")
+      .select("id")
+      .where("id", "=", references.categoryId)
+      .where((eb) => eb.or([eb("owner_id", "=", userId), eb("owner_id", "is", null)]))
+      .executeTakeFirst();
+    if (!category) return false;
+  }
+
+  if (references.subscriptionId !== undefined && references.subscriptionId !== null) {
+    const subscription = await db
+      .selectFrom("subscriptions")
+      .select("id")
+      .where("id", "=", references.subscriptionId)
+      .where("owner_id", "=", userId)
+      .executeTakeFirst();
+    if (!subscription) return false;
+  }
+
+  return true;
+}
+
+export async function createTransaction(db: AppDb, userId: string, transaction: TransactionCreate) {
+  const row = await db
+    .insertInto("transactions")
+    .values(fromTransaction({ transaction, ownerId: userId }))
+    .returningAll()
+    .executeTakeFirstOrThrow();
+
+  return parseTransactionRow(row, "Inserted transaction failed validation");
 }
 
 export async function createTransferWithFee(
+  db: AppDb,
   userId: string,
   transaction: TransactionCreate,
   fee: number,
 ) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .rpc("create_transfer_with_fee", {
-      p_owner_id: userId,
-      p_amount: transaction.amount,
-      p_account_id: transaction.accountId,
-      // Postgres accepts NULL for these plain (non-NOT-NULL, no-DEFAULT) function params;
-      // supabase gen types only marks an RPC arg optional/nullable when the SQL has a
-      // DEFAULT, so it types them as required non-null strings here regardless.
-      p_to_account_id: (transaction.toAccountId ?? null) as string,
-      p_merchant: transaction.merchant,
-      p_note: (transaction.note ?? null) as string,
-      p_tx_date: transaction.date,
-      p_tx_time: (transaction.time ?? null) as string,
-      p_receipt_url: (transaction.receipt ?? null) as string,
-      p_fee: fee,
-    })
-    .single();
+  const result = await sql<TransactionRow>`select * from public.create_transfer_with_fee(
+    ${userId}::uuid,
+    ${transaction.amount}::bigint,
+    ${transaction.accountId}::uuid,
+    ${transaction.toAccountId ?? null}::uuid,
+    ${transaction.merchant}::text,
+    ${transaction.note ?? null}::text,
+    ${transaction.date}::date,
+    ${transaction.time ?? null}::time,
+    ${transaction.receipt ?? null}::text,
+    ${fee}::bigint
+  )`.execute(db);
 
-  if (error) throw error;
-  return parseTransactionRow(data, "Inserted transfer failed validation");
+  return parseTransactionRow(result.rows[0], "Inserted transfer failed validation");
 }
 
-export async function findLinkedTransferFee(userId: string, transferId: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("*")
-    .eq("owner_id", userId)
-    .eq("linked_transfer_id", transferId)
-    .maybeSingle();
-  if (error) throw error;
-  return data ? parseTransactionRow(data, "Linked fee failed validation") : null;
+export async function findLinkedTransferFee(db: AppDb, userId: string, transferId: string) {
+  const row = await db
+    .selectFrom("transactions")
+    .selectAll()
+    .where("owner_id", "=", userId)
+    .where("linked_transfer_id", "=", transferId)
+    .executeTakeFirst();
+
+  return row ? parseTransactionRow(row, "Linked fee failed validation") : null;
 }
 
-export async function findTransferFeeCategoryId() {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("categories")
+export async function findTransferFeeCategoryId(db: AppDb) {
+  const row = await db
+    .selectFrom("categories")
     .select("id")
-    .is("owner_id", null)
-    .eq("name", "Transfer Fee")
-    .eq("type", "expense")
-    .single();
-  if (error) throw error;
-  return data.id as string;
+    .where("owner_id", "is", null)
+    .where("name", "=", "Transfer Fee")
+    .where("type", "=", "expense")
+    .executeTakeFirstOrThrow();
+
+  return row.id;
 }
 
 export async function createLinkedTransferFee(
+  db: AppDb,
   userId: string,
   transaction: Omit<Transaction, "id">,
 ) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("transactions")
-    .insert(fromTransaction({ transaction, ownerId: userId }))
-    .select("*")
-    .single();
-  if (error) throw error;
-  return parseTransactionRow(data, "Inserted transfer fee failed validation");
+  const row = await db
+    .insertInto("transactions")
+    .values(fromTransaction({ transaction, ownerId: userId }))
+    .returningAll()
+    .executeTakeFirstOrThrow();
+
+  return parseTransactionRow(row, "Inserted transfer fee failed validation");
 }
 
 /** Rows among `ids` that are loan-linked — generic patch/delete/bulk-delete must reject
  * these (see PLAN.md -> "Mutation Ownership and Atomicity"); only Loans may mutate them. */
-export async function listLoanLinkedIds(userId: string, ids: string[]): Promise<string[]> {
+export async function listLoanLinkedIds(
+  db: AppDb,
+  userId: string,
+  ids: string[],
+): Promise<string[]> {
   if (ids.length === 0) return [];
 
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("transactions")
+  const rows = await db
+    .selectFrom("transactions")
     .select("id")
-    .eq("owner_id", userId)
-    .in("id", ids)
-    .not("loan_event_id", "is", null);
+    .where("owner_id", "=", userId)
+    .where("id", "in", ids)
+    .where("loan_event_id", "is not", null)
+    .execute();
 
-  if (error) throw error;
-  return (data ?? []).map((row) => row.id as string);
+  return rows.map((row) => row.id);
 }
 
-export async function updateTransaction(userId: string, id: string, patch: TransactionPatch) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("transactions")
-    .update(transactionPatchToRow(patch))
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .select("*")
-    .maybeSingle();
+export async function updateTransaction(
+  db: AppDb,
+  userId: string,
+  id: string,
+  patch: TransactionPatch,
+) {
+  const row = await db
+    .updateTable("transactions")
+    .set(transactionPatchToRow(patch))
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .returningAll()
+    .executeTakeFirst();
 
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
+  if (!row) {
     return null;
   }
 
-  return parseTransactionRow(data, "Updated transaction failed validation");
+  return parseTransactionRow(row, "Updated transaction failed validation");
 }
 
-export async function deleteTransactions(userId: string, ids: string[]) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("transactions")
-    .delete()
-    .in("id", ids)
-    .eq("owner_id", userId)
-    .select("id");
+export async function deleteTransactions(db: AppDb, userId: string, ids: string[]) {
+  if (ids.length === 0) return { deletedIds: [] };
 
-  if (error) {
-    throw error;
-  }
+  const rows = await db
+    .deleteFrom("transactions")
+    .where("id", "in", ids)
+    .where("owner_id", "=", userId)
+    .returning("id")
+    .execute();
 
-  return { deletedIds: (data ?? []).map((row) => row.id) };
+  return { deletedIds: rows.map((row) => row.id) };
 }
 
-export async function deleteTransaction(userId: string, id: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("transactions")
-    .delete()
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .select("id")
-    .maybeSingle();
+export async function deleteTransaction(db: AppDb, userId: string, id: string) {
+  const row = await db
+    .deleteFrom("transactions")
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .returning("id")
+    .executeTakeFirst();
 
-  if (error) {
-    throw error;
-  }
-
-  return Boolean(data);
+  return Boolean(row);
 }

@@ -15,7 +15,8 @@ import {
   type Person,
   type PersonPatch,
 } from "@wallet/shared";
-import { getSupabase } from "../../config/supabase";
+import { sql } from "kysely";
+import type { AppDb } from "../../db/database";
 import { parseRows } from "../../lib/response";
 import { ApiError } from "../../middleware/error";
 
@@ -111,306 +112,287 @@ function parseLoanFromRpcRow(
 
 // ---- People ----
 
-export async function listPeople(userId: string): Promise<Person[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("loan_people")
-    .select("*")
-    .eq("owner_id", userId)
-    .order("created_at", { ascending: true });
+export async function listPeople(db: AppDb, userId: string): Promise<Person[]> {
+  const rows = await db
+    .selectFrom("loan_people")
+    .selectAll()
+    .where("owner_id", "=", userId)
+    .orderBy("created_at", "asc")
+    .execute();
 
-  if (error) throw error;
-  return parseRows(data, personRowSchema, toPerson);
+  return parseRows(rows, personRowSchema, toPerson);
 }
 
-export async function createPerson(userId: string, person: Omit<Person, "id">): Promise<Person> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("loan_people")
-    .insert(fromPerson({ person, ownerId: userId }))
-    .select("*")
-    .single();
+export async function createPerson(
+  db: AppDb,
+  userId: string,
+  person: Omit<Person, "id">,
+): Promise<Person> {
+  const row = await db
+    .insertInto("loan_people")
+    .values(fromPerson({ person, ownerId: userId }))
+    .returningAll()
+    .executeTakeFirstOrThrow();
 
-  if (error) throw error;
-  return parsePersonRow(data, "Inserted person failed validation");
+  return parsePersonRow(row, "Inserted person failed validation");
 }
 
 export async function updatePerson(
+  db: AppDb,
   userId: string,
   id: string,
   patch: PersonPatch,
 ): Promise<Person | null> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("loan_people")
-    .update(personPatchToRow(patch))
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .select("*")
-    .maybeSingle();
+  const row = await db
+    .updateTable("loan_people")
+    .set(personPatchToRow(patch))
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .returningAll()
+    .executeTakeFirst();
 
-  if (error) throw error;
-  return data ? parsePersonRow(data, "Updated person failed validation") : null;
+  return row ? parsePersonRow(row, "Updated person failed validation") : null;
 }
 
-export async function deletePerson(userId: string, id: string): Promise<boolean> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("loan_people")
-    .delete()
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .select("id")
-    .maybeSingle();
+export async function deletePerson(db: AppDb, userId: string, id: string): Promise<boolean> {
+  const row = await db
+    .deleteFrom("loan_people")
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .returning("id")
+    .executeTakeFirst();
 
-  if (error) throw error;
-  return Boolean(data);
+  return Boolean(row);
 }
 
 // ---- Loans + events (reads) ----
 
-export async function listLoans(userId: string): Promise<Loan[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("loans")
-    .select("*")
-    .eq("owner_id", userId)
-    .order("created_at", { ascending: false });
+export async function listLoans(db: AppDb, userId: string): Promise<Loan[]> {
+  const rows = await db
+    .selectFrom("loans")
+    .selectAll()
+    .where("owner_id", "=", userId)
+    .orderBy("created_at", "desc")
+    .execute();
 
-  if (error) throw error;
-  return parseRows(data, loanRowSchema, toLoan);
+  return parseRows(rows, loanRowSchema, toLoan);
 }
 
-export async function listEventsForLoans(userId: string, loanIds: string[]): Promise<LoanEvent[]> {
+export async function listEventsForLoans(
+  db: AppDb,
+  userId: string,
+  loanIds: string[],
+): Promise<LoanEvent[]> {
   if (loanIds.length === 0) return [];
 
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("loan_events")
-    .select("*")
-    .eq("owner_id", userId)
-    .in("loan_id", loanIds)
-    .order("event_date", { ascending: true });
+  const rows = await db
+    .selectFrom("loan_events")
+    .selectAll()
+    .where("owner_id", "=", userId)
+    .where("loan_id", "in", loanIds)
+    .orderBy("event_date", "asc")
+    .execute();
 
-  if (error) throw error;
-  return parseRows(data, loanEventRowSchema, toLoanEvent);
+  return parseRows(rows, loanEventRowSchema, toLoanEvent);
 }
 
-export async function loadLoan(userId: string, id: string): Promise<Loan | null> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("loans")
-    .select("*")
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .maybeSingle();
+export async function loadLoan(db: AppDb, userId: string, id: string): Promise<Loan | null> {
+  const row = await db
+    .selectFrom("loans")
+    .selectAll()
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .executeTakeFirst();
 
-  if (error) throw error;
-  return data ? parseLoanRow(data, "Stored loan failed validation") : null;
+  return row ? parseLoanRow(row, "Stored loan failed validation") : null;
 }
 
-export async function loadPerson(userId: string, id: string): Promise<Person | null> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("loan_people")
-    .select("*")
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .maybeSingle();
+export async function loadPerson(db: AppDb, userId: string, id: string): Promise<Person | null> {
+  const row = await db
+    .selectFrom("loan_people")
+    .selectAll()
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .executeTakeFirst();
 
-  if (error) throw error;
-  return data ? parsePersonRow(data, "Stored person failed validation") : null;
+  return row ? parsePersonRow(row, "Stored person failed validation") : null;
 }
 
 // ---- Loan lifecycle (RPCs) ----
 
-export async function createDisbursedLoan(params: {
-  userId: string;
-  personId: string;
-  direction: string;
-  description: string | null;
-  amount: number;
-  accountId: string;
-  eventDate: string;
-  dueDate: string | null;
-  note: string | null;
-}): Promise<{ loan: Loan; event: LoanEvent }> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .rpc("create_disbursed_loan", {
-      p_owner_id: params.userId,
-      p_person_id: params.personId,
-      p_direction: params.direction,
-      p_description: params.description as string,
-      p_amount: params.amount,
-      p_account_id: params.accountId,
-      p_event_date: params.eventDate,
-      p_due_date: params.dueDate as string,
-      p_note: params.note as string,
-    })
-    .single<CreateDisbursedLoanRpcRow>();
-
-  if (error) throw error;
+export async function createDisbursedLoan(
+  db: AppDb,
+  params: {
+    userId: string;
+    personId: string;
+    direction: string;
+    description: string | null;
+    amount: number;
+    accountId: string;
+    eventDate: string;
+    dueDate: string | null;
+    note: string | null;
+  },
+): Promise<{ loan: Loan; event: LoanEvent }> {
+  const result = await sql<CreateDisbursedLoanRpcRow>`select * from public.create_disbursed_loan(
+    ${params.userId}::uuid,
+    ${params.personId}::uuid,
+    ${params.direction}::text,
+    ${params.description}::text,
+    ${params.amount}::bigint,
+    ${params.accountId}::uuid,
+    ${params.eventDate}::date,
+    ${params.dueDate}::date,
+    ${params.note}::text
+  )`.execute(db);
+  const row = result.rows[0];
 
   return {
-    loan: parseLoanFromRpcRow(data, "Created loan failed validation"),
-    event: parseLoanEventFromRpcRow(data, "Created loan event failed validation"),
+    loan: parseLoanFromRpcRow(row, "Created loan failed validation"),
+    event: parseLoanEventFromRpcRow(row, "Created loan event failed validation"),
   };
 }
 
-export async function createOpeningLoan(params: {
-  userId: string;
-  personId: string;
-  direction: string;
-  description: string | null;
-  amount: number;
-  balanceAsOf: string;
-  originalDate: string | null;
-  dueDate: string | null;
-  note: string | null;
-}): Promise<{ loan: Loan; event: LoanEvent }> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .rpc("create_opening_loan", {
-      p_owner_id: params.userId,
-      p_person_id: params.personId,
-      p_direction: params.direction,
-      p_description: params.description as string,
-      p_amount: params.amount,
-      p_balance_as_of: params.balanceAsOf,
-      p_original_date: params.originalDate as string,
-      p_due_date: params.dueDate as string,
-      p_note: params.note as string,
-    })
-    .single<CreateOpeningLoanRpcRow>();
-
-  if (error) throw error;
+export async function createOpeningLoan(
+  db: AppDb,
+  params: {
+    userId: string;
+    personId: string;
+    direction: string;
+    description: string | null;
+    amount: number;
+    balanceAsOf: string;
+    originalDate: string | null;
+    dueDate: string | null;
+    note: string | null;
+  },
+): Promise<{ loan: Loan; event: LoanEvent }> {
+  const result = await sql<CreateOpeningLoanRpcRow>`select * from public.create_opening_loan(
+    ${params.userId}::uuid,
+    ${params.personId}::uuid,
+    ${params.direction}::text,
+    ${params.description}::text,
+    ${params.amount}::bigint,
+    ${params.balanceAsOf}::date,
+    ${params.originalDate}::date,
+    ${params.dueDate}::date,
+    ${params.note}::text
+  )`.execute(db);
+  const row = result.rows[0];
 
   return {
-    loan: parseLoanFromRpcRow(data, "Created loan failed validation"),
-    event: parseLoanEventFromRpcRow(data, "Created loan event failed validation"),
+    loan: parseLoanFromRpcRow(row, "Created loan failed validation"),
+    event: parseLoanEventFromRpcRow(row, "Created loan event failed validation"),
   };
 }
 
-export async function createLoanRepayment(params: {
-  userId: string;
-  loanId: string;
-  amount: number;
-  accountId: string;
-  eventDate: string;
-}): Promise<LoanEvent> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .rpc("create_loan_repayment", {
-      p_owner_id: params.userId,
-      p_loan_id: params.loanId,
-      p_amount: params.amount,
-      p_account_id: params.accountId,
-      p_event_date: params.eventDate,
-    })
-    .single<CreateLoanRepaymentRpcRow>();
+export async function createLoanRepayment(
+  db: AppDb,
+  params: {
+    userId: string;
+    loanId: string;
+    amount: number;
+    accountId: string;
+    eventDate: string;
+  },
+): Promise<LoanEvent> {
+  const result = await sql<CreateLoanRepaymentRpcRow>`select * from public.create_loan_repayment(
+    ${params.userId}::uuid,
+    ${params.loanId}::uuid,
+    ${params.amount}::bigint,
+    ${params.accountId}::uuid,
+    ${params.eventDate}::date
+  )`.execute(db);
 
-  if (error) throw error;
-  return parseLoanEventFromRpcRow(data, "Created repayment failed validation");
+  return parseLoanEventFromRpcRow(result.rows[0], "Created repayment failed validation");
 }
 
-export async function updateLoanRepayment(params: {
-  userId: string;
-  eventId: string;
-  amount: number;
-  accountId: string;
-  eventDate: string;
-}): Promise<LoanEvent> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .rpc("update_loan_repayment", {
-      p_owner_id: params.userId,
-      p_event_id: params.eventId,
-      p_amount: params.amount,
-      p_account_id: params.accountId,
-      p_event_date: params.eventDate,
-    })
-    .single<UpdateLoanRepaymentRpcRow>();
+export async function updateLoanRepayment(
+  db: AppDb,
+  params: {
+    userId: string;
+    eventId: string;
+    amount: number;
+    accountId: string;
+    eventDate: string;
+  },
+): Promise<LoanEvent> {
+  const result = await sql<UpdateLoanRepaymentRpcRow>`select * from public.update_loan_repayment(
+    ${params.userId}::uuid,
+    ${params.eventId}::uuid,
+    ${params.amount}::bigint,
+    ${params.accountId}::uuid,
+    ${params.eventDate}::date
+  )`.execute(db);
 
-  if (error) throw error;
-  return parseLoanEventFromRpcRow(data, "Updated repayment failed validation");
+  return parseLoanEventFromRpcRow(result.rows[0], "Updated repayment failed validation");
 }
 
-export async function updateLoanDisbursement(params: {
-  userId: string;
-  loanId: string;
-  amount: number;
-  accountId: string;
-  eventDate: string;
-}): Promise<LoanEvent> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .rpc("update_loan_disbursement", {
-      p_owner_id: params.userId,
-      p_loan_id: params.loanId,
-      p_amount: params.amount,
-      p_account_id: params.accountId,
-      p_event_date: params.eventDate,
-    })
-    .single<UpdateLoanDisbursementRpcRow>();
+export async function updateLoanDisbursement(
+  db: AppDb,
+  params: {
+    userId: string;
+    loanId: string;
+    amount: number;
+    accountId: string;
+    eventDate: string;
+  },
+): Promise<LoanEvent> {
+  const result =
+    await sql<UpdateLoanDisbursementRpcRow>`select * from public.update_loan_disbursement(
+    ${params.userId}::uuid,
+    ${params.loanId}::uuid,
+    ${params.amount}::bigint,
+    ${params.accountId}::uuid,
+    ${params.eventDate}::date
+  )`.execute(db);
 
-  if (error) throw error;
-  return parseLoanEventFromRpcRow(data, "Updated disbursement failed validation");
+  return parseLoanEventFromRpcRow(result.rows[0], "Updated disbursement failed validation");
 }
 
-export async function closeLoan(params: {
-  userId: string;
-  loanId: string;
-  kind: string;
-  eventDate: string;
-}): Promise<LoanEvent> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .rpc("close_loan", {
-      p_owner_id: params.userId,
-      p_loan_id: params.loanId,
-      p_kind: params.kind,
-      p_event_date: params.eventDate,
-    })
-    .single<CloseLoanRpcRow>();
+export async function closeLoan(
+  db: AppDb,
+  params: { userId: string; loanId: string; kind: string; eventDate: string },
+): Promise<LoanEvent> {
+  const result = await sql<CloseLoanRpcRow>`select * from public.close_loan(
+    ${params.userId}::uuid,
+    ${params.loanId}::uuid,
+    ${params.kind}::text,
+    ${params.eventDate}::date
+  )`.execute(db);
 
-  if (error) throw error;
-  return parseLoanEventFromRpcRow(data, "Closed loan failed validation");
+  return parseLoanEventFromRpcRow(result.rows[0], "Closed loan failed validation");
 }
 
 // ---- Loan lifecycle (plain mutations — no RPC needed) ----
 
 export async function updateLoanMetadata(
+  db: AppDb,
   userId: string,
   id: string,
   patch: LoanMetadataPatch,
 ): Promise<Loan | null> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("loans")
-    .update(loanMetadataPatchToRow(patch))
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .select("*")
-    .maybeSingle();
+  const row = await db
+    .updateTable("loans")
+    .set(loanMetadataPatchToRow(patch))
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .returningAll()
+    .executeTakeFirst();
 
-  if (error) throw error;
-  return data ? parseLoanRow(data, "Updated loan failed validation") : null;
+  return row ? parseLoanRow(row, "Updated loan failed validation") : null;
 }
 
 /** Deletion cascades through loan_events to their linked transactions (ON DELETE CASCADE). */
-export async function deleteLoan(userId: string, id: string): Promise<boolean> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("loans")
-    .delete()
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .select("id")
-    .maybeSingle();
+export async function deleteLoan(db: AppDb, userId: string, id: string): Promise<boolean> {
+  const row = await db
+    .deleteFrom("loans")
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .returning("id")
+    .executeTakeFirst();
 
-  if (error) throw error;
-  return Boolean(data);
+  return Boolean(row);
 }
 
 /**
@@ -418,38 +400,33 @@ export async function deleteLoan(userId: string, id: string): Promise<boolean> {
  * outstanding balance. Deletion cascades to the closing event's own linked transaction —
  * except closing events never have one, so this is a pure ledger correction.
  */
-export async function reopenLoan(userId: string, loanId: string): Promise<boolean> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("loan_events")
-    .delete()
-    .eq("loan_id", loanId)
-    .eq("owner_id", userId)
-    .in("kind", ["write_off", "forgiveness"])
-    .select("id")
-    .maybeSingle();
+export async function reopenLoan(db: AppDb, userId: string, loanId: string): Promise<boolean> {
+  const row = await db
+    .deleteFrom("loan_events")
+    .where("loan_id", "=", loanId)
+    .where("owner_id", "=", userId)
+    .where("kind", "in", ["write_off", "forgiveness"])
+    .returning("id")
+    .executeTakeFirst();
 
-  if (error) throw error;
-  return Boolean(data);
+  return Boolean(row);
 }
 
 /** Deletion cascades to the repayment's own linked transaction (ON DELETE CASCADE). */
 export async function deleteLoanRepayment(
+  db: AppDb,
   userId: string,
   loanId: string,
   eventId: string,
 ): Promise<boolean> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("loan_events")
-    .delete()
-    .eq("id", eventId)
-    .eq("loan_id", loanId)
-    .eq("owner_id", userId)
-    .eq("kind", "repayment")
-    .select("id")
-    .maybeSingle();
+  const row = await db
+    .deleteFrom("loan_events")
+    .where("id", "=", eventId)
+    .where("loan_id", "=", loanId)
+    .where("owner_id", "=", userId)
+    .where("kind", "=", "repayment")
+    .returning("id")
+    .executeTakeFirst();
 
-  if (error) throw error;
-  return Boolean(data);
+  return Boolean(row);
 }

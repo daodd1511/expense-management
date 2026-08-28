@@ -17,7 +17,11 @@ favoritesRouter.post(
     }
   }),
   async (c) => {
-    const result = await controller.createFavorite(c.get("userId"), c.req.valid("json"));
+    const result = await controller.createFavorite(
+      c.get("db"),
+      c.get("userId"),
+      c.req.valid("json"),
+    );
     return c.json({ data: result.favorite }, result.created ? 201 : 200);
   },
 );

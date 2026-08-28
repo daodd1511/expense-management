@@ -42,11 +42,12 @@ export const peopleRouter = new Hono<AuthEnv>();
 
 peopleRouter.get("/", controller.listPeople);
 peopleRouter.post("/", validateJson(personCreateSchema), async (c) => {
-  const data = await controller.createPerson(c.get("userId"), c.req.valid("json"));
+  const data = await controller.createPerson(c.get("db"), c.get("userId"), c.req.valid("json"));
   return c.json({ data }, 201);
 });
 peopleRouter.patch("/:id", validateJson(personPatchSchema), async (c) => {
   const data = await controller.updatePerson(
+    c.get("db"),
     c.get("userId"),
     c.req.param("id"),
     c.req.valid("json"),
@@ -71,6 +72,7 @@ loansRouter.post(
   rejectFutureLoanDate,
   async (c) => {
     const data = await controller.createDisbursedLoan(
+      c.get("db"),
       c.get("userId"),
       c.req.valid("json"),
       c.req.valid("query").today,
@@ -84,6 +86,7 @@ loansRouter.post(
   validateJson(openingLoanCreateSchema),
   async (c) => {
     const data = await controller.createOpeningLoan(
+      c.get("db"),
       c.get("userId"),
       c.req.valid("json"),
       c.req.valid("query").today,
@@ -100,6 +103,7 @@ loansRouter.patch(
   validateJson(loanMetadataPatchSchema),
   async (c) => {
     const data = await controller.updateLoanMetadata(
+      c.get("db"),
       c.get("userId"),
       c.req.param("id"),
       c.req.valid("json"),
@@ -115,6 +119,7 @@ loansRouter.patch(
   rejectFutureLoanDate,
   async (c) => {
     const data = await controller.updateLoanDisbursement(
+      c.get("db"),
       c.get("userId"),
       c.req.param("id"),
       c.req.valid("json"),
@@ -131,6 +136,7 @@ loansRouter.post(
   rejectFutureLoanDate,
   async (c) => {
     const data = await controller.createLoanRepayment(
+      c.get("db"),
       c.get("userId"),
       c.req.param("id"),
       c.req.valid("json"),
@@ -146,6 +152,7 @@ loansRouter.patch(
   rejectFutureLoanDate,
   async (c) => {
     const data = await controller.updateLoanRepayment(
+      c.get("db"),
       c.get("userId"),
       c.req.param("id"),
       c.req.param("eventId"),
@@ -163,6 +170,7 @@ loansRouter.post(
   rejectFutureLoanDate,
   async (c) => {
     const data = await controller.closeLoan(
+      c.get("db"),
       c.get("userId"),
       c.req.param("id"),
       c.req.valid("json"),

@@ -16,7 +16,11 @@ categoriesRouter.get(
     }
   }),
   async (c) => {
-    const data = await controller.listCategories(c.get("userId"), c.req.valid("query").locale);
+    const data = await controller.listCategories(
+      c.get("db"),
+      c.get("userId"),
+      c.req.valid("query").locale,
+    );
     return c.json({ data });
   },
 );
@@ -28,7 +32,7 @@ categoriesRouter.post(
     }
   }),
   async (c) => {
-    const data = await controller.createCategory(c.get("userId"), c.req.valid("json"));
+    const data = await controller.createCategory(c.get("db"), c.get("userId"), c.req.valid("json"));
     return c.json({ data }, 201);
   },
 );

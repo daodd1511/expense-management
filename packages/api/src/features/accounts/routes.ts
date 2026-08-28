@@ -19,7 +19,11 @@ accountsRouter.post(
     }
   }),
   async (c) => {
-    const account = await controller.createAccount(c.get("userId"), c.req.valid("json"));
+    const account = await controller.createAccount(
+      c.get("db"),
+      c.get("userId"),
+      c.req.valid("json"),
+    );
     return c.json({ data: account }, 201);
   },
 );
@@ -31,7 +35,7 @@ accountsRouter.put(
     }
   }),
   async (c) => {
-    await controller.reorderAccounts(c.get("userId"), c.req.valid("json"));
+    await controller.reorderAccounts(c.get("db"), c.get("userId"), c.req.valid("json"));
     return c.json({ ok: true });
   },
 );
@@ -44,6 +48,7 @@ accountsRouter.patch(
   }),
   async (c) => {
     const account = await controller.updateAccount(
+      c.get("db"),
       c.get("userId"),
       c.req.param("id"),
       c.req.valid("json"),

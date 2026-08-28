@@ -1,5 +1,6 @@
 import type { Context } from "hono";
 import type { Lang } from "@wallet/shared";
+import type { AppDb } from "../../db/database";
 import { jsonError, parseRawJsonBody } from "../../lib/response";
 import type { AuthEnv } from "../../middleware/auth";
 import * as service from "./service";
@@ -13,15 +14,16 @@ function requireId(id: string | undefined) {
   return id;
 }
 
-export async function listCategories(userId: string, locale?: Lang) {
-  return service.listCategories(userId, locale);
+export async function listCategories(db: AppDb, userId: string, locale?: Lang) {
+  return service.listCategories(db, userId, locale);
 }
 
 export async function createCategory(
+  db: AppDb,
   userId: string,
-  input: Parameters<typeof service.createCategory>[1],
+  input: Parameters<typeof service.createCategory>[2],
 ) {
-  return service.createCategory(userId, input);
+  return service.createCategory(db, userId, input);
 }
 
 export async function updateCategory(c: Context<AuthEnv>) {
@@ -40,6 +42,7 @@ export async function updateCategory(c: Context<AuthEnv>) {
   }
 
   const data = await service.updateCategory(
+    c.get("db"),
     c.get("userId"),
     requireId(c.req.param("id")),
     parsed.data,
@@ -48,6 +51,6 @@ export async function updateCategory(c: Context<AuthEnv>) {
 }
 
 export async function deleteCategory(c: Context<AuthEnv>) {
-  await service.deleteCategory(c.get("userId"), requireId(c.req.param("id")));
+  await service.deleteCategory(c.get("db"), c.get("userId"), requireId(c.req.param("id")));
   return c.json({ ok: true });
 }

@@ -7,7 +7,7 @@ import {
   type BudgetCreate,
   type BudgetPatch,
 } from "@wallet/shared";
-import { getSupabase } from "../../config/supabase";
+import type { AppDb } from "../../db/database";
 import { parseRows } from "../../lib/response";
 import { ApiError } from "../../middleware/error";
 
@@ -20,69 +20,55 @@ function parseBudgetRow(data: unknown, message: string): Budget {
   return toBudget(result.data);
 }
 
-export async function listBudgets(userId: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("budgets")
-    .select("*")
-    .eq("owner_id", userId)
-    .order("created_at", { ascending: true });
+export async function listBudgets(db: AppDb, userId: string) {
+  const rows = await db
+    .selectFrom("budgets")
+    .selectAll()
+    .where("owner_id", "=", userId)
+    .orderBy("created_at", "asc")
+    .execute();
 
-  if (error) {
-    throw error;
-  }
-
-  return parseRows(data, budgetRowSchema, toBudget);
+  return parseRows(rows, budgetRowSchema, toBudget);
 }
 
-export async function createBudget(userId: string, budget: BudgetCreate) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("budgets")
-    .insert(fromBudget({ budget, ownerId: userId }))
-    .select("*")
-    .single();
+export async function createBudget(db: AppDb, userId: string, budget: BudgetCreate) {
+  const row = await db
+    .insertInto("budgets")
+    .values(fromBudget({ budget, ownerId: userId }))
+    .returningAll()
+    .executeTakeFirstOrThrow();
 
-  if (error) {
-    throw error;
-  }
-
-  return parseBudgetRow(data, "Inserted budget failed validation");
+  return parseBudgetRow(row, "Inserted budget failed validation");
 }
 
-export async function updateBudget(userId: string, categoryId: string, patch: BudgetPatch) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("budgets")
-    .update(budgetPatchToRow(patch))
-    .eq("category_id", categoryId)
-    .eq("owner_id", userId)
-    .select("*")
-    .maybeSingle();
+export async function updateBudget(
+  db: AppDb,
+  userId: string,
+  categoryId: string,
+  patch: BudgetPatch,
+) {
+  const row = await db
+    .updateTable("budgets")
+    .set(budgetPatchToRow(patch))
+    .where("category_id", "=", categoryId)
+    .where("owner_id", "=", userId)
+    .returningAll()
+    .executeTakeFirst();
 
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
+  if (!row) {
     return null;
   }
 
-  return parseBudgetRow(data, "Updated budget failed validation");
+  return parseBudgetRow(row, "Updated budget failed validation");
 }
 
-export async function deleteBudget(userId: string, categoryId: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("budgets")
-    .delete()
-    .eq("category_id", categoryId)
-    .eq("owner_id", userId)
-    .select("id");
+export async function deleteBudget(db: AppDb, userId: string, categoryId: string) {
+  const row = await db
+    .deleteFrom("budgets")
+    .where("category_id", "=", categoryId)
+    .where("owner_id", "=", userId)
+    .returning("id")
+    .executeTakeFirst();
 
-  if (error) {
-    throw error;
-  }
-
-  return Boolean(data && data.length > 0);
+  return Boolean(row);
 }

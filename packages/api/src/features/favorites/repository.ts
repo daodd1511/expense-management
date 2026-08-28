@@ -5,7 +5,7 @@ import {
   type Favorite,
   type FavoriteCreate,
 } from "@wallet/shared";
-import { getSupabase } from "../../config/supabase";
+import type { AppDb } from "../../db/database";
 import { parseRows } from "../../lib/response";
 import { ApiError } from "../../middleware/error";
 
@@ -18,65 +18,56 @@ function parseFavoriteRow(data: unknown, message: string): Favorite {
   return toFavorite(result.data);
 }
 
-export async function listFavorites(userId: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("category_favorites")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true });
+export async function listFavorites(db: AppDb, userId: string) {
+  const rows = await db
+    .selectFrom("category_favorites")
+    .selectAll()
+    .where("user_id", "=", userId)
+    .orderBy("created_at", "asc")
+    .execute();
 
-  if (error) {
-    throw error;
-  }
-
-  return parseRows(data, favoriteRowSchema, toFavorite);
+  return parseRows(rows, favoriteRowSchema, toFavorite);
 }
 
-export async function findFavorite(userId: string, categoryId: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("category_favorites")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("category_id", categoryId)
-    .maybeSingle();
+export async function findFavorite(db: AppDb, userId: string, categoryId: string) {
+  const row = await db
+    .selectFrom("category_favorites")
+    .selectAll()
+    .where("user_id", "=", userId)
+    .where("category_id", "=", categoryId)
+    .executeTakeFirst();
 
-  if (error) {
-    throw error;
-  }
-
-  return data ? parseFavoriteRow(data, "Existing favorite failed validation") : null;
+  return row ? parseFavoriteRow(row, "Existing favorite failed validation") : null;
 }
 
-export async function createFavorite(userId: string, input: FavoriteCreate) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("category_favorites")
-    .insert(fromFavorite({ categoryId: input.categoryId, userId }))
-    .select("*")
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return parseFavoriteRow(data, "Inserted favorite failed validation");
-}
-
-export async function deleteFavorite(userId: string, categoryId: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("category_favorites")
-    .delete()
-    .eq("category_id", categoryId)
-    .eq("user_id", userId)
+export async function isCategoryAccessible(db: AppDb, userId: string, categoryId: string) {
+  const row = await db
+    .selectFrom("categories")
     .select("id")
-    .maybeSingle();
+    .where("id", "=", categoryId)
+    .where((eb) => eb.or([eb("owner_id", "=", userId), eb("owner_id", "is", null)]))
+    .executeTakeFirst();
 
-  if (error) {
-    throw error;
-  }
+  return Boolean(row);
+}
 
-  return Boolean(data);
+export async function createFavorite(db: AppDb, userId: string, input: FavoriteCreate) {
+  const row = await db
+    .insertInto("category_favorites")
+    .values(fromFavorite({ categoryId: input.categoryId, userId }))
+    .returningAll()
+    .executeTakeFirstOrThrow();
+
+  return parseFavoriteRow(row, "Inserted favorite failed validation");
+}
+
+export async function deleteFavorite(db: AppDb, userId: string, categoryId: string) {
+  const row = await db
+    .deleteFrom("category_favorites")
+    .where("category_id", "=", categoryId)
+    .where("user_id", "=", userId)
+    .returning("id")
+    .executeTakeFirst();
+
+  return Boolean(row);
 }

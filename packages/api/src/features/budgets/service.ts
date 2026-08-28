@@ -1,17 +1,19 @@
 import { conflictingBudget, type BudgetCreate, type BudgetPatch } from "@wallet/shared";
+import type { AppDb } from "../../db/database";
 import { ApiError } from "../../middleware/error";
 import * as categoriesService from "../categories/service";
 import * as repository from "./repository";
 
 async function assertNoConflict(
+  db: AppDb,
   userId: string,
   categoryId: string,
   scope: BudgetCreate["scope"],
   excludeCategoryId?: string,
 ) {
   const [budgets, categories] = await Promise.all([
-    repository.listBudgets(userId),
-    categoriesService.listCategories(userId),
+    repository.listBudgets(db, userId),
+    categoriesService.listCategories(db, userId),
   ]);
 
   const conflict = conflictingBudget(categoryId, scope, budgets, categories, excludeCategoryId);
@@ -20,21 +22,26 @@ async function assertNoConflict(
   }
 }
 
-export async function listBudgets(userId: string) {
-  return repository.listBudgets(userId);
+export async function listBudgets(db: AppDb, userId: string) {
+  return repository.listBudgets(db, userId);
 }
 
-export async function createBudget(userId: string, budget: BudgetCreate) {
-  await assertNoConflict(userId, budget.categoryId, budget.scope);
-  return repository.createBudget(userId, budget);
+export async function createBudget(db: AppDb, userId: string, budget: BudgetCreate) {
+  await assertNoConflict(db, userId, budget.categoryId, budget.scope);
+  return repository.createBudget(db, userId, budget);
 }
 
-export async function updateBudget(userId: string, categoryId: string, patch: BudgetPatch) {
+export async function updateBudget(
+  db: AppDb,
+  userId: string,
+  categoryId: string,
+  patch: BudgetPatch,
+) {
   if (patch.scope) {
-    await assertNoConflict(userId, categoryId, patch.scope, categoryId);
+    await assertNoConflict(db, userId, categoryId, patch.scope, categoryId);
   }
 
-  const budget = await repository.updateBudget(userId, categoryId, patch);
+  const budget = await repository.updateBudget(db, userId, categoryId, patch);
   if (!budget) {
     throw new ApiError(404, "Budget not found");
   }
@@ -42,8 +49,8 @@ export async function updateBudget(userId: string, categoryId: string, patch: Bu
   return budget;
 }
 
-export async function deleteBudget(userId: string, categoryId: string) {
-  const deleted = await repository.deleteBudget(userId, categoryId);
+export async function deleteBudget(db: AppDb, userId: string, categoryId: string) {
+  const deleted = await repository.deleteBudget(db, userId, categoryId);
   if (!deleted) {
     throw new ApiError(404, "Budget not found");
   }

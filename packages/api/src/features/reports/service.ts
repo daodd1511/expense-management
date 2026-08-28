@@ -17,6 +17,7 @@ import {
   type SpendingCategoryChildAggregate,
   type Transaction,
 } from "@wallet/shared";
+import type { AppDb } from "../../db/database";
 import { ApiError } from "../../middleware/error";
 import * as repository from "./repository";
 
@@ -53,11 +54,12 @@ function percentageOf(amount: number, total: number) {
 }
 
 export async function getIncomeExpenseReport(
+  db: AppDb,
   userId: string,
   from: string,
   to: string,
 ): Promise<IncomeExpenseReportResponse> {
-  const transactions = await repository.listReportTransactions(userId, from, to);
+  const transactions = await repository.listReportTransactions(db, userId, from, to);
   // Explicit income | expense, not "not transfer" — a catch-all would silently fold loan
   // rows into the expense branch below (PLAN.md -> "Transaction Model").
   const reportableTransactions = transactions.filter(
@@ -71,7 +73,7 @@ export async function getIncomeExpenseReport(
         .filter((id): id is string => Boolean(id)),
     ),
   ];
-  const categories = await repository.listReportCategories(userId, categoryIds);
+  const categories = await repository.listReportCategories(db, userId, categoryIds);
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const periods = monthRange(from.slice(0, 7), to.slice(0, 7));
 
@@ -214,15 +216,16 @@ export async function getIncomeExpenseReport(
 }
 
 export async function getFinancialPosition(
+  db: AppDb,
   userId: string,
   from: string,
   to: string,
 ): Promise<FinancialPositionResponse> {
   const [accounts, transactionsThroughTo, loans, balanceAdjustmentCategoryIds] = await Promise.all([
-    repository.listAccountsForPosition(userId),
-    repository.listTransactionsThroughDate(userId, to),
-    repository.listLoansWithEventsForPosition(userId),
-    repository.listBalanceAdjustmentCategoryIds(),
+    repository.listAccountsForPosition(db, userId),
+    repository.listTransactionsThroughDate(db, userId, to),
+    repository.listLoansWithEventsForPosition(db, userId),
+    repository.listBalanceAdjustmentCategoryIds(db),
   ]);
 
   const balanceAdjustmentTransactionIds = new Set(
@@ -281,6 +284,7 @@ type SpendingCategoryChildDraft = {
 };
 
 export async function getSpendingAnalysisReport(
+  db: AppDb,
   userId: string,
   from: string,
   to: string,
@@ -291,7 +295,12 @@ export async function getSpendingAnalysisReport(
   // A single query spans both windows (and the gap between them, for presets whose
   // comparison range isn't adjacent to the current range) — cheaper than two round
   // trips; transactions outside both windows are simply dropped below.
-  const transactions = await repository.listReportTransactions(userId, comparisonRange.from, to);
+  const transactions = await repository.listReportTransactions(
+    db,
+    userId,
+    comparisonRange.from,
+    to,
+  );
   const expenseTransactions = transactions.filter((transaction) => transaction.type === "expense");
 
   const categoryIds = [
@@ -301,7 +310,7 @@ export async function getSpendingAnalysisReport(
         .filter((id): id is string => Boolean(id)),
     ),
   ];
-  const categories = await repository.listReportCategories(userId, categoryIds);
+  const categories = await repository.listReportCategories(db, userId, categoryIds);
   const categoryById = new Map(categories.map((category) => [category.id, category]));
 
   // Same "Balance Adjustment" exclusion as getIncomeExpenseReport: checked inline
@@ -315,7 +324,8 @@ export async function getSpendingAnalysisReport(
     (transaction) => transaction.date >= from && transaction.date <= to,
   );
   const previousTransactions = spendingTransactions.filter(
-    (transaction) => transaction.date >= comparisonRange.from && transaction.date <= comparisonRange.to,
+    (transaction) =>
+      transaction.date >= comparisonRange.from && transaction.date <= comparisonRange.to,
   );
 
   const draftsByKey = new Map<string, SpendingCategoryDraft>();
@@ -348,10 +358,18 @@ export async function getSpendingAnalysisReport(
     const category = categoryById.get(transaction.categoryId);
     const parentCategoryId = category?.parentId ?? null;
     if (!parentCategoryId) {
-      return { key: transaction.categoryId, categoryId: transaction.categoryId, childCategoryId: null };
+      return {
+        key: transaction.categoryId,
+        categoryId: transaction.categoryId,
+        childCategoryId: null,
+      };
     }
 
-    return { key: parentCategoryId, categoryId: parentCategoryId, childCategoryId: transaction.categoryId };
+    return {
+      key: parentCategoryId,
+      categoryId: parentCategoryId,
+      childCategoryId: transaction.categoryId,
+    };
   }
 
   for (const transaction of currentTransactions) {
@@ -395,8 +413,14 @@ export async function getSpendingAnalysisReport(
     }
   }
 
-  const currentTotal = currentTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
-  const previousTotal = previousTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+  const currentTotal = currentTransactions.reduce(
+    (sum, transaction) => sum + transaction.amount,
+    0,
+  );
+  const previousTotal = previousTransactions.reduce(
+    (sum, transaction) => sum + transaction.amount,
+    0,
+  );
 
   function shareOf(amount: number, total: number): number {
     return total === 0 ? 0 : amount / total;

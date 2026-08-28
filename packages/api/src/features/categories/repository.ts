@@ -8,7 +8,7 @@ import {
   type CategoryPatch,
   type Lang,
 } from "@wallet/shared";
-import { getSupabase } from "../../config/supabase";
+import type { AppDb } from "../../db/database";
 import { parseRows } from "../../lib/response";
 import { ApiError } from "../../middleware/error";
 
@@ -32,181 +32,137 @@ function parseCategoryRow(data: unknown, message: string): Category {
   return toCategory(result.data);
 }
 
-export async function listCategories(userId: string, locale: Lang = DEFAULT_LOCALE) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*, category_translations(name, locale)")
-    .or(`owner_id.eq.${userId},owner_id.is.null`)
-    .eq("category_translations.locale", locale)
-    .order("created_at", { ascending: true });
+export async function listCategories(db: AppDb, userId: string, locale: Lang = DEFAULT_LOCALE) {
+  const rows = await db
+    .selectFrom("categories")
+    .leftJoin("category_translations", (join) =>
+      join
+        .onRef("category_translations.category_id", "=", "categories.id")
+        .on("category_translations.locale", "=", locale),
+    )
+    .selectAll("categories")
+    .select("category_translations.name as translated_name")
+    .where((eb) =>
+      eb.or([eb("categories.owner_id", "=", userId), eb("categories.owner_id", "is", null)]),
+    )
+    .orderBy("categories.created_at", "asc")
+    .execute();
 
-  if (error) {
-    throw error;
-  }
-
-  const localized = (data ?? []).map((row) => {
-    const { category_translations, ...rest } = row as typeof row & {
-      category_translations: { name: string; locale: string }[] | null;
-    };
-    const translated = rest.owner_id === null ? category_translations?.[0]?.name : undefined;
-    return { ...rest, name: translated ?? rest.name };
+  const localized = rows.map(({ translated_name: translatedName, ...row }) => {
+    const translated = row.owner_id === null ? translatedName : undefined;
+    return { ...row, name: translated ?? row.name };
   });
 
   return parseRows(localized, categoryRowSchema, toCategory);
 }
 
 export async function loadParentCandidate(
+  db: AppDb,
   parentId: string,
   userId: string,
 ): Promise<ParentCandidate | null> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("categories")
-    .select("id, type, parent_id, owner_id")
-    .eq("id", parentId)
-    .or(`owner_id.eq.${userId},owner_id.is.null`)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  return (data as ParentCandidate | null) ?? null;
+  return (
+    (await db
+      .selectFrom("categories")
+      .select(["id", "type", "parent_id", "owner_id"])
+      .where("id", "=", parentId)
+      .where((eb) => eb.or([eb("owner_id", "=", userId), eb("owner_id", "is", null)]))
+      .executeTakeFirst()) ?? null
+  );
 }
 
-export async function createCategory(userId: string, category: CategoryCreate) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("categories")
-    .insert(fromCategory({ category, ownerId: userId }))
-    .select("*")
-    .single();
+export async function createCategory(db: AppDb, userId: string, category: CategoryCreate) {
+  const row = await db
+    .insertInto("categories")
+    .values(fromCategory({ category, ownerId: userId }))
+    .returningAll()
+    .executeTakeFirstOrThrow();
 
-  if (error) {
-    throw error;
-  }
-
-  return parseCategoryRow(data, "Inserted category failed validation");
+  return parseCategoryRow(row, "Inserted category failed validation");
 }
 
-export async function loadOwnedCategory(id: string): Promise<OwnedCategory | null> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("categories")
-    .select("id, type, parent_id, owner_id")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  return (data as OwnedCategory | null) ?? null;
+export async function loadOwnedCategory(db: AppDb, id: string): Promise<OwnedCategory | null> {
+  return (
+    (await db
+      .selectFrom("categories")
+      .select(["id", "type", "parent_id", "owner_id"])
+      .where("id", "=", id)
+      .executeTakeFirst()) ?? null
+  );
 }
 
-export async function countChildren(categoryId: string) {
-  const supabase = getSupabase();
-  const result = await supabase
-    .from("categories")
-    .select("id", { count: "exact", head: true })
-    .eq("parent_id", categoryId);
+export async function countChildren(db: AppDb, categoryId: string) {
+  const row = await db
+    .selectFrom("categories")
+    .select((eb) => eb.fn.countAll<number>().as("count"))
+    .where("parent_id", "=", categoryId)
+    .executeTakeFirstOrThrow();
 
-  if (result.error) {
-    throw result.error;
-  }
-
-  return result.count ?? 0;
+  return Number(row.count);
 }
 
-export async function listBudgetedCategoryIds(userId: string, categoryIds: string[]) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("budgets")
+export async function listBudgetedCategoryIds(db: AppDb, userId: string, categoryIds: string[]) {
+  if (categoryIds.length === 0) return new Set<string>();
+
+  const rows = await db
+    .selectFrom("budgets")
     .select("category_id")
-    .in("category_id", categoryIds)
-    .eq("owner_id", userId);
+    .where("category_id", "in", categoryIds)
+    .where("owner_id", "=", userId)
+    .execute();
 
-  if (error) {
-    throw error;
-  }
-
-  return new Set((data ?? []).map((budget) => budget.category_id));
+  return new Set(rows.map((budget) => budget.category_id));
 }
 
-export async function updateCategory(userId: string, id: string, patch: CategoryPatch) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("categories")
-    .update(categoryPatchToRow(patch))
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .select("*")
-    .maybeSingle();
+export async function updateCategory(db: AppDb, userId: string, id: string, patch: CategoryPatch) {
+  const row = await db
+    .updateTable("categories")
+    .set(categoryPatchToRow(patch))
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .returningAll()
+    .executeTakeFirst();
 
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
+  if (!row) {
     return null;
   }
 
-  return parseCategoryRow(data, "Updated category failed validation");
+  return parseCategoryRow(row, "Updated category failed validation");
 }
 
-export async function clearTransactionsCategory(userId: string, categoryId: string) {
-  const supabase = getSupabase();
-  const result = await supabase
-    .from("transactions")
-    .update({ category_id: null })
-    .eq("category_id", categoryId)
-    .eq("owner_id", userId);
-
-  if (result.error) {
-    throw result.error;
-  }
+export async function clearTransactionsCategory(db: AppDb, userId: string, categoryId: string) {
+  await db
+    .updateTable("transactions")
+    .set({ category_id: null })
+    .where("category_id", "=", categoryId)
+    .where("owner_id", "=", userId)
+    .execute();
 }
 
-export async function clearSubscriptionsCategory(userId: string, categoryId: string) {
-  const supabase = getSupabase();
-  const result = await supabase
-    .from("subscriptions")
-    .update({ category_id: null })
-    .eq("category_id", categoryId)
-    .eq("owner_id", userId);
-
-  if (result.error) {
-    throw result.error;
-  }
+export async function clearSubscriptionsCategory(db: AppDb, userId: string, categoryId: string) {
+  await db
+    .updateTable("subscriptions")
+    .set({ category_id: null })
+    .where("category_id", "=", categoryId)
+    .where("owner_id", "=", userId)
+    .execute();
 }
 
-export async function deleteBudget(userId: string, categoryId: string) {
-  const supabase = getSupabase();
-  const result = await supabase
-    .from("budgets")
-    .delete()
-    .eq("category_id", categoryId)
-    .eq("owner_id", userId);
-
-  if (result.error) {
-    throw result.error;
-  }
+export async function deleteBudget(db: AppDb, userId: string, categoryId: string) {
+  await db
+    .deleteFrom("budgets")
+    .where("category_id", "=", categoryId)
+    .where("owner_id", "=", userId)
+    .execute();
 }
 
-export async function deleteCategory(userId: string, categoryId: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("categories")
-    .delete()
-    .eq("id", categoryId)
-    .eq("owner_id", userId)
-    .select("id")
-    .maybeSingle();
+export async function deleteCategory(db: AppDb, userId: string, categoryId: string) {
+  const row = await db
+    .deleteFrom("categories")
+    .where("id", "=", categoryId)
+    .where("owner_id", "=", userId)
+    .returning("id")
+    .executeTakeFirst();
 
-  if (error) {
-    throw error;
-  }
-
-  return Boolean(data);
+  return Boolean(row);
 }
