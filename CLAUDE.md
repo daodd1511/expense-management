@@ -215,24 +215,18 @@ Never auto-commit a capture. Delete a line only when the item ships or graduates
 `docs/specs/<feature>/` plan.
 
 ## Spec-Driven Execution Workflow
-<!-- rulebook v3 -->
+<!-- spec-workflow v1 -->
 
-Specs live in `docs/specs/<feature>/`. Flow: `/grill-me` → `PLAN.md` → `/spec-plan` →
-`EXECUTION.md` → `/spec-phase` per phase.
+Specs live in `docs/specs/<feature-slug>/`. Flow: `/grill-me` → `PLAN.md` →
+`/spec-plan` → `EXECUTION.md` → `/spec-phase` per phase.
 
-Binding on all work in this repo, spec skill or not:
+A grill session that lands a plan writes it to `docs/specs/<feature-slug>/PLAN.md` —
+never to the repo root. Create the directory if it doesn't exist yet.
 
-- **Git is the authoritative state store.** Branch `<feature-slug>/phase-<n>-<desc>` encodes
-  spec + phase and commits encode progress. Never infer spec state from prose, and never
-  rewrite history to make it tidy.
-- **One spec in flight.** Do not start or resume a second spec's phase while another has an
-  unfinished one.
-- **Never push, open a PR, or merge without a separate explicit ask** — regardless of what
-  earlier work in the session was authorized.
-
-Doing spec work? Read `docs/specs/RULEBOOK.md` first — the state model (`done-with-debt`,
-`[~]`, verification debt), gate lanes, branch model, checkpoints, and capability baseline are
-defined there, not here. Don't improvise substitutes for those terms from this summary.
+Doing spec work? Read `docs/specs/RULEBOOK.md` first — the state model
+(`done-with-debt`, `[~]`, verification debt), gate tiers, branch model, checkpoints, and
+capability baseline are defined there, not here. Don't improvise substitutes for those
+terms from this summary.
 
 ## Coding Standards
 - Always use `react-frontend-developer` skill for frontend code generation.
