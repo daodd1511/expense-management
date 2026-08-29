@@ -10,7 +10,7 @@ describe.skipIf(!hasTestDatabase)("Dbmate migration chain", () => {
   it("bootstraps the complete schema from an empty PostgreSQL 17 database", async () => {
     await withMigratedDatabase(async ({ migratorUrl }) => {
       const status = await runDbmate(migratorUrl, "status");
-      expect(status.stdout).toContain("Applied: 5");
+      expect(status.stdout).toContain("Applied: 6");
       expect(status.stdout).toContain("Pending: 0");
     });
   });
@@ -23,7 +23,7 @@ describe.skipIf(!hasTestDatabase)("Dbmate migration chain", () => {
       expect(secondRun.stdout.trim()).toBe("");
 
       const status = await runDbmate(migratorUrl, "status");
-      expect(status.stdout).toContain("Applied: 5");
+      expect(status.stdout).toContain("Applied: 6");
       expect(status.stdout).toContain("Pending: 0");
     });
   });
@@ -34,20 +34,20 @@ describe.skipIf(!hasTestDatabase)("Dbmate migration chain", () => {
       // `migrate:down` section must tolerate running in strict reverse-dependency
       // order (a `DROP TABLE` before another table's still-live foreign key into it
       // fails loudly, which is exactly the kind of bug this test exists to catch).
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 6; i++) {
         await runDbmate(migratorUrl, "down");
       }
 
       const afterDown = await runDbmate(migratorUrl, "status");
       expect(afterDown.stdout).toContain("Applied: 0");
-      expect(afterDown.stdout).toContain("Pending: 5");
+      expect(afterDown.stdout).toContain("Pending: 6");
 
       // Re-bootstrapping from the rolled-back state must also succeed: a `migrate:down`
       // that leaves behind an object its own `migrate:up` recreates without
       // `CREATE OR REPLACE` (e.g. a function) would fail here, not on the first `up`.
       await runDbmate(migratorUrl, "up");
       const afterUp = await runDbmate(migratorUrl, "status");
-      expect(afterUp.stdout).toContain("Applied: 5");
+      expect(afterUp.stdout).toContain("Applied: 6");
       expect(afterUp.stdout).toContain("Pending: 0");
     });
   });
