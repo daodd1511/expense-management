@@ -5,9 +5,9 @@ Integration branch: `develop`. Branch model: stacked via `gh stack` (default).
 
 ## STATUS
 
-- Current phase: 2 — in-progress
+- Current phase: 2 — done
 - Phase 1 — database baseline and access boundary: done
-- Phase 2 — API repositories and authorization: in-progress
+- Phase 2 — API repositories and authorization: done
 - Phase 3 — session authentication and web client: pending
 - Phase 4 — migration, validation, and recovery tooling: pending
 - Phase 5 — local runtime and integration verification: pending
@@ -66,8 +66,13 @@ Fresh review: required — authorization, financial calculations, and money-prot
 - [x] (amended 2026-08-29) Add `db/migrations/20260829000006_grant_readiness_probe.sql`, require that migration in `packages/api/src/db/database.ts`, and cover the real `wallet_app` readiness query in `packages/api/src/db/database.test.ts` so a migrated deployment reports ready without granting broader schema-metadata access.
 
 **Phase gate (hard):**
-- [ ] `pnpm typecheck`
-- [ ] `pnpm exec vitest related --run <files changed in this phase>`
+- [x] `pnpm typecheck`
+- [x] `pnpm exec vitest related --run <files changed in this phase>` — ran from the actual `989a83b..HEAD` diff against a throwaway local `postgres:17-bookworm` container with `TEST_DATABASE_URL`; 11 files and 42/42 tests passed after the review correction, including the real `wallet_app` readiness query.
+
+**Fresh review:** ran twice (initial + one re-review, per the rulebook's cap) with `gpt-5.6-terra` at high reasoning.
+- Initial review found one P1: `/health/ready` queried `public.schema_migrations` through `wallet_app`, but the runtime role had no permission to read that table, so every correctly migrated deployment would report `503`.
+- Fixed it as the 2026-08-29 amendment with a new forward migration granting column-only `SELECT (version)`, a matching down-migration revoke, a required-version bump, and a PostgreSQL integration test using the real `wallet_app` connection.
+- Re-review found no P0-P2 issues. Residual risk is intentional: protected routes remain fail-closed until Phase 3 supplies Better Auth, and that resolver must return only validated UUID User IDs.
 
 **Review checklist (user, at PR review):**
 - [ ] Exercise an owned-data read and a cross-User identifier read/write; confirm the latter reveals no private row and performs no mutation.
