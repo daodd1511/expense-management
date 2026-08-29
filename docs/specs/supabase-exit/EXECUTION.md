@@ -96,7 +96,7 @@ Fresh review: required — authentication, cookies, proxy trust, and signing sec
 - [x] Replace `packages/web/src/core/supabase.ts`, `packages/web/src/features/auth/auth.tsx`, and `packages/web/src/core/api.ts` with the Better Auth React client/auth context and `fetch(..., { credentials: "same-origin" })`; retain `X-Client-Timezone`, `ApiError`, and existing response validation.
 - [x] Update `packages/web/src/features/auth/components/SignIn.tsx`, `SignUp.tsx`, `AuthCardLayout.tsx`, `auth-errors.ts`, `packages/web/src/routing/router.tsx`, `auth-redirect*.test.ts`, and auth tests to retain email/password redirect behavior while removing Google, forgot-password, and reset-password routes, controls, and components.
 - [x] (amended 2026-08-29) Remove retired Google/password-recovery copy from `packages/web/src/core/i18n.tsx` and replace the stale Google provider label in `packages/web/src/features/settings/components/Settings.tsx`.
-- [ ] Remove Supabase browser environment variables from `.env.example`, `packages/web/vite.config.ts`, `packages/web/src/vite-env.d.ts`, and `.github/workflows/ci.yml`; update `packages/web/src/core/api.test.ts` and auth/component tests for cookie sessions.
+- [x] Remove Supabase browser environment variables from `.env.example`, `packages/web/vite.config.ts`, `packages/web/src/vite-env.d.ts`, and `.github/workflows/ci.yml`; update `packages/web/src/core/api.test.ts` and auth/component tests for cookie sessions. — `vite.config.ts` and `vite-env.d.ts` had no Supabase declarations to remove; the active build-time variables were confined to `.env.example` and CI.
 
 **Phase gate (hard):**
 - [ ] `pnpm typecheck`

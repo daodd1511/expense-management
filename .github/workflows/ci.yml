@@ -8,15 +8,6 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    # packages/web/src/core/supabase.ts calls createClient() at import time, so
-    # tests need a URL even though nothing actually hits the network.
-    #
-    # Actions *variables*, not secrets: these are compiled into the public browser
-    # bundle anyway, and secrets are withheld from fork PRs — which would break CI
-    # for outside contributors now that this repo is public.
-    env:
-      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
