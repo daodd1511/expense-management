@@ -114,6 +114,15 @@ describe.skipIf(!hasTestDatabase)("Better Auth integration", () => {
         });
         expect(protectedResponse.status).toBe(200);
 
+        const spoofedProxy = await app.request("/api/accounts", {
+          headers: {
+            cookie,
+            origin: BASE_URL,
+            "x-forwarded-for": "203.0.113.10",
+          },
+        });
+        expect(spoofedProxy.status).toBe(401);
+
         const signOut = await app.request(
           "/api/auth/sign-out",
           authRequest("/api/auth/sign-out", {}, cookie),
