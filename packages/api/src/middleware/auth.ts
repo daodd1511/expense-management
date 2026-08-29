@@ -1,9 +1,11 @@
 import type { Context } from "hono";
+import type { HttpBindings } from "@hono/node-server";
 import { createMiddleware } from "hono/factory";
 import { withAppTransaction, type AppDb } from "../db/database";
 import { jsonError } from "../lib/response";
 
 export type AuthEnv = {
+  Bindings: Partial<HttpBindings>;
   Variables: {
     userId: string;
     db: AppDb;

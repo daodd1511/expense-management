@@ -1,5 +1,11 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import {
+  createSessionIdentityResolver,
+  type AuthRequestNormalizer,
+  type WalletAuth,
+} from "./auth/better-auth";
+import { createAuthRoutes } from "./auth/routes";
 import { checkDatabaseReadiness } from "./db/database";
 import { accountsRouter } from "./features/accounts/routes";
 import { analyticsRouter } from "./features/analytics/routes";
@@ -20,6 +26,8 @@ import { errorMiddleware, handleError } from "./middleware/error";
 import { loggerMiddleware } from "./middleware/logger";
 
 export type AppDependencies = {
+  auth?: WalletAuth;
+  normalizeAuthRequest?: AuthRequestNormalizer;
   resolveIdentity?: IdentityResolver;
   runWithTransaction?: AppTransactionRunner;
   checkReadiness?: () => Promise<void>;
@@ -45,7 +53,16 @@ export function createApp(dependencies: AppDependencies = {}) {
   });
 
   const api = app.basePath("/api");
-  api.use("*", createAuthMiddleware(dependencies.resolveIdentity, dependencies.runWithTransaction));
+  api.route("/auth", createAuthRoutes(dependencies.auth, dependencies.normalizeAuthRequest));
+  api.use(
+    "*",
+    createAuthMiddleware(
+      dependencies.resolveIdentity ??
+        ((c) =>
+          createSessionIdentityResolver(dependencies.auth, dependencies.normalizeAuthRequest)(c)),
+      dependencies.runWithTransaction,
+    ),
+  );
   api.route("/transactions", transactionsRouter);
   api.route("/accounts", accountsRouter);
   api.route("/categories", categoriesRouter);
