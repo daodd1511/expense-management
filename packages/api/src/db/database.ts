@@ -11,7 +11,7 @@ export type Database = DB;
 export type AppDb = Kysely<Database> | Transaction<Database>;
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const REQUIRED_MIGRATION_VERSION = "20260828000004";
+const REQUIRED_MIGRATION_VERSION = "20260829000006";
 
 const APP_PG_TYPES = {
   getTypeParser(typeId: number, format?: "text" | "binary") {
@@ -114,10 +114,12 @@ export function withAppTransaction<T>(
 }
 
 /** Verifies that PostgreSQL responds and the Dbmate baseline required by this API is applied. */
-export async function checkDatabaseReadiness(): Promise<void> {
+export async function checkDatabaseReadiness(
+  db: Kysely<Database> = getAppDatabase().db,
+): Promise<void> {
   const result = await sql<{ version: string | null }>`
     select max(version) as version from public.schema_migrations
-  `.execute(getAppDatabase().db);
+  `.execute(db);
   const version = result.rows[0]?.version;
 
   if (!version || version < REQUIRED_MIGRATION_VERSION) {

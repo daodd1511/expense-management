@@ -1,6 +1,6 @@
 import { sql } from "kysely";
 import { describe, expect, it, vi } from "vitest";
-import { createAppDatabase } from "./database";
+import { checkDatabaseReadiness, createAppDatabase } from "./database";
 import { hasTestDatabase, withMigratedDatabase } from "./test-helpers";
 
 // See rls.test.ts for why the DB-backed tests below need a longer-than-default timeout.
@@ -21,6 +21,17 @@ describe("withAppTransaction", () => {
   });
 
   describe.skipIf(!hasTestDatabase)("against a migrated database", () => {
+    it("allows wallet_app to verify the required migration without application identity", async () => {
+      await withMigratedDatabase(async ({ appUrl }) => {
+        const app = createAppDatabase(appUrl);
+        try {
+          await expect(checkDatabaseReadiness(app.db)).resolves.toBeUndefined();
+        } finally {
+          await app.close();
+        }
+      });
+    });
+
     it("scopes the identity to one transaction and clears it once the connection is reused", async () => {
       await withMigratedDatabase(async ({ appUrl }) => {
         const app = createAppDatabase(appUrl);
@@ -31,8 +42,9 @@ describe("withAppTransaction", () => {
           const userId = "11111111-1111-1111-1111-111111111111";
 
           const seenDuring = await app.withAppTransaction(userId, async (trx) => {
-            const [row] = (await sql`select current_setting('wallet.user_id', true) as id`.execute(trx))
-              .rows as { id: string }[];
+            const [row] = (
+              await sql`select current_setting('wallet.user_id', true) as id`.execute(trx)
+            ).rows as { id: string }[];
             return row.id;
           });
           expect(seenDuring).toBe(userId);
@@ -43,8 +55,9 @@ describe("withAppTransaction", () => {
           // into the next through the exported function itself, not a reimplementation
           // of it.
           const seenAfter = await app.db.transaction().execute(async (trx) => {
-            const [row] = (await sql`select current_setting('wallet.user_id', true) as id`.execute(trx))
-              .rows as { id: string | null }[];
+            const [row] = (
+              await sql`select current_setting('wallet.user_id', true) as id`.execute(trx)
+            ).rows as { id: string | null }[];
             return row.id;
           });
           expect(seenAfter).toBeFalsy();

@@ -63,6 +63,7 @@ Fresh review: required — authorization, financial calculations, and money-prot
 - [x] Update `packages/api/src/config/env.ts`, `packages/api/src/index.ts`, `packages/api/src/app.ts`, and `packages/web/nginx.conf` to remove Supabase runtime configuration and expose database-aware `/health/ready` separately from process `/health` and nginx `/healthz`. — `index.ts` already consumed only `getEnv().port`, so removing Supabase fields from `getEnv()` required no direct bootstrap edit.
 - [x] Replace Supabase mocks in `packages/api/src/middleware/auth.test.ts`, `packages/api/src/features/*/*.test.ts`, and `packages/api/src/lib/http.test.ts` with PostgreSQL-backed fixtures that assert per-User isolation, API-contract equivalence, atomic rollback, and all nine function behaviors. — `lib/http.test.ts` was already a pure error-mapping test with no Supabase mock, so it remained unchanged.
 - [x] (amended 2026-08-28) Add application-pool parsers in `packages/api/src/db/database.ts` and a shared `packages/api/src/test/postgres-fixture.ts` so PostgreSQL `bigint`/timestamp values retain the established numeric-VND/ISO-string DTO contracts in repository integration tests.
+- [x] (amended 2026-08-29) Add `db/migrations/20260829000006_grant_readiness_probe.sql`, require that migration in `packages/api/src/db/database.ts`, and cover the real `wallet_app` readiness query in `packages/api/src/db/database.test.ts` so a migrated deployment reports ready without granting broader schema-metadata access.
 
 **Phase gate (hard):**
 - [ ] `pnpm typecheck`
