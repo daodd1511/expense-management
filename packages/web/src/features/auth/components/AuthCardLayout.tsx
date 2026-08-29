@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 
 type AuthLink = {
   label: string;
-  to: "/auth/sign-in" | "/auth/sign-up" | "/auth/forgot-password";
+  to: "/auth/sign-in" | "/auth/sign-up";
 };
 
 export function AuthCardLayout({

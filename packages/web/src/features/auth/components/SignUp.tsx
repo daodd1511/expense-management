@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { AppAuthError } from "@/features/auth/auth-errors";
 import { useAuth } from "@/features/auth/auth";
 import { useLang } from "@/core/i18n";
@@ -85,12 +85,6 @@ export function SignUpPage({ redirectTo }: { redirectTo: string }) {
           {t("auth.signUp")}
         </Button>
       </form>
-
-      <div className="text-center text-sm text-muted-foreground">
-        <Link to="/auth/forgot-password" className="font-medium text-primary hover:underline">
-          {t("auth.forgotPassword")}
-        </Link>
-      </div>
     </AuthCardLayout>
   );
 }

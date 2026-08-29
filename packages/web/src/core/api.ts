@@ -1,12 +1,11 @@
 import { z } from "zod";
-import { supabase } from "@/core/supabase";
 
 const apiErrorSchema = z.object({
   error: z.string(),
   details: z.unknown().optional(),
 });
 
-/** Thrown by `apiFetch` on any non-2xx response (or a missing auth session, as 401). */
+/** Thrown by `apiFetch` on any non-2xx response. */
 export class ApiError extends Error {
   status: number;
   details?: unknown;
@@ -65,19 +64,11 @@ function apiBase() {
 }
 
 export async function apiFetch(path: string, init?: RequestInit) {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session?.access_token) {
-    throw new ApiError("Missing auth session", 401);
-  }
-
   const response = await fetch(`${apiBase()}${path}`, {
     ...init,
+    credentials: "same-origin",
     headers: {
       ...(init?.body !== undefined ? { "Content-Type": "application/json" } : {}),
-      Authorization: `Bearer ${session.access_token}`,
       // The server has no reliable local calendar date of its own (it runs in UTC),
       // so "not in the future" checks are validated against the client's IANA zone.
       "X-Client-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
