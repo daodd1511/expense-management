@@ -110,7 +110,7 @@ describe.skipIf(!hasTestDatabase)("Better Auth integration", () => {
         expect(sessionResult.rows[0]?.remaining_seconds).toBeGreaterThan(364 * 24 * 60 * 60);
 
         const agedSession = await authPool.query<{ expires_at: Date }>(
-          'update auth."session" set "expiresAt" = now() + interval \'364 days\' returning "expiresAt" as expires_at',
+          'update auth."session" set "expiresAt" = now() + interval \'363 days\' returning "expiresAt" as expires_at',
         );
 
         const protectedResponse = await app.request("/api/accounts", {
