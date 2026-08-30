@@ -14,7 +14,7 @@ This repository owns the application images and a local/manual PostgreSQL 17 run
 6. `recovery` is a manual Compose profile that connects as read-only `wallet_recovery`, writes encrypted archives to the same-host recovery volume, and exits. PostgreSQL requires this role to hold `BYPASSRLS` so `pg_dump` can include every owner's rows; it remains non-superuser and has no write or DDL grant.
 7. `cloudflared` starts only after the web and API readiness chain succeeds.
 
-Use a dedicated local `.env` copied from `.env.example`. Generate distinct random values for the migrator, application, auth, and recovery passwords. Never give a `VITE_` prefix to a database URL, password, Better Auth secret, tunnel token, or recovery identity.
+Use a dedicated local `.env` copied from `.env.example`. Generate distinct URL-safe alphanumeric values for the migrator, application, auth, and recovery passwords because Compose embeds them directly in PostgreSQL URLs. Never give a `VITE_` prefix to a database URL, password, Better Auth secret, tunnel token, or recovery identity.
 
 ## Local start and verification
 
@@ -23,10 +23,10 @@ Start from an empty volume when validating the complete bootstrap contract:
 ```sh
 docker compose up -d postgres migrator role-bootstrap api web
 docker compose ps
-curl --fail http://127.0.0.1:${POSTGRES_PORT:-5432} >/dev/null 2>&1 || true
+docker compose exec postgres pg_isready -U wallet_migrator -d "${POSTGRES_DB:-wallet}"
 ```
 
-The database port check only confirms the loopback listener exists. Treat `api` as ready only when its container health check succeeds. `web` waits for that readiness state.
+The database check confirms PostgreSQL accepts connections. Treat `api` as ready only when its container health check succeeds. `web` waits for that readiness state.
 
 Run an encrypted same-host recovery point explicitly:
 
