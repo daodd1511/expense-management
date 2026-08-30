@@ -5,10 +5,10 @@ Integration branch: `develop`. Branch model: stacked via `gh stack` (default).
 
 ## STATUS
 
-- Current phase: 3 — in-progress
+- Current phase: 3 — done
 - Phase 1 — database baseline and access boundary: done
 - Phase 2 — API repositories and authorization: done
-- Phase 3 — session authentication and web client: in-progress
+- Phase 3 — session authentication and web client: done
 - Phase 4 — migration, validation, and recovery tooling: pending
 - Phase 5 — local runtime and integration verification: pending
 - Verification debt: none
@@ -101,8 +101,13 @@ Fresh review: required — authentication, cookies, proxy trust, and signing sec
 - [x] Remove Supabase browser environment variables from `.env.example`, `packages/web/vite.config.ts`, `packages/web/src/vite-env.d.ts`, and `.github/workflows/ci.yml`; update `packages/web/src/core/api.test.ts` and auth/component tests for cookie sessions. — `vite.config.ts` and `vite-env.d.ts` had no Supabase declarations to remove; the active build-time variables were confined to `.env.example` and CI.
 
 **Phase gate (hard):**
-- [ ] `pnpm typecheck`
-- [ ] Run package-configured dependency-aware tests from the actual phase diff: `git diff --name-only --diff-filter=ACMR 7f8e064..HEAD -z -- packages/api packages/shared | perl -0pe 's#^#$ENV{PWD}/#' | xargs -0 pnpm exec vitest --root packages/api related --run` and `git diff --name-only --diff-filter=ACMR 7f8e064..HEAD -z -- packages/web packages/shared | perl -0pe 's#^#$ENV{PWD}/#' | xargs -0 pnpm exec vitest --root packages/web --config vite.config.ts related --run`. — corrected 2026-08-30: the original root-level command bypassed the web package's jsdom, alias, and Vite configuration; the first correction used GNU-only `sed -z`, so the final command uses macOS-compatible Perl while preserving NUL-delimited paths.
+- [x] `pnpm typecheck` — passed after the review correction; API and web TypeScript projects completed without errors.
+- [x] Run package-configured dependency-aware tests from the actual phase diff: `git diff --name-only --diff-filter=ACMR 7f8e064..HEAD -z -- packages/api packages/shared | perl -0pe 's#^#$ENV{PWD}/#' | xargs -0 pnpm exec vitest --root packages/api related --run` and `git diff --name-only --diff-filter=ACMR 7f8e064..HEAD -z -- packages/web packages/shared | perl -0pe 's#^#$ENV{PWD}/#' | xargs -0 pnpm exec vitest --root packages/web --config vite.config.ts related --run`. — corrected 2026-08-30: the original root-level command bypassed the web package's jsdom, alias, and Vite configuration; the first correction used GNU-only `sed -z`, so the final command uses macOS-compatible Perl while preserving NUL-delimited paths. Final post-review results: API 12 files and 44/44 tests against PostgreSQL 17 with no skips; web 59 files and 239/239 tests.
+
+**Fresh review:** ran twice (initial + one re-review, per the rulebook's cap) with `gpt-5.6-terra` at high reasoning.
+- Initial review found one P2: protected activity refreshed the database session after `updateAge`, but `createSessionIdentityResolver()` discarded Better Auth's response headers, so the browser retained its original cookie expiry instead of receiving the sliding-session `Set-Cookie`.
+- Fixed it as the 2026-08-30 amendment by requesting Better Auth response headers, appending every refreshed session cookie to the protected Hono response, and extending the PostgreSQL integration test to age a session and prove both the cookie lifetime and database expiry advance.
+- Re-review found no P0-P2 issues. Residual risk is intentionally deferred to Phase 5: production proxy-address configuration and the live Cloudflare-to-nginx-to-API path still require runtime integration verification.
 
 **Review checklist (user, at PR review):**
 - [ ] Sign up, sign in, refresh, and sign out; confirm the session cookie is opaque and the next protected request after sign-out requires sign-in.
