@@ -11,7 +11,7 @@ export type Database = DB;
 export type AppDb = Kysely<Database> | Transaction<Database>;
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const REQUIRED_MIGRATION_VERSION = "20260829000006";
+const REQUIRED_MIGRATION_VERSION = "20260830000007";
 
 const APP_PG_TYPES = {
   getTypeParser(typeId: number, format?: "text" | "binary") {

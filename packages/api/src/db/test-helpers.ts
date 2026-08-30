@@ -21,6 +21,7 @@ export const hasTestDatabase = Boolean(TEST_DATABASE_URL);
 
 const TEST_APP_PASSWORD = "wallet_app_test_password";
 const TEST_AUTH_PASSWORD = "wallet_auth_test_password";
+const TEST_RECOVERY_PASSWORD = "wallet_recovery_test_password";
 
 function repoRoot(): string {
   // this file: packages/api/src/db/test-helpers.ts -> repo root is 4 levels up
@@ -61,16 +62,21 @@ function urlWithRole(base: string, username: string, password: string): string {
 
 /**
  * Creates a uniquely-named scratch database, runs every Dbmate migration against it,
- * sets throwaway passwords for `wallet_app`/`wallet_auth` (cluster-wide roles the
+ * sets throwaway passwords for all three runtime roles (cluster-wide roles the
  * migrations already created without a password — see
  * `db/migrations/20260828000001_create_roles.sql`), hands connection strings for all
- * three roles to `work`, then drops the database unconditionally.
+ * runtime roles to `work`, then drops the database unconditionally.
  *
  * Every integration test in this directory goes through this instead of sharing one
  * long-lived test database, so a bug one test introduces can never leak into another.
  */
 export async function withMigratedDatabase<T>(
-  work: (ctx: { migratorUrl: string; appUrl: string; authUrl: string }) => Promise<T>,
+  work: (ctx: {
+    migratorUrl: string;
+    appUrl: string;
+    authUrl: string;
+    recoveryUrl: string;
+  }) => Promise<T>,
 ): Promise<T> {
   if (!TEST_DATABASE_URL) {
     throw new Error("withMigratedDatabase: TEST_DATABASE_URL is not set");
@@ -100,6 +106,7 @@ export async function withMigratedDatabase<T>(
     try {
       await setup.query(`ALTER ROLE wallet_app WITH PASSWORD '${TEST_APP_PASSWORD}'`);
       await setup.query(`ALTER ROLE wallet_auth WITH PASSWORD '${TEST_AUTH_PASSWORD}'`);
+      await setup.query(`ALTER ROLE wallet_recovery WITH PASSWORD '${TEST_RECOVERY_PASSWORD}'`);
     } finally {
       await setup.end();
     }
@@ -108,6 +115,7 @@ export async function withMigratedDatabase<T>(
       migratorUrl,
       appUrl: urlWithRole(migratorUrl, "wallet_app", TEST_APP_PASSWORD),
       authUrl: urlWithRole(migratorUrl, "wallet_auth", TEST_AUTH_PASSWORD),
+      recoveryUrl: urlWithRole(migratorUrl, "wallet_recovery", TEST_RECOVERY_PASSWORD),
     });
   } finally {
     // Every test in this directory is expected to close its own connection to this
@@ -118,11 +126,15 @@ export async function withMigratedDatabase<T>(
     // of silently "working anyway" (which is exactly how the last version of this
     // safety net hid a real, always-firing bug — see the git history of this file).
     const terminated = await lock
-      .query("select pg_terminate_backend(pid) from pg_stat_activity where datname = $1 and pid <> pg_backend_pid()", [
-        dbName,
-      ])
+      .query(
+        "select pg_terminate_backend(pid) from pg_stat_activity where datname = $1 and pid <> pg_backend_pid()",
+        [dbName],
+      )
       .catch((error: unknown) => {
-        console.error(`withMigratedDatabase: failed to check/terminate lingering connections to ${dbName}`, error);
+        console.error(
+          `withMigratedDatabase: failed to check/terminate lingering connections to ${dbName}`,
+          error,
+        );
         return undefined;
       });
     if (terminated && terminated.rowCount) {

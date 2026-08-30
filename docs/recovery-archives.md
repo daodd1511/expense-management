@@ -8,7 +8,7 @@ Install `age`, PostgreSQL client tools, and `shasum` in the recovery image or ho
 
 Set these runtime inputs without baking them into an image or web bundle:
 
-- `DATABASE_URL`: the least-privilege recovery connection.
+- `DATABASE_URL`: the read-only `wallet_recovery` connection. PostgreSQL requires this role to hold `BYPASSRLS` for a complete `pg_dump`; it remains non-superuser and has no write or DDL grant.
 - `AGE_RECIPIENT`: the main machine's public `age` recipient.
 - `ARCHIVE_DIR`: a specific archive directory, never `/`.
 
