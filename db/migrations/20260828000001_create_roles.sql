@@ -33,5 +33,6 @@ END $$;
 
 -- migrate:down
 
-DROP ROLE IF EXISTS wallet_app;
-DROP ROLE IF EXISTS wallet_auth;
+-- Roles are cluster-wide while migrations run per database. Later down migrations
+-- revoke this database's grants, but these principals must remain because another
+-- database in the same cluster may still depend on them.

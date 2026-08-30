@@ -38,8 +38,10 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA auth, public
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA auth, public FROM wallet_recovery;
 REVOKE ALL ON ALL TABLES IN SCHEMA auth, public FROM wallet_recovery;
 REVOKE USAGE ON SCHEMA auth, public, wallet FROM wallet_recovery;
-ALTER ROLE wallet_recovery NOBYPASSRLS;
 DO $$ BEGIN
   EXECUTE format('REVOKE CONNECT ON DATABASE %I FROM wallet_recovery', current_database());
 END $$;
-DROP ROLE IF EXISTS wallet_recovery;
+
+-- Roles are cluster-wide while migrations run per database. Keep the principal and
+-- its BYPASSRLS attribute: another database in the same cluster may still depend on
+-- it for recovery. This down migration removes only this database's privileges.
