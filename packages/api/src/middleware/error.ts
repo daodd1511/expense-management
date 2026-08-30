@@ -78,7 +78,7 @@ export function handleError(error: unknown, c: Context) {
 
 /**
  * Hono's dispatcher only routes thrown values to `app.onError` when `err instanceof
- * Error` (see node_modules/hono/dist/compose.js) — but supabase-js's PostgrestError,
+ * Error` (see node_modules/hono/dist/compose.js) — but database/client errors,
  * thrown as-is by every repository's `if (error) throw error`, is a plain object, not
  * an Error instance. Uncaught, it silently escapes `handleError` as an unhandled
  * rejection instead of producing a mapped JSON response. Wrapping it in a real Error

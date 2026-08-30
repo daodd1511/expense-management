@@ -8,12 +8,11 @@ layouts.
 
 ## Stack
 
-- **pnpm monorepo** — `packages/web`, `packages/api`, `packages/shared`,
-  `supabase/` (migrations)
+- **pnpm monorepo** — `packages/web`, `packages/api`, `packages/shared`, and
+  `db/migrations/`
 - **web** — Vite + React 19 + TypeScript SPA, Tailwind v4,
   shadcn/base-ui primitives, TanStack Query, Recharts, vite-plugin-pwa
-- **api** — Hono on Node, Supabase Postgres + Supabase Auth (JWT verified
-  server-side)
+- **api** — Hono on Node, PostgreSQL 17 through Kysely, and Better Auth
 - **shared** — Zod DTOs, row↔model mappers, plain TS models used by both
 
 ## Getting started
@@ -22,7 +21,8 @@ Requires Node 22+ and pnpm.
 
 ```bash
 pnpm install
-cp .env.example .env   # fill in Supabase values (see comments in the file)
+cp .env.example .env   # replace every password/secret placeholder
+docker compose up -d postgres migrator role-bootstrap
 pnpm dev               # api on :3000 + web on http://localhost:5173
 ```
 
@@ -54,7 +54,7 @@ Each feature slice follows the same path:
 component → features/<f>/queries.ts (TanStack Query hooks)
           → features/<f>/db.ts (fetch client with Zod response validation)
           → api features/<domain>/ routes → controller → service → repository
-          → Supabase Postgres (shared mappers convert rows ↔ models)
+          → PostgreSQL 17 (RLS enforces the authenticated User boundary)
 ```
 
 `layouts/ResponsiveApp.tsx` switches at 1024px between a mobile layout
@@ -66,8 +66,9 @@ Key decisions live in [`docs/adr/`](docs/adr/); domain vocabulary in
 
 ## Deployment
 
-Self-hosted: web + api run as Docker containers on a home-lab box behind a
-Cloudflare Tunnel; Supabase stays in Supabase Cloud. A push to `main` builds
-and redeploys via a self-hosted GitHub Actions runner. Details in
-[`docs/deployment/self-hosting.md`](docs/deployment/self-hosting.md).
-`docker-compose.yml` at the root is for local/manual runs only.
+Self-hosted: web, API, and PostgreSQL run as Docker containers behind a Cloudflare
+Tunnel. This repository publishes the application images and the tested local runtime
+contract; production Compose, secrets staging, rehearsal, cutover, rollback, and
+user-confirmed hosted-project retirement are controlled by the deploy repository's
+`/Users/thomasduong/dev/personal/deploy/docs/specs/wallet-supabase-exit/EXECUTION.md`.
+See [`docs/deployment/self-hosting.md`](docs/deployment/self-hosting.md).

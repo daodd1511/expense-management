@@ -25,8 +25,7 @@ const appCommitDate =
   process.env.APP_COMMIT_DATE ?? readGitValue("git log -1 --format=%cd --date=short");
 
 export default defineConfig({
-  // VITE_* vars come from the single .env at the repo root (docker builds pass
-  // them as build args instead).
+  // Public Vite values come from the root .env; database/auth secrets are server-only.
   envDir: fileURLToPath(new URL("../../", import.meta.url)),
   define: {
     __APP_COMMIT__: JSON.stringify(appCommit),

@@ -9,7 +9,6 @@
 .codex
 docs
 presentation
-supabase
 scripts
 *.tsbuildinfo
 .pnpm-store
