@@ -5,11 +5,11 @@ Integration branch: `develop`. Branch model: stacked via `gh stack` (default).
 
 ## STATUS
 
-- Current phase: 4 — in-progress
+- Current phase: 4 — done
 - Phase 1 — database baseline and access boundary: done
 - Phase 2 — API repositories and authorization: done
 - Phase 3 — session authentication and web client: done
-- Phase 4 — migration, validation, and recovery tooling: in-progress
+- Phase 4 — migration, validation, and recovery tooling: done
 - Phase 5 — local runtime and integration verification: pending
 - Verification debt: none
 
@@ -126,15 +126,17 @@ Produces: `tools/cutover/export.ts`, `import.ts`, `manifest.ts`, `validate.ts`, 
 
 Fresh review: required — encryption, recovery archives, financial-data migration, and irreversible operational writes.
 
-- [ ] Add `tools/cutover/export.ts`, `import.ts`, `manifest.ts`, `validate.ts`, and tests to export only allowed identity fields, preserve UUIDs and financial rows losslessly, calculate canonical per-table and per-Transaction-ID digests, compare global/per-User counts and aggregates, and fail closed on every mismatch or unapproved difference.
-- [ ] Add `tools/cutover/set-password.ts` as an interactive hidden-prompt command that creates Better Auth-compatible credential records without command-line, environment, log, or SQL password exposure.
-- [ ] Add `tools/recovery/archive.sh`, `restore-rehearsal.sh`, and tests/documented fixtures for custom-format consistent `auth` plus application-schema archives, validation before `age` encryption/checksum/atomic publish, no retained plaintext, and 24-hourly/14-daily/8-weekly rotation.
-- [ ] Add the cutover and recovery command interfaces to `package.json` and document local rehearsal inputs, allowed manifest differences, isolated restore verification, and the maintenance-window abort-before-reopen rule in `docs/`.
-- [ ] Add integration fixtures/tests proving preserved User UUIDs and foreign keys, each Transaction's column-level digest, financial aggregates, no orphans, recovery restore success, and equivalence of all nine named functions.
+- [x] Add `tools/cutover/export.ts`, `import.ts`, `manifest.ts`, `validate.ts`, and tests to export only allowed identity fields, preserve UUIDs and financial rows losslessly, calculate canonical per-table and per-Transaction-ID digests, compare global/per-User counts and aggregates, and fail closed on every mismatch or unapproved difference.
+- [x] Add `tools/cutover/set-password.ts` as an interactive hidden-prompt command that creates Better Auth-compatible credential records without command-line, environment, log, or SQL password exposure.
+- [x] Add `tools/recovery/archive.sh`, `restore-rehearsal.sh`, and tests/documented fixtures for custom-format consistent `auth` plus application-schema archives, validation before `age` encryption/checksum/atomic publish, no retained plaintext, and 24-hourly/14-daily/8-weekly rotation.
+- [x] Add the cutover and recovery command interfaces to `package.json` and document local rehearsal inputs, allowed manifest differences, isolated restore verification, and the maintenance-window abort-before-reopen rule in `docs/`.
+- [x] Add integration fixtures/tests proving preserved User UUIDs and foreign keys, each Transaction's column-level digest, financial aggregates, no orphans, recovery restore success, and equivalence of all nine named functions.
 
 **Phase gate (hard):**
-- [ ] `pnpm typecheck`
-- [ ] `pnpm exec vitest related --run <files changed in this phase>`
+- [x] `pnpm typecheck`
+- [x] `pnpm exec vitest related --run <files changed in this phase>` — 9 tests passed with PostgreSQL 17 and real `age` encryption/decryption enabled.
+
+Initial fresh review found one P1 and two P2 issues: checksum command failures could publish an unusable archive, the restore integration used a plaintext `age` substitute, and the runbook misstated the Supabase identity source and transformation. The 2026-08-30 amendment validates every SHA-256 result before publication, covers checksum failure without leaving an archive, uses an ephemeral real `age` keypair for encrypted restore verification, and documents the implemented `auth.users` mapping. Re-review found no P0–P2 issues. Residual risk: a host termination between the checksum-sidecar and archive renames can leave an orphan sidecar and miss that recovery point, but the archive itself is never published before its checksum.
 
 **Review checklist (user, at PR review):**
 - [ ] Review a rehearsal manifest showing exact table and per-Transaction digest equality, preserved owner counts, and equivalent financial aggregates before authorizing a maintenance window.
