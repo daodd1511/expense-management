@@ -25,7 +25,7 @@ describe("recovery scripts", () => {
     await executable(path.join(bin, "pg_restore"), "exit 0");
     await executable(
       path.join(bin, "age"),
-      'while [ "$#" -gt 0 ]; do case "$1" in --output) output=$2; shift 2 ;; *) input=$1; shift ;; esac; done\ncp "$input" "$output"',
+      'while [ "$#" -gt 0 ]; do case "$1" in --output) output=$2; shift 2 ;; *) input=$1; shift ;; esac; done\nprintf "age-encryption.org/v1\\n" > "$output"\ncat "$input" >> "$output"',
     );
 
     const env = {
@@ -55,8 +55,44 @@ describe("recovery scripts", () => {
     const newest = (await archiveNames("hourly")).sort().at(-1);
     expect(newest).toBeTruthy();
     const encrypted = path.join(archives, "hourly", newest ?? "missing");
-    expect(await readFile(encrypted, "utf8")).toBe("validated dump");
+    expect(await readFile(encrypted, "utf8")).toBe("age-encryption.org/v1\nvalidated dump");
     expect(await readFile(`${encrypted}.sha256`, "utf8")).toContain(newest);
+  }, 60_000);
+
+  it("does not publish an archive when checksum generation fails", async () => {
+    const temporary = await mkdtemp(path.join(os.tmpdir(), "wallet-checksum-test-"));
+    const bin = path.join(temporary, "bin");
+    const archives = path.join(temporary, "archives");
+    await mkdir(bin);
+    await executable(
+      path.join(bin, "pg_dump"),
+      'for argument in "$@"; do case "$argument" in --file=*) output=${argument#--file=} ;; esac; done\nprintf "validated dump" > "$output"',
+    );
+    await executable(path.join(bin, "pg_restore"), "exit 0");
+    await executable(
+      path.join(bin, "age"),
+      'while [ "$#" -gt 0 ]; do case "$1" in --output) output=$2; shift 2 ;; *) input=$1; shift ;; esac; done\ncp "$input" "$output"',
+    );
+    await executable(path.join(bin, "shasum"), "exit 1");
+
+    await expect(
+      execFileAsync(path.join(repositoryRoot, "tools/recovery/archive.sh"), [], {
+        env: {
+          ...process.env,
+          PATH: `${bin}:/usr/bin:/bin`,
+          DATABASE_URL: "postgres://unused",
+          AGE_RECIPIENT: "age1testrecipient",
+          ARCHIVE_DIR: archives,
+          WALLET_ARCHIVE_TIMESTAMP: "20260831T000000Z",
+        },
+      }),
+    ).rejects.toMatchObject({
+      stderr: expect.stringContaining("failed to calculate encrypted archive checksum"),
+    });
+    expect(await readdir(path.join(archives, "hourly"))).toEqual([]);
+    expect((await readdir(archives)).some((name) => name.startsWith(".wallet-archive"))).toBe(
+      false,
+    );
   });
 
   it("rejects a restore when the encrypted archive checksum differs", async () => {

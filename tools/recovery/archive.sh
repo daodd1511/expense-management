@@ -25,6 +25,18 @@ require_command pg_restore
 require_command age
 require_command shasum
 
+calculate_digest() {
+  if ! checksum_output=$(shasum -a 256 "$1"); then
+    return 1
+  fi
+  checksum_digest=${checksum_output%% *}
+  [ "${#checksum_digest}" -eq 64 ] || return 1
+  case "$checksum_digest" in
+    *[!0-9a-f]*) return 1 ;;
+  esac
+  printf '%s\n' "$checksum_digest"
+}
+
 timestamp=${WALLET_ARCHIVE_TIMESTAMP:-$(date -u +%Y%m%dT%H%M%SZ)}
 case "$timestamp" in
   [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z) ;;
@@ -56,7 +68,9 @@ pg_dump \
 
 pg_restore --list "$plaintext" >/dev/null
 age --encrypt --recipient "$AGE_RECIPIENT" --output "$encrypted" "$plaintext"
-digest=$(shasum -a 256 "$encrypted" | awk '{print $1}')
+if ! digest=$(calculate_digest "$encrypted"); then
+  fail "failed to calculate encrypted archive checksum"
+fi
 printf '%s  %s\n' "$digest" "$(basename "$published")" > "$temporary_dir/checksum"
 
 mv "$temporary_dir/checksum" "$published.sha256"
@@ -71,7 +85,10 @@ copy_tier() {
   filename=$2
   destination="$ARCHIVE_DIR/$tier/$filename"
   cp "$published" "$destination.tmp"
-  digest=$(shasum -a 256 "$destination.tmp" | awk '{print $1}')
+  if ! digest=$(calculate_digest "$destination.tmp"); then
+    rm -f "$destination.tmp" "$destination.sha256.tmp"
+    fail "failed to calculate $tier archive checksum"
+  fi
   printf '%s  %s\n' "$digest" "$(basename "$destination")" > "$destination.sha256.tmp"
   mv "$destination.sha256.tmp" "$destination.sha256"
   mv "$destination.tmp" "$destination"

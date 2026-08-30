@@ -1,5 +1,5 @@
-import { execFile } from "node:child_process";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { execFile, spawnSync } from "node:child_process";
+import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -13,6 +13,7 @@ import {
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
+const hasAge = spawnSync("age", ["--version"], { stdio: "ignore" }).status === 0;
 
 function databaseUrl(base: string, database: string): string {
   const url = new URL(base);
@@ -20,7 +21,7 @@ function databaseUrl(base: string, database: string): string {
   return url.toString();
 }
 
-describe.skipIf(!hasTestDatabase)("recovery PostgreSQL integration", () => {
+describe.skipIf(!hasTestDatabase || !hasAge)("recovery PostgreSQL integration", () => {
   it("restores an encrypted custom archive into a fresh database", async () => {
     await withMigratedDatabase(async ({ migratorUrl }) => {
       if (!TEST_DATABASE_URL) throw new Error("TEST_DATABASE_URL is required");
@@ -53,12 +54,9 @@ describe.skipIf(!hasTestDatabase)("recovery PostgreSQL integration", () => {
         '#!/bin/sh\nset -eu\nif [ "$1" = "--list" ]; then docker exec -i wallet-phase2-pg pg_restore -U postgres --list < "$2"; exit 0; fi\nfor argument in "$@"; do case "$argument" in --dbname=*) url=${argument#--dbname=} ;; *) input=$argument ;; esac; done\ndatabase=$(printf "%s" "$url" | sed "s|.*/||; s|?.*||")\ndocker exec -i wallet-phase2-pg pg_restore -U postgres --exit-on-error --no-owner --dbname="$database" < "$input"\n',
         { mode: 0o700 },
       );
-      await writeFile(
-        path.join(bin, "age"),
-        '#!/bin/sh\nset -eu\nwhile [ "$#" -gt 0 ]; do case "$1" in --output) output=$2; shift 2 ;; --recipient|--identity) shift 2 ;; --encrypt|--decrypt) shift ;; *) input=$1; shift ;; esac; done\ncp "$input" "$output"\n',
-        { mode: 0o700 },
-      );
-      await writeFile(identity, "test-only identity", { mode: 0o600 });
+      await execFileAsync("age-keygen", ["--output", identity]);
+      const recipientResult = await execFileAsync("age-keygen", ["-y", identity]);
+      const recipient = recipientResult.stdout.trim();
 
       try {
         const archiveResult = await execFileAsync(
@@ -69,13 +67,16 @@ describe.skipIf(!hasTestDatabase)("recovery PostgreSQL integration", () => {
               ...process.env,
               PATH: `${bin}:${process.env.PATH ?? "/usr/bin:/bin"}`,
               DATABASE_URL: migratorUrl,
-              AGE_RECIPIENT: "age1testrecipient",
+              AGE_RECIPIENT: recipient,
               ARCHIVE_DIR: archives,
               WALLET_ARCHIVE_TIMESTAMP: "20260831T000000Z",
             },
           },
         );
         const archive = archiveResult.stdout.trim();
+        const encrypted = await readFile(archive);
+        expect(encrypted.toString("utf8", 0, 128)).toContain("age-encryption.org/v1");
+        expect(encrypted.includes(Buffer.from("PGDMP"))).toBe(false);
         await execFileAsync(
           path.join(repositoryRoot, "tools/recovery/restore-rehearsal.sh"),
           [archive],

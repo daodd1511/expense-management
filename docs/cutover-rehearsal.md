@@ -6,12 +6,12 @@ Use this runbook to prove source-to-target equivalence before requesting a produ
 
 Prepare these values without committing them:
 
-- `SOURCE_DATABASE_URL`: a read-only source connection that can select the allowed `auth.user` identity columns and every application table.
+- `SOURCE_DATABASE_URL`: a read-only source connection that can select the approved columns from Supabase `auth.users` and every application table.
 - `TARGET_DATABASE_URL`: an isolated, fully migrated PostgreSQL 17 target. Use the migrator role for import and a read-only connection for validation when practical.
 - `AUTH_DATABASE_URL`: the isolated target's `wallet_auth` connection for interactive credential creation.
 - A new artifact and report path for each rehearsal. The exporter refuses to overwrite an existing artifact.
 
-The identity export contains only the preserved User UUID, normalized email, display name, image, email-verification flag, and creation/update timestamps. It excludes Supabase password hashes, sessions, refresh tokens, OAuth tokens, and authentication metadata not required by Better Auth.
+The identity export preserves the User UUID, lowercases and trims the email, uses that normalized email as the initial Better Auth name, maps `email_confirmed_at` to the email-verification flag, sets the image to `null`, and preserves creation/update timestamps. It excludes Supabase password hashes, sessions, refresh tokens, OAuth tokens, and raw authentication metadata.
 
 ## Rehearsal sequence
 
