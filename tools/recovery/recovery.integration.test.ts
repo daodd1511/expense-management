@@ -23,8 +23,12 @@ function databaseUrl(base: string, database: string): string {
 
 describe.skipIf(!hasTestDatabase || !hasAge)("recovery PostgreSQL integration", () => {
   it("restores an encrypted custom archive into a fresh database", async () => {
-    await withMigratedDatabase(async ({ migratorUrl }) => {
+    await withMigratedDatabase(async ({ migratorUrl, recoveryUrl }) => {
       if (!TEST_DATABASE_URL) throw new Error("TEST_DATABASE_URL is required");
+      const postgresContainer = process.env.TEST_POSTGRES_CONTAINER_ID ?? "wallet-phase2-pg";
+      if (!/^[a-zA-Z0-9_.-]+$/.test(postgresContainer)) {
+        throw new Error("TEST_POSTGRES_CONTAINER_ID contains unsupported characters");
+      }
       const source = new Client({ connectionString: migratorUrl });
       await source.connect();
       await source.query(
@@ -46,12 +50,12 @@ describe.skipIf(!hasTestDatabase || !hasAge)("recovery PostgreSQL integration", 
       await mkdir(bin);
       await writeFile(
         path.join(bin, "pg_dump"),
-        '#!/bin/sh\nset -eu\nfor argument in "$@"; do case "$argument" in --file=*) output=${argument#--file=} ;; postgres://*) url=$argument ;; esac; done\ndatabase=$(printf "%s" "$url" | sed "s|.*/||; s|?.*||")\ndocker exec wallet-phase2-pg pg_dump -U postgres --format=custom --no-owner --schema=auth --schema=public --schema=wallet "$database" > "$output"\n',
+        `#!/bin/sh\nset -eu\nfor argument in "$@"; do case "$argument" in --file=*) output=\${argument#--file=} ;; postgres://*) url=$argument ;; esac; done\nuser=$(printf "%s" "$url" | sed "s|^[^:]*://||; s|:.*||")\ndatabase=$(printf "%s" "$url" | sed "s|.*/||; s|?.*||")\ndocker exec ${postgresContainer} pg_dump -U "$user" --format=custom --no-owner --schema=auth --schema=public --schema=wallet "$database" > "$output"\n`,
         { mode: 0o700 },
       );
       await writeFile(
         path.join(bin, "pg_restore"),
-        '#!/bin/sh\nset -eu\nif [ "$1" = "--list" ]; then docker exec -i wallet-phase2-pg pg_restore -U postgres --list < "$2"; exit 0; fi\nfor argument in "$@"; do case "$argument" in --dbname=*) url=${argument#--dbname=} ;; *) input=$argument ;; esac; done\ndatabase=$(printf "%s" "$url" | sed "s|.*/||; s|?.*||")\ndocker exec -i wallet-phase2-pg pg_restore -U postgres --exit-on-error --no-owner --dbname="$database" < "$input"\n',
+        `#!/bin/sh\nset -eu\nif [ "$1" = "--list" ]; then docker exec -i ${postgresContainer} pg_restore --list < "$2"; exit 0; fi\nfor argument in "$@"; do case "$argument" in --dbname=*) url=\${argument#--dbname=} ;; *) input=$argument ;; esac; done\nuser=$(printf "%s" "$url" | sed "s|^[^:]*://||; s|:.*||")\ndatabase=$(printf "%s" "$url" | sed "s|.*/||; s|?.*||")\ndocker exec -i ${postgresContainer} pg_restore -U "$user" --exit-on-error --no-owner --dbname="$database" < "$input"\n`,
         { mode: 0o700 },
       );
       await execFileAsync("age-keygen", ["--output", identity]);
@@ -66,7 +70,7 @@ describe.skipIf(!hasTestDatabase || !hasAge)("recovery PostgreSQL integration", 
             env: {
               ...process.env,
               PATH: `${bin}:${process.env.PATH ?? "/usr/bin:/bin"}`,
-              DATABASE_URL: migratorUrl,
+              DATABASE_URL: recoveryUrl,
               AGE_RECIPIENT: recipient,
               ARCHIVE_DIR: archives,
               WALLET_ARCHIVE_TIMESTAMP: "20260831T000000Z",

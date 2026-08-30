@@ -80,8 +80,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # VITE_* are compiled into the browser bundle and are public by design, so they
-      # are Actions *variables*, not secrets. A secret must never acquire a VITE_ prefix.
+      # The browser image receives only the same-origin API path and public build metadata.
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -89,8 +88,6 @@ jobs:
           platforms: linux/amd64
           push: true
           build-args: |
-            VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
-            VITE_SUPABASE_PUBLISHABLE_KEY=${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
             VITE_API_BASE=/api
             APP_COMMIT=${{ env.BUILD_SHA }}
           tags: |
