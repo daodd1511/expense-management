@@ -5,12 +5,12 @@ Integration branch: `develop`. Branch model: stacked via `gh stack` (default).
 
 ## STATUS
 
-- Current phase: 5 — in-progress
+- Current phase: 5 — done
 - Phase 1 — database baseline and access boundary: done
 - Phase 2 — API repositories and authorization: done
 - Phase 3 — session authentication and web client: done
 - Phase 4 — migration, validation, and recovery tooling: done
-- Phase 5 — local runtime and integration verification: in-progress
+- Phase 5 — local runtime and integration verification: done
 - Verification debt: none
 
 ## Phase 1 — database baseline and access boundary
@@ -151,18 +151,20 @@ Branch: `supabase-exit/phase-5-local-integration` (stacked: `gh stack add` — s
 Publish the tested application artifacts and local runtime contract consumed by the coordinated deploy-repository spec without changing production deployment files here.
 
 Consumes: database, API, session, cutover, and recovery interfaces from Phases 1–4.
-Produces: local `docker-compose.yml` PostgreSQL/migrator/recovery services; `packages/api/Dockerfile` and `packages/web/Dockerfile` artifacts; deployment handoff documented as `/Users/thomasduong/dev/personal/deploy/docs/specs/wallet-supabase-exit/PLAN.md`.
+Produces: local `docker-compose.yml` PostgreSQL/migrator/recovery services; `packages/api/Dockerfile` and `packages/web/Dockerfile` artifacts; deployment handoff documented as `/Users/thomasduong/dev/personal/deploy/docs/specs/wallet-supabase-exit/EXECUTION.md`.
 
 Fresh review: required — CI/test-gate infrastructure, secrets boundary, and deployment/recovery rollback paths.
 
-- [ ] Update `docker-compose.yml`, `.env.example`, `packages/api/Dockerfile`, `packages/web/Dockerfile`, and Docker build inputs for local PostgreSQL 17, a one-shot Dbmate migrator, application/auth runtime credentials, Better Auth secrets, readiness dependency, and a least-privilege recovery job; do not edit production Compose files outside this repository.
-- [ ] Update `.github/workflows/ci.yml` and add PostgreSQL 17 integration-test setup so the app CI validates the target database/runtime without Supabase variables or services.
-- [ ] Remove `supabase/`, `packages/api/src/config/supabase.ts`, `packages/api/src/lib/jwt.ts`, Supabase package references, and remaining active Supabase configuration only after their replacements and tests are present.
-- [ ] Update `README.md`, `CLAUDE.md`, `.env.example`, Docker comments, and operational documentation to name local PostgreSQL as the source of truth and reference the coordinated deploy plan at `/Users/thomasduong/dev/personal/deploy/docs/specs/wallet-supabase-exit/EXECUTION.md` for production Compose, secrets staging, rehearsal, cutover, and user-confirmed Supabase retirement.
+- [x] Update `docker-compose.yml`, `.env.example`, `packages/api/Dockerfile`, `packages/web/Dockerfile`, and Docker build inputs for local PostgreSQL 17, a one-shot Dbmate migrator, application/auth runtime credentials, Better Auth secrets, readiness dependency, and a least-privilege recovery job; do not edit production Compose files outside this repository.
+- [x] Update `.github/workflows/ci.yml` and add PostgreSQL 17 integration-test setup so the app CI validates the target database/runtime without Supabase variables or services.
+- [x] Remove `supabase/`, `packages/api/src/config/supabase.ts`, `packages/api/src/lib/jwt.ts`, Supabase package references, and remaining active Supabase configuration only after their replacements and tests are present.
+- [x] Update `README.md`, `CLAUDE.md`, `.env.example`, Docker comments, and operational documentation to name local PostgreSQL as the source of truth and reference the coordinated deploy plan at `/Users/thomasduong/dev/personal/deploy/docs/specs/wallet-supabase-exit/EXECUTION.md` for production Compose, secrets staging, rehearsal, cutover, and user-confirmed Supabase retirement.
 
 **Phase gate (hard):**
-- [ ] `pnpm typecheck`
-- [ ] `pnpm exec vitest related --run <files changed in this phase>`
+- [x] `pnpm typecheck`
+- [x] `pnpm exec vitest related --run <files changed in this phase>` — ran through the repository's package-specific API and tools configurations because a root Vitest invocation does not load the web aliases/jsdom or tools timeouts. PostgreSQL migration/database/recovery-role tests passed 8/8, the real encrypted recovery integration passed 1/1, and the runtime-role bootstrap integration passed 1/1. The Better Auth refresh regression passed 3/3 across three consecutive runs. The final full spec gate also passed every package and tool test.
+
+**Fresh review:** `gpt-5.6-terra` at high reasoning reviewed `69e74cb..9544eaa` and found no actionable issues. Residual risk: the live Cloudflare Tunnel → nginx → API path remains unexercised here because the deploy repository owns production orchestration. Recovery's `BYPASSRLS` remains necessary for complete `pg_dump`; explicit grants keep the principal read-only and non-superuser.
 
 **Review checklist (user, at PR review):**
 - [ ] Start the local target stack from an empty PostgreSQL 17 volume; confirm Dbmate finishes before the API readiness endpoint succeeds and neither image nor web bundle contains a database credential.
@@ -172,5 +174,5 @@ Fresh review: required — CI/test-gate infrastructure, secrets boundary, and de
 
 ## Spec gate (hard — once, before the final phase's PR)
 
-- [ ] `pnpm test`
-- [ ] `pnpm --filter @wallet/api typecheck && pnpm build`
+- [x] `pnpm test` — 118 shared, 61 API, 239 web, and 10 tooling/integration tests passed against PostgreSQL 17 with real `age` encryption and restore.
+- [x] `pnpm --filter @wallet/api typecheck && pnpm build`
