@@ -109,10 +109,27 @@ describe.skipIf(!hasTestDatabase)("Better Auth integration", () => {
         );
         expect(sessionResult.rows[0]?.remaining_seconds).toBeGreaterThan(364 * 24 * 60 * 60);
 
+        const agedSession = await authPool.query<{ expires_at: Date }>(
+          'update auth."session" set "expiresAt" = now() + interval \'364 days\' returning "expiresAt" as expires_at',
+        );
+
         const protectedResponse = await app.request("/api/accounts", {
           headers: { cookie, origin: BASE_URL },
         });
         expect(protectedResponse.status).toBe(200);
+        const refreshedCookie = protectedResponse.headers.get("set-cookie") ?? "";
+        const refreshedMaxAge = Number(refreshedCookie.match(/Max-Age=(\d+)/)?.[1]);
+        expect(refreshedMaxAge).toBeGreaterThan(364 * 24 * 60 * 60);
+        expect(refreshedCookie).toContain("Secure");
+        expect(refreshedCookie).toContain("HttpOnly");
+        expect(refreshedCookie.toLowerCase()).toContain("samesite=lax");
+
+        const refreshedSession = await authPool.query<{ expires_at: Date }>(
+          'select "expiresAt" as expires_at from auth."session"',
+        );
+        expect(refreshedSession.rows[0]?.expires_at.getTime()).toBeGreaterThan(
+          agedSession.rows[0]?.expires_at.getTime() ?? Number.POSITIVE_INFINITY,
+        );
 
         const spoofedProxy = await app.request("/api/accounts", {
           headers: {

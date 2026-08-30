@@ -125,7 +125,13 @@ export function createSessionIdentityResolver(
   return async (c) => {
     const request = normalizeRequest(c);
     if (!request) return null;
-    const session = await auth.api.getSession({ headers: request.headers });
-    return session?.user.id ?? null;
+    const session = await auth.api.getSession({
+      headers: request.headers,
+      returnHeaders: true,
+    });
+    for (const cookie of session.headers.getSetCookie()) {
+      c.header("set-cookie", cookie, { append: true });
+    }
+    return session.response?.user.id ?? null;
   };
 }
