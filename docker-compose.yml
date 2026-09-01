@@ -1,52 +1,55 @@
 # LOCAL / MANUAL RUNS ONLY. Production orchestration lives in the private deploy repo.
 # Values come from a local, gitignored `.env`; no credential is built into an image.
+x-wallet-ops: &wallet-ops
+  build:
+    context: .
+    dockerfile: tools/ops/Dockerfile
+  image: wallet-ops:local
+
 services:
   postgres:
     image: postgres:17-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-wallet}
-      POSTGRES_USER: wallet_migrator
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_USER: wallet_admin
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?set POSTGRES_ADMIN_PASSWORD in .env}
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - wallet-postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wallet_migrator -d $${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U wallet_admin -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 20
     restart: unless-stopped
     networks: [wallet]
 
-  migrator:
-    image: ghcr.io/amacneil/dbmate:2.35.0
+  role-bootstrap:
+    <<: *wallet-ops
     environment:
-      DATABASE_URL: postgres://wallet_migrator:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-wallet}?sslmode=disable
-    command: ["--no-dump-schema", "--migrations-dir", "/db/migrations", "up"]
-    volumes:
-      - ./db:/db:ro
+      PGHOST: postgres
+      PGDATABASE: ${POSTGRES_DB:-wallet}
+      PGUSER: wallet_admin
+      PGPASSWORD: ${POSTGRES_ADMIN_PASSWORD}
+      WALLET_MIGRATOR_PASSWORD: ${WALLET_MIGRATOR_PASSWORD:?set WALLET_MIGRATOR_PASSWORD in .env}
+      WALLET_APP_PASSWORD: ${WALLET_APP_PASSWORD:?set WALLET_APP_PASSWORD in .env}
+      WALLET_AUTH_PASSWORD: ${WALLET_AUTH_PASSWORD:?set WALLET_AUTH_PASSWORD in .env}
+      WALLET_RECOVERY_PASSWORD: ${WALLET_RECOVERY_PASSWORD:?set WALLET_RECOVERY_PASSWORD in .env}
+    command: ["bootstrap"]
     depends_on:
       postgres:
         condition: service_healthy
     restart: "no"
     networks: [wallet]
 
-  role-bootstrap:
-    image: postgres:17-alpine
-    entrypoint: ["/bin/sh", "/bootstrap/bootstrap-roles.sh"]
+  migrator:
+    <<: *wallet-ops
     environment:
-      PGHOST: postgres
-      PGDATABASE: ${POSTGRES_DB:-wallet}
-      PGUSER: wallet_migrator
-      PGPASSWORD: ${POSTGRES_PASSWORD}
-      WALLET_APP_PASSWORD: ${WALLET_APP_PASSWORD:?set WALLET_APP_PASSWORD in .env}
-      WALLET_AUTH_PASSWORD: ${WALLET_AUTH_PASSWORD:?set WALLET_AUTH_PASSWORD in .env}
-      WALLET_RECOVERY_PASSWORD: ${WALLET_RECOVERY_PASSWORD:?set WALLET_RECOVERY_PASSWORD in .env}
-    volumes:
-      - ./tools/local/bootstrap-roles.sh:/bootstrap/bootstrap-roles.sh:ro
+      DATABASE_URL: postgres://wallet_migrator:${WALLET_MIGRATOR_PASSWORD}@postgres:5432/${POSTGRES_DB:-wallet}?sslmode=disable
+    command: ["migrate"]
     depends_on:
-      migrator:
+      role-bootstrap:
         condition: service_completed_successfully
     restart: "no"
     networks: [wallet]
@@ -66,7 +69,7 @@ services:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env}
       AUTH_TRUSTED_PROXY_IPS: ${AUTH_TRUSTED_PROXY_IPS:-172.30.0.20}
     depends_on:
-      role-bootstrap:
+      migrator:
         condition: service_completed_successfully
     restart: unless-stopped
     networks: [wallet]
@@ -89,19 +92,17 @@ services:
         ipv4_address: 172.30.0.20
 
   recovery:
-    build:
-      context: .
-      dockerfile: tools/recovery/Dockerfile
-    image: wallet-recovery:local
+    <<: *wallet-ops
     profiles: ["recovery"]
     environment:
       DATABASE_URL: postgres://wallet_recovery:${WALLET_RECOVERY_PASSWORD}@postgres:5432/${POSTGRES_DB:-wallet}?sslmode=disable
       AGE_RECIPIENT: ${AGE_RECIPIENT:?set AGE_RECIPIENT in .env}
       ARCHIVE_DIR: /archives
+    command: ["archive"]
     volumes:
       - wallet-recovery:/archives
     depends_on:
-      role-bootstrap:
+      migrator:
         condition: service_completed_successfully
     restart: "no"
     networks: [wallet]

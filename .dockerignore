@@ -2,6 +2,13 @@
 # copied explicitly by the Dockerfiles; everything below is noise or stale output.
 **/node_modules
 **/dist
+.env
+.env.*
+*.dump
+*.dump.age
+*.age
+*.sha256
+rehearsal-*.json
 .git
 .github
 .claude

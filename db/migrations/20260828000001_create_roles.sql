@@ -1,38 +1,28 @@
 -- migrate:up
 
--- Restricted-privilege roles for the target runtime (ADR-0008, ADR-0010).
---
--- `wallet_migrator` is not created here: it is the initial role the PostgreSQL
--- container provisions from POSTGRES_USER and already owns every schema. It runs
--- Dbmate and is the only role with DDL privileges.
---
--- Neither role below is given a password by this migration. Passwords are set
--- out-of-band at deploy time from secrets (Phase 5's job) so no credential is ever
--- embedded in a migration file or the Dbmate ledger.
---
--- Roles live cluster-wide, not per-database, but Dbmate's applied-migrations ledger is
--- per-database — so a second database in the same cluster (a disaster-recovery
--- rebuild, or this repo's own per-test scratch databases) replaying this migration
--- would otherwise hit "role already exists". Guard each `CREATE ROLE` accordingly.
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'wallet_auth') THEN
-    CREATE ROLE wallet_auth LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
-    COMMENT ON ROLE wallet_auth IS
-      'Better Auth runtime pool: DML on the auth schema only, no access to financial tables.';
+-- Cluster roles are an administrator-owned precondition, not database-local migration
+-- state. The wallet-ops bootstrap creates them, assigns credentials, grants BYPASSRLS
+-- only to recovery, and transfers this database to the restricted wallet_migrator.
+-- Dbmate then manages schemas, grants, policies, and functions without a superuser.
+DO $$
+DECLARE
+  missing_roles text;
+BEGIN
+  IF current_user <> 'wallet_migrator' THEN
+    RAISE EXCEPTION 'Dbmate must run as wallet_migrator, not %', current_user;
   END IF;
-END $$;
 
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'wallet_app') THEN
-    CREATE ROLE wallet_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
-    COMMENT ON ROLE wallet_app IS
-      'Hono API application-data pool: restricted DML on public tables, RLS-enforced, no DDL.';
+  SELECT string_agg(required.name, ', ' ORDER BY required.name)
+    INTO missing_roles
+  FROM (VALUES ('wallet_app'), ('wallet_auth'), ('wallet_recovery')) AS required(name)
+  LEFT JOIN pg_roles roles ON roles.rolname = required.name
+  WHERE roles.oid IS NULL;
+
+  IF missing_roles IS NOT NULL THEN
+    RAISE EXCEPTION 'administrator bootstrap did not create roles: %', missing_roles;
   END IF;
 END $$;
 
 -- migrate:down
 
--- Roles are cluster-wide while migrations run per database. Later down migrations
--- revoke this database's grants, but these principals must remain because another
--- database in the same cluster may still depend on them.
+-- Cluster roles remain administrator-owned and outlive database-local rollbacks.

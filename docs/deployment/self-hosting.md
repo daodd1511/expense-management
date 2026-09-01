@@ -6,9 +6,9 @@ This repository owns the application images and a local/manual PostgreSQL 17 run
 
 `docker-compose.yml` starts these services in dependency order:
 
-1. `postgres` runs PostgreSQL 17 with a persistent local volume and a loopback-only development port.
-2. `migrator` runs the complete Dbmate chain once after PostgreSQL becomes healthy.
-3. `role-bootstrap` injects distinct runtime passwords after migrations create the `wallet_app`, `wallet_auth`, and `wallet_recovery` roles.
+1. `postgres` runs PostgreSQL 17 with a persistent local volume, a loopback-only development port, and a dedicated container-administrator credential.
+2. `role-bootstrap` uses that administrator credential once to create the restricted `wallet_migrator`, `wallet_app`, `wallet_auth`, and `wallet_recovery` cluster roles, assign distinct passwords, grant `BYPASSRLS` only to recovery, and transfer database ownership to the migrator.
+3. `migrator` runs the bundled Dbmate chain as non-superuser `wallet_migrator` after bootstrap succeeds.
 4. `api` receives only the application/auth connection URLs and Better Auth runtime secret. Its health check uses `/health/ready`, which requires the current Dbmate version.
 5. `web` receives only `/api` and public build metadata. Its image and browser bundle contain no database credential.
 6. `recovery` is a manual Compose profile that connects as read-only `wallet_recovery`, writes encrypted archives to the same-host recovery volume, and exits. PostgreSQL requires this role to hold `BYPASSRLS` so `pg_dump` can include every owner's rows; it remains non-superuser and has no write or DDL grant.
@@ -21,9 +21,9 @@ Use a dedicated local `.env` copied from `.env.example`. Generate distinct URL-s
 Start from an empty volume when validating the complete bootstrap contract:
 
 ```sh
-docker compose up -d postgres migrator role-bootstrap api web
+docker compose up -d postgres role-bootstrap migrator api web
 docker compose ps
-docker compose exec postgres pg_isready -U wallet_migrator -d "${POSTGRES_DB:-wallet}"
+docker compose exec postgres pg_isready -U wallet_admin -d "${POSTGRES_DB:-wallet}"
 ```
 
 The database check confirms PostgreSQL accepts connections. Treat `api` as ready only when its container health check succeeds. `web` waits for that readiness state.
@@ -40,9 +40,11 @@ The local recovery volume is not off-host durability. Follow [`docs/recovery-arc
 
 - `packages/api/Dockerfile` bundles the Node API, runs as the unprivileged `node` user, and includes no migration files or credentials.
 - `packages/web/Dockerfile` builds the SPA with only public values and serves it from nginx.
-- `tools/recovery/Dockerfile` contains PostgreSQL client tools, `age`, and the reviewed recovery scripts; it runs as the unprivileged `postgres` user.
+- `tools/ops/Dockerfile` bundles Dbmate migrations, administrator bootstrap, cutover commands, PostgreSQL client tools, `age`, and recovery commands; it contains no credentials and runs as the unprivileged `postgres` operating-system user.
 
-`.github/workflows/build.yml` publishes the API and web images after CI succeeds on `main`. It does not deploy them directly. The deploy repository consumes immutable commit tags and owns rollback.
+`.github/workflows/build.yml` publishes API, web, and operations images under the same commit SHA after CI succeeds on `main`; dispatch waits for all three. It does not deploy them directly. The deploy repository consumes immutable commit tags and owns rollback.
+
+The public operations image exposes strict commands rather than arbitrary production configuration: `bootstrap`, `migrate`, `migrate-status`, `archive`, `restore-rehearsal`, and the four `cutover-*` commands. Compose gives each invocation only the credential required for that operation. Production exports, archives, reports, `.env` files, and the `age` private key are runtime mounts or operator inputs and must never enter an image layer.
 
 ## CI boundary
 

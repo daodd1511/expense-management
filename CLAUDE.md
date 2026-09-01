@@ -37,7 +37,7 @@ Tests exist (vitest, colocated `*.test.ts(x)`) but coverage is partial. Never ru
 
 ## Stack
 
-- **pnpm monorepo** — `packages/web`, `packages/api`, `packages/shared`, plus `db/migrations/`
+- **pnpm monorepo** — `packages/web`, `packages/api`, `packages/shared`, `db/migrations/`, and versioned operational tooling under `tools/`
 - **packages/web** — Vite + React 19 + TypeScript SPA, no SSR; client-side routing via **TanStack Router** (`src/routing/router.tsx`)
 - **packages/api** — Hono on Node (`@hono/node-server`), PostgreSQL 17 via Kysely, Better Auth
 - **packages/shared** — Zod DTOs, row↔model mappers, plain TS models shared by web and api
@@ -268,4 +268,5 @@ terms from this summary.
 - Web source lives in `packages/web/src/`
 - API source lives in `packages/api/src/`
 - Shared DTOs/mappers/models live in `packages/shared/src/`
-- Database migrations live in `db/migrations/` and Dbmate is their only runner.
+- Database migrations live in `db/migrations/` and Dbmate is their only runner. The public `wallet-ops` image bundles the migrations and operational scripts without secrets.
+- PostgreSQL cluster roles are created by the administrator-only `wallet-ops bootstrap` command before Dbmate runs as restricted `wallet_migrator`; migrations must not create or alter cluster roles.

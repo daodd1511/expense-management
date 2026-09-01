@@ -1,19 +1,9 @@
 -- migrate:up
 
--- Read-only backup principal. The password is injected after migration by the
--- deployment environment; migrations never contain credentials.
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'wallet_recovery') THEN
-    CREATE ROLE wallet_recovery LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS;
-    COMMENT ON ROLE wallet_recovery IS
-      'Read-only pg_dump principal for the auth, public, and wallet schemas.';
-  END IF;
-END $$;
-
 -- pg_dump deliberately refuses to copy an RLS-protected table as a role affected by
--- its policies. BYPASSRLS is therefore required for a complete backup; explicit
--- read-only grants below still prevent every application/auth write and all DDL.
-ALTER ROLE wallet_recovery BYPASSRLS;
+-- its policies. The administrator bootstrap therefore grants wallet_recovery
+-- BYPASSRLS before Dbmate runs; explicit database-local grants below still prevent
+-- every application/auth write and all DDL.
 
 DO $$ BEGIN
   EXECUTE format('GRANT CONNECT ON DATABASE %I TO wallet_recovery', current_database());

@@ -14,6 +14,8 @@ layouts.
   shadcn/base-ui primitives, TanStack Query, Recharts, vite-plugin-pwa
 - **api** — Hono on Node, PostgreSQL 17 through Kysely, and Better Auth
 - **shared** — Zod DTOs, row↔model mappers, plain TS models used by both
+- **wallet-ops** — immutable Dbmate migrations, administrator bootstrap, cutover,
+  and encrypted recovery commands shared by local and production orchestration
 
 ## Getting started
 
@@ -67,8 +69,8 @@ Key decisions live in [`docs/adr/`](docs/adr/); domain vocabulary in
 ## Deployment
 
 Self-hosted: web, API, and PostgreSQL run as Docker containers behind a Cloudflare
-Tunnel. This repository publishes the application images and the tested local runtime
-contract; production Compose, secrets staging, rehearsal, cutover, rollback, and
+Tunnel. This repository publishes SHA-matched API, web, and secret-free operations
+images plus the tested local runtime contract; production Compose, secrets staging, rehearsal, cutover, rollback, and
 user-confirmed hosted-project retirement are controlled by the deploy repository's
 `/Users/thomasduong/dev/personal/deploy/docs/specs/wallet-supabase-exit/EXECUTION.md`.
 See [`docs/deployment/self-hosting.md`](docs/deployment/self-hosting.md).
