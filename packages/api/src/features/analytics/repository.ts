@@ -12,59 +12,55 @@ import {
   type LoanEvent,
   type Transaction,
 } from "@wallet/shared";
-import { getSupabase } from "../../config/supabase";
+import type { AppDb } from "../../db/database";
 import { parseRows } from "../../lib/response";
 
-export async function listActiveAccounts(userId: string): Promise<Account[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("accounts")
-    .select("*")
-    .eq("owner_id", userId)
-    .eq("archived", false);
+export async function listActiveAccounts(db: AppDb, userId: string): Promise<Account[]> {
+  const rows = await db
+    .selectFrom("accounts")
+    .selectAll()
+    .where("owner_id", "=", userId)
+    .where("archived", "=", false)
+    .execute();
 
-  if (error) {
-    throw error;
-  }
-
-  return parseRows(data, accountRowSchema, toAccount);
+  return parseRows(rows, accountRowSchema, toAccount);
 }
 
-export async function listTransactions(userId: string): Promise<Transaction[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase.from("transactions").select("*").eq("owner_id", userId);
+export async function listTransactions(db: AppDb, userId: string): Promise<Transaction[]> {
+  const rows = await db
+    .selectFrom("transactions")
+    .selectAll()
+    .where("owner_id", "=", userId)
+    .execute();
 
-  if (error) {
-    throw error;
-  }
-
-  return parseRows(data, transactionRowSchema, toTransaction);
+  return parseRows(rows, transactionRowSchema, toTransaction);
 }
 
 /** Every loan (full row, not just direction — the dashboard's overdue count needs each
  * loan's own dueDate) plus its full event history. */
 export async function listLoansWithEvents(
+  db: AppDb,
   userId: string,
 ): Promise<{ loan: Loan; events: LoanEvent[] }[]> {
-  const supabase = getSupabase();
-  const { data: loanRows, error: loanError } = await supabase
-    .from("loans")
-    .select("*")
-    .eq("owner_id", userId);
-  if (loanError) throw loanError;
+  const loanRows = await db
+    .selectFrom("loans")
+    .selectAll()
+    .where("owner_id", "=", userId)
+    .execute();
 
   const loans = parseRows(loanRows, loanRowSchema, toLoan);
   if (loans.length === 0) return [];
 
-  const { data: eventRows, error: eventError } = await supabase
-    .from("loan_events")
-    .select("*")
-    .eq("owner_id", userId)
-    .in(
+  const eventRows = await db
+    .selectFrom("loan_events")
+    .selectAll()
+    .where("owner_id", "=", userId)
+    .where(
       "loan_id",
+      "in",
       loans.map((loan) => loan.id),
-    );
-  if (eventError) throw eventError;
+    )
+    .execute();
 
   const events = parseRows(eventRows, loanEventRowSchema, toLoanEvent);
   const eventsByLoanId = new Map<string, LoanEvent[]>();

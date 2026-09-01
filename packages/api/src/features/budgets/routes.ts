@@ -17,7 +17,7 @@ budgetsRouter.post(
     }
   }),
   async (c) => {
-    const data = await controller.createBudget(c.get("userId"), c.req.valid("json"));
+    const data = await controller.createBudget(c.get("db"), c.get("userId"), c.req.valid("json"));
     return c.json({ data }, 201);
   },
 );
@@ -30,6 +30,7 @@ budgetsRouter.patch(
   }),
   async (c) => {
     const data = await controller.updateBudget(
+      c.get("db"),
       c.get("userId"),
       c.req.param("categoryId"),
       c.req.valid("json"),

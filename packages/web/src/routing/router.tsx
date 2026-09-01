@@ -25,8 +25,6 @@ import { AppDataBoundary } from "@/core/ErrorBoundary";
 import { ResponsiveApp } from "@/layouts/ResponsiveApp";
 import { VersionPage } from "@/features/version/components/VersionPage";
 import { useAuth, type AuthContextValue } from "@/features/auth/auth";
-import { ForgotPasswordPage } from "@/features/auth/components/ForgotPassword";
-import { ResetPasswordPage } from "@/features/auth/components/ResetPassword";
 import { SignIn } from "@/features/auth/components/SignIn";
 import { SignUpPage } from "@/features/auth/components/SignUp";
 import { currentRedirectPath, normalizeRedirectPath, validateAuthSearch } from "./auth-redirect";
@@ -104,32 +102,6 @@ const signUpRoute = createRoute({
   },
   component: () => (
     <SignUpPage redirectTo={normalizeRedirectPath(signUpRoute.useSearch().redirect)} />
-  ),
-});
-
-const forgotPasswordRoute = createRoute({
-  getParentRoute: () => authRoute,
-  path: "forgot-password",
-  validateSearch: validateAuthSearch,
-  beforeLoad: ({ context, search }) => {
-    if (!context.auth.loading && context.auth.user) {
-      throw redirect({
-        href: normalizeRedirectPath(search.redirect),
-        replace: true,
-      });
-    }
-  },
-  component: ForgotPasswordPage,
-});
-
-const resetPasswordRoute = createRoute({
-  getParentRoute: () => authRoute,
-  path: "reset-password",
-  validateSearch: validateAuthSearch,
-  component: () => (
-    <ResetPasswordPage
-      redirectTo={normalizeRedirectPath(resetPasswordRoute.useSearch().redirect)}
-    />
   ),
 });
 
@@ -245,7 +217,7 @@ const settingsCategoriesRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   versionRoute,
-  authRoute.addChildren([signInRoute, signUpRoute, forgotPasswordRoute, resetPasswordRoute]),
+  authRoute.addChildren([signInRoute, signUpRoute]),
   appRoute.addChildren([
     dashboardRoute,
     transactionsRoute,

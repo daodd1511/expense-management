@@ -15,19 +15,19 @@ describe("toAppAuthError", () => {
     expect(error.translationKey).toBe("auth.errorEmailInUse");
   });
 
-  it("maps token failures to reset-link copy", () => {
-    const error = toAppAuthError({ code: "otp_expired", message: "OTP expired" });
-
-    expect(error.translationKey).toBe("auth.errorInvalidResetLink");
-  });
-
-  it("maps email send rate limits to retry-later copy", () => {
+  it("maps Better Auth rate limits to retry-later copy", () => {
     const error = toAppAuthError({
-      code: "over_email_send_rate_limit",
-      message: "email rate limit exceeded",
+      code: "TOO_MANY_REQUESTS",
+      message: "Too many requests",
     });
 
-    expect(error.translationKey).toBe("auth.errorEmailRateLimit");
+    expect(error.translationKey).toBe("auth.errorRateLimit");
+  });
+
+  it("maps Better Auth credential failures", () => {
+    const error = toAppAuthError({ code: "INVALID_EMAIL_OR_PASSWORD" });
+
+    expect(error.translationKey).toBe("auth.errorInvalidCredentials");
   });
 
   it("falls back to the generic auth error key for unknown failures", () => {

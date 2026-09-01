@@ -23,9 +23,7 @@ export function SettingsBody() {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-semibold">{t("settings.categories")}</span>
-            <span className="block text-sm text-muted-foreground">
-              {t("other.categoriesDesc")}
-            </span>
+            <span className="block text-sm text-muted-foreground">{t("other.categoriesDesc")}</span>
           </span>
           <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
         </Card>
@@ -93,7 +91,7 @@ export function SettingsBody() {
       <Card className="flex items-center justify-between px-5 py-4">
         <div>
           <p className="text-sm font-medium">{user?.email}</p>
-          <p className="text-xs text-muted-foreground">Google</p>
+          <p className="text-xs text-muted-foreground">{t("auth.email")}</p>
         </div>
         <Button variant="outline" size="sm" onClick={signOut}>
           <LogOut className="size-4" />

@@ -11,7 +11,8 @@ import {
   type AccountReorder,
   type Transaction,
 } from "@wallet/shared";
-import { getSupabase } from "../../config/supabase";
+import { sql } from "kysely";
+import type { AppDb } from "../../db/database";
 import { ApiError } from "../../middleware/error";
 import { parseRows } from "../../lib/response";
 
@@ -24,100 +25,83 @@ function parseAccountRow(data: unknown, message: string): Account {
   return toAccount(result.data);
 }
 
-export async function listActiveAccounts(userId: string): Promise<Account[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("accounts")
-    .select("*")
-    .eq("owner_id", userId)
-    .eq("archived", false)
-    .order("display_order", { ascending: true })
-    .order("created_at", { ascending: true })
-    .order("id", { ascending: true });
+export async function listActiveAccounts(db: AppDb, userId: string): Promise<Account[]> {
+  const rows = await db
+    .selectFrom("accounts")
+    .selectAll()
+    .where("owner_id", "=", userId)
+    .where("archived", "=", false)
+    .orderBy("display_order", "asc")
+    .orderBy("created_at", "asc")
+    .orderBy("id", "asc")
+    .execute();
 
-  if (error) {
-    throw error;
-  }
-
-  return parseRows(data, accountRowSchema, toAccount);
+  return parseRows(rows, accountRowSchema, toAccount);
 }
 
-export async function listUserTransactions(userId: string): Promise<Transaction[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase.from("transactions").select("*").eq("owner_id", userId);
+export async function listUserTransactions(db: AppDb, userId: string): Promise<Transaction[]> {
+  const rows = await db
+    .selectFrom("transactions")
+    .selectAll()
+    .where("owner_id", "=", userId)
+    .execute();
 
-  if (error) {
-    throw error;
-  }
-
-  return parseRows(data, transactionRowSchema, toTransaction);
+  return parseRows(rows, transactionRowSchema, toTransaction);
 }
 
-export async function createAccount(userId: string, account: AccountCreate): Promise<Account> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("accounts")
-    .insert(fromAccount({ account, ownerId: userId }))
-    .select("*")
-    .single();
+export async function createAccount(
+  db: AppDb,
+  userId: string,
+  account: AccountCreate,
+): Promise<Account> {
+  const row = await db
+    .insertInto("accounts")
+    .values(fromAccount({ account, ownerId: userId }))
+    .returningAll()
+    .executeTakeFirstOrThrow();
 
-  if (error) {
-    throw error;
-  }
-
-  return parseAccountRow(data, "Inserted account failed validation");
+  return parseAccountRow(row, "Inserted account failed validation");
 }
 
 export async function updateAccount(
+  db: AppDb,
   userId: string,
   id: string,
   patch: AccountPatch,
 ): Promise<Account | null> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("accounts")
-    .update(accountPatchToRow(patch))
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .select("*")
-    .maybeSingle();
+  const row = await db
+    .updateTable("accounts")
+    .set(accountPatchToRow(patch))
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .returningAll()
+    .executeTakeFirst();
 
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
+  if (!row) {
     return null;
   }
 
-  return parseAccountRow(data, "Updated account failed validation");
+  return parseAccountRow(row, "Updated account failed validation");
 }
 
-export async function archiveAccount(userId: string, id: string): Promise<boolean> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("accounts")
-    .update({ archived: true })
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .select("id")
-    .maybeSingle();
+export async function archiveAccount(db: AppDb, userId: string, id: string): Promise<boolean> {
+  const row = await db
+    .updateTable("accounts")
+    .set({ archived: true })
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .returning("id")
+    .executeTakeFirst();
 
-  if (error) {
-    throw error;
-  }
-
-  return Boolean(data);
+  return Boolean(row);
 }
 
-export async function reorderAccounts(userId: string, input: AccountReorder): Promise<void> {
-  const supabase = getSupabase();
-  const { error } = await supabase.rpc("reorder_accounts", {
-    p_owner_id: userId,
-    p_account_ids: input.accountIds,
-  });
-
-  if (error) {
-    throw error;
-  }
+export async function reorderAccounts(
+  db: AppDb,
+  userId: string,
+  input: AccountReorder,
+): Promise<void> {
+  await sql`select public.reorder_accounts(${userId}::uuid, ${input.accountIds}::uuid[])`.execute(
+    db,
+  );
 }

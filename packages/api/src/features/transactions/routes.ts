@@ -27,7 +27,11 @@ transactionsRouter.post(
   }),
   rejectFutureTxDate,
   async (c) => {
-    const data = await controller.createTransaction(c.get("userId"), c.req.valid("json"));
+    const data = await controller.createTransaction(
+      c.get("db"),
+      c.get("userId"),
+      c.req.valid("json"),
+    );
     return c.json({ data }, 201);
   },
 );
@@ -41,6 +45,7 @@ transactionsRouter.patch(
   rejectFutureTxDate,
   async (c) => {
     const data = await controller.updateTransaction(
+      c.get("db"),
       c.get("userId"),
       c.req.param("id"),
       c.req.valid("json"),
@@ -56,7 +61,11 @@ transactionsRouter.delete(
     }
   }),
   async (c) => {
-    const data = await controller.deleteTransactions(c.get("userId"), c.req.valid("json"));
+    const data = await controller.deleteTransactions(
+      c.get("db"),
+      c.get("userId"),
+      c.req.valid("json"),
+    );
     return c.json({ data });
   },
 );

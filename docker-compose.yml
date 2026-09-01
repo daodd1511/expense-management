@@ -1,11 +1,56 @@
-# LOCAL / MANUAL RUNS ONLY — this builds from source and is not what production uses.
-#
-# Production compose lives in the private daodd1511/deploy repo at apps/wallet/compose.yml:
-# pulled GHCR images (`ghcr.io/daodd1511/wallet-{web,api}:<sha>`), health-gated, with
-# rollback. Images are published by .github/workflows/build.yml on push to main.
-#
-# Values here come from a local, gitignored `.env` (see .env.example).
+# LOCAL / MANUAL RUNS ONLY. Production orchestration lives in the private deploy repo.
+# Values come from a local, gitignored `.env`; no credential is built into an image.
 services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-wallet}
+      POSTGRES_USER: wallet_migrator
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - wallet-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wallet_migrator -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [wallet]
+
+  migrator:
+    image: ghcr.io/amacneil/dbmate:2.35.0
+    environment:
+      DATABASE_URL: postgres://wallet_migrator:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-wallet}?sslmode=disable
+    command: ["--no-dump-schema", "--migrations-dir", "/db/migrations", "up"]
+    volumes:
+      - ./db:/db:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks: [wallet]
+
+  role-bootstrap:
+    image: postgres:17-alpine
+    entrypoint: ["/bin/sh", "/bootstrap/bootstrap-roles.sh"]
+    environment:
+      PGHOST: postgres
+      PGDATABASE: ${POSTGRES_DB:-wallet}
+      PGUSER: wallet_migrator
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      WALLET_APP_PASSWORD: ${WALLET_APP_PASSWORD:?set WALLET_APP_PASSWORD in .env}
+      WALLET_AUTH_PASSWORD: ${WALLET_AUTH_PASSWORD:?set WALLET_AUTH_PASSWORD in .env}
+      WALLET_RECOVERY_PASSWORD: ${WALLET_RECOVERY_PASSWORD:?set WALLET_RECOVERY_PASSWORD in .env}
+    volumes:
+      - ./tools/local/bootstrap-roles.sh:/bootstrap/bootstrap-roles.sh:ro
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    restart: "no"
+    networks: [wallet]
+
   api:
     build:
       context: .
@@ -15,8 +60,14 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3000"
-      SUPABASE_URL: ${VITE_SUPABASE_URL}
-      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY}
+      APP_DATABASE_URL: postgres://wallet_app:${WALLET_APP_PASSWORD}@postgres:5432/${POSTGRES_DB:-wallet}?sslmode=disable
+      AUTH_DATABASE_URL: postgres://wallet_auth:${WALLET_AUTH_PASSWORD}@postgres:5432/${POSTGRES_DB:-wallet}?sslmode=disable
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?set BETTER_AUTH_URL in .env}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env}
+      AUTH_TRUSTED_PROXY_IPS: ${AUTH_TRUSTED_PROXY_IPS:-172.30.0.20}
+    depends_on:
+      role-bootstrap:
+        condition: service_completed_successfully
     restart: unless-stopped
     networks: [wallet]
 
@@ -25,24 +76,54 @@ services:
       context: .
       dockerfile: packages/web/Dockerfile
       args:
-        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
-        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
         VITE_API_BASE: /api
         APP_COMMIT: ${APP_COMMIT:-}
     image: wallet-web:local
     pull_policy: build
-    depends_on: [api]
+    depends_on:
+      api:
+        condition: service_healthy
     restart: unless-stopped
+    networks:
+      wallet:
+        ipv4_address: 172.30.0.20
+
+  recovery:
+    build:
+      context: .
+      dockerfile: tools/recovery/Dockerfile
+    image: wallet-recovery:local
+    profiles: ["recovery"]
+    environment:
+      DATABASE_URL: postgres://wallet_recovery:${WALLET_RECOVERY_PASSWORD}@postgres:5432/${POSTGRES_DB:-wallet}?sslmode=disable
+      AGE_RECIPIENT: ${AGE_RECIPIENT:?set AGE_RECIPIENT in .env}
+      ARCHIVE_DIR: /archives
+    volumes:
+      - wallet-recovery:/archives
+    depends_on:
+      role-bootstrap:
+        condition: service_completed_successfully
+    restart: "no"
     networks: [wallet]
 
   cloudflared:
     image: cloudflare/cloudflared:latest
     command: tunnel run
     environment:
-      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?set TUNNEL_TOKEN in .env}
+    depends_on:
+      web:
+        condition: service_healthy
     restart: unless-stopped
     networks: [wallet]
 
 networks:
   wallet:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+volumes:
+  wallet-postgres:
+  wallet-recovery:

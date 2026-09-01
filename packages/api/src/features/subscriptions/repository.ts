@@ -7,7 +7,8 @@ import {
   type Database,
   type Subscription,
 } from "@wallet/shared";
-import { getSupabase } from "../../config/supabase";
+import { sql } from "kysely";
+import type { AppDb } from "../../db/database";
 import { parseRows } from "../../lib/response";
 import { ApiError } from "../../middleware/error";
 
@@ -22,115 +23,120 @@ function parseSubscriptionRow(data: unknown, message: string): Subscription {
   return toSubscription(result.data);
 }
 
-export async function listSubscriptions(userId: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("subscriptions")
-    .select("*")
-    .eq("owner_id", userId)
-    .order("created_at", { ascending: true });
+export async function listSubscriptions(db: AppDb, userId: string) {
+  const rows = await db
+    .selectFrom("subscriptions")
+    .selectAll()
+    .where("owner_id", "=", userId)
+    .orderBy("created_at", "asc")
+    .execute();
 
-  if (error) {
-    throw error;
-  }
-
-  return parseRows(data, subscriptionRowSchema, toSubscription);
+  return parseRows(rows, subscriptionRowSchema, toSubscription);
 }
 
-export async function createSubscription(userId: string, subscription: Omit<Subscription, "id">) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("subscriptions")
-    .insert(fromSubscription({ subscription, ownerId: userId }))
-    .select("*")
-    .single();
-
-  if (error) {
-    throw error;
+export async function referencesAreAccessible(
+  db: AppDb,
+  userId: string,
+  references: { accountId?: string; categoryId?: string | null },
+) {
+  if (references.accountId !== undefined) {
+    const account = await db
+      .selectFrom("accounts")
+      .select("id")
+      .where("id", "=", references.accountId)
+      .where("owner_id", "=", userId)
+      .executeTakeFirst();
+    if (!account) return false;
   }
 
-  return parseSubscriptionRow(data, "Inserted subscription failed validation");
+  if (references.categoryId !== undefined && references.categoryId !== null) {
+    const category = await db
+      .selectFrom("categories")
+      .select("id")
+      .where("id", "=", references.categoryId)
+      .where((eb) => eb.or([eb("owner_id", "=", userId), eb("owner_id", "is", null)]))
+      .executeTakeFirst();
+    if (!category) return false;
+  }
+
+  return true;
 }
 
-export async function loadSubscription(userId: string, id: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("subscriptions")
-    .select("*")
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .maybeSingle();
+export async function createSubscription(
+  db: AppDb,
+  userId: string,
+  subscription: Omit<Subscription, "id">,
+) {
+  const row = await db
+    .insertInto("subscriptions")
+    .values(fromSubscription({ subscription, ownerId: userId }))
+    .returningAll()
+    .executeTakeFirstOrThrow();
 
-  if (error) {
-    throw error;
-  }
-
-  return data ? parseSubscriptionRow(data, "Stored subscription failed validation") : null;
+  return parseSubscriptionRow(row, "Inserted subscription failed validation");
 }
 
-export async function loadSubscriptionSchedule(userId: string, id: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("subscriptions")
-    .select("day_of_month, month_of_year, cadence")
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .maybeSingle();
+export async function loadSubscription(db: AppDb, userId: string, id: string) {
+  const row = await db
+    .selectFrom("subscriptions")
+    .selectAll()
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .executeTakeFirst();
 
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  return row ? parseSubscriptionRow(row, "Stored subscription failed validation") : null;
 }
 
-export async function logSubscription(params: {
-  userId: string;
-  subscription: Subscription;
-  today: string;
-  nextDueDate: string;
-}) {
-  const supabase = getSupabase();
-  const rpc = await supabase
-    .rpc("log_subscription", {
-      p_owner_id: params.userId,
-      p_subscription_id: params.subscription.id,
-      p_type: params.subscription.type,
-      p_amount: params.subscription.amount,
-      // Postgres accepts NULL for these plain (non-NOT-NULL, no-DEFAULT) function params;
-      // supabase gen types only marks an RPC arg optional/nullable when the SQL has a
-      // DEFAULT, so it types them as required non-null strings here regardless.
-      p_category_id: params.subscription.categoryId as string,
-      p_account_id: params.subscription.accountId,
-      p_merchant: params.subscription.name,
-      p_note: (params.subscription.note ?? null) as string,
-      p_tx_date: params.today,
-      p_next_due_date: params.nextDueDate,
-    })
-    .single<LogSubscriptionRpcRow>();
+export async function loadSubscriptionSchedule(db: AppDb, userId: string, id: string) {
+  return db
+    .selectFrom("subscriptions")
+    .select(["day_of_month", "month_of_year", "cadence"])
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .executeTakeFirst();
+}
 
-  if (rpc.error) {
-    throw rpc.error;
-  }
-  if (!rpc.data) {
+export async function logSubscription(
+  db: AppDb,
+  params: {
+    userId: string;
+    subscription: Subscription;
+    today: string;
+    nextDueDate: string;
+  },
+) {
+  const result = await sql<LogSubscriptionRpcRow>`select * from public.log_subscription(
+    ${params.userId}::uuid,
+    ${params.subscription.id}::uuid,
+    ${params.subscription.type}::text,
+    ${params.subscription.amount}::numeric,
+    ${params.subscription.categoryId ?? null}::uuid,
+    ${params.subscription.accountId}::uuid,
+    ${params.subscription.name}::text,
+    ${params.subscription.note ?? null}::text,
+    ${params.today}::date,
+    ${params.nextDueDate}::date
+  )`.execute(db);
+  const row = result.rows[0];
+  if (!row) {
     return null;
   }
 
   const txRow = transactionRowSchema.safeParse({
-    id: rpc.data.tx_id,
-    owner_id: rpc.data.tx_owner_id,
-    type: rpc.data.tx_type,
-    amount: rpc.data.tx_amount,
-    category_id: rpc.data.tx_category_id,
-    account_id: rpc.data.tx_account_id,
-    to_account_id: rpc.data.tx_to_account_id,
-    merchant: rpc.data.tx_merchant,
-    note: rpc.data.tx_note,
-    tx_date: rpc.data.tx_tx_date,
+    id: row.tx_id,
+    owner_id: row.tx_owner_id,
+    type: row.tx_type,
+    amount: row.tx_amount,
+    category_id: row.tx_category_id,
+    account_id: row.tx_account_id,
+    to_account_id: row.tx_to_account_id,
+    merchant: row.tx_merchant,
+    note: row.tx_note,
+    tx_date: row.tx_tx_date,
     tx_time: null,
-    receipt_url: rpc.data.tx_receipt_url,
-    subscription_id: rpc.data.tx_subscription_id,
-    created_at: rpc.data.tx_created_at,
+    receipt_url: row.tx_receipt_url,
+    subscription_id: row.tx_subscription_id,
+    created_at: row.tx_created_at,
   });
   if (!txRow.success) {
     throw new ApiError(500, "Logged transaction failed validation", txRow.error.flatten());
@@ -138,61 +144,51 @@ export async function logSubscription(params: {
 
   return parseSubscriptionRow(
     {
-      id: rpc.data.sub_id,
-      owner_id: rpc.data.sub_owner_id,
-      name: rpc.data.sub_name,
-      amount: rpc.data.sub_amount,
-      type: rpc.data.sub_type,
-      category_id: rpc.data.sub_category_id,
-      account_id: rpc.data.sub_account_id,
-      cadence: rpc.data.sub_cadence,
-      day_of_month: rpc.data.sub_day_of_month,
-      month_of_year: rpc.data.sub_month_of_year,
-      next_due_date: rpc.data.sub_next_due_date,
-      note: rpc.data.sub_note,
-      active: rpc.data.sub_active,
-      created_at: rpc.data.sub_created_at,
+      id: row.sub_id,
+      owner_id: row.sub_owner_id,
+      name: row.sub_name,
+      amount: row.sub_amount,
+      type: row.sub_type,
+      category_id: row.sub_category_id,
+      account_id: row.sub_account_id,
+      cadence: row.sub_cadence,
+      day_of_month: row.sub_day_of_month,
+      month_of_year: row.sub_month_of_year,
+      next_due_date: row.sub_next_due_date,
+      note: row.sub_note,
+      active: row.sub_active,
+      created_at: row.sub_created_at,
     },
     "Updated subscription failed validation",
   );
 }
 
 export async function updateSubscription(
+  db: AppDb,
   userId: string,
   id: string,
   row: ReturnType<typeof subscriptionPatchToRow> & { next_due_date?: string },
 ) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("subscriptions")
-    .update(row)
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .select("*")
-    .maybeSingle();
+  const updated = await db
+    .updateTable("subscriptions")
+    .set(row)
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .returningAll()
+    .executeTakeFirst();
 
-  if (error) {
-    throw error;
-  }
-
-  return data ? parseSubscriptionRow(data, "Updated subscription failed validation") : null;
+  return updated ? parseSubscriptionRow(updated, "Updated subscription failed validation") : null;
 }
 
-export async function deleteSubscription(userId: string, id: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("subscriptions")
-    .delete()
-    .eq("id", id)
-    .eq("owner_id", userId)
-    .select("id")
-    .maybeSingle();
+export async function deleteSubscription(db: AppDb, userId: string, id: string) {
+  const row = await db
+    .deleteFrom("subscriptions")
+    .where("id", "=", id)
+    .where("owner_id", "=", userId)
+    .returning("id")
+    .executeTakeFirst();
 
-  if (error) {
-    throw error;
-  }
-
-  return Boolean(data);
+  return Boolean(row);
 }
 
 export { subscriptionPatchToRow };

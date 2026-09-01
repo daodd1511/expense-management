@@ -11,6 +11,7 @@ import {
   type Transaction,
 } from "@wallet/shared";
 import { z } from "zod";
+import type { AppDb } from "../../db/database";
 import { ApiError } from "../../middleware/error";
 import * as repository from "./repository";
 
@@ -33,19 +34,20 @@ function parseReferenceMonth(referenceMonthParam?: string): string {
  * every account-total-derived report (balance trend, net worth, net-worth trend) starts
  * from. */
 async function loadActiveAccountTransactions(
+  db: AppDb,
   userId: string,
 ): Promise<{ accounts: Account[]; transactions: Transaction[] }> {
-  const accounts = await repository.listActiveAccounts(userId);
+  const accounts = await repository.listActiveAccounts(db, userId);
   const accountIds = new Set(accounts.map((account) => account.id));
-  const transactions = (await repository.listTransactions(userId)).filter((tx) =>
+  const transactions = (await repository.listTransactions(db, userId)).filter((tx) =>
     accountIds.has(tx.accountId),
   );
   return { accounts, transactions };
 }
 
-export async function getBalanceTrend(userId: string, referenceMonthParam?: string) {
+export async function getBalanceTrend(db: AppDb, userId: string, referenceMonthParam?: string) {
   const referenceMonth = parseReferenceMonth(referenceMonthParam);
-  const { accounts, transactions } = await loadActiveAccountTransactions(userId);
+  const { accounts, transactions } = await loadActiveAccountTransactions(db, userId);
   const startingBalance = accounts.reduce((sum, account) => sum + account.openingBalance, 0);
 
   const response = balanceTrendResponseSchema.safeParse({
@@ -59,10 +61,10 @@ export async function getBalanceTrend(userId: string, referenceMonthParam?: stri
   return response.data;
 }
 
-export async function getDashboardSummary(userId: string, todayIso: string) {
+export async function getDashboardSummary(db: AppDb, userId: string, todayIso: string) {
   const [{ accounts, transactions }, loansWithEvents] = await Promise.all([
-    loadActiveAccountTransactions(userId),
-    repository.listLoansWithEvents(userId),
+    loadActiveAccountTransactions(db, userId),
+    repository.listLoansWithEvents(db, userId),
   ]);
 
   const transactionsThroughToday = transactions.filter((tx) => tx.date <= todayIso);
@@ -85,11 +87,11 @@ export async function getDashboardSummary(userId: string, todayIso: string) {
   return response.data;
 }
 
-export async function getNetWorthTrend(userId: string, referenceMonthParam?: string) {
+export async function getNetWorthTrend(db: AppDb, userId: string, referenceMonthParam?: string) {
   const referenceMonth = parseReferenceMonth(referenceMonthParam);
   const [{ accounts, transactions }, loansWithEvents] = await Promise.all([
-    loadActiveAccountTransactions(userId),
-    repository.listLoansWithEvents(userId),
+    loadActiveAccountTransactions(db, userId),
+    repository.listLoansWithEvents(db, userId),
   ]);
 
   const loansForNetWorth = loansWithEvents.map(({ loan, events }) => ({

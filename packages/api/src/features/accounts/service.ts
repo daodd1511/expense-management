@@ -4,13 +4,14 @@ import {
   type AccountPatch,
   type AccountReorder,
 } from "@wallet/shared";
+import type { AppDb } from "../../db/database";
 import { ApiError } from "../../middleware/error";
 import * as repository from "./repository";
 
-export async function listAccounts(userId: string) {
+export async function listAccounts(db: AppDb, userId: string) {
   const [accounts, transactions] = await Promise.all([
-    repository.listActiveAccounts(userId),
-    repository.listUserTransactions(userId),
+    repository.listActiveAccounts(db, userId),
+    repository.listUserTransactions(db, userId),
   ]);
 
   return accounts.map((account) => ({
@@ -19,12 +20,12 @@ export async function listAccounts(userId: string) {
   }));
 }
 
-export async function createAccount(userId: string, account: AccountCreate) {
-  return repository.createAccount(userId, account);
+export async function createAccount(db: AppDb, userId: string, account: AccountCreate) {
+  return repository.createAccount(db, userId, account);
 }
 
-export async function updateAccount(userId: string, id: string, patch: AccountPatch) {
-  const account = await repository.updateAccount(userId, id, patch);
+export async function updateAccount(db: AppDb, userId: string, id: string, patch: AccountPatch) {
+  const account = await repository.updateAccount(db, userId, id, patch);
   if (!account) {
     throw new ApiError(404, "Account not found");
   }
@@ -32,13 +33,13 @@ export async function updateAccount(userId: string, id: string, patch: AccountPa
   return account;
 }
 
-export async function archiveAccount(userId: string, id: string) {
-  const archived = await repository.archiveAccount(userId, id);
+export async function archiveAccount(db: AppDb, userId: string, id: string) {
+  const archived = await repository.archiveAccount(db, userId, id);
   if (!archived) {
     throw new ApiError(404, "Account not found");
   }
 }
 
-export async function reorderAccounts(userId: string, input: AccountReorder) {
-  await repository.reorderAccounts(userId, input);
+export async function reorderAccounts(db: AppDb, userId: string, input: AccountReorder) {
+  await repository.reorderAccounts(db, userId, input);
 }

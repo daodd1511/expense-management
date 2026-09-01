@@ -1,61 +1,60 @@
-import { Hono } from "hono";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AuthEnv } from "./auth";
+import { describe, expect, it, vi } from "vitest";
+import { createApp } from "../app";
+import { hasTestDatabase } from "../db/test-helpers";
+import { USER_A, withApiTestDatabase } from "../test/postgres-fixture";
 
-const { verifyAccessToken } = vi.hoisted(() => ({
-  verifyAccessToken: vi.fn(),
-}));
+vi.setConfig({ testTimeout: 20_000 });
 
-vi.mock("../lib/jwt", () => ({
-  verifyAccessToken,
-}));
+describe("health boundaries", () => {
+  it("keeps process liveness independent from database readiness", async () => {
+    const checkReadiness = vi.fn().mockRejectedValue(new Error("database unavailable"));
+    const app = createApp({ checkReadiness });
 
-import { authMiddleware } from "./auth";
+    await expect((await app.request("/health")).json()).resolves.toEqual({ ok: true });
+    expect(checkReadiness).not.toHaveBeenCalled();
 
-describe("authMiddleware", () => {
-  beforeEach(() => {
-    verifyAccessToken.mockReset();
+    const readiness = await app.request("/health/ready");
+    expect(readiness.status).toBe(503);
+    await expect(readiness.json()).resolves.toEqual({ ok: false });
+    expect(checkReadiness).toHaveBeenCalledOnce();
   });
 
-  it("returns 401 when the authorization header is missing", async () => {
-    const app = new Hono<AuthEnv>();
-    app.use("*", authMiddleware);
-    app.get("/", (c) => c.json({ ok: true }));
+  it("reports readiness after the database check succeeds", async () => {
+    const checkReadiness = vi.fn().mockResolvedValue(undefined);
+    const readiness = await createApp({ checkReadiness }).request("/health/ready");
 
-    const response = await app.request("/");
-
-    expect(response.status).toBe(401);
-    await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
+    expect(readiness.status).toBe(200);
+    await expect(readiness.json()).resolves.toEqual({ ok: true });
   });
+});
 
-  it("stores the verified user id in context", async () => {
-    const app = new Hono<AuthEnv>();
-    app.use("*", authMiddleware);
-    app.get("/", (c) => c.json({ userId: c.get("userId") }));
+describe.skipIf(!hasTestDatabase)("protected request boundary", () => {
+  it("returns 401 without a server identity and does not query User-owned data", async () => {
+    await withApiTestDatabase(async ({ request }) => {
+      const response = await request(null, "/api/accounts");
 
-    verifyAccessToken.mockResolvedValue("user-123");
-
-    const response = await app.request("/", {
-      headers: { Authorization: "Bearer token-123" },
+      expect(response.status).toBe(401);
+      await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
     });
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ userId: "user-123" });
-    expect(verifyAccessToken).toHaveBeenCalledWith("token-123");
   });
 
-  it("returns 401 when verification succeeds without a string sub claim", async () => {
-    const app = new Hono<AuthEnv>();
-    app.use("*", authMiddleware);
-    app.get("/", (c) => c.json({ ok: true }));
+  it("stores the resolved User and transaction-bound database executor in context", async () => {
+    await withApiTestDatabase(async ({ request }) => {
+      const response = await request(USER_A, "/api/accounts");
 
-    verifyAccessToken.mockResolvedValue(null);
-
-    const response = await app.request("/", {
-      headers: { Authorization: "Bearer token-123" },
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({ data: [] });
     });
+  });
 
-    expect(response.status).toBe(401);
-    await expect(response.json()).resolves.toEqual({ error: "Invalid token" });
+  it("returns 401 when the identity resolver rejects an unknown identity", async () => {
+    await withApiTestDatabase(async ({ app }) => {
+      const response = await app.request("/api/accounts", {
+        headers: { "x-test-user-id": "33333333-3333-3333-3333-333333333333" },
+      });
+
+      expect(response.status).toBe(401);
+      await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
+    });
   });
 });

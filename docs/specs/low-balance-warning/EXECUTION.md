@@ -5,9 +5,9 @@ Integration branch: `develop`. Branch model: stacked (default; single phase, so 
 
 ## STATUS
 
-- Current phase: 1 — in-progress
-- Phase 1 — Underfunded account warning: in-progress
-- Verification debt: none (local gate passed; CI gate open until the phase PR runs)
+- Current phase: 1 — done
+- Phase 1 — Underfunded account warning: done
+- Verification debt: none
 
 ## Phase 1 — Underfunded account warning
 
@@ -48,7 +48,7 @@ Produces: nothing — no later phase.
 - [x] `pnpm test` — full local suite, not `vitest related`. This phase edits
   `helpers.ts` and `i18n.tsx`, both shared surfaces whose consumers the import graph
   understates. Matches what CI runs (`.github/workflows/ci.yml:31`).
-- [ ] CI green on the phase PR
+- [x] CI green on the phase PR — PR #30 check completed successfully before merge
 - Build gate skipped: no config, entry-point, or codegen changes; typecheck covers this diff.
 
 **Review checklist (user, at PR review):**

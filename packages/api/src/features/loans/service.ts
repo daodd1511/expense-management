@@ -17,6 +17,7 @@ import {
   type PersonPatch,
   type PersonSummary,
 } from "@wallet/shared";
+import type { AppDb } from "../../db/database";
 import { ApiError } from "../../middleware/error";
 import * as repository from "./repository";
 
@@ -55,30 +56,32 @@ function buildLoanDetail(
  * outstanding balance/status are derived from the full event history, not just the one
  * event that just changed. */
 async function refetchLoanDetail(
+  db: AppDb,
   userId: string,
   loanId: string,
   todayIso: string,
 ): Promise<LoanDetail> {
-  const loan = await repository.loadLoan(userId, loanId);
+  const loan = await repository.loadLoan(db, userId, loanId);
   if (!loan) {
     throw new ApiError(404, "Loan not found");
   }
 
   const [person, events] = await Promise.all([
-    repository.loadPerson(userId, loan.personId),
-    repository.listEventsForLoans(userId, [loanId]),
+    repository.loadPerson(db, userId, loan.personId),
+    repository.listEventsForLoans(db, userId, [loanId]),
   ]);
 
   return buildLoanDetail(loan, person?.name ?? "", events, todayIso);
 }
 
-async function loanListContext(userId: string) {
+async function loanListContext(db: AppDb, userId: string) {
   const [loans, people] = await Promise.all([
-    repository.listLoans(userId),
-    repository.listPeople(userId),
+    repository.listLoans(db, userId),
+    repository.listPeople(db, userId),
   ]);
   const personNameById = new Map(people.map((person) => [person.id, person.name]));
   const events = await repository.listEventsForLoans(
+    db,
     userId,
     loans.map((loan) => loan.id),
   );
@@ -94,28 +97,33 @@ async function loanListContext(userId: string) {
 
 // ---- People ----
 
-export async function listPeople(userId: string): Promise<Person[]> {
-  return repository.listPeople(userId);
+export async function listPeople(db: AppDb, userId: string): Promise<Person[]> {
+  return repository.listPeople(db, userId);
 }
 
-export async function createPerson(userId: string, input: PersonCreate): Promise<Person> {
-  return repository.createPerson(userId, { name: input.name, note: input.note });
+export async function createPerson(
+  db: AppDb,
+  userId: string,
+  input: PersonCreate,
+): Promise<Person> {
+  return repository.createPerson(db, userId, { name: input.name, note: input.note });
 }
 
 export async function updatePerson(
+  db: AppDb,
   userId: string,
   id: string,
   patch: PersonPatch,
 ): Promise<Person> {
-  const person = await repository.updatePerson(userId, id, patch);
+  const person = await repository.updatePerson(db, userId, id, patch);
   if (!person) {
     throw new ApiError(404, "Person not found");
   }
   return person;
 }
 
-export async function deletePerson(userId: string, id: string): Promise<void> {
-  const deleted = await repository.deletePerson(userId, id);
+export async function deletePerson(db: AppDb, userId: string, id: string): Promise<void> {
+  const deleted = await repository.deletePerson(db, userId, id);
   if (!deleted) {
     throw new ApiError(404, "Person not found");
   }
@@ -123,8 +131,12 @@ export async function deletePerson(userId: string, id: string): Promise<void> {
 
 // ---- Loans (reads) ----
 
-export async function listLoanSummaries(userId: string, todayIso: string): Promise<LoanSummary[]> {
-  const { loans, personNameById, eventsByLoanId } = await loanListContext(userId);
+export async function listLoanSummaries(
+  db: AppDb,
+  userId: string,
+  todayIso: string,
+): Promise<LoanSummary[]> {
+  const { loans, personNameById, eventsByLoanId } = await loanListContext(db, userId);
   return loans.map((loan) =>
     buildLoanSummary(
       loan,
@@ -136,10 +148,11 @@ export async function listLoanSummaries(userId: string, todayIso: string): Promi
 }
 
 export async function listPersonSummaries(
+  db: AppDb,
   userId: string,
   todayIso: string,
 ): Promise<PersonSummary[]> {
-  const { loans, people, personNameById, eventsByLoanId } = await loanListContext(userId);
+  const { loans, people, personNameById, eventsByLoanId } = await loanListContext(db, userId);
   const summariesByPersonId = new Map<string, LoanSummary[]>();
   for (const loan of loans) {
     const summary = buildLoanSummary(
@@ -176,8 +189,8 @@ export async function listPersonSummaries(
   });
 }
 
-export async function listLoanEventLinks(userId: string): Promise<LoanEventLink[]> {
-  const { loans, personNameById, eventsByLoanId } = await loanListContext(userId);
+export async function listLoanEventLinks(db: AppDb, userId: string): Promise<LoanEventLink[]> {
+  const { loans, personNameById, eventsByLoanId } = await loanListContext(db, userId);
   return loans.flatMap((loan) =>
     (eventsByLoanId.get(loan.id) ?? []).map((event) => ({
       eventId: event.id,
@@ -190,21 +203,23 @@ export async function listLoanEventLinks(userId: string): Promise<LoanEventLink[
 }
 
 export async function getLoanDetail(
+  db: AppDb,
   userId: string,
   id: string,
   todayIso: string,
 ): Promise<LoanDetail> {
-  return refetchLoanDetail(userId, id, todayIso);
+  return refetchLoanDetail(db, userId, id, todayIso);
 }
 
 // ---- Loans (lifecycle) ----
 
 export async function createDisbursedLoan(
+  db: AppDb,
   userId: string,
   input: DisbursedLoanCreate,
   todayIso: string,
 ): Promise<LoanDetail> {
-  const { loan, event } = await repository.createDisbursedLoan({
+  const { loan, event } = await repository.createDisbursedLoan(db, {
     userId,
     personId: input.personId,
     direction: input.direction,
@@ -215,16 +230,17 @@ export async function createDisbursedLoan(
     dueDate: input.dueDate ?? null,
     note: input.note ?? null,
   });
-  const person = await repository.loadPerson(userId, loan.personId);
+  const person = await repository.loadPerson(db, userId, loan.personId);
   return buildLoanDetail(loan, person?.name ?? "", [event], todayIso);
 }
 
 export async function createOpeningLoan(
+  db: AppDb,
   userId: string,
   input: OpeningLoanCreate,
   todayIso: string,
 ): Promise<LoanDetail> {
-  const { loan, event } = await repository.createOpeningLoan({
+  const { loan, event } = await repository.createOpeningLoan(db, {
     userId,
     personId: input.personId,
     direction: input.direction,
@@ -235,113 +251,120 @@ export async function createOpeningLoan(
     dueDate: input.dueDate ?? null,
     note: input.note ?? null,
   });
-  const person = await repository.loadPerson(userId, loan.personId);
+  const person = await repository.loadPerson(db, userId, loan.personId);
   return buildLoanDetail(loan, person?.name ?? "", [event], todayIso);
 }
 
 export async function updateLoanMetadata(
+  db: AppDb,
   userId: string,
   id: string,
   patch: LoanMetadataPatch,
   todayIso: string,
 ): Promise<LoanDetail> {
-  const loan = await repository.updateLoanMetadata(userId, id, patch);
+  const loan = await repository.updateLoanMetadata(db, userId, id, patch);
   if (!loan) {
     throw new ApiError(404, "Loan not found");
   }
-  return refetchLoanDetail(userId, id, todayIso);
+  return refetchLoanDetail(db, userId, id, todayIso);
 }
 
 export async function updateLoanDisbursement(
+  db: AppDb,
   userId: string,
   id: string,
   patch: LoanDisbursementPatch,
   todayIso: string,
 ): Promise<LoanDetail> {
-  await repository.updateLoanDisbursement({
+  await repository.updateLoanDisbursement(db, {
     userId,
     loanId: id,
     amount: patch.amount,
     accountId: patch.accountId,
     eventDate: patch.date,
   });
-  return refetchLoanDetail(userId, id, todayIso);
+  return refetchLoanDetail(db, userId, id, todayIso);
 }
 
-export async function deleteLoan(userId: string, id: string): Promise<void> {
-  const deleted = await repository.deleteLoan(userId, id);
+export async function deleteLoan(db: AppDb, userId: string, id: string): Promise<void> {
+  const deleted = await repository.deleteLoan(db, userId, id);
   if (!deleted) {
     throw new ApiError(404, "Loan not found");
   }
 }
 
 export async function createLoanRepayment(
+  db: AppDb,
   userId: string,
   loanId: string,
   input: LoanRepaymentCreate,
   todayIso: string,
 ): Promise<LoanDetail> {
-  await repository.createLoanRepayment({
+  await repository.createLoanRepayment(db, {
     userId,
     loanId,
     amount: input.amount,
     accountId: input.accountId,
     eventDate: input.date,
   });
-  return refetchLoanDetail(userId, loanId, todayIso);
+  return refetchLoanDetail(db, userId, loanId, todayIso);
 }
 
 export async function updateLoanRepayment(
+  db: AppDb,
   userId: string,
   loanId: string,
   eventId: string,
   patch: LoanRepaymentPatch,
   todayIso: string,
 ): Promise<LoanDetail> {
-  await repository.updateLoanRepayment({
+  await repository.updateLoanRepayment(db, {
     userId,
     eventId,
     amount: patch.amount,
     accountId: patch.accountId,
     eventDate: patch.date,
   });
-  return refetchLoanDetail(userId, loanId, todayIso);
+  return refetchLoanDetail(db, userId, loanId, todayIso);
 }
 
 export async function deleteLoanRepayment(
+  db: AppDb,
   userId: string,
   loanId: string,
   eventId: string,
 ): Promise<void> {
-  const deleted = await repository.deleteLoanRepayment(userId, loanId, eventId);
+  const deleted = await repository.deleteLoanRepayment(db, userId, loanId, eventId);
   if (!deleted) {
     throw new ApiError(404, "Repayment not found");
   }
 }
 
 export async function closeLoan(
+  db: AppDb,
   userId: string,
   loanId: string,
   input: CloseLoan,
   todayIso: string,
 ): Promise<LoanDetail> {
-  await repository.closeLoan({
+  await repository.closeLoan(db, {
     userId,
     loanId,
     kind: input.kind,
     eventDate: input.date,
   });
-  return refetchLoanDetail(userId, loanId, todayIso);
+  return refetchLoanDetail(db, userId, loanId, todayIso);
 }
 
 export async function reopenLoan(
+  db: AppDb,
   userId: string,
   loanId: string,
   todayIso: string,
 ): Promise<LoanDetail> {
-  const reopened = await repository.reopenLoan(userId, loanId);
+  const reopened = await repository.reopenLoan(db, userId, loanId);
   if (!reopened) {
     throw new ApiError(404, "Loan is not closed");
   }
-  return refetchLoanDetail(userId, loanId, todayIso);
+  return refetchLoanDetail(db, userId, loanId, todayIso);
 }

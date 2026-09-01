@@ -1,126 +1,80 @@
-import { Hono } from "hono";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AuthEnv } from "../../middleware/auth";
-import { handleError } from "../../middleware/error";
+import { describe, expect, it, vi } from "vitest";
+import { hasTestDatabase } from "../../db/test-helpers";
+import {
+  USER_A,
+  USER_B,
+  createTestCategory,
+  jsonRequest,
+  withApiTestDatabase,
+} from "../../test/postgres-fixture";
 
-const { getSupabase } = vi.hoisted(() => ({
-  getSupabase: vi.fn(),
-}));
+vi.setConfig({ testTimeout: 30_000 });
 
-vi.mock("../../config/supabase", () => ({
-  getSupabase,
-}));
+describe.skipIf(!hasTestDatabase)("favorites API with PostgreSQL", () => {
+  it("lists, creates idempotently, and removes the current User's favorite", async () => {
+    await withApiTestDatabase(async (context) => {
+      const category = await createTestCategory(context, USER_A, { name: "Favorite" });
+      const created = await context.request(
+        USER_A,
+        "/api/favorites",
+        jsonRequest("POST", { categoryId: category.id }),
+      );
+      expect(created.status).toBe(201);
 
-import { favoritesRouter } from "./routes";
+      const repeated = await context.request(
+        USER_A,
+        "/api/favorites",
+        jsonRequest("POST", { categoryId: category.id }),
+      );
+      expect(repeated.status).toBe(200);
 
-type StubResult = { data?: unknown; error?: unknown; count?: number };
+      const list = await context.request(USER_A, "/api/favorites");
+      await expect(list.json()).resolves.toEqual({ data: [{ categoryId: category.id }] });
 
-function createSupabaseStub(results: StubResult[]) {
-  let call = 0;
-  const next = () => results[call++] ?? { data: null, error: null };
-
-  const builder: Record<string, unknown> = {
-    from: vi.fn(() => builder),
-    select: vi.fn(() => builder),
-    eq: vi.fn(() => builder),
-    or: vi.fn(() => builder),
-    in: vi.fn(() => builder),
-    order: vi.fn(() => builder),
-    update: vi.fn(() => builder),
-    insert: vi.fn(() => builder),
-    delete: vi.fn(() => builder),
-    maybeSingle: vi.fn(() => Promise.resolve(next())),
-    single: vi.fn(() => Promise.resolve(next())),
-    then: (resolve: (value: StubResult) => void, reject: (reason: unknown) => void) =>
-      Promise.resolve(next()).then(resolve, reject),
-  };
-
-  return builder;
-}
-
-function buildApp() {
-  const app = new Hono<AuthEnv>();
-  app.onError(handleError);
-  app.use("*", async (c, next) => {
-    c.set("userId", "user-1");
-    await next();
-  });
-  app.route("/favorites", favoritesRouter);
-  return app;
-}
-
-const favoriteRow = {
-  id: "fav-1",
-  user_id: "user-1",
-  category_id: "cat-1",
-  created_at: "2026-07-02T00:00:00.000Z",
-};
-
-describe("favoritesRouter", () => {
-  beforeEach(() => {
-    getSupabase.mockReset();
-  });
-
-  it("lists the current user favorites", async () => {
-    getSupabase.mockReturnValue(createSupabaseStub([{ data: [favoriteRow], error: null }]));
-
-    const app = buildApp();
-    const response = await app.request("/favorites");
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ data: [{ categoryId: "cat-1" }] });
-  });
-
-  it("adds a new favorite", async () => {
-    getSupabase.mockReturnValue(
-      createSupabaseStub([
-        { data: null, error: null },
-        { data: favoriteRow, error: null },
-      ]),
-    );
-
-    const app = buildApp();
-    const response = await app.request("/favorites", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ categoryId: "cat-1" }),
+      const removed = await context.request(USER_A, `/api/favorites/${category.id}`, {
+        method: "DELETE",
+      });
+      expect(removed.status).toBe(200);
+      expect(
+        (await context.request(USER_A, `/api/favorites/${category.id}`, { method: "DELETE" }))
+          .status,
+      ).toBe(404);
     });
-
-    expect(response.status).toBe(201);
-    await expect(response.json()).resolves.toEqual({ data: { categoryId: "cat-1" } });
   });
 
-  it("is idempotent when the favorite already exists", async () => {
-    getSupabase.mockReturnValue(createSupabaseStub([{ data: favoriteRow, error: null }]));
+  it("isolates favorite lists between Users", async () => {
+    await withApiTestDatabase(async (context) => {
+      const categoryA = await createTestCategory(context, USER_A, { name: "A" });
+      const categoryB = await createTestCategory(context, USER_B, { name: "B" });
+      await context.request(
+        USER_A,
+        "/api/favorites",
+        jsonRequest("POST", { categoryId: categoryA.id }),
+      );
+      await context.request(
+        USER_B,
+        "/api/favorites",
+        jsonRequest("POST", { categoryId: categoryB.id }),
+      );
 
-    const app = buildApp();
-    const response = await app.request("/favorites", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ categoryId: "cat-1" }),
+      const list = await context.request(USER_A, "/api/favorites");
+      await expect(list.json()).resolves.toEqual({ data: [{ categoryId: categoryA.id }] });
     });
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ data: { categoryId: "cat-1" } });
   });
 
-  it("removes an existing favorite", async () => {
-    getSupabase.mockReturnValue(createSupabaseStub([{ data: { id: "fav-1" }, error: null }]));
+  it("rejects another User's category identifier without creating a favorite", async () => {
+    await withApiTestDatabase(async (context) => {
+      const privateCategory = await createTestCategory(context, USER_B, { name: "Private" });
 
-    const app = buildApp();
-    const response = await app.request("/favorites/cat-1", { method: "DELETE" });
+      const response = await context.request(
+        USER_A,
+        "/api/favorites",
+        jsonRequest("POST", { categoryId: privateCategory.id }),
+      );
+      expect(response.status).toBe(404);
 
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ok: true });
-  });
-
-  it("returns 404 when removing a category that is not favorited", async () => {
-    getSupabase.mockReturnValue(createSupabaseStub([{ data: null, error: null }]));
-
-    const app = buildApp();
-    const response = await app.request("/favorites/cat-1", { method: "DELETE" });
-
-    expect(response.status).toBe(404);
-    await expect(response.json()).resolves.toMatchObject({ error: "Favorite not found" });
+      const list = await context.request(USER_A, "/api/favorites");
+      await expect(list.json()).resolves.toEqual({ data: [] });
+    });
   });
 });

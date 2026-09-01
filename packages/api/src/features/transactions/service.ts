@@ -5,6 +5,7 @@ import {
   type TransactionCreate,
   type TransactionPatch,
 } from "@wallet/shared";
+import type { AppDb } from "../../db/database";
 import { ApiError } from "../../middleware/error";
 import * as repository from "./repository";
 import { monthFilterSchema } from "./schema";
@@ -19,7 +20,7 @@ function monthBounds(month: string) {
   };
 }
 
-export async function listTransactions(userId: string, month?: string) {
+export async function listTransactions(db: AppDb, userId: string, month?: string) {
   let start: string | undefined;
   let end: string | undefined;
 
@@ -35,8 +36,8 @@ export async function listTransactions(userId: string, month?: string) {
   }
 
   const [openingBalances, ledgerTransactions] = await Promise.all([
-    repository.listAccountOpeningBalances(userId),
-    repository.listTransactionsForBalance({ userId, throughExclusive: end }),
+    repository.listAccountOpeningBalances(db, userId),
+    repository.listTransactionsForBalance(db, { userId, throughExclusive: end }),
   ]);
 
   const transactionsWithBalances = computeRunningBalances(ledgerTransactions, openingBalances);
@@ -55,45 +56,57 @@ export async function listTransactions(userId: string, month?: string) {
   return response.data;
 }
 
-export async function createTransaction(userId: string, transaction: TransactionCreate) {
-  if (transaction.type === "transfer" && (transaction.fee ?? 0) > 0) {
-    return repository.createTransferWithFee(userId, transaction, transaction.fee!);
+export async function createTransaction(db: AppDb, userId: string, transaction: TransactionCreate) {
+  if (!(await repository.referencesAreAccessible(db, userId, transaction))) {
+    throw new ApiError(404, "Referenced resource not found");
   }
-  return repository.createTransaction(userId, transaction);
+
+  if (transaction.type === "transfer" && (transaction.fee ?? 0) > 0) {
+    return repository.createTransferWithFee(db, userId, transaction, transaction.fee!);
+  }
+  return repository.createTransaction(db, userId, transaction);
 }
 
 const LOAN_LINKED_MESSAGE = "This transaction is linked to a loan. Edit or delete it from Loans.";
 
-async function rejectIfLoanLinked(userId: string, ids: string[]) {
-  const linkedIds = await repository.listLoanLinkedIds(userId, ids);
+async function rejectIfLoanLinked(db: AppDb, userId: string, ids: string[]) {
+  const linkedIds = await repository.listLoanLinkedIds(db, userId, ids);
   if (linkedIds.length > 0) {
     throw new ApiError(409, LOAN_LINKED_MESSAGE);
   }
 }
 
-export async function updateTransaction(userId: string, id: string, patch: TransactionPatch) {
-  await rejectIfLoanLinked(userId, [id]);
+export async function updateTransaction(
+  db: AppDb,
+  userId: string,
+  id: string,
+  patch: TransactionPatch,
+) {
+  await rejectIfLoanLinked(db, userId, [id]);
+  if (!(await repository.referencesAreAccessible(db, userId, patch))) {
+    throw new ApiError(404, "Referenced resource not found");
+  }
 
-  const transaction = await repository.updateTransaction(userId, id, patch);
+  const transaction = await repository.updateTransaction(db, userId, id, patch);
   if (!transaction) {
     throw new ApiError(404, "Transaction not found");
   }
 
   if (transaction.type !== "transfer") return transaction;
 
-  const linkedFee = await repository.findLinkedTransferFee(userId, id);
+  const linkedFee = await repository.findLinkedTransferFee(db, userId, id);
   const fee = patch.fee;
   if (fee === 0 && linkedFee) {
-    await repository.deleteTransaction(userId, linkedFee.id);
+    await repository.deleteTransaction(db, userId, linkedFee.id);
   } else if (linkedFee) {
-    await repository.updateTransaction(userId, linkedFee.id, {
+    await repository.updateTransaction(db, userId, linkedFee.id, {
       ...(fee !== undefined && { amount: fee }),
       accountId: transaction.accountId,
       date: transaction.date,
     });
   } else if (fee !== undefined && fee > 0) {
-    const categoryId = await repository.findTransferFeeCategoryId();
-    await repository.createLinkedTransferFee(userId, {
+    const categoryId = await repository.findTransferFeeCategoryId(db);
+    await repository.createLinkedTransferFee(db, userId, {
       type: "expense",
       amount: fee,
       categoryId,
@@ -111,16 +124,16 @@ export async function updateTransaction(userId: string, id: string, patch: Trans
   return transaction;
 }
 
-export async function deleteTransactions(userId: string, ids: string[]) {
+export async function deleteTransactions(db: AppDb, userId: string, ids: string[]) {
   // Mixed selections are rejected as a whole, not partially processed (PLAN.md).
-  await rejectIfLoanLinked(userId, ids);
-  return repository.deleteTransactions(userId, ids);
+  await rejectIfLoanLinked(db, userId, ids);
+  return repository.deleteTransactions(db, userId, ids);
 }
 
-export async function deleteTransaction(userId: string, id: string) {
-  await rejectIfLoanLinked(userId, [id]);
+export async function deleteTransaction(db: AppDb, userId: string, id: string) {
+  await rejectIfLoanLinked(db, userId, [id]);
 
-  const deleted = await repository.deleteTransaction(userId, id);
+  const deleted = await repository.deleteTransaction(db, userId, id);
   if (!deleted) {
     throw new ApiError(404, "Transaction not found");
   }

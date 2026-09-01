@@ -37,9 +37,9 @@ Tests exist (vitest, colocated `*.test.ts(x)`) but coverage is partial. Never ru
 
 ## Stack
 
-- **pnpm monorepo** — `packages/web`, `packages/api`, `packages/shared`, plus `supabase/` (migrations)
+- **pnpm monorepo** — `packages/web`, `packages/api`, `packages/shared`, plus `db/migrations/`
 - **packages/web** — Vite + React 19 + TypeScript SPA, no SSR; client-side routing via **TanStack Router** (`src/routing/router.tsx`)
-- **packages/api** — Hono on Node (`@hono/node-server`), Supabase as the database
+- **packages/api** — Hono on Node (`@hono/node-server`), PostgreSQL 17 via Kysely, Better Auth
 - **packages/shared** — Zod DTOs, row↔model mappers, plain TS models shared by web and api
 - **Tailwind v4** via `@tailwindcss/vite` plugin (no `postcss.config`)
 - **shadcn/base-ui** (`@base-ui/react`) — base primitives; custom UI wrappers in `packages/web/src/shared/components/ui/`
@@ -53,13 +53,14 @@ Tests exist (vitest, colocated `*.test.ts(x)`) but coverage is partial. Never ru
 ### Backend-backed now — not in-memory only
 
 The app was originally a client-only SPA seeded from static data; it now talks to a
-Hono API backed by Supabase Postgres, with Supabase Auth gating access. Treat any
-older doc/memory describing "no backend" or "resets on refresh" as historical.
+Hono API backed by local PostgreSQL 17, with Better Auth database sessions gating access.
+Treat any older doc/memory describing Supabase runtime access, "no backend", or "resets
+on refresh" as historical.
 
 ### `packages/web/src` layout
 
 - `core/` — cross-cutting concerns: `api.ts` (`apiJson`/`apiFetch` fetch client with
-  Zod response validation, `ApiError`), `i18n.tsx`, `types.ts`, `supabase.ts`,
+  Zod response validation, `ApiError`), `i18n.tsx`, `types.ts`, `auth-client.ts`,
   `mutationErrorHandler.ts` / `queryErrorHandler.ts`, `query-invalidation.ts`
   (cross-feature invalidation helpers, e.g. `invalidateTransactionDependentQueries`),
   `ErrorBoundary.tsx`, `PwaUpdateProvider.tsx`, `useOnlineStatus.ts`. There is no
@@ -100,9 +101,9 @@ touch accounts, reports, and analytics) → `features/<f>/db.ts`
 sets `userId`; api domains: `accounts`, `analytics`, `budgets`, `categories`,
 `favorites`, `loans`, `reports`, `subscriptions`, `transactions` — the web
 `dashboard` feature is served by `analytics`) → `controller.ts` (HTTP-only request/response handling and validation) →
-`service.ts` (business rules/orchestration) → `repository.ts` (Supabase access via
-shared mappers) → Supabase Postgres, with `packages/shared/src/mappers/*` converting
-rows↔models (`toX` row→model, `fromX` model→row, `xPatchToRow`).
+`service.ts` (business rules/orchestration) → `repository.ts` (Kysely queries bound to
+the authenticated transaction) → PostgreSQL 17, with RLS as the second authorization
+boundary.
 
 ### Data model
 
@@ -154,11 +155,12 @@ class on `<html>`. `useTheme()` exposes `{ theme, resolvedTheme, setTheme }`.
 ### Auth
 
 `packages/web/src/features/auth/auth.tsx` (`AuthProvider`, `useAuth`) +
-`features/auth/components/` (`SignIn`, `SignUp`, `ForgotPassword`, `ResetPassword`)
-on the web side, backed by Supabase Auth; route gating lives in the router
-(`routing/auth-redirect.ts`), not a wrapper component. `packages/api/src/middleware/auth.ts`
-verifies the JWT (via `jose`) and sets `userId` on the Hono context (`AuthEnv`);
-every `/api/*` route requires it.
+`features/auth/components/` (`SignIn`, `SignUp`, `AuthCardLayout`)
+on the web side, backed by Better Auth email/password sessions; route gating lives in
+the router (`routing/auth-redirect.ts`), not a wrapper component.
+`packages/api/src/middleware/auth.ts` resolves the opaque database session, sets `userId`
+on the Hono context (`AuthEnv`), and opens the RLS-scoped application transaction;
+every protected `/api/*` route requires it.
 
 ### Dates
 
@@ -266,4 +268,4 @@ terms from this summary.
 - Web source lives in `packages/web/src/`
 - API source lives in `packages/api/src/`
 - Shared DTOs/mappers/models live in `packages/shared/src/`
-- Database migrations live in `supabase/migrations/`
+- Database migrations live in `db/migrations/` and Dbmate is their only runner.
